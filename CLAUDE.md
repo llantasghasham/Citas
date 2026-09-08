@@ -9,7 +9,9 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Tailwind CSS 4 (configuración en CSS, `@theme` en globals.css)
 - PostgreSQL vía Prisma 7 (adaptador `@prisma/adapter-pg`)
 - Render de imágenes en servidor (Chromium headless vía puppeteer-core)
-- Expo/React Native para las apps móviles (fase posterior)
+- Expo/React Native para la app móvil (`apps/mobile`)
+- Monorepo con espacios de trabajo de npm: `apps/web`, `apps/mobile`,
+  `packages/core`
 
 ## Reglas innegociables
 
@@ -65,6 +67,21 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   crear páginas en el dominio.
 - El slug no translitera nombres árabes: sale `invitacion-<azar>`. Transliterar
   un apellido automáticamente es justo lo que este proyecto prohíbe.
+
+### Monorepo y móvil
+- Lo que comparten web y móvil vive en `packages/core`: tipos, los cuatro
+  diccionarios y el formato de fechas y cifras. Un cambio de idioma se hace UNA
+  vez.
+- `packages/core` NO puede depender de Next, del navegador ni de Tailwind: en
+  cuanto lo haga, deja de poder usarse desde React Native.
+- La app móvil se autentica con el MISMO modelo de sesión que la web: un token
+  bearer en vez de una cookie, la misma tabla y la misma caducidad.
+- El token vive en el llavero del dispositivo (`expo-secure-store`), nunca en
+  almacenamiento plano.
+- React Native fija la dirección del texto al arrancar: cambiar a árabe exige
+  reiniciar la app. Hay que decírselo al usuario, no medio invertir la interfaz.
+- La app NO vende: las tiendas cobran comisión sobre bienes digitales. El pago
+  se hace en la web.
 
 ### Planes y límites
 - Un `maxEvents` a `null` significa SIN LÍMITE. Nunca colapsarlo con `??` contra
@@ -129,8 +146,8 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
 ## Estado actual
 Fases 1, 2 y 3 terminadas: motor de render, base de datos, acceso por código de
 un solo uso, oficinas por subdominio, historial, confirmaciones, calendario,
-exportación, formulario de creación y panel con oficinas, equipo, planes y
-facturas. Falta el cobro real (la spec de Whish) y las apps móviles.
+exportación, formulario de creación, panel con oficinas, equipo, planes y
+facturas, y la app móvil. Falta el cobro real: la especificación de Whish.
 - `GET /i/[slug]` — página web de la invitación
 - `GET /api/render/[slug]` — PNG 1080x1920 generado en servidor
 - `GET /render/[slug]` — lienzo interno de captura (no indexado)
@@ -152,10 +169,10 @@ facturas. Falta el cobro real (la spec de Whish) y las apps móviles.
 2. RSVP y entregables — **hecho**: confirmaciones, `.ics`, mapa y exportación
 3. Formulario de creación con vista previa — **hecho**
 4. Panel de oficina y facturación — **hecho**
-5. Apps móviles — monorepo con Expo
+5. Apps móviles — **hecho**: monorepo con Expo y API con token
 
-El orden importa en un punto: **las apps móviles necesitan cuentas y roles
-detrás**. Construirlas antes obliga a rehacerlas. No adelantar el paso 5.
+Todas las fases están construidas. Lo único pendiente que no depende del código
+es la especificación de Whish y la verificación humana de los versículos.
 
 ## Reglas de producto que no se rompen
 - Todo dato de negocio cuelga de un tenant. Ninguna consulta sin filtrar por

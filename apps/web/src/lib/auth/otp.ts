@@ -1,7 +1,7 @@
 import { getPrisma } from '@/lib/db/client';
 import { getMailer } from '@/lib/mail';
 
-import { createSession, type SessionMetadata } from './session';
+import { issueSession, type SessionMetadata } from './session';
 import { hashSecret, newLoginCode, secretMatches } from './tokens';
 
 const CODE_TTL_MINUTES = 10;
@@ -61,6 +61,8 @@ export interface VerifyOutcome {
   ok: boolean;
   userId: string | null;
   tenantId: string | null;
+  /** The raw session token. The caller decides whether it becomes a cookie. */
+  token: string | null;
 }
 
 /**
@@ -78,7 +80,7 @@ export async function verifyLoginCode(
 ): Promise<VerifyOutcome> {
   const email = normalizeEmail(rawEmail);
   const code = rawCode.trim();
-  const failure: VerifyOutcome = { ok: false, userId: null, tenantId: null };
+  const failure: VerifyOutcome = { ok: false, userId: null, tenantId: null, token: null };
 
   if (!looksLikeEmail(email) || !/^\d{6}$/.test(code)) return failure;
 
@@ -125,7 +127,7 @@ export async function verifyLoginCode(
     data: { consumedAt: new Date() },
   });
 
-  await createSession(user.id, tenantId, metadata);
+  const token = await issueSession(user.id, tenantId, metadata);
 
-  return { ok: true, userId: user.id, tenantId };
+  return { ok: true, userId: user.id, tenantId, token };
 }

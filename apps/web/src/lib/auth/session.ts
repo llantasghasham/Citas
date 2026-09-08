@@ -31,8 +31,12 @@ function expiryFromNow(): Date {
   return new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
 }
 
-/** Creates the session and returns the raw token — the only time it exists. */
-export async function createSession(
+/**
+ * Creates the session row and returns the raw token — the only moment it exists
+ * in the clear. The web sets it as a cookie; the mobile app keeps it and sends
+ * it as a bearer token. Same sessions, same expiry, one table.
+ */
+export async function issueSession(
   userId: string,
   tenantId: string | null,
   metadata: SessionMetadata = {},
@@ -50,6 +54,10 @@ export async function createSession(
     },
   });
 
+  return token;
+}
+
+export async function setSessionCookie(token: string): Promise<void> {
   const store = await cookies();
   store.set(COOKIE_NAME, token, {
     httpOnly: true,
@@ -58,7 +66,16 @@ export async function createSession(
     path: '/',
     expires: expiryFromNow(),
   });
+}
 
+/** Browser flow: issue the session and put it in the cookie. */
+export async function createSession(
+  userId: string,
+  tenantId: string | null,
+  metadata: SessionMetadata = {},
+): Promise<string> {
+  const token = await issueSession(userId, tenantId, metadata);
+  await setSessionCookie(token);
   return token;
 }
 
@@ -66,10 +83,9 @@ export async function createSession(
  * The signed-in user, or null. Never throws: callers decide what to do.
  * Memoised per request, so a layout and its page share one lookup.
  */
-export const getSession = cache(async (): Promise<AuthenticatedSession | null> => {
-  const store = await cookies();
-  const token = store.get(COOKIE_NAME)?.value;
-  if (token === undefined || token.length === 0) return null;
+/** Resolves a raw token to a session, wherever it arrived from. */
+export async function resolveSession(token: string): Promise<AuthenticatedSession | null> {
+  if (token.length === 0) return null;
 
   const prisma = getPrisma();
   const row = await prisma.session.findUnique({
@@ -102,7 +118,26 @@ export const getSession = cache(async (): Promise<AuthenticatedSession | null> =
     tenantId: row.tenantId,
     role: row.user.isSuperadmin ? 'SUPERADMIN' : (membership?.role ?? null),
   };
+}
+
+/**
+ * The signed-in user for a browser request, or null. Memoised per request, so a
+ * layout and its page share one lookup.
+ */
+export const getSession = cache(async (): Promise<AuthenticatedSession | null> => {
+  const store = await cookies();
+  return resolveSession(store.get(COOKIE_NAME)?.value ?? '');
 });
+
+/** The signed-in user for an API request carrying `Authorization: Bearer …`. */
+export async function getBearerSession(
+  requestHeaders: Headers,
+): Promise<AuthenticatedSession | null> {
+  const header = requestHeaders.get('authorization') ?? '';
+  const [scheme, token] = header.split(' ');
+  if (scheme?.toLowerCase() !== 'bearer' || token === undefined) return null;
+  return resolveSession(token);
+}
 
 export async function destroySession(): Promise<void> {
   const store = await cookies();

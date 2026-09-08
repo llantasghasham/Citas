@@ -1,7 +1,7 @@
-import ar from '../../locales/ar.json';
-import en from '../../locales/en.json';
-import es from '../../locales/es.json';
-import pt from '../../locales/pt.json';
+import ar from '../locales/ar.json';
+import en from '../locales/en.json';
+import es from '../locales/es.json';
+import pt from '../locales/pt.json';
 
 import type { Dictionary, Locale } from './types';
 

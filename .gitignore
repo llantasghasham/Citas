@@ -4,11 +4,12 @@ out/
 next-env.d.ts
 *.tsbuildinfo
 .DS_Store
-.env*.local
-/tmp-render/
-
-# Local env (never committed)
 .env
+.env*.local
 
 # Cliente generado por Prisma
-src/generated/
+**/src/generated/
+
+# Artefactos de Expo
+.expo/
+dist/

@@ -130,8 +130,8 @@ Las decisiones que importan:
 
 ## 5. Apps móviles
 
-**Un monorepo** con la web y la app compartiendo tipos, validaciones y los cuatro
-diccionarios de idioma. Un cambio en el texto árabe se hace una vez.
+**Un monorepo** con la web y la app compartiendo tipos y los cuatro diccionarios
+de idioma. Un cambio en el texto árabe se hace una vez. **Ya está construido.**
 
 ```
 apps/web      Next.js — invitación pública, paneles, API

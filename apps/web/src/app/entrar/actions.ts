@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { clientIp, requestHost } from '@/lib/admin/context';
 import { recordAudit } from '@/lib/audit';
 import { normalizeEmail, requestLoginCode, verifyLoginCode } from '@/lib/auth/otp';
-import { destroySession, getSession } from '@/lib/auth/session';
+import { destroySession, getSession, setSessionCookie } from '@/lib/auth/session';
 import { getTenantByHost } from '@/lib/tenancy/current';
 
 function signInUrl(email: string, params: Record<string, string> = {}): string {
@@ -38,9 +38,11 @@ export async function verifyCodeAction(formData: FormData): Promise<void> {
     ip: ip ?? undefined,
   });
 
-  if (!outcome.ok || outcome.userId === null) {
+  if (!outcome.ok || outcome.userId === null || outcome.token === null) {
     redirect(signInUrl(email, { sent: '1', error: '1' }));
   }
+
+  await setSessionCookie(outcome.token);
 
   await recordAudit({
     tenantId: outcome.tenantId,

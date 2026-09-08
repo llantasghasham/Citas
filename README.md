@@ -8,8 +8,9 @@ servidor. Sin auth, sin base de datos, sin pagos.
 ## Arranque
 
 ```bash
-npm install
-npm run dev
+npm install          # instala los tres espacios de trabajo
+npm run dev          # la web
+npm run mobile       # la app (Expo)
 ```
 
 | Ruta | Qué hace |
@@ -54,18 +55,26 @@ Chromium.
 
 ## Arquitectura
 
+Monorepo con espacios de trabajo de npm:
+
 ```
-data/            invitations.json (datos sembrados) · verses.json (lista fija de versículos)
-locales/         ar.json · es.json · pt.json · en.json  ← todo string visible
-public/fonts/    Amiri · Playfair Display · Inter (TTF locales, OFL 1.1)
-scripts/         check-logical-css.mjs  ← guardia de CSS físico
-src/app/         layout · página índice · /i/[slug] · /render/[slug] · /api/render/[slug]
-src/components/
-  invitation/    piezas reutilizables (Kicker, HostsBlock, HonoreesBlock, …) + InvitationCard
-  templates/     registry.ts + classic-gold/ (plantilla y sus ornamentos SVG)
-src/lib/         types · validate · invitations · verses · dictionary · numerals · datetime · typography
-src/lib/render/  browser.ts (Chromium) · png.ts (captura)
+apps/web/        Next.js — invitación pública, panel, formulario de creación, API
+  data/          invitations.json · verses.json (lista fija de versículos)
+  public/fonts/  Amiri · Playfair Display · Inter (TTF locales, OFL 1.1)
+  prisma/        esquema, migraciones y semilla
+  scripts/       check-logical-css.mjs  ← guardia de CSS físico
+  src/app/       /i/[slug] · /render · /crear · /entrar · /panel · /api
+  src/components/  invitation/ · templates/ · create/ · rsvp/
+  src/lib/       auth · billing · create · db · payments · repositories · render · rsvp
+
+apps/mobile/     Expo (React Native) — app del organizador y de la oficina
+
+packages/core/   Tipos, los cuatro diccionarios y el formato de fechas y cifras.
+                 Lo comparten web y móvil: un cambio de idioma se hace una vez.
 ```
+
+`packages/core` no depende de Next, del navegador ni de Tailwind — por eso puede
+usarse desde React Native.
 
 ### Cómo se mantiene idéntica la composición en web y en PNG
 

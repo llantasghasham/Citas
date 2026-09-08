@@ -262,6 +262,30 @@ Se escribe su correo y se elige el rol. No se envía invitación ni se crea
 contraseña: la cuenta queda creada y esa persona entra con un código de un solo
 uso cuando quiera.
 
+## 4 septies. La app móvil
+
+```bash
+npm install                        # desde la raíz: instala los tres paquetes
+EXPO_PUBLIC_API_URL=http://192.168.1.10:3000 npm run mobile
+```
+
+- `EXPO_PUBLIC_API_URL` debe apuntar al servidor web **accesible desde el
+  teléfono**: `localhost` no vale desde un dispositivo real. Para una oficina,
+  su propio subdominio.
+- Se entra con el mismo código de un solo uso que en la web. El token se guarda
+  en el llavero del dispositivo, no en almacenamiento plano.
+- Una sola app para todo el equipo: con rol de organizador se ve un evento; con
+  rol de oficina, la cartera entera. Lo que cambia es lo que el rol permite.
+- **El árabe exige reiniciar la app.** React Native decide la dirección del texto
+  al arrancar; al cambiar a un idioma RTL la app avisa en vez de quedarse a
+  medias.
+- La app no vende nada: las tiendas cobran comisión sobre bienes digitales, así
+  que el pago se hace en la web.
+
+> Estado: el paquete de Android compila y empaqueta correctamente (599 módulos),
+> y la API que consume está verificada. **No se ha ejecutado en un dispositivo ni
+> en un emulador**, porque no había ninguno disponible durante el desarrollo.
+
 ## 5. Cambiar textos e idiomas
 
 Ningún texto visible está en el código. Todo vive en `locales/ar.json`,
