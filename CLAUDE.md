@@ -5,8 +5,8 @@ App multiidioma para crear y enviar invitaciones de eventos.
 Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués, inglés.
 
 ## Stack
-- Next.js 15 (App Router) + TypeScript estricto
-- Tailwind CSS 3
+- Next.js 16 (App Router, Turbopack) + React 19 + TypeScript estricto
+- Tailwind CSS 4 (configuración en CSS, `@theme` en globals.css)
 - PostgreSQL vía Prisma (cuando llegue)
 - Render de imágenes en servidor (Chromium headless vía puppeteer-core)
 - Expo/React Native para las apps móviles (fase posterior)

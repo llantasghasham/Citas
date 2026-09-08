@@ -1,6 +1,14 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/*
+ * Font stacks per script. Tailwind 4 turns each --font-* token into a utility,
+ * so `font-arabic` / `font-display` / `font-body` come from here.
+ */
+@theme {
+  --font-arabic: 'Amiri', serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
 
 /*
  * Fonts are shipped as local files under /public/fonts (never a CDN): the

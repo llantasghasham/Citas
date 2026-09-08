@@ -14,8 +14,11 @@ completo (oficinas, roles, apps móviles, formas de venta) ver
 | Chromium o Google Chrome | cualquiera reciente | generar el PNG en el servidor |
 
 El PNG se genera fotografiando una página real, así que el servidor necesita un
-navegador instalado. No hace falta configurarlo si Chrome o Chromium están en una
-ruta habitual del sistema; si no, se indica con la variable `CHROMIUM_PATH`.
+navegador instalado. Si Chrome o Chromium están en una ruta habitual del sistema
+(`/usr/bin/chromium`, `/usr/bin/google-chrome`, la carpeta Aplicaciones en Mac)
+se encuentran solos. En cualquier otro caso —entre ellos un navegador gestionado
+por Playwright, que vive en una carpeta con número de versión— hay que indicarlo
+con `CHROMIUM_PATH`.
 
 ## 2. Arrancar
 
@@ -143,7 +146,7 @@ Si algo se rompe en RTL, se rompe ahí.
 
 | Síntoma | Causa y solución |
 | --- | --- |
-| `No Chromium executable found` | No hay navegador instalado o está en otra ruta. Definir `CHROMIUM_PATH`. |
+| `No Chromium could be started` | No hay navegador instalado o está en otra ruta. El mensaje lista lo que se intentó; definir `CHROMIUM_PATH`. |
 | El PNG sale con la fuente equivocada | Falta el archivo en `public/fonts/` o el `@font-face` en `globals.css`. |
 | `Invalid data at "…"` al arrancar | El mensaje señala el campo exacto de `data/invitations.json`. |
 | El árabe sale con las letras sueltas | Se ha aplicado `letter-spacing` a texto árabe. Debe pasar por `latinOnly()`. |

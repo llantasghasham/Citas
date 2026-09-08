@@ -43,8 +43,10 @@ Se evaluaron las dos opciones y se eligió **Chromium headless vía
 
 El coste es que el runtime necesita un binario de Chromium (no funciona en Edge
 Runtime). `src/lib/render/browser.ts` lo localiza por `CHROMIUM_PATH`,
-`PUPPETEER_EXECUTABLE_PATH`, un directorio de navegadores de Playwright o las
-rutas habituales del sistema, y reutiliza una única instancia por proceso.
+`PUPPETEER_EXECUTABLE_PATH` o las rutas habituales del sistema, y reutiliza una
+única instancia por proceso. La búsqueda no toca el sistema de archivos a
+propósito: un escaneo de directorios haría que el empaquetador arrastrase todo el
+proyecto —código fuente y `/public` incluidos— dentro del bundle del servidor.
 
 Si más adelante hiciera falta desplegar en Edge, la salida para invitaciones
 **latinas** podría generarse con Satori, pero el árabe seguiría necesitando
