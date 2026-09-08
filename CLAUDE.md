@@ -62,16 +62,35 @@ npm run typecheck  # tsc --noEmit
 npm run lint:rtl   # guardia de CSS lógico (RTL)
 ```
 
+## Documentos
+- `MANUAL.md` — manual de uso: arrancar, crear invitaciones, idiomas, PNG,
+  versículos, fuentes y problemas frecuentes.
+- `docs/ARQUITECTURA.md` — producto completo: oficinas (multiempresa), roles,
+  las tres formas de venderlo, apps móviles, descargas y despliegue.
+- `prisma/schema.prisma` — modelo de datos de la fase 2. Diseñado, no instalado.
+
 ## Estado actual
-Fase 1: motor de render. Sin auth, sin base de datos, sin pagos todavía.
+Fase 1 terminada: motor de render. Todavía sin auth, sin base de datos y sin pagos.
 - `GET /i/[slug]` — página web de la invitación
 - `GET /api/render/[slug]` — PNG 1080x1920 generado en servidor
 - `GET /render/[slug]` — lienzo interno de captura (no indexado)
 - Datos en /data/invitations.json (4 ejemplos: ar, es, en, pt)
 - Una plantilla: `classic-gold`
 
-## Qué NO hacer todavía
-- No agregar autenticación
-- No integrar WhatsApp API
-- No agregar pagos
-- No crear la app Expo
+## Orden de construcción
+1. Base de datos, oficinas (multiempresa) y roles — Prisma + PostgreSQL, OTP,
+   tenant por subdominio, historial de cambios
+2. RSVP y entregables — confirmaciones, `.ics`, mapa, exportar a Excel
+3. Formulario de creación con vista previa en vivo
+4. Panel de oficina y facturación
+5. Apps móviles — monorepo con Expo
+
+El orden importa en un punto: **las apps móviles necesitan cuentas y roles
+detrás**. Construirlas antes obliga a rehacerlas. No adelantar el paso 5.
+
+## Reglas de producto que no se rompen
+- Todo dato de negocio cuelga de un tenant. Ninguna consulta sin filtrar por
+  oficina: una oficina jamás ve los datos de otra.
+- El invitado NO tiene cuenta ni instala nada. La invitación es un enlace web.
+- Los permisos se comprueban en el servidor. Ocultar un botón no es un permiso.
+- El acceso de soporte del superadmin a un evento ajeno queda siempre registrado.

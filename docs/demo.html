@@ -1,0 +1,912 @@
+<title>Motor de invitaciones Citas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Inter:wght@400;500;600&family=Playfair+Display:wght@400;500;700&display=swap">
+
+<style>
+  :root {
+    --bg: #ECEAE3;
+    --surface: #F8F7F3;
+    --surface-2: #E2DFD4;
+    --ink: #23201A;
+    --muted: #6A6456;
+    --rule: #D2CEC1;
+    --gold: #8A6C22;
+    --gold-dim: #B39A55;
+
+    /* The invitation is a printed object: its palette never follows the theme. */
+    --card-bg: #FBF6EC;
+    --card-ink: #6B4E16;
+    --card-gold: #C9A227;
+
+    --font-display: 'Amiri', 'Times New Roman', serif;
+    --font-ui: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --step: clamp(0.9rem, 0.86rem + 0.2vw, 1rem);
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #13110D;
+      --surface: #1B1813;
+      --surface-2: #241F18;
+      --ink: #EFEBE1;
+      --muted: #A29A87;
+      --rule: #2F2A20;
+      --gold: #D4B457;
+      --gold-dim: #8A742E;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #13110D;
+    --surface: #1B1813;
+    --surface-2: #241F18;
+    --ink: #EFEBE1;
+    --muted: #A29A87;
+    --rule: #2F2A20;
+    --gold: #D4B457;
+    --gold-dim: #8A742E;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: var(--step);
+    line-height: 1.65;
+  }
+
+  .shell {
+    max-width: 1180px;
+    margin-inline: auto;
+    padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1.1rem, 4vw, 2.5rem) 5rem;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-block-end: 2rem;
+    border-block-end: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.6rem, 7vw, 4.2rem);
+    line-height: 1;
+    margin: 0;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+  }
+
+  .lede {
+    margin: 0;
+    max-width: 58ch;
+    color: var(--muted);
+    font-size: 1.02rem;
+  }
+
+  /* ---------- two-column body ---------- */
+
+  .layout {
+    display: grid;
+    gap: clamp(2rem, 5vw, 3.5rem);
+    align-items: start;
+    padding-block-start: 2.5rem;
+  }
+
+  @media (min-width: 940px) {
+    .layout { grid-template-columns: 380px minmax(0, 1fr); }
+    .stage { position: sticky; top: 2rem; }
+  }
+
+  .stage {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .switcher {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .switcher button {
+    font: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    color: var(--muted);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color 120ms, border-color 120ms, background 120ms;
+  }
+
+  .switcher button:hover { color: var(--ink); border-color: var(--gold-dim); }
+
+  .switcher button[aria-selected="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--bg);
+  }
+
+  :is(button, a):focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  .stage-note {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+
+  .numerals {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .numerals[hidden] { display: none; }
+
+  .numerals button {
+    font: inherit;
+    font-family: var(--font-mono);
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    color: var(--muted);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .numerals button[aria-pressed="true"] { color: var(--ink); border-color: var(--gold-dim); }
+
+  /* ---------- the invitation card ---------- */
+
+  .card {
+    position: relative;
+    inline-size: 100%;
+    aspect-ratio: 1080 / 1920;
+    container-type: size;
+    background: var(--card-bg);
+    color: var(--card-ink);
+    overflow: hidden;
+    box-shadow: 0 22px 50px -26px rgba(20, 16, 8, 0.65);
+    transition: opacity 180ms ease;
+  }
+
+  .card.is-swapping { opacity: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+    .card.is-swapping { opacity: 1; }
+  }
+
+  .card-frame {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    color: var(--card-gold);
+    pointer-events: none;
+  }
+
+  .card-body {
+    position: relative;
+    block-size: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+    padding: 9cqw 10cqw;
+  }
+
+  .card-body > * {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .card :is(p, h2, ul, figure, blockquote, figcaption, address) { margin: 0; }
+  .card ul { padding: 0; list-style: none; }
+  .card address { font-style: normal; }
+
+  .c-kicker { font-size: 2.7cqw; opacity: 0.8; }
+  .c-hosts { gap: 1cqw; font-size: 3cqw; }
+  .c-role { opacity: 0.65; }
+  .c-sep { opacity: 0.45; margin-inline: 0.8cqw; }
+  .c-intro { font-size: 3.1cqw; line-height: 1.7; opacity: 0.75; max-inline-size: 78cqw; }
+  .c-names { font-size: 7.6cqw; line-height: 1.25; gap: 1.4cqw; font-weight: 400; }
+  .c-names.is-single { font-size: 8.6cqw; }
+  .c-quote { gap: 1.4cqw; max-inline-size: 74cqw; }
+  .c-quote blockquote { font-size: 3.2cqw; line-height: 1.9; opacity: 0.85; }
+  .c-quote figcaption { font-size: 2.4cqw; opacity: 0.6; }
+  .c-date { font-size: 4.4cqw; line-height: 1.5; }
+  .c-time { font-size: 3.6cqw; opacity: 0.85; }
+  .c-hijri { font-size: 2.7cqw; opacity: 0.6; }
+  .c-venue { font-size: 3.9cqw; }
+  .c-address { font-size: 2.9cqw; opacity: 0.75; }
+  .c-message { font-size: 2.9cqw; line-height: 2; opacity: 0.8; max-inline-size: 72cqw; }
+  .c-rsvp { font-size: 2.45cqw; line-height: 1.8; opacity: 0.7; max-inline-size: 86cqw; }
+
+  .c-head { gap: 2.4cqw; }
+  .c-middle { gap: 3cqw; }
+  .c-foot { gap: 2.6cqw; }
+  .c-moment { gap: 1.2cqw; }
+  .c-place { gap: 1cqw; }
+
+  .flourish { inline-size: 24cqw; block-size: 2.6cqw; color: var(--card-gold); }
+  .name-sep { inline-size: 3.4cqw; block-size: 3.4cqw; color: var(--card-gold); }
+
+  /* Latin scripts: Playfair for display, Inter for running text. */
+  .card[dir="ltr"] { font-family: 'Inter', system-ui, sans-serif; }
+  .card[dir="ltr"] :is(.c-names, .c-date, .c-venue) { font-family: 'Playfair Display', Georgia, serif; }
+  .card[dir="ltr"] .c-kicker { text-transform: uppercase; letter-spacing: 0.42em; }
+  .card[dir="ltr"] .c-quote blockquote { font-style: italic; }
+  .card[dir="ltr"] .c-quote figcaption { letter-spacing: 0.16em; }
+  .card[dir="ltr"] .c-rsvp { letter-spacing: 0.08em; }
+
+  /* Arabic: Amiri throughout, and no letter-spacing — it breaks the cursive joins. */
+  .card[dir="rtl"] { font-family: 'Amiri', serif; }
+
+  /* ---------- editorial column ---------- */
+
+  .column {
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+    min-inline-size: 0;
+  }
+
+  section { display: flex; flex-direction: column; gap: 1rem; }
+
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.6rem;
+    line-height: 1.2;
+    margin: 0;
+    letter-spacing: 0.005em;
+  }
+
+  h2 .num {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    margin-inline-end: 0.7rem;
+    vertical-align: 0.28em;
+  }
+
+  section > p { margin: 0; max-width: 66ch; color: var(--muted); }
+  section > p strong { color: var(--ink); font-weight: 600; }
+
+  .routes { display: flex; flex-direction: column; gap: 0; }
+
+  .route {
+    display: grid;
+    gap: 0.15rem 1.5rem;
+    padding-block: 0.9rem;
+    border-block-start: 1px solid var(--rule);
+  }
+
+  .route:last-child { border-block-end: 1px solid var(--rule); }
+
+  @media (min-width: 620px) {
+    .route { grid-template-columns: 15rem minmax(0, 1fr); align-items: baseline; }
+  }
+
+  .route code {
+    font-family: var(--font-mono);
+    font-size: 0.84rem;
+    color: var(--gold);
+    overflow-wrap: anywhere;
+  }
+
+  .route span { color: var(--muted); }
+
+  .facts { display: flex; flex-direction: column; gap: 0.55rem; margin: 0; padding: 0; list-style: none; }
+
+  .facts li {
+    display: grid;
+    grid-template-columns: 0.85rem minmax(0, 1fr);
+    gap: 0.75rem;
+    color: var(--muted);
+  }
+
+  .facts li::before {
+    content: "";
+    inline-size: 5px;
+    block-size: 5px;
+    margin-block-start: 0.62em;
+    background: var(--gold-dim);
+    transform: rotate(45deg);
+  }
+
+  .facts b { color: var(--ink); font-weight: 600; }
+
+  .models { display: grid; gap: 1rem; }
+  @media (min-width: 700px) { .models { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .model {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 1.15rem 1.2rem 1.3rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+  }
+
+  .model h3 {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+  }
+
+  .model p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+  .model .who {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .scroller { overflow-x: auto; }
+
+  table {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+    min-inline-size: 34rem;
+  }
+
+  th, td {
+    text-align: start;
+    padding: 0.7rem 1rem 0.7rem 0;
+    border-block-end: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  thead th {
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 600;
+    border-block-end-color: var(--gold-dim);
+  }
+
+  tbody th { font-weight: 600; white-space: nowrap; padding-inline-end: 1.5rem; }
+  td { color: var(--muted); }
+
+  .terminal {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.9;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    color: var(--ink);
+  }
+
+  .terminal .comment { color: var(--muted); }
+
+  .status { display: grid; gap: 1rem; }
+  @media (min-width: 700px) { .status { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .status-block { display: flex; flex-direction: column; gap: 0.55rem; }
+
+  .status-block h3 {
+    margin: 0;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .status-block.done h3 { color: var(--gold); }
+  .status-block.next h3 { color: var(--muted); }
+
+  .steps { margin: 0; padding-inline-start: 1.4rem; color: var(--muted); display: flex; flex-direction: column; gap: 0.4rem; }
+  .steps li::marker { font-family: var(--font-mono); font-size: 0.8rem; color: var(--gold-dim); }
+
+  footer {
+    margin-block-start: 4rem;
+    padding-block-start: 1.5rem;
+    border-block-start: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 0.84rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  footer code { font-family: var(--font-mono); color: var(--gold); }
+</style>
+
+<div class="shell">
+  <header class="masthead">
+    <p class="eyebrow">Fase 1 · motor de render</p>
+    <h1>Citas</h1>
+    <p class="lede">
+      Invitaciones de evento compuestas en el servidor, en árabe, español, portugués e inglés.
+      La tarjeta de aquí al lado es exactamente lo que produce el motor: la misma pieza que ve
+      el invitado en la web y la que sale como PNG de 1080×1920.
+    </p>
+  </header>
+
+  <div class="layout">
+    <div class="stage">
+      <div class="switcher" role="tablist" aria-label="Idioma de la invitación">
+        <button type="button" role="tab" data-lang="ar" aria-selected="true">العربية</button>
+        <button type="button" role="tab" data-lang="es" aria-selected="false">Español</button>
+        <button type="button" role="tab" data-lang="pt" aria-selected="false">Português</button>
+        <button type="button" role="tab" data-lang="en" aria-selected="false">English</button>
+      </div>
+
+      <article class="card" id="card" dir="rtl" lang="ar" aria-label="Tarjeta de invitación">
+        <svg class="card-frame" viewBox="0 0 1080 1920" aria-hidden="true">
+          <defs>
+            <g id="corner" fill="none" stroke="currentColor" stroke-linecap="round">
+              <path d="M52 244 C 56 150 116 72 244 52" stroke-width="2.4" opacity=".85"/>
+              <path d="M76 238 C 82 168 134 102 216 80" stroke-width="1" opacity=".5"/>
+              <g transform="translate(88 176) rotate(18)">
+                <path d="M0 0 C 11 -8 24 -7 32 3 C 21 12 7 11 0 0 Z" fill="currentColor" stroke="none" opacity=".42"/>
+                <path d="M2 1 C 12 2 23 3 30 3" stroke-width=".9" opacity=".55"/>
+              </g>
+              <g transform="translate(118 124) rotate(44) scale(.92)">
+                <path d="M0 0 C 11 -8 24 -7 32 3 C 21 12 7 11 0 0 Z" fill="currentColor" stroke="none" opacity=".42"/>
+                <path d="M2 1 C 12 2 23 3 30 3" stroke-width=".9" opacity=".55"/>
+              </g>
+              <g transform="translate(172 88) rotate(70) scale(.8)">
+                <path d="M0 0 C 11 -8 24 -7 32 3 C 21 12 7 11 0 0 Z" fill="currentColor" stroke="none" opacity=".42"/>
+                <path d="M2 1 C 12 2 23 3 30 3" stroke-width=".9" opacity=".55"/>
+              </g>
+              <path d="M244 52 C 256 50 261 58 255 64 C 251 67 246 65 246 60" stroke-width="1.4" opacity=".7"/>
+              <path d="M52 244 C 50 256 58 261 64 255 C 67 251 65 246 60 246" stroke-width="1.4" opacity=".7"/>
+              <g stroke="none" fill="currentColor">
+                <circle cx="62" cy="206" r="2.8" opacity=".6"/>
+                <circle cx="206" cy="62" r="2.8" opacity=".6"/>
+              </g>
+              <g transform="translate(84 84)" stroke="none" fill="currentColor" opacity=".45">
+                <ellipse cx="0" cy="-8" rx="3.6" ry="8"/>
+                <ellipse cx="0" cy="-8" rx="3.6" ry="8" transform="rotate(60)"/>
+                <ellipse cx="0" cy="-8" rx="3.6" ry="8" transform="rotate(120)"/>
+                <ellipse cx="0" cy="-8" rx="3.6" ry="8" transform="rotate(180)"/>
+                <ellipse cx="0" cy="-8" rx="3.6" ry="8" transform="rotate(240)"/>
+                <ellipse cx="0" cy="-8" rx="3.6" ry="8" transform="rotate(300)"/>
+                <circle cx="0" cy="0" r="2.8" opacity=".9"/>
+              </g>
+            </g>
+          </defs>
+          <rect x="44" y="44" width="992" height="1832" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".75"/>
+          <rect x="60" y="60" width="960" height="1800" fill="none" stroke="currentColor" stroke-width=".9" opacity=".45"/>
+          <use href="#corner"/>
+          <use href="#corner" transform="translate(1080 0) scale(-1 1)"/>
+          <use href="#corner" transform="translate(0 1920) scale(1 -1)"/>
+          <use href="#corner" transform="translate(1080 1920) scale(-1 -1)"/>
+        </svg>
+
+        <div class="card-body">
+          <header class="c-head">
+            <p class="c-kicker" data-f="kicker"></p>
+            <svg class="flourish" viewBox="0 0 320 40" fill="none" stroke="currentColor" aria-hidden="true">
+              <path d="M8 20 H118" stroke-width="1.1" opacity=".5"/>
+              <path d="M202 20 H312" stroke-width="1.1" opacity=".5"/>
+              <path d="M118 20 C 134 20 138 8 152 8 C 158 8 160 14 160 20" stroke-width="1.4" opacity=".8"/>
+              <path d="M202 20 C 186 20 182 32 168 32 C 162 32 160 26 160 20" stroke-width="1.4" opacity=".8"/>
+              <g fill="currentColor" stroke="none">
+                <path d="M160 8 L168 20 L160 32 L152 20 Z" opacity=".85"/>
+                <circle cx="118" cy="20" r="2.4" opacity=".7"/>
+                <circle cx="202" cy="20" r="2.4" opacity=".7"/>
+              </g>
+            </svg>
+            <ul class="c-hosts" data-f="hosts"></ul>
+          </header>
+
+          <section class="c-middle">
+            <p class="c-intro" data-f="intro"></p>
+            <h2 class="c-names" data-f="names"></h2>
+            <figure class="c-quote" data-f="quote">
+              <blockquote data-f="quoteText"></blockquote>
+              <figcaption data-f="quoteSource"></figcaption>
+            </figure>
+          </section>
+
+          <footer class="c-foot">
+            <div class="c-moment">
+              <p class="c-date" data-f="date"></p>
+              <p class="c-time" data-f="time"></p>
+              <p class="c-hijri" data-f="hijri"></p>
+            </div>
+            <svg class="flourish" viewBox="0 0 320 40" fill="none" stroke="currentColor" aria-hidden="true">
+              <path d="M8 20 H118" stroke-width="1.1" opacity=".5"/>
+              <path d="M202 20 H312" stroke-width="1.1" opacity=".5"/>
+              <path d="M118 20 C 134 20 138 8 152 8 C 158 8 160 14 160 20" stroke-width="1.4" opacity=".8"/>
+              <path d="M202 20 C 186 20 182 32 168 32 C 162 32 160 26 160 20" stroke-width="1.4" opacity=".8"/>
+              <g fill="currentColor" stroke="none">
+                <path d="M160 8 L168 20 L160 32 L152 20 Z" opacity=".85"/>
+                <circle cx="118" cy="20" r="2.4" opacity=".7"/>
+                <circle cx="202" cy="20" r="2.4" opacity=".7"/>
+              </g>
+            </svg>
+            <address class="c-place">
+              <p class="c-venue" data-f="venue"></p>
+              <p class="c-address" data-f="address"></p>
+            </address>
+            <p class="c-message" data-f="message"></p>
+            <p class="c-rsvp" data-f="rsvp"></p>
+          </footer>
+        </div>
+      </article>
+
+      <div class="numerals" id="numerals">
+        <span>Cifras</span>
+        <button type="button" data-num="arabic" aria-pressed="true">٠١٢٣</button>
+        <button type="button" data-num="latin" aria-pressed="false">0123</button>
+      </div>
+
+      <p class="stage-note">
+        Al cambiar de idioma cambian también la dirección del texto, la tipografía, los nombres
+        de los meses y las cifras. No hay una maqueta por idioma: hay una sola.
+      </p>
+    </div>
+
+    <div class="column">
+      <section>
+        <h2><span class="num">01</span>Qué hace hoy el motor</h2>
+        <p>
+          Tres rutas, una sola plantilla React. El PNG no se dibuja aparte: Chromium fotografía
+          la misma página que ve el invitado, así que <strong>la imagen y la web no pueden
+          desviarse</strong> nunca la una de la otra.
+        </p>
+        <div class="routes">
+          <div class="route">
+            <code>/i/[slug]</code>
+            <span>La invitación que abre el invitado. Responsive, sin JavaScript de cliente.</span>
+          </div>
+          <div class="route">
+            <code>/api/render/[slug]</code>
+            <span>Descarga el PNG de 1080×1920, la medida de story y de WhatsApp.</span>
+          </div>
+          <div class="route">
+            <code>/render/[slug]</code>
+            <span>Lienzo interno de captura, a tamaño exacto y sin indexar.</span>
+          </div>
+        </div>
+        <div class="terminal">
+          <span class="comment"># arrancar en tu máquina</span><br>
+          npm install<br>
+          npm run dev<br>
+          <span class="comment"># y abrir</span> http://localhost:3000/i/ejemplo-ar
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="num">02</span>Los cuatro idiomas de una vez</h2>
+        <ul class="facts">
+          <li><b>Árabe.</b> RTL real, tipografía Amiri, cifras orientales ٠١٢٣, fecha hijri y meses levantinos — تشرين الأول, no أكتوبر, que es lo que se lee en Líbano.</li>
+          <li><b>Español, portugués e inglés.</b> LTR con Playfair Display e Inter, y cada uno con su formato de fecha local.</li>
+          <li><b>Cero texto en el código.</b> Todo string visible vive en cuatro diccionarios, y una clave que falte en uno de ellos rompe la compilación en vez de aparecer vacía en producción.</li>
+          <li><b>Ornamentos simétricos.</b> El marco dorado está dibujado en su propio sistema de coordenadas: se ve idéntico en las dos direcciones sin una sola línea de CSS condicional.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2><span class="num">03</span>Tres formas de venderlo</h2>
+        <p>
+          Las tres conviven en la misma base de datos y en el mismo código. Lo único que cambia
+          es <strong>de quién es el evento</strong> y quién lo compone.
+        </p>
+        <div class="models">
+          <div class="model">
+            <p class="who">Autoservicio</p>
+            <h3>El cliente se la hace</h3>
+            <p>
+              Entra, elige plantilla, escribe sus datos, paga y publica. Pago por evento o plan
+              anual. Tú no intervienes en ninguna invitación.
+            </p>
+          </div>
+          <div class="model">
+            <p class="who">Licencia</p>
+            <h3>Una oficina la alquila</h3>
+            <p>
+              Una agencia de eventos trabaja con su marca y su propio subdominio, y compone las
+              invitaciones de sus clientes. Tú cobras mensualidad o porcentaje. Cada oficina ve
+              solo lo suyo.
+            </p>
+          </div>
+          <div class="model">
+            <p class="who">Concierge</p>
+            <h3>La haces tú</h3>
+            <p>
+              Compones desde tu panel y entregas el enlace y el PNG. El cliente no necesita
+              cuenta, ni aprender nada, ni instalar nada.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="num">04</span>Quién entra y qué puede tocar</h2>
+        <p>
+          Cada oficina es un inquilino aislado: sus eventos, sus invitados y su marca. Un admin
+          de oficina <strong>nunca</strong> ve los datos de otra.
+        </p>
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr><th scope="col">Rol</th><th scope="col">Quién es</th><th scope="col">Alcance</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Superadmin</th>
+                <td>Tú</td>
+                <td>Oficinas, planes y precios, plantillas, facturación, y acceso de soporte a cualquier evento.</td>
+              </tr>
+              <tr>
+                <th scope="row">Admin de oficina</th>
+                <td>La agencia que alquila</td>
+                <td>Su equipo, su marca, sus clientes y todos los eventos de su oficina.</td>
+              </tr>
+              <tr>
+                <th scope="row">Operador</th>
+                <td>Quien compone en la oficina</td>
+                <td>Crear y editar eventos de esa oficina. No toca facturación ni usuarios.</td>
+              </tr>
+              <tr>
+                <th scope="row">Organizador</th>
+                <td>El cliente final</td>
+                <td>Su evento, su lista de invitados, sus confirmaciones y sus descargas.</td>
+              </tr>
+              <tr>
+                <th scope="row">Invitado</th>
+                <td>Quien recibe la invitación</td>
+                <td>Abrirla, confirmar, añadirla al calendario. Sin cuenta y sin instalar nada.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2><span class="num">05</span>Las apps móviles</h2>
+        <ul class="facts">
+          <li><b>App del organizador.</b> iOS y Android con Expo: crear el evento, ver las confirmaciones llegando en vivo, mandar la invitación por WhatsApp y descargar la imagen.</li>
+          <li><b>La misma app en modo oficina.</b> Con rol de admin muestra la cartera de clientes y eventos en vez de un solo evento; el superadmin ve además las oficinas.</li>
+          <li><b>El invitado no instala nada.</b> La invitación es un enlace web y así se queda: pedir una app para abrir una boda mata la mitad de las confirmaciones.</li>
+          <li><b>Lo que se descarga el cliente:</b> PNG 1080×1920 para redes, PDF para imprenta, archivo <code>.ics</code> de calendario y la lista de invitados en Excel.</li>
+          <li><b>Un solo repositorio.</b> Web y móvil comparten tipos, validaciones y los cuatro diccionarios, para no traducir dos veces ni arreglar el árabe dos veces.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2><span class="num">06</span>Dónde estamos</h2>
+        <div class="status">
+          <div class="status-block done">
+            <h3>Terminado y en git</h3>
+            <ul class="facts">
+              <li>Motor de render con los cuatro idiomas y RTL verificado</li>
+              <li>Plantilla <b>classic-gold</b> y PNG 1080×1920 en servidor</li>
+              <li>Validación de datos y guardia automática contra CSS físico</li>
+            </ul>
+          </div>
+          <div class="status-block next">
+            <h3>Siguiente, en este orden</h3>
+            <ol class="steps">
+              <li>Base de datos, oficinas y roles</li>
+              <li>RSVP, calendario y descargas</li>
+              <li>Formulario de creación con vista previa</li>
+              <li>Panel de oficina y facturación</li>
+              <li>Apps móviles</li>
+            </ol>
+          </div>
+        </div>
+        <p>
+          El orden no es negociable en un punto: las apps móviles necesitan cuentas y roles
+          detrás, así que la base de datos va primero. Construirlas antes obligaría a rehacerlas.
+        </p>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    <p>Rama <code>claude/invitation-render-engine-9sv1tp</code> · repositorio <code>llantasghasham/Citas</code></p>
+    <p>Esta página es una réplica fiel de la tarjeta para que puedas verla desde el móvil. El motor real corre en Next.js con Chromium en el servidor.</p>
+  </footer>
+</div>
+
+<script>
+  const DATA = {
+    ar: {
+      dir: 'rtl',
+      kicker: 'دعوة زفاف',
+      hosts: [['الوالدان', 'سمير وليلى الحدّاد'], [null, 'إلياس ونادية خوري']],
+      intro: 'يسرّنا دعوتكم لحضور حفل زفاف',
+      names: ['كريم الحدّاد', 'ريما خوري'],
+      quoteText: 'وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً',
+      quoteSource: 'سورة الروم — الآية 21',
+      date: 'السبت، 17 تشرين الأول 2026',
+      time: '7:30 م',
+      hijri: '6 جمادى الأولى 1448 هـ',
+      venue: 'قصر الأرز للاحتفالات',
+      address: 'جونية، جبل لبنان',
+      message: 'يسعدنا أن نشارككم فرحتنا في هذه المناسبة الغالية، وحضوركم يزيدها بهجة.',
+      rsvp: 'يرجى تأكيد الحضور قبل 3 تشرين الأول 2026',
+      numerals: true
+    },
+    es: {
+      dir: 'ltr',
+      kicker: 'Invitación de graduación',
+      hosts: [['Familia', 'Familia Moreno Cardoso']],
+      intro: 'Nos complace invitarle a celebrar la graduación de',
+      names: ['Valentina Moreno Cardoso'],
+      quoteText: '',
+      quoteSource: '',
+      date: 'sábado, 20 de junio de 2026',
+      time: '18:00',
+      hijri: '',
+      venue: 'Salón Los Olivos',
+      address: 'Calle Mayor 42, Madrid',
+      message: 'Después de cinco años de esfuerzo, queremos celebrar este día rodeados de las personas que nos acompañaron en el camino.',
+      rsvp: 'Se ruega confirmar asistencia antes del 6 de junio de 2026',
+      numerals: false
+    },
+    pt: {
+      dir: 'ltr',
+      kicker: 'Convite de batizado',
+      hosts: [['Os pais', 'Rui e Marta Fonseca']],
+      intro: 'Temos o prazer de o convidar para o batizado de',
+      names: ['Tomás Fonseca'],
+      quoteText: 'O amor é paciente, o amor é bondoso.',
+      quoteSource: '1 Coríntios 13:4 (NVI)',
+      date: 'domingo, 24 de maio de 2026',
+      time: '11:00',
+      hijri: '',
+      venue: 'Igreja de São Roque',
+      address: 'Largo Trindade Coelho, Lisboa',
+      message: 'Queremos partilhar convosco este dia tão especial para a nossa família.',
+      rsvp: '',
+      numerals: false
+    },
+    en: {
+      dir: 'ltr',
+      kicker: 'Wedding Invitation',
+      hosts: [['The parents', 'Mr & Mrs Whitaker'], [null, 'Mr & Mrs Khoury']],
+      intro: 'We are honoured to invite you to the wedding of',
+      names: ['James Whitaker', 'Nadia Khoury'],
+      quoteText: 'Love is patient, love is kind.',
+      quoteSource: '1 Corinthians 13:4 (NIV)',
+      date: 'Saturday, 9 January 2027',
+      time: '16:00',
+      hijri: '',
+      venue: 'The Old Orangery',
+      address: '12 Kew Road, London',
+      message: 'We would be delighted to have you with us as we begin this new chapter together.',
+      rsvp: 'Kindly confirm your attendance before 12 December 2026',
+      numerals: false
+    }
+  };
+
+  const EASTERN = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  const toEastern = (text) => text.replace(/[0-9]/g, (d) => EASTERN[Number(d)]);
+
+  const card = document.getElementById('card');
+  const numeralBar = document.getElementById('numerals');
+  const field = (name) => card.querySelector('[data-f="' + name + '"]');
+
+  let lang = 'ar';
+  let numerals = 'arabic';
+
+  const NAME_SEPARATOR =
+    '<svg class="name-sep" viewBox="0 0 40 40" aria-hidden="true">' +
+    '<path d="M20 6 L28 20 L20 34 L12 20 Z" fill="currentColor" opacity=".75"/>' +
+    '<path d="M4 20 H10 M30 20 H36" stroke="currentColor" stroke-width="1.2" opacity=".5"/></svg>';
+
+  function setText(name, value) {
+    const node = field(name);
+    node.textContent = value;
+    node.hidden = value.length === 0;
+  }
+
+  function draw() {
+    const data = DATA[lang];
+    const digits = (text) => (data.numerals && numerals === 'arabic' ? toEastern(text) : text);
+
+    card.dir = data.dir;
+    card.lang = lang;
+
+    setText('kicker', data.kicker);
+    setText('intro', data.intro);
+
+    field('hosts').innerHTML = data.hosts
+      .map(([role, name]) =>
+        '<li>' +
+        (role ? '<span class="c-role">' + role + '</span><span class="c-sep">·</span>' : '') +
+        '<span>' + name + '</span></li>')
+      .join('');
+
+    const names = field('names');
+    names.classList.toggle('is-single', data.names.length === 1);
+    names.innerHTML = data.names
+      .map((name, index) => (index > 0 ? NAME_SEPARATOR : '') + '<span>' + name + '</span>')
+      .join('');
+
+    const quote = field('quote');
+    quote.hidden = data.quoteText.length === 0;
+    setText('quoteText', data.quoteText);
+    setText('quoteSource', digits(data.quoteSource));
+
+    setText('date', digits(data.date));
+    setText('time', digits(data.time));
+    setText('hijri', digits(data.hijri));
+    setText('venue', data.venue);
+    setText('address', data.address);
+    setText('message', data.message);
+    setText('rsvp', digits(data.rsvp));
+
+    numeralBar.hidden = !data.numerals;
+  }
+
+  function swapTo(next) {
+    if (next === lang) return;
+    lang = next;
+    card.classList.add('is-swapping');
+    window.setTimeout(() => {
+      draw();
+      card.classList.remove('is-swapping');
+    }, 180);
+  }
+
+  document.querySelectorAll('.switcher button').forEach((button) => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.switcher button').forEach((other) => {
+        other.setAttribute('aria-selected', String(other === button));
+      });
+      swapTo(button.dataset.lang);
+    });
+  });
+
+  numeralBar.querySelectorAll('button').forEach((button) => {
+    button.addEventListener('click', () => {
+      numerals = button.dataset.num;
+      numeralBar.querySelectorAll('button').forEach((other) => {
+        other.setAttribute('aria-pressed', String(other === button));
+      });
+      draw();
+    });
+  });
+
+  draw();
+</script>

@@ -1,0 +1,391 @@
+// Modelo de datos de la plataforma. Diseño de la fase 2 — todavía NO está en uso:
+// la fase 1 lee las invitaciones de data/invitations.json. Instalar Prisma y
+// levantar PostgreSQL requiere aprobación previa (ver CLAUDE.md, "Código").
+//
+// Reglas que este esquema hace cumplir:
+//   - Todo dato de negocio cuelga de un Tenant (oficina). Nadie ve otra oficina.
+//   - Un Event es la boda; una InvitationVersion es esa boda en un idioma.
+//   - Los versículos NO viven aquí: siguen en data/verses.json, verificados por
+//     una persona y versionados en git, para que nadie pueda alterarlos desde
+//     un panel.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------- enumeraciones
+
+enum Locale {
+  ar
+  es
+  pt
+  en
+}
+
+enum Direction {
+  rtl
+  ltr
+}
+
+enum NumeralSystem {
+  arabic
+  latin
+}
+
+enum EventType {
+  wedding
+  graduation
+  birthday
+  baptism
+  memorial
+}
+
+enum HostRole {
+  parents
+  father
+  mother
+  family
+  couple
+  self
+  institution
+  host
+}
+
+/// SUPERADMIN es global; el resto siempre dentro de una oficina.
+enum Role {
+  SUPERADMIN
+  TENANT_ADMIN
+  OPERATOR
+  ORGANIZER
+}
+
+enum TenantStatus {
+  active
+  suspended
+  trial
+}
+
+/// Cómo llegó el evento: se factura distinto en cada caso.
+enum AcquisitionChannel {
+  self_service
+  licensed_office
+  concierge
+}
+
+enum EventStatus {
+  draft
+  published
+  archived
+}
+
+enum RsvpStatus {
+  attending
+  declined
+  tentative
+}
+
+enum RenderKind {
+  png
+  pdf
+}
+
+enum PlanTier {
+  free
+  single_event
+  annual
+  office
+}
+
+// ---------------------------------------------------------------- inquilinos
+
+/// Una oficina que alquila la plataforma. El tenant raíz (isRoot) es la
+/// plataforma misma: autoservicio y trabajos concierge cuelgan de él.
+model Tenant {
+  id        String       @id @default(cuid())
+  slug      String       @unique
+  name      String
+  isRoot    Boolean      @default(false)
+  status    TenantStatus @default(trial)
+
+  /// Subdominio propio (agenciax) o dominio completo aportado por la oficina.
+  subdomain    String  @unique
+  customDomain String? @unique
+
+  // Marca blanca. Las plantillas base NO son configurables: son el producto.
+  logoUrl       String?
+  brandPrimary  String?
+  brandAccent   String?
+  defaultLocale Locale  @default(ar)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships  Membership[]
+  events       Event[]
+  subscription Subscription?
+  auditLogs    AuditLog[]
+
+  @@index([status])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  phone        String?
+  /// Solo para superadmin y admins de oficina. El cliente final entra con OTP.
+  passwordHash String?
+  isSuperadmin Boolean  @default(false)
+  locale       Locale   @default(ar)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  memberships  Membership[]
+  ownedEvents  Event[]      @relation("EventOwner")
+  auditLogs    AuditLog[]
+}
+
+/// Un usuario puede pertenecer a más de una oficina con roles distintos.
+model Membership {
+  id       String @id @default(cuid())
+  userId   String
+  tenantId String
+  role     Role
+
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([tenantId, role])
+}
+
+// ---------------------------------------------------------------- eventos
+
+model Event {
+  id       String @id @default(cuid())
+  tenantId String
+  /// El organizador. Nulo en un trabajo concierge sin cuenta de cliente.
+  ownerId  String?
+
+  type    EventType
+  status  EventStatus        @default(draft)
+  channel AcquisitionChannel
+
+  /// Fecha y hora locales del lugar, guardadas como texto para que no las
+  /// desplace ninguna conversión de zona horaria. La zona se guarda aparte.
+  date      String
+  time      String
+  timezone  String  @default("Asia/Beirut")
+  hijriDate String?
+
+  venueName    String
+  venueAddress String
+  venueMapUrl  String
+  venueLat     Float
+  venueLng     Float
+
+  rsvpEnabled  Boolean   @default(true)
+  rsvpDeadline DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner    User?               @relation("EventOwner", fields: [ownerId], references: [id])
+  versions InvitationVersion[]
+  hosts    EventHost[]
+  honorees EventHonoree[]
+  guests   Guest[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, date])
+}
+
+model EventHost {
+  id      String   @id @default(cuid())
+  eventId String
+  role    HostRole
+  /// Nombre propio: se escribe igual en todos los idiomas salvo transliteración.
+  name    String
+  /// Transliteraciones por idioma, cuando el nombre se escribe en otro alfabeto.
+  names   Json?
+  order   Int      @default(0)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+model EventHonoree {
+  id      String @id @default(cuid())
+  eventId String
+  name    String
+  names   Json?
+  order   Int    @default(0)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+/// Un evento compuesto en un idioma. Una boda tiene su versión en árabe y su
+/// versión en inglés, con la misma lista de invitados y las mismas respuestas.
+model InvitationVersion {
+  id      String @id @default(cuid())
+  eventId String
+
+  /// URL pública. Global y no adivinable: es la única ruta sin tenant.
+  slug String @unique
+
+  locale        Locale
+  direction     Direction
+  numeralSystem NumeralSystem @default(latin)
+  templateId    String        @default("classic-gold")
+
+  /// Texto libre del anfitrión, ya escrito en este idioma.
+  message String
+
+  /// Id dentro de data/verses.json. El texto NO se guarda aquí: se resuelve
+  /// contra la lista fija verificada, y si el id no existe no se muestra nada.
+  quoteId String?
+
+  themePrimary    String @default("#6B4E16")
+  themeAccent     String @default("#C9A227")
+  themeBackground String @default("#FBF6EC")
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  renders Render[]
+
+  @@unique([eventId, locale])
+  @@index([eventId])
+}
+
+/// PNG o PDF ya generado y archivado. Regenerar con Chromium en cada visita
+/// sería caro y lento.
+model Render {
+  id        String     @id @default(cuid())
+  versionId String
+  kind      RenderKind
+  url       String
+  width     Int
+  height    Int
+  bytes     Int
+  /// Huella del contenido que produjo este archivo: si cambia, se regenera.
+  contentHash String
+  createdAt   DateTime @default(now())
+
+  version InvitationVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, kind, contentHash])
+  @@index([versionId])
+}
+
+// ---------------------------------------------------------------- invitados
+
+/// El invitado no tiene cuenta. Se identifica con un token en su enlace.
+model Guest {
+  id      String @id @default(cuid())
+  eventId String
+
+  name   String
+  phone  String?
+  email  String?
+  /// Idioma en el que recibe la invitación: a la abuela en árabe, a la prima
+  /// de Londres en inglés, del mismo evento.
+  locale Locale
+
+  /// Token del enlace personal. No adivinable y revocable.
+  token     String    @unique
+  maxParty  Int       @default(1)
+  invitedAt DateTime?
+  openedAt  DateTime?
+
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  rsvp  Rsvp?
+
+  @@index([eventId])
+  @@index([eventId, locale])
+}
+
+model Rsvp {
+  id      String     @id @default(cuid())
+  guestId String     @unique
+  status  RsvpStatus
+  /// Número de asistentes incluyendo al invitado.
+  party   Int        @default(1)
+  message String?
+
+  respondedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  guest Guest @relation(fields: [guestId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------- facturación
+
+model Plan {
+  id            String   @id @default(cuid())
+  tier          PlanTier @unique
+  name          String
+  /// En la moneda menor (céntimos), para no perder precisión.
+  priceMonthly  Int
+  pricePerEvent Int      @default(0)
+  maxEvents     Int?
+  maxGuests     Int?
+  whiteLabel    Boolean  @default(false)
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id       String @id @default(cuid())
+  tenantId String @unique
+  planId   String
+
+  startedAt   DateTime  @default(now())
+  renewsAt    DateTime?
+  cancelledAt DateTime?
+
+  /// Comisión por invitación publicada, en puntos básicos (250 = 2,5 %).
+  revenueShareBps Int @default(0)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan   Plan   @relation(fields: [planId], references: [id])
+}
+
+// ---------------------------------------------------------------- trazabilidad
+
+/// Quién tocó qué. Sin esto, el acceso de soporte del superadmin a un evento
+/// ajeno es una puerta trasera.
+model AuditLog {
+  id       String  @id @default(cuid())
+  tenantId String?
+  actorId  String?
+
+  action   String
+  entity   String
+  entityId String
+  metadata Json?
+  ip       String?
+
+  createdAt DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  actor  User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([entity, entityId])
+}

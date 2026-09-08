@@ -116,6 +116,14 @@ npm run lint:rtl    # guardia de CSS lógico
 npm run build
 ```
 
+## Documentación
+
+- [`MANUAL.md`](MANUAL.md) — manual de uso del motor.
+- [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) — multiempresa, roles, formas de
+  venta, apps móviles y despliegue.
+- [`prisma/schema.prisma`](prisma/schema.prisma) — modelo de datos de la fase 2.
+
 ## Siguiente fase
 
-RSVP + persistencia en PostgreSQL vía Prisma, `.ics` y enlace a mapa.
+Base de datos y multiempresa (Prisma + PostgreSQL), después RSVP, `.ics` y
+exportaciones. El orden completo está en `docs/ARQUITECTURA.md`.
