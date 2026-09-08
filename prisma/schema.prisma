@@ -151,6 +151,7 @@ model User {
   memberships  Membership[]
   ownedEvents  Event[]      @relation("EventOwner")
   auditLogs    AuditLog[]
+  sessions     Session[]
 }
 
 /// Un usuario puede pertenecer a más de una oficina con roles distintos.
@@ -482,4 +483,51 @@ model PaymentEvent {
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@index([paymentId, receivedAt])
+}
+
+// ---------------------------------------------------------------- acceso
+
+/// Código de un solo uso enviado por correo. El cliente final no tiene
+/// contraseña: no hay contraseña que perder ni que reutilizar.
+model LoginCode {
+  id       String  @id @default(cuid())
+  email    String
+  tenantId String?
+
+  /// Nunca se guarda el código en claro.
+  codeHash  String
+  expiresAt DateTime
+  /// Marcado en cuanto se usa: un código vale exactamente una vez.
+  consumedAt DateTime?
+  /// Intentos fallidos. Pasado el límite el código queda muerto.
+  attempts   Int       @default(0)
+
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([expiresAt])
+}
+
+/// Sesión activa. En la cookie viaja el token; aquí solo vive su hash, de forma
+/// que un volcado de la base de datos no permite suplantar a nadie.
+model Session {
+  id     String  @id @default(cuid())
+  userId String
+  /// Oficina en la que se está trabajando. Nulo para el superadmin fuera de una.
+  tenantId String?
+
+  tokenHash String   @unique
+  expiresAt DateTime
+
+  userAgent String?
+  ip        String?
+
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }

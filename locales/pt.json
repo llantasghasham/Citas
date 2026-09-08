@@ -11,11 +11,26 @@
     "memorial": "cerimónia de homenagem"
   },
   "invite": {
-    "wedding": { "kicker": "Convite de casamento", "intro": "Temos a honra de o convidar para o casamento de" },
-    "graduation": { "kicker": "Convite de formatura", "intro": "Temos o prazer de o convidar para celebrar a formatura de" },
-    "birthday": { "kicker": "Convite de aniversário", "intro": "Temos o prazer de o convidar para celebrar o aniversário de" },
-    "baptism": { "kicker": "Convite de batizado", "intro": "Temos o prazer de o convidar para o batizado de" },
-    "memorial": { "kicker": "Cerimónia de homenagem", "intro": "Convidamo-lo a recordar connosco" }
+    "wedding": {
+      "kicker": "Convite de casamento",
+      "intro": "Temos a honra de o convidar para o casamento de"
+    },
+    "graduation": {
+      "kicker": "Convite de formatura",
+      "intro": "Temos o prazer de o convidar para celebrar a formatura de"
+    },
+    "birthday": {
+      "kicker": "Convite de aniversário",
+      "intro": "Temos o prazer de o convidar para celebrar o aniversário de"
+    },
+    "baptism": {
+      "kicker": "Convite de batizado",
+      "intro": "Temos o prazer de o convidar para o batizado de"
+    },
+    "memorial": {
+      "kicker": "Cerimónia de homenagem",
+      "intro": "Convidamo-lo a recordar connosco"
+    }
   },
   "roles": {
     "parents": "Os pais",
@@ -39,6 +54,38 @@
     "withDeadline": "Pedimos a confirmação de presença até {deadline}",
     "withoutDeadline": "Pedimos a confirmação de presença"
   },
-  "actions": { "viewMap": "Ver localização no mapa" },
-  "aria": { "invitationCard": "Cartão de convite", "ornament": "Ornamento decorativo" }
+  "actions": {
+    "viewMap": "Ver localização no mapa"
+  },
+  "aria": {
+    "invitationCard": "Cartão de convite",
+    "ornament": "Ornamento decorativo"
+  },
+  "admin": {
+    "signIn": {
+      "title": "Entrar",
+      "emailLabel": "Correio eletrónico",
+      "emailHint": "Enviaremos um código de utilização única.",
+      "send": "Enviar código",
+      "sent": "Se esse endereço tiver acesso, enviámos um código. Expira em 10 minutos.",
+      "codeLabel": "Código de 6 dígitos",
+      "verify": "Entrar",
+      "invalid": "Código incorreto ou expirado. Peça um novo.",
+      "otherEmail": "Usar outro correio"
+    },
+    "panel": {
+      "title": "Painel",
+      "signedInAs": "Sessão de",
+      "office": "Escritório",
+      "role": "Função",
+      "noOffice": "Sem escritório",
+      "signOut": "Sair"
+    },
+    "roles": {
+      "SUPERADMIN": "Superadministrador",
+      "TENANT_ADMIN": "Administrador de escritório",
+      "OPERATOR": "Operador",
+      "ORGANIZER": "Organizador"
+    }
+  }
 }

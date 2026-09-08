@@ -119,6 +119,35 @@ Notas:
 - El cliente de Prisma se genera en `src/generated/` y **no se versiona**: lo
   regenera `npm install` automáticamente.
 
+## 4 ter. Entrar al panel
+
+No hay contraseñas. Se entra con un código de un solo uso enviado por correo.
+
+```bash
+npm run db:seed              # crea el superadministrador
+npm run dev
+# abrir http://app.localhost:3000/entrar
+```
+
+- El correo del superadministrador sale de `SUPERADMIN_EMAIL`
+  (por defecto `admin@citas.local`).
+- **En desarrollo el código se imprime en el log del servidor**, no se envía.
+  El emisor de consola se niega a arrancar en producción, así que antes de
+  desplegar hay que configurar un proveedor de correo real en `src/lib/mail/`.
+- El código dura 10 minutos, admite 5 intentos y **muere en cuanto se usa**.
+  Una dirección puede pedir 3 códigos cada 15 minutos.
+- Si la dirección no tiene acceso, la respuesta es exactamente la misma: quién
+  tiene cuenta no es algo que un desconocido pueda averiguar probando.
+
+### La oficina sale del subdominio
+
+`app.localhost:3000` es la plataforma; `agenciax.localhost:3000` sería una
+oficina. La pantalla de entrada se muestra en el idioma de esa oficina — una
+oficina de Beirut ve su panel en árabe y de derecha a izquierda.
+
+Una vez dentro, **la oficina la manda la sesión, no el host**: cambiar el
+subdominio no cambia a qué oficina perteneces.
+
 ## 5. Cambiar textos e idiomas
 
 Ningún texto visible está en el código. Todo vive en `locales/ar.json`,
@@ -183,3 +212,5 @@ Si algo se rompe en RTL, se rompe ahí.
 | `Invalid data at "…"` al arrancar | El mensaje señala el campo exacto de `data/invitations.json`. |
 | El árabe sale con las letras sueltas | Se ha aplicado `letter-spacing` a texto árabe. Debe pasar por `latinOnly()`. |
 | `npm run lint:rtl` falla | Se ha colado CSS físico. El error dice el archivo, la línea y con qué sustituirlo. |
+| `The console mailer must never run in production` | Correcto: hay que configurar un proveedor de correo real antes de desplegar. |
+| El panel sale en el idioma equivocado | La oficina se resuelve por `x-forwarded-host`. El servidor debe estar detrás del proxy que fija esa cabecera. |

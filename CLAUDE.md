@@ -41,6 +41,18 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Verificar licencia comercial antes de agregar cualquier fuente
   (las tres actuales son SIL OFL 1.1 — ver public/fonts/README.md)
 
+### Acceso
+- Sin contraseñas para el cliente final: código de un solo uso por correo.
+- Los secretos (token de sesión, código) se guardan SIEMPRE con hash. Un volcado
+  de la base de datos no puede suplantar a nadie.
+- Nunca se revela si una dirección tiene cuenta. La respuesta es la misma.
+- La oficina se resuelve por `x-forwarded-host`, no por `host`: en las peticiones
+  de una Server Action, Next reescribe `host`. El origen debe estar detrás del
+  proxy que fija esa cabecera.
+- Una vez dentro, la oficina la manda la SESIÓN, no el host.
+- El envío de correo entra por el puerto `Mailer`. El emisor de consola está
+  prohibido en producción y el código lo impide.
+
 ### Cobro
 - Líbano cobra con **Whish**. Costa Rica, si se abre, con Tilopay (SINPE Móvil).
 - El navegador NUNCA decide un pago. Un regreso a la URL de éxito no es una
@@ -84,19 +96,21 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
 - `docs/DECISIONES-PENDIENTES.md` — lo que no es código y bloquea fases enteras.
 
 ## Estado actual
-Fase 1 terminada (motor de render). Fase 2 en curso: la base de datos ya está.
-Todavía sin autenticación, sin paneles y sin cobro real (falta la spec de Whish).
+Fase 1 terminada (motor de render). Fase 2 casi terminada: base de datos,
+acceso por código de un solo uso, oficinas por subdominio e historial de cambios.
+Falta el cobro real (la spec de Whish) y los paneles de verdad.
 - `GET /i/[slug]` — página web de la invitación
 - `GET /api/render/[slug]` — PNG 1080x1920 generado en servidor
 - `GET /render/[slug]` — lienzo interno de captura (no indexado)
 - Una plantilla: `classic-gold`
 - Datos: `DATA_SOURCE=json` lee /data/invitations.json (por defecto),
   `DATA_SOURCE=database` lee PostgreSQL. Ambos detrás de `InvitationRepository`.
-- Esquema aplicado y `npm run db:seed` carga los 4 ejemplos.
+- Esquema aplicado y `npm run db:seed` carga los 4 ejemplos y el superadmin.
+- `GET /entrar` — acceso por código de un solo uso; `GET /panel` — protegido.
 
 ## Orden de construcción
-1. Base de datos, oficinas (multiempresa) y roles — **esquema y migración
-   hechos**; falta autenticación OTP, tenant por subdominio e historial
+1. Base de datos, oficinas (multiempresa) y roles — **hecho**: esquema,
+   migraciones, acceso OTP, sesiones, oficina por subdominio e historial
 2. RSVP y entregables — confirmaciones, `.ics`, mapa, exportar a Excel
 3. Formulario de creación con vista previa en vivo
 4. Panel de oficina y facturación
@@ -114,3 +128,13 @@ detrás**. Construirlas antes obliga a rehacerlas. No adelantar el paso 5.
 - El invitado NO tiene cuenta ni instala nada. La invitación es un enlace web.
 - Los permisos se comprueban en el servidor. Ocultar un botón no es un permiso.
 - El acceso de soporte del superadmin a un evento ajeno queda siempre registrado.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

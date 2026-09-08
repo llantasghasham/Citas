@@ -11,11 +11,26 @@
     "memorial": "memorial"
   },
   "invite": {
-    "wedding": { "kicker": "Wedding Invitation", "intro": "We are honoured to invite you to the wedding of" },
-    "graduation": { "kicker": "Graduation Invitation", "intro": "We are delighted to invite you to celebrate the graduation of" },
-    "birthday": { "kicker": "Birthday Invitation", "intro": "We are delighted to invite you to celebrate the birthday of" },
-    "baptism": { "kicker": "Baptism Invitation", "intro": "We are delighted to invite you to the baptism of" },
-    "memorial": { "kicker": "In Remembrance", "intro": "We invite you to remember with us" }
+    "wedding": {
+      "kicker": "Wedding Invitation",
+      "intro": "We are honoured to invite you to the wedding of"
+    },
+    "graduation": {
+      "kicker": "Graduation Invitation",
+      "intro": "We are delighted to invite you to celebrate the graduation of"
+    },
+    "birthday": {
+      "kicker": "Birthday Invitation",
+      "intro": "We are delighted to invite you to celebrate the birthday of"
+    },
+    "baptism": {
+      "kicker": "Baptism Invitation",
+      "intro": "We are delighted to invite you to the baptism of"
+    },
+    "memorial": {
+      "kicker": "In Remembrance",
+      "intro": "We invite you to remember with us"
+    }
   },
   "roles": {
     "parents": "The parents",
@@ -39,6 +54,38 @@
     "withDeadline": "Kindly confirm your attendance before {deadline}",
     "withoutDeadline": "Kindly confirm your attendance"
   },
-  "actions": { "viewMap": "View location on the map" },
-  "aria": { "invitationCard": "Invitation card", "ornament": "Decorative ornament" }
+  "actions": {
+    "viewMap": "View location on the map"
+  },
+  "aria": {
+    "invitationCard": "Invitation card",
+    "ornament": "Decorative ornament"
+  },
+  "admin": {
+    "signIn": {
+      "title": "Sign in",
+      "emailLabel": "Email",
+      "emailHint": "We will send you a one-time code.",
+      "send": "Send code",
+      "sent": "If that address has access, we have sent a code. It expires in 10 minutes.",
+      "codeLabel": "6-digit code",
+      "verify": "Sign in",
+      "invalid": "Wrong or expired code. Request a new one.",
+      "otherEmail": "Use another email"
+    },
+    "panel": {
+      "title": "Dashboard",
+      "signedInAs": "Signed in as",
+      "office": "Office",
+      "role": "Role",
+      "noOffice": "No office",
+      "signOut": "Sign out"
+    },
+    "roles": {
+      "SUPERADMIN": "Superadmin",
+      "TENANT_ADMIN": "Office admin",
+      "OPERATOR": "Operator",
+      "ORGANIZER": "Organiser"
+    }
+  }
 }

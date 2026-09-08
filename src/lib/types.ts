@@ -123,4 +123,27 @@ export interface Dictionary {
     invitationCard: string;
     ornament: string;
   };
+  /** Staff-facing screens. Office staff in Beirut read these in Arabic too. */
+  admin: {
+    signIn: {
+      title: string;
+      emailLabel: string;
+      emailHint: string;
+      send: string;
+      sent: string;
+      codeLabel: string;
+      verify: string;
+      invalid: string;
+      otherEmail: string;
+    };
+    panel: {
+      title: string;
+      signedInAs: string;
+      office: string;
+      role: string;
+      noOffice: string;
+      signOut: string;
+    };
+    roles: Record<'SUPERADMIN' | 'TENANT_ADMIN' | 'OPERATOR' | 'ORGANIZER', string>;
+  };
 }

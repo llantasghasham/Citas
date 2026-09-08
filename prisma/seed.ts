@@ -33,6 +33,23 @@ async function main(): Promise<void> {
       },
     });
 
+    // Sin registro público todavía: el superadmin se crea aquí y es el único
+    // que puede entrar hasta que exista el alta de clientes.
+    const superadminEmail = (process.env['SUPERADMIN_EMAIL'] ?? 'admin@citas.local')
+      .trim()
+      .toLowerCase();
+    const superadmin = await prisma.user.upsert({
+      where: { email: superadminEmail },
+      update: { isSuperadmin: true },
+      create: {
+        email: superadminEmail,
+        name: 'Superadmin',
+        isSuperadmin: true,
+        locale: 'ar',
+      },
+    });
+    console.log(`superadmin: ${superadmin.email}`);
+
     for (const invitation of getAllInvitations()) {
       const existing = await prisma.invitationVersion.findUnique({
         where: { slug: invitation.slug },

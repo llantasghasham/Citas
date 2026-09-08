@@ -65,6 +65,13 @@ row-level tenancy*):
 - El tenant se resuelve por subdominio (o por dominio propio si la oficina lo
   aporta) y se confirma contra la sesión del usuario: quien entra por
   `agenciax.` y pertenece a otra oficina, no pasa.
+- La resolución usa `x-forwarded-host`, porque en las peticiones que dispara una
+  Server Action Next reescribe `host` al origen desnudo. Eso implica una
+  condición de despliegue: **el servidor de origen solo puede ser alcanzable a
+  través del proxy que fija esa cabecera**, nunca expuesto directamente.
+- Después de iniciar sesión, la oficina sale de la sesión y no del host: la
+  pertenencia a una oficina es parte de quién eres, y no puede cambiar porque
+  cambie una cabecera.
 - La invitación pública (`/i/[slug]`) es la única ruta sin tenant: el `slug` es
   global y no revela nada del resto.
 
