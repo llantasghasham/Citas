@@ -41,6 +41,17 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Verificar licencia comercial antes de agregar cualquier fuente
   (las tres actuales son SIL OFL 1.1 — ver public/fonts/README.md)
 
+### Cobro
+- Líbano cobra con **Whish**. Costa Rica, si se abre, con Tilopay (SINPE Móvil).
+- El navegador NUNCA decide un pago. Un regreso a la URL de éxito no es una
+  prueba de cobro: se confirma servidor contra servidor con `getStatus()`.
+- El callback es un aviso, no una prueba, mientras no haya firma verificable.
+- Importes SIEMPRE en entero, en la unidad menor de la moneda. Ningún decimal
+  toca dinero.
+- Todo proveedor entra por el puerto `PaymentProvider`. La aplicación no sabe
+  qué pasarela hay detrás.
+- El proveedor `mock` está prohibido en producción y el código lo impide.
+
 ### Render
 - Las invitaciones se renderizan en el SERVIDOR, nunca en el cliente
 - Salida: PNG 1080x1920 y página web responsive
@@ -68,6 +79,9 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
 - `docs/ARQUITECTURA.md` — producto completo: oficinas (multiempresa), roles,
   las tres formas de venderlo, apps móviles, descargas y despliegue.
 - `prisma/schema.prisma` — modelo de datos de la fase 2. Diseñado, no instalado.
+- `docs/COBRO-WHISH.md` — cobro en Líbano con Whish: qué pedirle al proveedor y
+  las reglas de la integración.
+- `docs/DECISIONES-PENDIENTES.md` — lo que no es código y bloquea fases enteras.
 
 ## Estado actual
 Fase 1 terminada: motor de render. Todavía sin auth, sin base de datos y sin pagos.

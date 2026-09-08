@@ -53,10 +53,14 @@ Dos obligaciones que no son opcionales:
   tickets de invitación sobra, pero condiciona cualquier venta grande a una
   oficina.
 
-### 1.3 Líbano — Whish sí tiene API
+### 1.3 Líbano — DECIDIDO: Whish
 
-**Sí se puede conectar.** Whish tiene producto de comercio (**Whish Pay**) y un
-servicio web documentado (**Whish Collect**) con operaciones de consulta de
+**Decidido: Líbano cobra con Whish.** El puerto de pagos y el adaptador ya están
+en el código; lo único que falta es el contrato exacto del servicio web. La lista
+de lo que hay que pedirle a Whish está en [`COBRO-WHISH.md`](COBRO-WHISH.md).
+
+Whish tiene producto de comercio (**Whish Pay**) y un servicio web documentado
+(**Whish Collect**) con operaciones de consulta de
 saldo, consulta de tipo de cambio y cobro. Existe además un plugin de WordPress
 que lo usa, lo que confirma que la integración por API es real y no una promesa
 comercial.

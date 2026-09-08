@@ -127,6 +127,7 @@ model Tenant {
 
   memberships  Membership[]
   events       Event[]
+  orders       Order[]
   subscription Subscription?
   auditLogs    AuditLog[]
 
@@ -388,4 +389,95 @@ model AuditLog {
 
   @@index([tenantId, createdAt])
   @@index([entity, entityId])
+}
+
+// ---------------------------------------------------------------- cobro
+
+enum Currency {
+  USD
+  LBP
+  CRC
+}
+
+/// Líbano cobra por Whish. `manual` cubre transferencia y efectivo, que es como
+/// se cobra un trabajo concierge antes de que exista pasarela.
+enum PaymentProviderId {
+  whish
+  tilopay
+  manual
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  expired
+  refunded
+}
+
+model Order {
+  id       String  @id @default(cuid())
+  tenantId String
+  eventId  String?
+
+  /// Importe en la unidad menor de la moneda: céntimos en USD, unidades en LBP.
+  /// Nunca un decimal.
+  amount      Int
+  currency    Currency
+  description String
+  status      PaymentStatus @default(pending)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([tenantId, status])
+  @@index([eventId])
+}
+
+model Payment {
+  id      String @id @default(cuid())
+  orderId String
+
+  provider PaymentProviderId
+  /// Identificador del cobro en el proveedor. Único junto al proveedor: es lo
+  /// que impide procesar dos veces la misma notificación.
+  providerRef String
+  status      PaymentStatus     @default(pending)
+
+  amount   Int
+  currency Currency
+
+  /// Última vez que se le preguntó al proveedor cuál es la verdad.
+  lastCheckedAt DateTime?
+  paidAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order  Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  events PaymentEvent[]
+
+  @@unique([provider, providerRef])
+  @@index([orderId])
+  @@index([status, lastCheckedAt])
+}
+
+/// Todo lo que llega del proveedor se guarda crudo. Cuando un cobro se discute
+/// —y se discute— esto es lo único que sirve.
+model PaymentEvent {
+  id        String @id @default(cuid())
+  paymentId String
+
+  /// callback | poll | manual
+  kind    String
+  payload Json
+
+  receivedAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId, receivedAt])
 }
