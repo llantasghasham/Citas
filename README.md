@@ -127,12 +127,19 @@ npm run lint:rtl    # guardia de CSS lógico
 npm run build
 ```
 
+## Verlo y publicarlo
+
+`docs/DESPLIEGUE.md` explica los dos caminos: levantarlo en tu máquina en diez
+minutos, y ponerlo online con el `Dockerfile` y el `docker-compose.yml` del
+repositorio.
+
 ## Documentación
 
 - [`MANUAL.md`](MANUAL.md) — manual de uso del motor.
 - [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) — multiempresa, roles, formas de
   venta, apps móviles y despliegue.
-- [`prisma/schema.prisma`](prisma/schema.prisma) — modelo de datos de la fase 2.
+- [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) — verlo en local y publicarlo.
+- [`apps/web/prisma/schema.prisma`](apps/web/prisma/schema.prisma) — modelo de datos.
 
 ## Siguiente fase
 

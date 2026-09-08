@@ -104,7 +104,7 @@ export default function App() {
 
       {needsRestart ? (
         <Text style={{ padding: 12, backgroundColor: theme.gold, color: theme.background }}>
-          {dictionary.create.preview} · {locale}
+          {dictionary.admin.panel.restartNeeded}
         </Text>
       ) : null}
 

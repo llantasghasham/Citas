@@ -199,6 +199,8 @@ export interface Dictionary {
       role: string;
       noOffice: string;
       signOut: string;
+      /** Shown when React Native needs a relaunch to flip text direction. */
+      restartNeeded: string;
     };
     roles: Record<'SUPERADMIN' | 'TENANT_ADMIN' | 'OPERATOR' | 'ORGANIZER', string>;
     nav: Record<'events' | 'offices' | 'team' | 'billing', string>;

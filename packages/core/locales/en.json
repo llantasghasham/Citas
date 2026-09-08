@@ -80,7 +80,8 @@
       "office": "Office",
       "role": "Role",
       "noOffice": "No office",
-      "signOut": "Sign out"
+      "signOut": "Sign out",
+      "restartNeeded": "Text direction changed. Restart the app to see it laid out correctly."
     },
     "roles": {
       "SUPERADMIN": "Superadmin",

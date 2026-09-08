@@ -80,7 +80,8 @@
       "office": "Oficina",
       "role": "Rol",
       "noOffice": "Sin oficina",
-      "signOut": "Salir"
+      "signOut": "Salir",
+      "restartNeeded": "Ha cambiado la dirección del texto. Reinicie la aplicación para verla bien."
     },
     "roles": {
       "SUPERADMIN": "Superadministrador",

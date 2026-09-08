@@ -19,11 +19,15 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "bundler": "metro",
+      "output": "single"
     },
     "scheme": "citas",
     "extra": {
       "supportsRTL": true
+    },
+    "experiments": {
+      "baseUrl": "/app"
     }
   }
 }

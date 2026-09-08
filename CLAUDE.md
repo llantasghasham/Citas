@@ -138,10 +138,11 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
   versículos, fuentes y problemas frecuentes.
 - `docs/ARQUITECTURA.md` — producto completo: oficinas (multiempresa), roles,
   las tres formas de venderlo, apps móviles, descargas y despliegue.
-- `prisma/schema.prisma` — modelo de datos de la fase 2. Diseñado, no instalado.
+- `apps/web/prisma/schema.prisma` — modelo de datos, aplicado y migrado.
 - `docs/COBRO-WHISH.md` — cobro en Líbano con Whish: qué pedirle al proveedor y
   las reglas de la integración.
 - `docs/DECISIONES-PENDIENTES.md` — lo que no es código y bloquea fases enteras.
+- `docs/DESPLIEGUE.md` — cómo verlo en local y cómo publicarlo (Docker incluido).
 
 ## Estado actual
 Fases 1, 2 y 3 terminadas: motor de render, base de datos, acceso por código de
