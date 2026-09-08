@@ -220,6 +220,48 @@ Detalles que conviene conocer:
 - Si no se indica enlace de mapa, se genera una búsqueda con el nombre y la
   dirección del lugar.
 
+## 4 sexies. El panel: oficinas, equipo y suscripción
+
+El panel tiene cuatro secciones y **cada una se muestra solo si el rol la
+permite** — la comprobación está en el servidor, no en si se ve el enlace.
+
+| Sección | Quién entra | Para qué |
+| --- | --- | --- |
+| Eventos | todos | Eventos de la oficina y sus confirmaciones |
+| Oficinas | superadmin | Alta y listado de oficinas, con su plan |
+| Equipo | admin de oficina | Miembros y sus roles |
+| Suscripción | admin de oficina | Plan, límites y facturas |
+
+### Planes
+
+| Plan | Precio | Eventos | Invitados |
+| --- | --- | --- | --- |
+| Gratis | 0 | 1 | 50 |
+| Un evento | 30 US$ por evento | sin límite | 300 |
+| Anual | 15 US$/mes | 10 | 500 |
+| Oficina | 120 US$/mes | sin límite | sin límite |
+
+Los precios se guardan en **centavos enteros**. El límite de eventos se
+comprueba al publicar, en el servidor; si se alcanza, la publicación se rechaza.
+
+### Cómo se cobra
+
+1. Se elige un plan → se abre una **factura** (`Order`) y se pide un cobro al
+   proveedor configurado en `PAYMENTS_PROVIDER`.
+2. El navegador vuelve a la página de suscripción. **Eso no confirma nada.**
+3. El botón «Pagar» de la factura pregunta al proveedor cuál es el estado real.
+   Solo esa respuesta marca la factura como pagada y mueve la oficina de plan.
+
+Con `PAYMENTS_PROVIDER=mock` la primera consulta devuelve «pendiente» y la
+segunda «pagada», precisamente para poder probar ese camino. En producción el
+proveedor será Whish, y el código no cambia: entra por el mismo puerto.
+
+### Añadir a alguien al equipo
+
+Se escribe su correo y se elige el rol. No se envía invitación ni se crea
+contraseña: la cuenta queda creada y esa persona entra con un código de un solo
+uso cuando quiera.
+
 ## 5. Cambiar textos e idiomas
 
 Ningún texto visible está en el código. Todo vive en `locales/ar.json`,

@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 
 import type { Role } from '@/generated/prisma/enums';
 import { getPrisma } from '@/lib/db/client';
@@ -61,8 +62,11 @@ export async function createSession(
   return token;
 }
 
-/** The signed-in user, or null. Never throws: callers decide what to do. */
-export async function getSession(): Promise<AuthenticatedSession | null> {
+/**
+ * The signed-in user, or null. Never throws: callers decide what to do.
+ * Memoised per request, so a layout and its page share one lookup.
+ */
+export const getSession = cache(async (): Promise<AuthenticatedSession | null> => {
   const store = await cookies();
   const token = store.get(COOKIE_NAME)?.value;
   if (token === undefined || token.length === 0) return null;
@@ -98,7 +102,7 @@ export async function getSession(): Promise<AuthenticatedSession | null> {
     tenantId: row.tenantId,
     role: row.user.isSuperadmin ? 'SUPERADMIN' : (membership?.role ?? null),
   };
-}
+});
 
 export async function destroySession(): Promise<void> {
   const store = await cookies();

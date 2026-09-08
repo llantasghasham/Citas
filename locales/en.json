@@ -98,6 +98,49 @@
       "guests": "Guests",
       "download": "Download guest list",
       "empty": "No events yet."
+    },
+    "nav": {
+      "events": "Events",
+      "offices": "Offices",
+      "team": "Team",
+      "billing": "Subscription"
+    },
+    "offices": {
+      "heading": "Offices",
+      "name": "Name",
+      "subdomain": "Subdomain",
+      "plan": "Plan",
+      "status": "Status",
+      "create": "Create office",
+      "empty": "No offices yet.",
+      "defaultLocale": "Default language"
+    },
+    "team": {
+      "heading": "Team",
+      "email": "Email",
+      "role": "Role",
+      "add": "Add member",
+      "empty": "No members yet.",
+      "added": "Added."
+    },
+    "billing": {
+      "heading": "Subscription",
+      "plan": "Plan",
+      "limits": "Limits",
+      "eventsUsed": "Events used",
+      "unlimited": "unlimited",
+      "orders": "Invoices",
+      "amount": "Amount",
+      "state": "Status",
+      "created": "Date",
+      "pay": "Pay",
+      "noOrders": "No invoices.",
+      "choosePlan": "Choose a plan",
+      "planFree": "Free",
+      "planSingle": "Single event",
+      "planAnnual": "Annual",
+      "planOffice": "Office",
+      "limitReached": "You have reached your plan’s event limit. Upgrade to continue."
     }
   },
   "rsvpForm": {

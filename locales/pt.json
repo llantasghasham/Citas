@@ -98,6 +98,49 @@
       "guests": "Convidados",
       "download": "Descarregar lista de convidados",
       "empty": "Ainda não há eventos."
+    },
+    "nav": {
+      "events": "Eventos",
+      "offices": "Escritórios",
+      "team": "Equipa",
+      "billing": "Subscrição"
+    },
+    "offices": {
+      "heading": "Escritórios",
+      "name": "Nome",
+      "subdomain": "Subdomínio",
+      "plan": "Plano",
+      "status": "Estado",
+      "create": "Criar escritório",
+      "empty": "Ainda não há escritórios.",
+      "defaultLocale": "Idioma predefinido"
+    },
+    "team": {
+      "heading": "Equipa",
+      "email": "Correio eletrónico",
+      "role": "Função",
+      "add": "Adicionar membro",
+      "empty": "Ainda não há membros.",
+      "added": "Adicionado."
+    },
+    "billing": {
+      "heading": "Subscrição",
+      "plan": "Plano",
+      "limits": "Limites",
+      "eventsUsed": "Eventos usados",
+      "unlimited": "sem limite",
+      "orders": "Faturas",
+      "amount": "Montante",
+      "state": "Estado",
+      "created": "Data",
+      "pay": "Pagar",
+      "noOrders": "Não há faturas.",
+      "choosePlan": "Escolher plano",
+      "planFree": "Grátis",
+      "planSingle": "Um evento",
+      "planAnnual": "Anual",
+      "planOffice": "Escritório",
+      "limitReached": "Atingiu o limite de eventos do seu plano. Amplie-o para continuar."
     }
   },
   "rsvpForm": {

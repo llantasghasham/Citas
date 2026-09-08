@@ -66,6 +66,13 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - El slug no translitera nombres árabes: sale `invitacion-<azar>`. Transliterar
   un apellido automáticamente es justo lo que este proyecto prohíbe.
 
+### Planes y límites
+- Un `maxEvents` a `null` significa SIN LÍMITE. Nunca colapsarlo con `??` contra
+  el plan gratis: ese error facturó a una oficina fuera de sus propios eventos.
+- El límite se comprueba al publicar, en el servidor.
+- Los precios se guardan en centavos enteros.
+- Solo la respuesta del proveedor marca una factura como pagada.
+
 ### Confirmaciones
 - El formulario de confirmación es PÚBLICO a propósito: la invitación se reenvía
   por WhatsApp y pedir cuenta al invitado cuesta más respuestas que el spam que
@@ -122,8 +129,8 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
 ## Estado actual
 Fases 1, 2 y 3 terminadas: motor de render, base de datos, acceso por código de
 un solo uso, oficinas por subdominio, historial, confirmaciones, calendario,
-exportación y formulario de creación. Falta el cobro real (la spec de Whish) y
-el panel de oficina con facturación.
+exportación, formulario de creación y panel con oficinas, equipo, planes y
+facturas. Falta el cobro real (la spec de Whish) y las apps móviles.
 - `GET /i/[slug]` — página web de la invitación
 - `GET /api/render/[slug]` — PNG 1080x1920 generado en servidor
 - `GET /render/[slug]` — lienzo interno de captura (no indexado)
@@ -136,13 +143,15 @@ el panel de oficina con facturación.
 - `GET /api/calendar/[slug]` — archivo `.ics`.
 - `GET /api/events/[eventId]/guests` — CSV de invitados; exige sesión y oficina.
 - `GET /crear` — creación en cinco pasos con vista previa; publicar exige sesión.
+- `/panel/oficinas` (superadmin), `/panel/equipo` y `/panel/facturacion`.
+- `POST /api/payments/[provider]/callback` — aviso del proveedor, nunca prueba.
 
 ## Orden de construcción
 1. Base de datos, oficinas (multiempresa) y roles — **hecho**: esquema,
    migraciones, acceso OTP, sesiones, oficina por subdominio e historial
 2. RSVP y entregables — **hecho**: confirmaciones, `.ics`, mapa y exportación
 3. Formulario de creación con vista previa — **hecho**
-4. Panel de oficina y facturación
+4. Panel de oficina y facturación — **hecho**
 5. Apps móviles — monorepo con Expo
 
 El orden importa en un punto: **las apps móviles necesitan cuentas y roles

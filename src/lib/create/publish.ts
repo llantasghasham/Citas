@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 
 import { recordAudit } from '@/lib/audit';
+import { eventLimitReached } from '@/lib/billing/plans';
 import type { AuthenticatedSession } from '@/lib/auth/session';
 import { getPrisma } from '@/lib/db/client';
 
@@ -52,6 +53,10 @@ export async function publishDraft(
     session.tenantId ??
     (await prisma.tenant.findFirst({ where: { isRoot: true }, select: { id: true } }))?.id;
   if (tenantId === undefined) return { ok: false, problems: ['tenant'] };
+
+  // The plan is checked here, on the server, at the moment of publishing —
+  // not by hiding a button.
+  if (await eventLimitReached(tenantId)) return { ok: false, problems: ['planLimit'] };
 
   const honorees = draft.honorees.filter((name) => name.length > 0);
   const hosts = draft.hosts.filter((host) => host.name.length > 0);

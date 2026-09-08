@@ -1,6 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from '../src/generated/prisma/client';
+import { PLAN_CATALOGUE } from '../src/lib/billing/plans';
 import { getAllInvitations } from '../src/lib/invitations';
 
 /**
@@ -32,6 +33,32 @@ async function main(): Promise<void> {
         defaultLocale: 'ar',
       },
     });
+
+    for (const plan of PLAN_CATALOGUE) {
+      await prisma.plan.upsert({
+        where: { tier: plan.tier },
+        update: {
+          name: plan.name,
+          priceMonthly: plan.priceMonthly,
+          pricePerEvent: plan.pricePerEvent,
+          maxEvents: plan.maxEvents,
+          maxGuests: plan.maxGuests,
+          whiteLabel: plan.whiteLabel,
+        },
+        create: plan,
+      });
+    }
+    console.log(`plans: ${PLAN_CATALOGUE.length}`);
+
+    // La plataforma misma va en el plan sin límites.
+    const officePlan = await prisma.plan.findUnique({ where: { tier: 'office' } });
+    if (officePlan !== null) {
+      await prisma.subscription.upsert({
+        where: { tenantId: tenant.id },
+        update: { planId: officePlan.id },
+        create: { tenantId: tenant.id, planId: officePlan.id },
+      });
+    }
 
     // Sin registro público todavía: el superadmin se crea aquí y es el único
     // que puede entrar hasta que exista el alta de clientes.

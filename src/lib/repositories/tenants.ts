@@ -1,0 +1,127 @@
+import type { Locale, PlanTier, Role, TenantStatus } from '@/generated/prisma/enums';
+import { getPrisma } from '@/lib/db/client';
+import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
+
+export interface OfficeRow {
+  id: string;
+  name: string;
+  subdomain: string;
+  status: TenantStatus;
+  isRoot: boolean;
+  tier: PlanTier | null;
+  events: number;
+}
+
+/** Offices are platform-wide, so only a superadmin ever calls this. */
+export async function listOffices(): Promise<OfficeRow[]> {
+  const tenants = await getPrisma().tenant.findMany({
+    orderBy: { createdAt: 'asc' },
+    include: {
+      subscription: { include: { plan: true } },
+      _count: { select: { events: true } },
+    },
+  });
+
+  return tenants.map((tenant) => ({
+    id: tenant.id,
+    name: tenant.name,
+    subdomain: tenant.subdomain,
+    status: tenant.status,
+    isRoot: tenant.isRoot,
+    tier: tenant.subscription?.plan.tier ?? null,
+    events: tenant._count.events,
+  }));
+}
+
+export interface CreateOfficeInput {
+  name: string;
+  subdomain: string;
+  defaultLocale: Locale;
+  tier: PlanTier;
+}
+
+const SUBDOMAIN_SHAPE = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
+
+export function normalizeSubdomain(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+export function isValidSubdomain(value: string): boolean {
+  return SUBDOMAIN_SHAPE.test(value);
+}
+
+export async function createOffice(input: CreateOfficeInput): Promise<string | null> {
+  if (!isValidSubdomain(input.subdomain) || input.name.length === 0) return null;
+
+  const prisma = getPrisma();
+  const taken = await prisma.tenant.findFirst({
+    where: { OR: [{ subdomain: input.subdomain }, { slug: input.subdomain }] },
+    select: { id: true },
+  });
+  if (taken !== null) return null;
+
+  const plan = await prisma.plan.findUnique({ where: { tier: input.tier } });
+
+  const tenant = await prisma.tenant.create({
+    data: {
+      slug: input.subdomain,
+      subdomain: input.subdomain,
+      name: input.name,
+      defaultLocale: input.defaultLocale,
+      status: 'trial',
+      ...(plan === null ? {} : { subscription: { create: { planId: plan.id } } }),
+    },
+    select: { id: true },
+  });
+
+  return tenant.id;
+}
+
+export interface MemberRow {
+  userId: string;
+  email: string;
+  role: Role;
+}
+
+export async function listMembers(scope: TenantScope): Promise<MemberRow[]> {
+  const memberships = await getPrisma().membership.findMany({
+    where: scopedWhere(scope),
+    orderBy: { createdAt: 'asc' },
+    include: { user: { select: { email: true } } },
+  });
+
+  return memberships.map((membership) => ({
+    userId: membership.userId,
+    email: membership.user.email,
+    role: membership.role,
+  }));
+}
+
+/**
+ * Adds someone to the office. No invitation email and no password: the account
+ * exists, and they get in with a one-time code whenever they first try.
+ */
+export async function addMember(
+  scope: TenantScope,
+  email: string,
+  role: Role,
+): Promise<boolean> {
+  const normalized = email.trim().toLowerCase();
+  if (normalized.length === 0 || !normalized.includes('@')) return false;
+
+  const prisma = getPrisma();
+  const user = await prisma.user.upsert({
+    where: { email: normalized },
+    update: {},
+    create: { email: normalized },
+    select: { id: true },
+  });
+
+  await prisma.membership.upsert({
+    where: { userId_tenantId: { userId: user.id, tenantId: scope.tenantId } },
+    update: { role },
+    create: { userId: user.id, tenantId: scope.tenantId, role },
+  });
+
+  return true;
+}

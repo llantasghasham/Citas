@@ -201,6 +201,44 @@ export interface Dictionary {
       signOut: string;
     };
     roles: Record<'SUPERADMIN' | 'TENANT_ADMIN' | 'OPERATOR' | 'ORGANIZER', string>;
+    nav: Record<'events' | 'offices' | 'team' | 'billing', string>;
+    offices: {
+      heading: string;
+      name: string;
+      subdomain: string;
+      plan: string;
+      status: string;
+      create: string;
+      empty: string;
+      defaultLocale: string;
+    };
+    team: {
+      heading: string;
+      email: string;
+      role: string;
+      add: string;
+      empty: string;
+      added: string;
+    };
+    billing: {
+      heading: string;
+      plan: string;
+      limits: string;
+      eventsUsed: string;
+      unlimited: string;
+      orders: string;
+      amount: string;
+      state: string;
+      created: string;
+      pay: string;
+      noOrders: string;
+      choosePlan: string;
+      planFree: string;
+      planSingle: string;
+      planAnnual: string;
+      planOffice: string;
+      limitReached: string;
+    };
     events: {
       heading: string;
       event: string;
