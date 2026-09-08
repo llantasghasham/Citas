@@ -9,3 +9,4 @@ export * from './types';
 export * from './dictionary';
 export * from './numerals';
 export * from './datetime';
+export * from './presets';

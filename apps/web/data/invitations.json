@@ -9,10 +9,23 @@
       "templateId": "classic-gold",
       "numeralSystem": "arabic",
       "hosts": [
-        { "name": "سمير وليلى الحدّاد", "role": "parents" },
-        { "name": "إلياس ونادية خوري", "role": "parents" }
+        {
+          "name": "سمير وليلى الحدّاد",
+          "role": "parents"
+        },
+        {
+          "name": "إلياس ونادية خوري",
+          "role": "parents"
+        }
       ],
-      "honorees": [{ "name": "كريم الحدّاد" }, { "name": "ريما خوري" }],
+      "honorees": [
+        {
+          "name": "كريم الحدّاد"
+        },
+        {
+          "name": "ريما خوري"
+        }
+      ],
       "date": "2026-10-17",
       "time": "19:30",
       "hijriDate": "٦ جمادى الأولى ١٤٤٨ هـ",
@@ -25,8 +38,15 @@
       },
       "message": "يسعدنا أن نشارككم فرحتنا في هذه المناسبة الغالية، وحضوركم يزيدها بهجة.",
       "quoteId": "quran-ar-rum-21",
-      "theme": { "primary": "#6B4E16", "accent": "#C9A227", "background": "#FBF6EC" },
-      "rsvp": { "enabled": true, "deadline": "2026-10-03" }
+      "theme": {
+        "primary": "#6B4E16",
+        "accent": "#C9A227",
+        "background": "#FBF6EC"
+      },
+      "rsvp": {
+        "enabled": true,
+        "deadline": "2026-10-03"
+      }
     },
     {
       "id": "inv_002",
@@ -36,8 +56,17 @@
       "direction": "ltr",
       "templateId": "classic-gold",
       "numeralSystem": "latin",
-      "hosts": [{ "name": "Familia Moreno Cardoso", "role": "family" }],
-      "honorees": [{ "name": "Valentina Moreno Cardoso" }],
+      "hosts": [
+        {
+          "name": "Familia Moreno Cardoso",
+          "role": "family"
+        }
+      ],
+      "honorees": [
+        {
+          "name": "Valentina Moreno Cardoso"
+        }
+      ],
       "date": "2026-06-20",
       "time": "18:00",
       "venue": {
@@ -48,8 +77,15 @@
         "lng": -3.7074
       },
       "message": "Después de cinco años de esfuerzo, queremos celebrar este día rodeados de las personas que nos acompañaron en el camino.",
-      "theme": { "primary": "#6B4E16", "accent": "#C9A227", "background": "#FBF6EC" },
-      "rsvp": { "enabled": true, "deadline": "2026-06-06" }
+      "theme": {
+        "primary": "#6B4E16",
+        "accent": "#C9A227",
+        "background": "#FBF6EC"
+      },
+      "rsvp": {
+        "enabled": true,
+        "deadline": "2026-06-06"
+      }
     },
     {
       "id": "inv_003",
@@ -60,10 +96,23 @@
       "templateId": "classic-gold",
       "numeralSystem": "latin",
       "hosts": [
-        { "name": "Mr & Mrs Whitaker", "role": "parents" },
-        { "name": "Mr & Mrs Khoury", "role": "parents" }
+        {
+          "name": "Mr & Mrs Whitaker",
+          "role": "parents"
+        },
+        {
+          "name": "Mr & Mrs Khoury",
+          "role": "parents"
+        }
       ],
-      "honorees": [{ "name": "James Whitaker" }, { "name": "Nadia Khoury" }],
+      "honorees": [
+        {
+          "name": "James Whitaker"
+        },
+        {
+          "name": "Nadia Khoury"
+        }
+      ],
       "date": "2027-01-09",
       "time": "16:00",
       "venue": {
@@ -75,8 +124,15 @@
       },
       "message": "We would be delighted to have you with us as we begin this new chapter together.",
       "quoteId": "bible-en-1cor-13-4",
-      "theme": { "primary": "#6B4E16", "accent": "#C9A227", "background": "#FBF6EC" },
-      "rsvp": { "enabled": true, "deadline": "2026-12-12" }
+      "theme": {
+        "primary": "#6B4E16",
+        "accent": "#C9A227",
+        "background": "#FBF6EC"
+      },
+      "rsvp": {
+        "enabled": true,
+        "deadline": "2026-12-12"
+      }
     },
     {
       "id": "inv_004",
@@ -86,8 +142,17 @@
       "direction": "ltr",
       "templateId": "classic-gold",
       "numeralSystem": "latin",
-      "hosts": [{ "name": "Rui e Marta Fonseca", "role": "parents" }],
-      "honorees": [{ "name": "Tomás Fonseca" }],
+      "hosts": [
+        {
+          "name": "Rui e Marta Fonseca",
+          "role": "parents"
+        }
+      ],
+      "honorees": [
+        {
+          "name": "Tomás Fonseca"
+        }
+      ],
       "date": "2026-05-24",
       "time": "11:00",
       "venue": {
@@ -99,8 +164,55 @@
       },
       "message": "Queremos partilhar convosco este dia tão especial para a nossa família.",
       "quoteId": "bible-pt-1cor-13-4",
-      "theme": { "primary": "#6B4E16", "accent": "#C9A227", "background": "#FBF6EC" },
-      "rsvp": { "enabled": false, "deadline": null }
+      "theme": {
+        "primary": "#6B4E16",
+        "accent": "#C9A227",
+        "background": "#FBF6EC"
+      },
+      "rsvp": {
+        "enabled": false,
+        "deadline": null
+      }
+    },
+    {
+      "id": "inv_005",
+      "slug": "ejemplo-memorial",
+      "eventType": "memorial",
+      "locale": "ar",
+      "direction": "rtl",
+      "templateId": "sober-memorial",
+      "numeralSystem": "arabic",
+      "hosts": [
+        {
+          "name": "عائلة نصّار",
+          "role": "family"
+        }
+      ],
+      "honorees": [
+        {
+          "name": "جورج نصّار"
+        }
+      ],
+      "date": "2026-11-08",
+      "time": "16:00",
+      "timeZone": "Asia/Beirut",
+      "venue": {
+        "name": "كنيسة مار إلياس",
+        "address": "الأشرفية، بيروت",
+        "mapUrl": "https://www.google.com/maps/search/?api=1&query=33.8886,35.5215",
+        "lat": null,
+        "lng": null
+      },
+      "message": "نشكر لكم مشاركتنا الصلاة على راحة نفسه.",
+      "theme": {
+        "primary": "#2F332E",
+        "accent": "#8B8C7E",
+        "background": "#F2F1ED"
+      },
+      "rsvp": {
+        "enabled": false,
+        "deadline": null
+      }
     }
   ]
 }

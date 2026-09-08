@@ -71,7 +71,7 @@ export default async function CreatePage({ searchParams }: PageProps) {
             {copy.openInvitation}
           </a>
           <a
-            href={`/api/render/${published}`}
+            href={`/api/render/${published}?download=1`}
             className="border border-[#23201a] px-6 py-3 text-base text-[#23201a] hover:opacity-70"
           >
             {copy.downloadImage}

@@ -1,5 +1,7 @@
 import { randomBytes } from 'node:crypto';
 
+import { templateFor, themeFor } from '@citas/core';
+
 import { recordAudit } from '@/lib/audit';
 import { eventLimitReached } from '@/lib/billing/plans';
 import type { AuthenticatedSession } from '@/lib/auth/session';
@@ -87,9 +89,12 @@ export async function publishDraft(
             locale: draft.locale,
             direction: draft.locale === 'ar' ? 'rtl' : 'ltr',
             numeralSystem: draft.numeralSystem,
-            templateId: 'classic-gold',
+            templateId: templateFor(draft.eventType),
             message: draft.message,
             quoteId: draft.quoteId.length === 0 ? null : draft.quoteId,
+            themePrimary: themeFor(draft.eventType).primary,
+            themeAccent: themeFor(draft.eventType).accent,
+            themeBackground: themeFor(draft.eventType).background,
             publishedAt: new Date(),
           },
         ],

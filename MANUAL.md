@@ -303,11 +303,30 @@ en los cuatro.
 ## 6. Descargar el PNG
 
 ```bash
-curl -o boda.png http://localhost:3000/api/render/ejemplo-ar
+curl -o boda.png "http://localhost:3000/api/render/ejemplo-ar?download=1"
 ```
 
 Sale a 1080×1920, la medida de story de Instagram y de estado de WhatsApp.
-Desde el navegador, abrir esa URL descarga el archivo directamente.
+
+- **Sin `?download=1` la imagen se sirve para verse, no para descargarse.** Esa
+  es la URL que usa WhatsApp para la vista previa al pegar el enlace.
+- **La imagen se genera una sola vez.** La primera petición tarda un par de
+  segundos; las siguientes salen del almacén en milisegundos. La cabecera
+  `x-render-cache` dice si fue `miss` o `hit`.
+- Con `DATA_SOURCE=json` no hay dónde guardarla, así que se regenera siempre.
+  Es aceptable: ese modo es para enseñarlo en local.
+- Si se cambia una plantilla hay que subir `RENDERER_VERSION` en
+  `src/lib/render/hash.ts`, o se seguirá sirviendo la imagen anterior.
+
+## 6 bis. La plantilla de duelo
+
+`memorial` **no** usa la plantilla dorada. El tipo de evento elige plantilla y
+paleta: fondo gris pálido, un solo filete, sin ornamento y con mucho aire. Se
+decide en el código (`templateFor`, `themeFor`), no en el formulario, para que
+nadie pueda publicar un funeral con marco de boda.
+
+Ejemplo: `/i/ejemplo-memorial`. Va **sin cita**, porque en la lista verificada
+todavía no hay ningún texto de duelo — y no se inventa uno.
 
 ## 7. Añadir un versículo
 

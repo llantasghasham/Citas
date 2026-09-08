@@ -1,4 +1,6 @@
 import {
+  templateFor,
+  themeFor,
   EVENT_TYPES,
   HOST_ROLES,
   LOCALES,
@@ -157,7 +159,7 @@ export function draftToInvitation(draft: InvitationDraft): Invitation {
     eventType: draft.eventType,
     locale: draft.locale,
     direction: draft.locale === 'ar' ? 'rtl' : 'ltr',
-    templateId: 'classic-gold',
+    templateId: templateFor(draft.eventType),
     numeralSystem: draft.numeralSystem,
     hosts: draft.hosts.filter((host) => host.name.length > 0),
     honorees: draft.honorees.filter((name) => name.length > 0).map((name) => ({ name })),
@@ -174,7 +176,7 @@ export function draftToInvitation(draft: InvitationDraft): Invitation {
     message: draft.message,
     quote: verse === undefined ? undefined : { text: verse.text, source: verse.source },
     quoteId: draft.quoteId.length === 0 ? undefined : draft.quoteId,
-    theme: { primary: '#6B4E16', accent: '#C9A227', background: '#FBF6EC' },
+    theme: themeFor(draft.eventType),
     rsvp: {
       enabled: draft.rsvpEnabled,
       deadline: ISO_DATE.test(draft.rsvpDeadline) ? draft.rsvpDeadline : null,

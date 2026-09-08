@@ -134,16 +134,16 @@ sobre `Guest.openedAt` y es probablemente la función que más se vende sola.
 
 ## Bloque 3 — Producto
 
-### 3.1 El memorial no es una invitación
+### 3.1 El memorial no es una invitación — RESUELTO EN PARTE
 
-El tipo de evento `memorial` existe en el código y hoy se renderiza con el mismo
-marco dorado festivo que una boda. Eso es un error que ofende, no un detalle
-estético. Antes de que salga a cualquier cliente:
+Ya existe `sober-memorial`: fondo gris pálido, un solo filete, sin ornamento, con
+márgenes anchos. El tipo de evento elige plantilla y paleta en el código, así que
+un funeral no puede publicarse con marco de boda. El texto también es propio: no
+se «invita», se convoca a recordar.
 
-- Plantilla sobria propia, sin dorado ni floral.
-- Texto propio: no se "invita" a una ceremonia de duelo, y en árabe la fórmula es
-  otra.
-- Revisión por alguien libanés antes de publicarla.
+**Sigue pendiente:** que alguien libanés revise la fórmula en árabe antes de que
+esto salga a un cliente real. Y no hay ningún texto de duelo en la lista de
+versículos verificados, así que estas invitaciones van sin cita.
 
 ### 3.2 Líbano tiene 18 confesiones reconocidas
 
@@ -179,15 +179,18 @@ licenciadas no la querrán).
 
 ## Bloque 4 — El día del evento
 
-### 4.1 No se puede caer
+### 4.1 No se puede caer — RESUELTO EN PARTE
 
 Una boda ocurre una vez. Si la invitación no abre la tarde que se manda el
 WhatsApp, no hay disculpa que lo arregle.
 
 - La página del invitado tiene que servirse **estática desde CDN**, de forma que
   siga viva aunque el servidor de la aplicación esté caído.
-- El PNG se genera una vez y se archiva; Chromium no puede intervenir en cada
-  visita. Ya está previsto en el modelo (`Render`), falta implementarlo.
+- **Hecho:** el PNG se genera una vez por versión y se archiva. Medido en local,
+  la primera petición tarda 2,5 s y las siguientes 21 ms. Además responde con
+  `ETag`, así que quien ya la tiene recibe un 304 sin bytes.
+- **Falta:** servir la página del invitado estática desde CDN, para que siga viva
+  aunque el servidor de la aplicación esté caído.
 - 300 aperturas en dos horas es el pico normal en cuanto se manda el mensaje.
 
 ### 4.2 Quien abre esto tiene 70 años y un Android viejo

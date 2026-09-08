@@ -283,7 +283,13 @@ model Render {
   id        String     @id @default(cuid())
   versionId String
   kind      RenderKind
-  url       String
+  /// Dónde vive el archivo cuando está en almacenamiento de objetos. Vacío
+  /// mientras los bytes se guardan aquí mismo.
+  url       String?
+  /// El archivo. Guardarlo en la base de datos es lo que funciona en cualquier
+  /// despliegue sin configurar nada; cuando haya almacenamiento de objetos, el
+  /// puerto `RenderStore` se cambia por otro y esto queda a null.
+  data      Bytes?
   width     Int
   height    Int
   bytes     Int

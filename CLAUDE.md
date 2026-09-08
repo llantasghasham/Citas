@@ -113,6 +113,17 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - El proveedor `mock` está prohibido en producción y el código lo impide.
 
 ### Render
+- El PNG se genera UNA vez por versión y se guarda (`Render`), porque esa URL es
+  también la vista previa que pide WhatsApp: sin caché, cada invitado del grupo
+  arranca su propio Chromium.
+- La huella (`contentHashOf`) cubre todo lo que cambia la imagen. Al tocar una
+  plantilla hay que subir `RENDERER_VERSION` o se seguirá sirviendo la anterior.
+- El almacenamiento entra por el puerto `RenderStore`. Hoy guarda los bytes en
+  PostgreSQL; pasar a almacenamiento de objetos es cambiar ese archivo.
+- La ruta responde `inline` por defecto y `attachment` solo con `?download=1`:
+  la vista previa al compartir no es una descarga.
+- Un memorial NUNCA usa la plantilla de celebración. `templateFor()` y
+  `themeFor()` lo deciden por tipo de evento, no quien rellena el formulario.
 - Las invitaciones se renderizan en el SERVIDOR, nunca en el cliente
 - Salida: PNG 1080x1920 y página web responsive
 - La página web y el PNG comparten el MISMO componente (`InvitationCard`);
@@ -152,7 +163,7 @@ facturas, y la app móvil. Falta el cobro real: la especificación de Whish.
 - `GET /i/[slug]` — página web de la invitación
 - `GET /api/render/[slug]` — PNG 1080x1920 generado en servidor
 - `GET /render/[slug]` — lienzo interno de captura (no indexado)
-- Una plantilla: `classic-gold`
+- Dos plantillas: `classic-gold` (celebración) y `sober-memorial` (duelo)
 - Datos: `DATA_SOURCE=json` lee /data/invitations.json (por defecto),
   `DATA_SOURCE=database` lee PostgreSQL. Ambos detrás de `InvitationRepository`.
 - Esquema aplicado y `npm run db:seed` carga los 4 ejemplos y el superadmin.

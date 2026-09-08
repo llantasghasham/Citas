@@ -22,7 +22,7 @@ export const HOST_ROLES = [
 ] as const;
 export type HostRole = (typeof HOST_ROLES)[number];
 
-export const TEMPLATE_IDS = ['classic-gold'] as const;
+export const TEMPLATE_IDS = ['classic-gold', 'sober-memorial'] as const;
 export type TemplateId = (typeof TEMPLATE_IDS)[number];
 
 export const NUMERAL_SYSTEMS = ['arabic', 'latin'] as const;
