@@ -1,0 +1,37 @@
+{
+  "_policy": "Fixed, human-verified list. Religious texts are NEVER generated, completed, paraphrased or corrected by AI. A verse that is not in this file is not rendered. Adding an entry requires a human to check it against the cited edition and record their name in verifiedBy.",
+  "verses": [
+    {
+      "id": "quran-ar-rum-21",
+      "locale": "ar",
+      "tradition": "quran",
+      "text": "وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً",
+      "source": "سورة الروم — الآية ٢١",
+      "verifiedBy": null
+    },
+    {
+      "id": "bible-en-1cor-13-4",
+      "locale": "en",
+      "tradition": "bible",
+      "text": "Love is patient, love is kind.",
+      "source": "1 Corinthians 13:4 (NIV)",
+      "verifiedBy": null
+    },
+    {
+      "id": "bible-es-1cor-13-4",
+      "locale": "es",
+      "tradition": "bible",
+      "text": "El amor es paciente, es bondadoso.",
+      "source": "1 Corintios 13:4 (NVI)",
+      "verifiedBy": null
+    },
+    {
+      "id": "bible-pt-1cor-13-4",
+      "locale": "pt",
+      "tradition": "bible",
+      "text": "O amor é paciente, o amor é bondoso.",
+      "source": "1 Coríntios 13:4 (NVI)",
+      "verifiedBy": null
+    }
+  ]
+}

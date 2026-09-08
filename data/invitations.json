@@ -1,0 +1,106 @@
+{
+  "invitations": [
+    {
+      "id": "inv_001",
+      "slug": "ejemplo-ar",
+      "eventType": "wedding",
+      "locale": "ar",
+      "direction": "rtl",
+      "templateId": "classic-gold",
+      "numeralSystem": "arabic",
+      "hosts": [
+        { "name": "سمير وليلى الحدّاد", "role": "parents" },
+        { "name": "إلياس ونادية خوري", "role": "parents" }
+      ],
+      "honorees": [{ "name": "كريم الحدّاد" }, { "name": "ريما خوري" }],
+      "date": "2026-10-17",
+      "time": "19:30",
+      "hijriDate": "٦ جمادى الأولى ١٤٤٨ هـ",
+      "venue": {
+        "name": "قصر الأرز للاحتفالات",
+        "address": "جونية، جبل لبنان",
+        "mapUrl": "https://www.google.com/maps/search/?api=1&query=33.9808,35.6178",
+        "lat": 33.9808,
+        "lng": 35.6178
+      },
+      "message": "يسعدنا أن نشارككم فرحتنا في هذه المناسبة الغالية، وحضوركم يزيدها بهجة.",
+      "quoteId": "quran-ar-rum-21",
+      "theme": { "primary": "#6B4E16", "accent": "#C9A227", "background": "#FBF6EC" },
+      "rsvp": { "enabled": true, "deadline": "2026-10-03" }
+    },
+    {
+      "id": "inv_002",
+      "slug": "ejemplo-es",
+      "eventType": "graduation",
+      "locale": "es",
+      "direction": "ltr",
+      "templateId": "classic-gold",
+      "numeralSystem": "latin",
+      "hosts": [{ "name": "Familia Moreno Cardoso", "role": "family" }],
+      "honorees": [{ "name": "Valentina Moreno Cardoso" }],
+      "date": "2026-06-20",
+      "time": "18:00",
+      "venue": {
+        "name": "Salón Los Olivos",
+        "address": "Calle Mayor 42, Madrid",
+        "mapUrl": "https://www.google.com/maps/search/?api=1&query=40.4155,-3.7074",
+        "lat": 40.4155,
+        "lng": -3.7074
+      },
+      "message": "Después de cinco años de esfuerzo, queremos celebrar este día rodeados de las personas que nos acompañaron en el camino.",
+      "theme": { "primary": "#6B4E16", "accent": "#C9A227", "background": "#FBF6EC" },
+      "rsvp": { "enabled": true, "deadline": "2026-06-06" }
+    },
+    {
+      "id": "inv_003",
+      "slug": "ejemplo-en",
+      "eventType": "wedding",
+      "locale": "en",
+      "direction": "ltr",
+      "templateId": "classic-gold",
+      "numeralSystem": "latin",
+      "hosts": [
+        { "name": "Mr & Mrs Whitaker", "role": "parents" },
+        { "name": "Mr & Mrs Khoury", "role": "parents" }
+      ],
+      "honorees": [{ "name": "James Whitaker" }, { "name": "Nadia Khoury" }],
+      "date": "2027-01-09",
+      "time": "16:00",
+      "venue": {
+        "name": "The Old Orangery",
+        "address": "12 Kew Road, London",
+        "mapUrl": "https://www.google.com/maps/search/?api=1&query=51.4787,-0.2956",
+        "lat": 51.4787,
+        "lng": -0.2956
+      },
+      "message": "We would be delighted to have you with us as we begin this new chapter together.",
+      "quoteId": "bible-en-1cor-13-4",
+      "theme": { "primary": "#6B4E16", "accent": "#C9A227", "background": "#FBF6EC" },
+      "rsvp": { "enabled": true, "deadline": "2026-12-12" }
+    },
+    {
+      "id": "inv_004",
+      "slug": "ejemplo-pt",
+      "eventType": "baptism",
+      "locale": "pt",
+      "direction": "ltr",
+      "templateId": "classic-gold",
+      "numeralSystem": "latin",
+      "hosts": [{ "name": "Rui e Marta Fonseca", "role": "parents" }],
+      "honorees": [{ "name": "Tomás Fonseca" }],
+      "date": "2026-05-24",
+      "time": "11:00",
+      "venue": {
+        "name": "Igreja de São Roque",
+        "address": "Largo Trindade Coelho, Lisboa",
+        "mapUrl": "https://www.google.com/maps/search/?api=1&query=38.7148,-9.1435",
+        "lat": 38.7148,
+        "lng": -9.1435
+      },
+      "message": "Queremos partilhar convosco este dia tão especial para a nossa família.",
+      "quoteId": "bible-pt-1cor-13-4",
+      "theme": { "primary": "#6B4E16", "accent": "#C9A227", "background": "#FBF6EC" },
+      "rsvp": { "enabled": false, "deadline": null }
+    }
+  ]
+}

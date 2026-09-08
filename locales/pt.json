@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "pageTitle": "{event} · {honorees}",
+    "pageDescription": "Convite para {event} · {honorees}"
+  },
+  "eventTypes": {
+    "wedding": "casamento",
+    "graduation": "formatura",
+    "birthday": "aniversário",
+    "baptism": "batizado",
+    "memorial": "cerimónia de homenagem"
+  },
+  "invite": {
+    "wedding": { "kicker": "Convite de casamento", "intro": "Temos a honra de o convidar para o casamento de" },
+    "graduation": { "kicker": "Convite de formatura", "intro": "Temos o prazer de o convidar para celebrar a formatura de" },
+    "birthday": { "kicker": "Convite de aniversário", "intro": "Temos o prazer de o convidar para celebrar o aniversário de" },
+    "baptism": { "kicker": "Convite de batizado", "intro": "Temos o prazer de o convidar para o batizado de" },
+    "memorial": { "kicker": "Cerimónia de homenagem", "intro": "Convidamo-lo a recordar connosco" }
+  },
+  "roles": {
+    "parents": "Os pais",
+    "father": "O pai",
+    "mother": "A mãe",
+    "family": "Família",
+    "couple": "Os noivos",
+    "self": "Anfitrião",
+    "institution": "Entidade organizadora",
+    "host": "Anfitrião"
+  },
+  "labels": {
+    "date": "Data",
+    "time": "Hora",
+    "hijriDate": "Data hégira",
+    "venue": "Local",
+    "address": "Endereço",
+    "quoteSource": "Fonte"
+  },
+  "rsvp": {
+    "withDeadline": "Pedimos a confirmação de presença até {deadline}",
+    "withoutDeadline": "Pedimos a confirmação de presença"
+  },
+  "actions": { "viewMap": "Ver localização no mapa" },
+  "aria": { "invitationCard": "Cartão de convite", "ornament": "Ornamento decorativo" }
+}

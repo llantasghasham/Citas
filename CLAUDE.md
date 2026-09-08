@@ -1,0 +1,77 @@
+# Proyecto: Plataforma de Invitaciones Digitales
+
+## Qué es
+App multiidioma para crear y enviar invitaciones de eventos.
+Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués, inglés.
+
+## Stack
+- Next.js 15 (App Router) + TypeScript estricto
+- Tailwind CSS 3
+- PostgreSQL vía Prisma (cuando llegue)
+- Render de imágenes en servidor (Chromium headless vía puppeteer-core)
+- Expo/React Native para las apps móviles (fase posterior)
+
+## Reglas innegociables
+
+### RTL y i18n
+- PROHIBIDO: margin-left, margin-right, padding-left, padding-right,
+  text-align: left/right, left:, right:, float
+- OBLIGATORIO: margin-inline-start/end, padding-inline-start/end,
+  text-align: start/end, inset-inline-start/end
+- Los atajos simétricos (`px-`, `mx-`, `inset-`) sí están permitidos: se
+  comportan igual en ambas direcciones.
+- `npm run lint:rtl` verifica esta regla sobre todo `src/`. Debe pasar siempre.
+- Cero strings hardcodeados. Todo en /locales/{ar,es,pt,en}.json
+- El interletraje (`tracking-*`) y las mayúsculas son recursos latinos: pasan
+  por `latinOnly()` porque rompen las uniones cursivas del árabe.
+- Todo componente nuevo se prueba en árabe RTL antes de darse por terminado
+
+### Contenido religioso
+- Los versículos coránicos y bíblicos vienen SIEMPRE de /data/verses.json,
+  una lista fija y verificada.
+- NUNCA generar, completar, parafrasear ni corregir un versículo con IA.
+- Si un versículo no está en la lista, no se muestra (el loader lanza error).
+- Una entrada nueva solo se añade tras verificación humana contra la edición
+  citada, anotando el nombre en `verifiedBy`.
+
+### Tipografía
+- Fuentes en /public/fonts, cargadas localmente
+- Árabe: Amiri, Cairo, Reem Kufi
+- Latino: Playfair Display, Inter
+- Verificar licencia comercial antes de agregar cualquier fuente
+  (las tres actuales son SIL OFL 1.1 — ver public/fonts/README.md)
+
+### Render
+- Las invitaciones se renderizan en el SERVIDOR, nunca en el cliente
+- Salida: PNG 1080x1920 y página web responsive
+- La página web y el PNG comparten el MISMO componente (`InvitationCard`);
+  no se duplica nunca la maquetación
+- Las plantillas son HTML/SVG con capas, nunca imágenes generadas por IA
+
+### Código
+- TypeScript estricto, sin `any`
+- Componentes pequeños, un archivo por componente
+- Nombres en inglés en el código, contenido de usuario en los 4 idiomas
+- No instalar dependencias sin preguntarme primero
+
+## Comandos
+```
+npm run dev        # servidor de desarrollo
+npm run build      # build de producción
+npm run typecheck  # tsc --noEmit
+npm run lint:rtl   # guardia de CSS lógico (RTL)
+```
+
+## Estado actual
+Fase 1: motor de render. Sin auth, sin base de datos, sin pagos todavía.
+- `GET /i/[slug]` — página web de la invitación
+- `GET /api/render/[slug]` — PNG 1080x1920 generado en servidor
+- `GET /render/[slug]` — lienzo interno de captura (no indexado)
+- Datos en /data/invitations.json (4 ejemplos: ar, es, en, pt)
+- Una plantilla: `classic-gold`
+
+## Qué NO hacer todavía
+- No agregar autenticación
+- No integrar WhatsApp API
+- No agregar pagos
+- No crear la app Expo

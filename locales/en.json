@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "pageTitle": "{event} · {honorees}",
+    "pageDescription": "Invitation to the {event} of {honorees}"
+  },
+  "eventTypes": {
+    "wedding": "wedding",
+    "graduation": "graduation",
+    "birthday": "birthday",
+    "baptism": "baptism",
+    "memorial": "memorial"
+  },
+  "invite": {
+    "wedding": { "kicker": "Wedding Invitation", "intro": "We are honoured to invite you to the wedding of" },
+    "graduation": { "kicker": "Graduation Invitation", "intro": "We are delighted to invite you to celebrate the graduation of" },
+    "birthday": { "kicker": "Birthday Invitation", "intro": "We are delighted to invite you to celebrate the birthday of" },
+    "baptism": { "kicker": "Baptism Invitation", "intro": "We are delighted to invite you to the baptism of" },
+    "memorial": { "kicker": "In Remembrance", "intro": "We invite you to remember with us" }
+  },
+  "roles": {
+    "parents": "The parents",
+    "father": "The father",
+    "mother": "The mother",
+    "family": "Family",
+    "couple": "The couple",
+    "self": "Host",
+    "institution": "Organising body",
+    "host": "Host"
+  },
+  "labels": {
+    "date": "Date",
+    "time": "Time",
+    "hijriDate": "Hijri date",
+    "venue": "Venue",
+    "address": "Address",
+    "quoteSource": "Source"
+  },
+  "rsvp": {
+    "withDeadline": "Kindly confirm your attendance before {deadline}",
+    "withoutDeadline": "Kindly confirm your attendance"
+  },
+  "actions": { "viewMap": "View location on the map" },
+  "aria": { "invitationCard": "Invitation card", "ornament": "Decorative ornament" }
+}

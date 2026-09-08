@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "pageTitle": "{event} · {honorees}",
+    "pageDescription": "Invitación a {event} · {honorees}"
+  },
+  "eventTypes": {
+    "wedding": "boda",
+    "graduation": "graduación",
+    "birthday": "cumpleaños",
+    "baptism": "bautizo",
+    "memorial": "ceremonia de recuerdo"
+  },
+  "invite": {
+    "wedding": { "kicker": "Invitación de boda", "intro": "Tenemos el honor de invitarle a la boda de" },
+    "graduation": { "kicker": "Invitación de graduación", "intro": "Nos complace invitarle a celebrar la graduación de" },
+    "birthday": { "kicker": "Invitación de cumpleaños", "intro": "Nos complace invitarle a celebrar el cumpleaños de" },
+    "baptism": { "kicker": "Invitación de bautizo", "intro": "Nos complace invitarle al bautizo de" },
+    "memorial": { "kicker": "Ceremonia de recuerdo", "intro": "Le invitamos a recordar juntos a" }
+  },
+  "roles": {
+    "parents": "Los padres",
+    "father": "El padre",
+    "mother": "La madre",
+    "family": "Familia",
+    "couple": "Los novios",
+    "self": "Anfitrión",
+    "institution": "Entidad organizadora",
+    "host": "Anfitrión"
+  },
+  "labels": {
+    "date": "Fecha",
+    "time": "Hora",
+    "hijriDate": "Fecha hijri",
+    "venue": "Lugar",
+    "address": "Dirección",
+    "quoteSource": "Fuente"
+  },
+  "rsvp": {
+    "withDeadline": "Se ruega confirmar asistencia antes del {deadline}",
+    "withoutDeadline": "Se ruega confirmar asistencia"
+  },
+  "actions": { "viewMap": "Ver ubicación en el mapa" },
+  "aria": { "invitationCard": "Tarjeta de invitación", "ornament": "Ornamento decorativo" }
+}

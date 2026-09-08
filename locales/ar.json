@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "pageTitle": "{event} · {honorees}",
+    "pageDescription": "دعوة لحضور {event} · {honorees}"
+  },
+  "eventTypes": {
+    "wedding": "حفل زفاف",
+    "graduation": "حفل تخرّج",
+    "birthday": "عيد ميلاد",
+    "baptism": "معمودية",
+    "memorial": "ذكرى"
+  },
+  "invite": {
+    "wedding": { "kicker": "دعوة زفاف", "intro": "يسرّنا دعوتكم لحضور حفل زفاف" },
+    "graduation": { "kicker": "دعوة تخرّج", "intro": "يسرّنا دعوتكم للاحتفال بتخرّج" },
+    "birthday": { "kicker": "دعوة عيد ميلاد", "intro": "يسرّنا دعوتكم للاحتفال بعيد ميلاد" },
+    "baptism": { "kicker": "دعوة معمودية", "intro": "يسرّنا دعوتكم لحضور معمودية" },
+    "memorial": { "kicker": "ذكرى", "intro": "ندعوكم لإحياء ذكرى" }
+  },
+  "roles": {
+    "parents": "الوالدان",
+    "father": "الوالد",
+    "mother": "الوالدة",
+    "family": "عائلة",
+    "couple": "العروسان",
+    "self": "المحتفى به",
+    "institution": "الجهة الداعية",
+    "host": "المضيف"
+  },
+  "labels": {
+    "date": "التاريخ",
+    "time": "الساعة",
+    "hijriDate": "التاريخ الهجري",
+    "venue": "المكان",
+    "address": "العنوان",
+    "quoteSource": "المصدر"
+  },
+  "rsvp": {
+    "withDeadline": "يرجى تأكيد الحضور قبل {deadline}",
+    "withoutDeadline": "يرجى تأكيد الحضور"
+  },
+  "actions": { "viewMap": "عرض الموقع على الخريطة" },
+  "aria": { "invitationCard": "بطاقة الدعوة", "ornament": "زخرفة" }
+}
