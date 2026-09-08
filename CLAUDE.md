@@ -90,6 +90,18 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Los precios se guardan en centavos enteros.
 - Solo la respuesta del proveedor marca una factura como pagada.
 
+### Invitados y envío
+- El enlace personal es `/g/<token>`: corto y sin el slug, para que reenviarlo no
+  revele de quién es el evento. Abrirlo marca `openedAt` y recuerda al invitado.
+- Se envía con enlaces `wa.me`, NO con la API de WhatsApp: abre el WhatsApp del
+  operador con el mensaje escrito. Sin plantillas aprobadas, sin coste por
+  mensaje y desde el número que el cliente ya conoce.
+- El mensaje va en el idioma DEL INVITADO, no en el de la oficina.
+- Reimportar la misma lista no duplica: se reconoce por teléfono, y por nombre
+  cuando no hay teléfono.
+- Los teléfonos se guardan normalizados a E.164. Una línea sin nombre se
+  descarta y se cuenta; no se importa un invitado vacío.
+
 ### Confirmaciones
 - El formulario de confirmación es PÚBLICO a propósito: la invitación se reenvía
   por WhatsApp y pedir cuenta al invitado cuesta más respuestas que el spam que
@@ -174,6 +186,9 @@ facturas, y la app móvil. Falta el cobro real: la especificación de Whish.
 - `GET /crear` — creación en cinco pasos con vista previa; publicar exige sesión.
 - `/panel/oficinas` (superadmin), `/panel/equipo` y `/panel/facturacion`.
 - `POST /api/payments/[provider]/callback` — aviso del proveedor, nunca prueba.
+- `/panel/eventos/[eventId]` — lista de invitados: importar, enviar por WhatsApp
+  y ver quién abrió y quién respondió.
+- `GET /g/[token]` — enlace personal del invitado.
 
 ## Orden de construcción
 1. Base de datos, oficinas (multiempresa) y roles — **hecho**: esquema,

@@ -179,6 +179,10 @@ export interface Dictionary {
     startOver: string;
     errorInvalid: string;
   };
+  /** Text that leaves the platform, in the guest's own language. */
+  share: {
+    whatsappMessage: string;
+  };
   /** Staff-facing screens. Office staff in Beirut read these in Arabic too. */
   admin: {
     signIn: {
@@ -240,6 +244,28 @@ export interface Dictionary {
       planAnnual: string;
       planOffice: string;
       limitReached: string;
+    };
+    guests: {
+      heading: string;
+      import: string;
+      importHint: string;
+      pasteLabel: string;
+      fileLabel: string;
+      countryLabel: string;
+      add: string;
+      name: string;
+      phone: string;
+      link: string;
+      opened: string;
+      reply: string;
+      notOpened: string;
+      pending: string;
+      empty: string;
+      sendWhatsapp: string;
+      exportCsv: string;
+      imported: string;
+      skipped: string;
+      openedCount: string;
     };
     events: {
       heading: string;

@@ -144,21 +144,38 @@ export interface ExistingReply {
   message: string | null;
 }
 
-/** The reply already on file for this guest, so the form can show it back. */
-export async function findReplyByToken(
+export interface GuestContext {
+  /** The name the office has for them: the form should not ask again. */
+  name: string;
+  /** Their answer so far, when they have already given one. */
+  reply: ExistingReply | null;
+}
+
+/**
+ * Who this browser is on this invitation. Two different things at once: a guest
+ * who arrived through their personal link is known by name before they answer,
+ * and a guest who already replied gets their answer shown back to change.
+ */
+export async function findGuestByToken(
   slug: string,
   token: string,
-): Promise<ExistingReply | null> {
+): Promise<GuestContext | null> {
   const guest = await getPrisma().guest.findFirst({
     where: { token, event: { versions: { some: { slug } } } },
     include: { rsvp: true },
   });
-  if (guest === null || guest.rsvp === null) return null;
+  if (guest === null) return null;
 
   return {
     name: guest.name,
-    status: guest.rsvp.status,
-    party: guest.rsvp.party,
-    message: guest.rsvp.message,
+    reply:
+      guest.rsvp === null
+        ? null
+        : {
+            name: guest.name,
+            status: guest.rsvp.status,
+            party: guest.rsvp.party,
+            message: guest.rsvp.message,
+          },
   };
 }

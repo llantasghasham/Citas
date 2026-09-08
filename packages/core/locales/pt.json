@@ -142,6 +142,28 @@
       "planAnnual": "Anual",
       "planOffice": "Escritório",
       "limitReached": "Atingiu o limite de eventos do seu plano. Amplie-o para continuar."
+    },
+    "guests": {
+      "heading": "Convidados",
+      "import": "Importar lista",
+      "importHint": "Uma linha por convidado: nome, número de WhatsApp e, se quiser, o idioma.",
+      "pasteLabel": "Cole a lista",
+      "fileLabel": "ou carregue um CSV",
+      "countryLabel": "Indicativo do país por omissão",
+      "add": "Adicionar convidados",
+      "name": "Nome",
+      "phone": "Número",
+      "link": "Ligação pessoal",
+      "opened": "Abriu",
+      "reply": "Resposta",
+      "notOpened": "por abrir",
+      "pending": "sem resposta",
+      "empty": "Ainda não há convidados.",
+      "sendWhatsapp": "Enviar por WhatsApp",
+      "exportCsv": "Descarregar a lista",
+      "imported": "Foram adicionados {count} convidados.",
+      "skipped": "Foram descartadas {count} linhas inválidas.",
+      "openedCount": "Abriram: {opened} de {total}"
     }
   },
   "rsvpForm": {
@@ -199,5 +221,8 @@
     "downloadImage": "Descarregar a imagem",
     "startOver": "Criar outro convite",
     "errorInvalid": "Reveja os campos obrigatórios."
+  },
+  "share": {
+    "whatsappMessage": "Olá {name}, teríamos muito gosto na sua presença. Aqui está o convite: {link}"
   }
 }

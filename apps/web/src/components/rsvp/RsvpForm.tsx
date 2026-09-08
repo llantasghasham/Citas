@@ -1,14 +1,14 @@
 import { submitRsvpAction } from '@/app/i/[slug]/actions';
 import type { RsvpStatus } from '@/generated/prisma/enums';
-import { RSVP_STATUSES, type ExistingReply } from '@/lib/rsvp/service';
+import { RSVP_STATUSES, type GuestContext } from '@/lib/rsvp/service';
 import { bodyFont, displayFont } from '@/lib/typography';
 import type { Dictionary, Invitation } from '@/lib/types';
 
 interface RsvpFormProps {
   invitation: Invitation;
   dictionary: Dictionary;
-  /** The reply already on file, when this browser has answered before. */
-  reply: ExistingReply | null;
+  /** Who this browser is, when they came through a personal link or answered before. */
+  guest: GuestContext | null;
   outcome?: string;
 }
 
@@ -19,7 +19,7 @@ const FIELD =
  * Lives below the card, never inside it: the invitation itself has to stay a
  * clean composition, because it is also the exported image.
  */
-export function RsvpForm({ invitation, dictionary, reply, outcome }: RsvpFormProps) {
+export function RsvpForm({ invitation, dictionary, guest, outcome }: RsvpFormProps) {
   const { locale, rsvp } = invitation;
   const copy = dictionary.rsvpForm;
 
@@ -31,12 +31,12 @@ export function RsvpForm({ invitation, dictionary, reply, outcome }: RsvpFormPro
     tentative: copy.thanksTentative,
   };
 
-  if (outcome === 'ok' && reply !== null) {
+  if (outcome === 'ok' && guest?.reply != null) {
     return (
       <section
         className={`${bodyFont(locale)} flex flex-col items-center gap-4 text-center text-[color:var(--inv-primary)]`}
       >
-        <p className="text-lg">{thanks[reply.status]}</p>
+        <p className="text-lg">{thanks[guest.reply.status]}</p>
         <a href="?" className="text-sm underline opacity-70 hover:opacity-100">
           {copy.change}
         </a>
@@ -79,7 +79,7 @@ export function RsvpForm({ invitation, dictionary, reply, outcome }: RsvpFormPro
                 name="status"
                 value={status}
                 required
-                defaultChecked={reply?.status === status}
+                defaultChecked={guest?.reply?.status === status}
                 className="accent-[color:var(--inv-primary)]"
               />
               {copy[status]}
@@ -92,7 +92,7 @@ export function RsvpForm({ invitation, dictionary, reply, outcome }: RsvpFormPro
           <input
             className={FIELD}
             name="name"
-            defaultValue={reply?.name ?? ''}
+            defaultValue={guest?.name ?? ''}
             maxLength={120}
             required
           />
@@ -107,7 +107,7 @@ export function RsvpForm({ invitation, dictionary, reply, outcome }: RsvpFormPro
             inputMode="numeric"
             min={1}
             max={20}
-            defaultValue={reply?.party ?? 1}
+            defaultValue={guest?.reply?.party ?? 1}
             required
           />
         </label>
@@ -118,7 +118,7 @@ export function RsvpForm({ invitation, dictionary, reply, outcome }: RsvpFormPro
             className={`${FIELD} min-h-24`}
             name="message"
             maxLength={500}
-            defaultValue={reply?.message ?? ''}
+            defaultValue={guest?.reply?.message ?? ''}
           />
         </label>
 

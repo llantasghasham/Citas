@@ -142,6 +142,28 @@
       "planAnnual": "Annual",
       "planOffice": "Office",
       "limitReached": "You have reached your plan’s event limit. Upgrade to continue."
+    },
+    "guests": {
+      "heading": "Guests",
+      "import": "Import a list",
+      "importHint": "One line per guest: name, WhatsApp number, and the language if you like.",
+      "pasteLabel": "Paste the list",
+      "fileLabel": "or upload a CSV",
+      "countryLabel": "Default country code",
+      "add": "Add guests",
+      "name": "Name",
+      "phone": "Number",
+      "link": "Personal link",
+      "opened": "Opened",
+      "reply": "Reply",
+      "notOpened": "not opened",
+      "pending": "no reply",
+      "empty": "No guests yet.",
+      "sendWhatsapp": "Send on WhatsApp",
+      "exportCsv": "Download the list",
+      "imported": "{count} guests added.",
+      "skipped": "{count} invalid lines were skipped.",
+      "openedCount": "Opened: {opened} of {total}"
     }
   },
   "rsvpForm": {
@@ -199,5 +221,8 @@
     "downloadImage": "Download the image",
     "startOver": "Create another invitation",
     "errorInvalid": "Please check the required fields."
+  },
+  "share": {
+    "whatsappMessage": "Hello {name}, we would love to have you with us. Here is the invitation: {link}"
   }
 }

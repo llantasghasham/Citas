@@ -142,6 +142,28 @@
       "planAnnual": "Anual",
       "planOffice": "Oficina",
       "limitReached": "Ha alcanzado el límite de eventos de su plan. Amplíelo para continuar."
+    },
+    "guests": {
+      "heading": "Invitados",
+      "import": "Importar lista",
+      "importHint": "Una línea por invitado: nombre, número de WhatsApp y, si quiere, el idioma.",
+      "pasteLabel": "Pegue la lista",
+      "fileLabel": "o suba un CSV",
+      "countryLabel": "Prefijo de país por defecto",
+      "add": "Añadir invitados",
+      "name": "Nombre",
+      "phone": "Número",
+      "link": "Enlace personal",
+      "opened": "Abrió",
+      "reply": "Respuesta",
+      "notOpened": "sin abrir",
+      "pending": "sin responder",
+      "empty": "Todavía no hay invitados.",
+      "sendWhatsapp": "Enviar por WhatsApp",
+      "exportCsv": "Descargar la lista",
+      "imported": "Se añadieron {count} invitados.",
+      "skipped": "Se descartaron {count} líneas no válidas.",
+      "openedCount": "Abrieron: {opened} de {total}"
     }
   },
   "rsvpForm": {
@@ -199,5 +221,8 @@
     "downloadImage": "Descargar la imagen",
     "startOver": "Crear otra invitación",
     "errorInvalid": "Revise los campos obligatorios."
+  },
+  "share": {
+    "whatsappMessage": "Hola {name}, nos haría ilusión contar con usted. Aquí está la invitación: {link}"
   }
 }

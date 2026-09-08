@@ -286,6 +286,43 @@ EXPO_PUBLIC_API_URL=http://192.168.1.10:3000 npm run mobile
 > y la API que consume está verificada. **No se ha ejecutado en un dispositivo ni
 > en un emulador**, porque no había ninguno disponible durante el desarrollo.
 
+## 4 octies. Una boda de 234 invitados, paso a paso
+
+El caso real: llega un cliente con su lista de nombres y teléfonos.
+
+1. **Crear la invitación** en `/crear`. Cinco pasos y publicar. Sale un enlace.
+2. **Abrir el evento** en el panel: `Eventos` → el número de invitados.
+3. **Importar la lista.** Se pega en el recuadro o se sube el CSV que mandó el
+   cliente. Una línea por invitado: `nombre, teléfono, idioma`. El idioma es
+   opcional.
+   - Los teléfonos se normalizan solos: `03 456 789`, `+961 3 456789` y
+     `00961-3-456789` acaban todos igual. Por eso hay que elegir bien el
+     **prefijo de país por defecto**.
+   - Volver a pegar la misma lista **no duplica** a nadie: se reconoce por
+     teléfono, y por nombre cuando no hay teléfono.
+   - Las líneas sin nombre se descartan y se cuentan, no se cuelan como
+     invitados vacíos.
+4. **Enviar.** Cada fila tiene un botón que abre **tu propio WhatsApp** con el
+   mensaje ya escrito y el enlace personal de esa persona. Ni API, ni plantillas
+   aprobadas, ni coste por mensaje, ni número verificado: sales desde el número
+   que tus clientes ya conocen.
+   - El mensaje va **en el idioma del invitado**, no en el de la oficina.
+   - Si prefieres enviar con otra herramienta, `Descargar la lista` da un CSV
+     con la columna `personal_link`.
+5. **Seguir las respuestas.** La lista muestra quién abrió y quién contestó, y la
+   cabecera lleva la cuenta: «Abrieron: 84 de 234».
+
+### Qué gana el invitado con su enlace personal
+
+- El enlace es corto y **no dice de quién es la boda**: reenviarlo no filtra nada.
+- Al abrirlo, el formulario ya trae su nombre escrito. Solo elige y envía.
+- Si su idioma tiene versión propia de la invitación, la ve en su idioma.
+
+> **Límite de hoy:** un evento tiene una sola versión de la invitación. Si la
+> lista mezcla idiomas, quien no tenga versión en el suyo verá la que haya. El
+> modelo de datos ya soporta varias versiones por evento; falta ofrecerlo en el
+> formulario de creación.
+
 ## 5. Cambiar textos e idiomas
 
 Ningún texto visible está en el código. Todo vive en `locales/ar.json`,

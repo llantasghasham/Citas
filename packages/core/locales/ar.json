@@ -142,6 +142,28 @@
       "planAnnual": "سنوية",
       "planOffice": "مكتب",
       "limitReached": "بلغت حد خطتك من الأحداث. رقِّ الخطة للمتابعة."
+    },
+    "guests": {
+      "heading": "المدعوون",
+      "import": "استيراد قائمة",
+      "importHint": "سطر لكل مدعو: الاسم، ثم رقم الواتساب، ثم اللغة (اختياري).",
+      "pasteLabel": "الصق القائمة",
+      "fileLabel": "أو ارفع ملف CSV",
+      "countryLabel": "مفتاح الدولة الافتراضي",
+      "add": "إضافة المدعوين",
+      "name": "الاسم",
+      "phone": "الرقم",
+      "link": "الرابط الشخصي",
+      "opened": "فتحها",
+      "reply": "الرد",
+      "notOpened": "لم يفتحها",
+      "pending": "بانتظار الرد",
+      "empty": "لا يوجد مدعوون بعد.",
+      "sendWhatsapp": "إرسال عبر واتساب",
+      "exportCsv": "تنزيل القائمة",
+      "imported": "أُضيف {count} مدعواً.",
+      "skipped": "تُجوهل {count} سطراً غير صالح.",
+      "openedCount": "فتحوا: {opened} من {total}"
     }
   },
   "rsvpForm": {
@@ -199,5 +221,8 @@
     "downloadImage": "تنزيل الصورة",
     "startOver": "إنشاء دعوة أخرى",
     "errorInvalid": "راجع الحقول المطلوبة."
+  },
+  "share": {
+    "whatsappMessage": "مرحباً {name}، يشرّفنا دعوتكم. تفاصيل الدعوة هنا: {link}"
   }
 }

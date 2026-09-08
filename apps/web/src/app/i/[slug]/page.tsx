@@ -8,7 +8,7 @@ import { RsvpForm } from '@/components/rsvp/RsvpForm';
 import { getDictionary, interpolate } from '@/lib/dictionary';
 import { getInvitationRepository } from '@/lib/repositories';
 import { guestCookieName } from '@/lib/rsvp/cookie';
-import { findReplyByToken } from '@/lib/rsvp/service';
+import { findGuestByToken } from '@/lib/rsvp/service';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -61,10 +61,10 @@ export default async function InvitationPage({ params, searchParams }: PageProps
   // showing none.
   const canCollectReplies = process.env['DATA_SOURCE'] === 'database';
   const guestToken = (await cookies()).get(guestCookieName(slug))?.value;
-  const reply =
+  const guest =
     !canCollectReplies || guestToken === undefined
       ? null
-      : await findReplyByToken(slug, guestToken);
+      : await findGuestByToken(slug, guestToken);
 
   return (
     <main
@@ -90,7 +90,7 @@ export default async function InvitationPage({ params, searchParams }: PageProps
             <RsvpForm
               invitation={invitation}
               dictionary={dictionary}
-              reply={reply}
+              guest={guest}
               outcome={outcome}
             />
           </div>

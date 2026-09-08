@@ -73,7 +73,7 @@ export default async function PanelPage() {
                     <td className="py-3 text-end">
                       <a
                         className="underline text-[#8a6c22]"
-                        href={`/api/events/${event.id}/guests`}
+                        href={`/panel/eventos/${event.id}`}
                         title={eventCopy.download}
                       >
                         {event.guests}

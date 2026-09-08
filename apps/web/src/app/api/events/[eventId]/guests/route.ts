@@ -2,7 +2,8 @@ import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { recordAudit } from '@/lib/audit';
 import { clientIp } from '@/lib/admin/context';
 import { buildCsv } from '@/lib/export/csv';
-import { listGuests } from '@/lib/repositories/events';
+import { requestHost } from '@/lib/admin/context';
+import { listGuestsWithLinks } from '@/lib/repositories/guests';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,10 +26,12 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
   }
 
   const { eventId } = await context.params;
-  const guests = await listGuests(scopeOf(session), eventId);
+  const event = await listGuestsWithLinks(scopeOf(session), eventId);
   // Not found and not yours are the same answer: otherwise this endpoint tells
   // one office which event ids exist in another.
-  if (guests === null) return Response.json({ error: 'event_not_found' }, { status: 404 });
+  if (event === null) return Response.json({ error: 'event_not_found' }, { status: 404 });
+  const { guests } = event;
+  const origin = `https://${requestHost(request.headers)}`;
 
   await recordAudit({
     tenantId: session.tenantId,
@@ -40,16 +43,18 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
     ip: clientIp(request.headers),
   });
 
+  // The personal link travels in the export on purpose: it is what lets an
+  // office send the invitations with whatever tool it already uses.
   const csv = buildCsv(
-    ['name', 'locale', 'status', 'party', 'message', 'responded_at', 'self_added'],
+    ['name', 'phone', 'locale', 'personal_link', 'opened_at', 'status', 'party'],
     guests.map((guest) => [
       guest.name,
+      guest.phone,
       guest.locale,
+      `${origin}/g/${guest.token}`,
+      guest.openedAt === null ? null : guest.openedAt.toISOString(),
       guest.status,
       guest.party,
-      guest.message,
-      guest.respondedAt === null ? null : guest.respondedAt.toISOString(),
-      guest.selfAdded ? 'yes' : 'no',
     ]),
   );
 
