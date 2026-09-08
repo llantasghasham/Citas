@@ -54,6 +54,14 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Una vez dentro, la oficina la manda la SESIÓN, no el host.
 - El envío de correo entra por el puerto `Mailer`. El emisor de consola está
   prohibido en producción y el código lo impide.
+- Las contraseñas de servicios (hoy SMTP) van CIFRADAS en el `.env`
+  (`SMTP_PASSWORD_ENC`), con la llave fuera del proyecto en
+  `CITAS_SECRET_KEY_FILE`. En claro está prohibido en producción.
+- Cifrar no sustituye a los permisos: el `.env` va en 600, fuera del repositorio,
+  y una contraseña filtrada se rota. El cifrado solo evita que el `.env` la
+  revele por sí solo.
+- Un secreto se pasa por la entrada estándar, nunca como argumento: los
+  argumentos quedan en la lista de procesos y en el historial.
 
 ### Creación
 - La vista previa es el MISMO `InvitationCard`, renderizado en el servidor. Nunca

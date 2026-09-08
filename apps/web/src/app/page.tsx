@@ -3,6 +3,10 @@ import Link from 'next/link';
 import { InvitationCard } from '@/components/invitation/InvitationCard';
 import { getInvitationRepository } from '@/lib/repositories';
 
+// Reads whatever the data source holds right now, so `npm run build` does not
+// need a reachable database to compile.
+export const dynamic = 'force-dynamic';
+
 /**
  * Internal index of the seeded invitations. It deliberately carries no prose:
  * every label here is data (slug, locale, route), so the page needs no locale

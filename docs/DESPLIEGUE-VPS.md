@@ -104,6 +104,60 @@ sudo -u www bash -lc '
 La semilla crea la oficina raíz, las invitaciones de ejemplo y el
 superadministrador de `SUPERADMIN_EMAIL`.
 
+## 3 bis. El correo saliente
+
+Sin esto **no se puede entrar al panel**: el acceso es por código de un solo uso
+y el emisor de consola se niega a arrancar en producción.
+
+La contraseña del buzón no se escribe en claro en ningún sitio. Primero, la
+llave, **fuera del proyecto**:
+
+```bash
+mkdir -p /etc/citas
+openssl rand -base64 32 > /etc/citas/secret.key
+chown www:www /etc/citas/secret.key
+chmod 400 /etc/citas/secret.key
+```
+
+Después se cifra la contraseña. **Se escribe por la entrada estándar**, no como
+argumento: un argumento queda en la lista de procesos y en el historial del
+intérprete.
+
+```bash
+cd /www/wwwroot/citas
+sudo -u www bash -lc '
+  CITAS_SECRET_KEY_FILE=/etc/citas/secret.key \
+  printf %s "LA-CONTRASEÑA-DEL-BUZON" | npm run secret:encrypt --workspace @citas/web --silent
+'
+```
+
+Devuelve algo como `v1.xxxx.yyyy.zzzz`. Eso es lo que va al `.env`, junto con el
+resto de los datos que te dio tu proveedor de correo:
+
+```ini
+MAILER="smtp"
+SMTP_HOST="…"
+SMTP_PORT="587"
+SMTP_USER="…"
+MAIL_FROM="Nombre <buzon@dominio>"
+CITAS_SECRET_KEY_FILE="/etc/citas/secret.key"
+SMTP_PASSWORD_ENC="v1....."
+```
+
+Comprobación: reinicia el servicio, pide un código en `/entrar` con el correo
+del superadministrador y mira que llegue.
+
+> **Qué protege esto y qué no.** Enviar correo necesita la contraseña en claro en
+> ese instante, así que la llave vive en el mismo servidor: quien pueda leer los
+> dos archivos, puede leer la contraseña. Lo que sí evita es que el `.env` la
+> revele **por sí solo** —copiado a un respaldo, pegado por error, leído por otro
+> proceso—, porque la llave está en otro sitio y con otros permisos. Lo que de
+> verdad la protege sigue siendo: permisos `600`, fuera del repositorio, y
+> rotarla cuando se filtre.
+>
+> El puerto 587 es STARTTLS: la conexión abre en claro y se eleva a TLS. Solo el
+> 465 es TLS desde el primer byte. El código exige el cifrado en ambos casos.
+
 ## 4. El servicio
 
 ```bash
@@ -167,6 +221,22 @@ Y el origen **solo debe ser accesible por nginx**: el servicio escucha en
    (Let's Encrypt lo emite, pero validando por DNS, no por HTTP).
 3. **Las credenciales de Whish** para cobrar de verdad. Con `mock` el código se
    niega a arrancar en producción, así que ese modo es solo para probar el resto.
+
+## Respaldos
+
+aaPanel respalda MariaDB, pero **PostgreSQL no aparece en su panel**. Es la única
+ventaja real que tenía MariaDB aquí, y se cubre con un cron:
+
+```bash
+cp /www/wwwroot/citas/deploy/backup-citas.sh /usr/local/bin/
+chmod 700 /usr/local/bin/backup-citas.sh
+crontab -e
+# 30 3 * * *  /usr/local/bin/backup-citas.sh
+```
+
+Guarda 14 días en `/www/backup/citas`, avisa si el volcado sale vacío, y nunca
+pisa los buenos. **Prueba a restaurar uno**: un respaldo que nadie ha restaurado
+nunca no es un respaldo.
 
 ## Actualizar
 

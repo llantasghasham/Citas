@@ -13,13 +13,15 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "secret:encrypt": "tsx scripts/encrypt-secret.mjs"
   },
   "dependencies": {
     "@citas/core": "*",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "next": "^16.3.4",
+    "nodemailer": "^10.0.1",
     "puppeteer-core": "25.10.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
@@ -27,6 +29,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "22.20.1",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "dotenv": "^17.4.2",
