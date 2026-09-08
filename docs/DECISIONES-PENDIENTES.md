@@ -12,27 +12,52 @@ de diseñar nada encima: son cosas que cambian de un mes a otro.
 
 ### 1.1 Cómo se cobra en Líbano
 
-El problema más serio y el menos técnico. Stripe no da de alta negocios en
-Líbano, y sin pasarela no hay autoservicio ni licencias: solo concierge cobrado
-a mano. **⚠ verificar** el estado actual de Stripe, Paddle y Lemon Squeezy para
-Líbano.
+**Confirmado (septiembre 2026): Stripe no opera en Líbano.** Líbano no está entre
+los países soportados. El camino habitual —constituir una LLC en EE. UU. o una
+Ltd en Reino Unido para acceder a Stripe— es real, pero implica una entidad
+extranjera con sus obligaciones fiscales y contables. No es un atajo, es otra
+empresa.
 
-Caminos posibles, todos con coste:
+Las opciones locales, que sí existen:
 
-- **Cobrar desde fuera.** Una entidad en otro país (Chipre, Emiratos, España) que
-  factura y cobra con pasarela normal. Es lo que hace casi todo el software
-  libanés que vende fuera. Coste: constituir y mantener esa entidad.
-- **Pasarela local.** Whish Money, OMT y similares mueven dinero dentro del país.
-  Menos integrables, pero es donde está el cliente libanés.
-- **Cobro manual.** Transferencia o efectivo contra entrega del enlace. Funciona
-  para concierge y para las primeras oficinas; no escala.
+| Vía | Qué es | Sirve para |
+| --- | --- | --- |
+| **Areeba** | Institución financiera libanesa con licencia. POS, pasarela de comercio electrónico, **pay-by-link**, cobros recurrentes y 3-D Secure | Cobrar con tarjeta, dentro y fuera de Líbano |
+| **Whish Money** | Billetera móvil local, con integración por API. Enorme alcance, incluida la población sin banco | El cliente libanés medio |
+| **OMT** | Red de transferencia en efectivo | Quien no tiene tarjeta ni billetera |
+| **Tap Payments** | Pasarela del Golfo, alternativa a Areeba | Comparar contra Areeba antes de firmar |
 
-Y detrás: **en qué moneda se fija el precio**. Dólar fresco y lira no son la
-misma cosa. Fijar en dólares y cobrar en lo que llegue es lo habitual, pero hay
-que decirlo en la factura.
+> Las tarifas y los requisitos de alta hay que pedirlos directamente a cada uno:
+> lo publicado en blogs no sirve para firmar un contrato.
 
-> Esto condiciona el orden de construcción entero. Si cobrar tarda seis meses,
-> el autoservicio no puede ir antes que el concierge.
+**Lo más inteligente: reutilizar la relación que ya existe por el POS.**
+
+Si ya hay un TPV funcionando en otro negocio, ya hay un contrato de comercio, una
+entidad registrada y un historial. En ese caso **añadir cobros por internet suele
+ser una ampliación del contrato existente, no un alta nueva**: Areeba, por
+ejemplo, vende POS y pasarela online bajo el mismo paraguas. Preguntar al
+proveedor del POS actual «¿me activáis pay-by-link y comercio electrónico sobre
+esta misma cuenta?» puede ahorrar meses y el coste de constituir nada.
+
+Lo que hay que averiguar, en este orden:
+
+1. **Quién provee el POS actual** y si ofrece pasarela online o pay-by-link.
+2. **Qué entidad legal está detrás** de ese contrato (empresa individual, SARL) y
+   si sirve para facturar invitaciones o hace falta otra.
+3. **Comisión por transacción** de cada vía, sobre un ticket realista.
+
+**Plan escalonado sugerido** (sin escribir una línea de código para empezar):
+
+1. **Concierge.** Pay-by-link del proveedor del POS + Whish + efectivo. Se manda
+   el enlace de pago por WhatsApp, igual que la invitación. Cero integración.
+2. **Autoservicio en Líbano.** Whish integrado por API para el cliente local, más
+   tarjeta por la pasarela del POS. Aquí sí hay trabajo de código.
+3. **Fuera de Líbano.** Solo si aparecen oficinas licenciadas en Europa o el
+   Golfo: ahí sí compensa la entidad extranjera con Stripe o Paddle.
+
+**Moneda.** El precio se fija en dólares y se indica claramente en la factura en
+qué se cobra. Dólar fresco y lira no son la misma cosa, y una invitación vendida
+hoy se entrega dentro de meses.
 
 ### 1.2 El precio
 
