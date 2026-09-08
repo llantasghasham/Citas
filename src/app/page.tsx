@@ -1,15 +1,15 @@
 import Link from 'next/link';
 
 import { InvitationCard } from '@/components/invitation/InvitationCard';
-import { getAllInvitations } from '@/lib/invitations';
+import { getInvitationRepository } from '@/lib/repositories';
 
 /**
  * Internal index of the seeded invitations. It deliberately carries no prose:
  * every label here is data (slug, locale, route), so the page needs no locale
  * dictionary of its own.
  */
-export default function HomePage() {
-  const invitations = getAllInvitations();
+export default async function HomePage() {
+  const invitations = await getInvitationRepository().listAll();
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-10 p-8">

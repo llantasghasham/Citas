@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { InvitationCard } from '@/components/invitation/InvitationCard';
-import { getAllInvitations, getInvitationBySlug } from '@/lib/invitations';
+import { getInvitationRepository } from '@/lib/repositories';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -11,8 +11,10 @@ interface PageProps {
 /** Internal capture surface — never indexed, never linked to guests. */
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-export function generateStaticParams(): { slug: string }[] {
-  return getAllInvitations().map((invitation) => ({ slug: invitation.slug }));
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  if (process.env['DATA_SOURCE'] === 'database') return [];
+  const invitations = await getInvitationRepository().listAll();
+  return invitations.map((invitation) => ({ slug: invitation.slug }));
 }
 
 /**
@@ -21,7 +23,7 @@ export function generateStaticParams(): { slug: string }[] {
  */
 export default async function RenderPage({ params }: PageProps) {
   const { slug } = await params;
-  const invitation = getInvitationBySlug(slug);
+  const invitation = await getInvitationRepository().findBySlug(slug);
   if (invitation === undefined) notFound();
 
   return (

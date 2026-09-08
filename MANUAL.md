@@ -87,6 +87,38 @@ una fecha inválida detienen el arranque con un mensaje que dice exactamente qu�
 campo y en qué posición del archivo. Es intencionado: es mejor que romper en
 producción con una invitación a medias.
 
+## 4 bis. Usar PostgreSQL en vez del archivo JSON
+
+El motor lee de `data/invitations.json` por defecto. Para leer de la base de
+datos se cambia una variable, sin tocar código: las páginas hablan con un
+repositorio, no con el archivo.
+
+```bash
+# 1. Configurar la conexión
+cp .env.example .env         # y rellenar DATABASE_URL
+
+# 2. Crear las tablas
+npm run db:migrate           # en desarrollo
+npm run db:deploy            # en producción
+
+# 3. Cargar los ejemplos (idempotente: se puede repetir)
+npm run db:seed
+
+# 4. Activar la base de datos
+DATA_SOURCE=database npm run dev
+```
+
+Notas:
+
+- **El seed pasa por la misma validación** que el archivo JSON, así que lo que
+  entra en la base de datos ya se comprobó campo por campo.
+- Con `DATA_SOURCE=json` las invitaciones se pre-generan en el build. Con
+  `database` se generan a demanda, para que publicar una invitación no exija
+  recompilar.
+- `npm run db:studio` abre un navegador de la base de datos.
+- El cliente de Prisma se genera en `src/generated/` y **no se versiona**: lo
+  regenera `npm install` automáticamente.
+
 ## 5. Cambiar textos e idiomas
 
 Ningún texto visible está en el código. Todo vive en `locales/ar.json`,

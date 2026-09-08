@@ -10,12 +10,14 @@
 //     un panel.
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
+// Prisma 7: la URL de conexión vive en prisma7.config.ts (migraciones) y en el
+// adaptador que recibe PrismaClient (src/lib/db.ts), nunca en el esquema.
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ---------------------------------------------------------------- enumeraciones

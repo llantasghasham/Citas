@@ -3,19 +3,26 @@ import { notFound } from 'next/navigation';
 
 import { InvitationCard } from '@/components/invitation/InvitationCard';
 import { getDictionary, interpolate } from '@/lib/dictionary';
-import { getAllInvitations, getInvitationBySlug } from '@/lib/invitations';
+import { getInvitationRepository } from '@/lib/repositories';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export function generateStaticParams(): { slug: string }[] {
-  return getAllInvitations().map((invitation) => ({ slug: invitation.slug }));
+/**
+ * Pre-renders the invitations only while the JSON file is the data source.
+ * Against the database they are rendered on demand, so publishing an invitation
+ * does not require a rebuild.
+ */
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  if (process.env['DATA_SOURCE'] === 'database') return [];
+  const invitations = await getInvitationRepository().listAll();
+  return invitations.map((invitation) => ({ slug: invitation.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const invitation = getInvitationBySlug(slug);
+  const invitation = await getInvitationRepository().findBySlug(slug);
   if (invitation === undefined) return {};
 
   const dictionary = getDictionary(invitation.locale);
@@ -38,7 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 /** The page a guest opens. */
 export default async function InvitationPage({ params }: PageProps) {
   const { slug } = await params;
-  const invitation = getInvitationBySlug(slug);
+  const invitation = await getInvitationRepository().findBySlug(slug);
   if (invitation === undefined) notFound();
 
   return (

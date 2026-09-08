@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { getInvitationBySlug } from '@/lib/invitations';
+import { getInvitationRepository } from '@/lib/repositories';
 import { RENDER_HEIGHT, RENDER_WIDTH, renderInvitationPng } from '@/lib/render/png';
 
 export const runtime = 'nodejs';
@@ -13,7 +13,7 @@ interface RouteContext {
 /** GET /api/render/[slug] → a 1080×1920 PNG of the invitation. */
 export async function GET(request: Request, context: RouteContext): Promise<Response> {
   const { slug } = await context.params;
-  const invitation = getInvitationBySlug(slug);
+  const invitation = await getInvitationRepository().findBySlug(slug);
   if (invitation === undefined) {
     return NextResponse.json({ error: 'invitation_not_found', slug }, { status: 404 });
   }

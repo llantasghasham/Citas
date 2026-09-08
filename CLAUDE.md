@@ -7,7 +7,7 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 ## Stack
 - Next.js 16 (App Router, Turbopack) + React 19 + TypeScript estricto
 - Tailwind CSS 4 (configuración en CSS, `@theme` en globals.css)
-- PostgreSQL vía Prisma (cuando llegue)
+- PostgreSQL vía Prisma 7 (adaptador `@prisma/adapter-pg`)
 - Render de imágenes en servidor (Chromium headless vía puppeteer-core)
 - Expo/React Native para las apps móviles (fase posterior)
 
@@ -84,16 +84,19 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
 - `docs/DECISIONES-PENDIENTES.md` — lo que no es código y bloquea fases enteras.
 
 ## Estado actual
-Fase 1 terminada: motor de render. Todavía sin auth, sin base de datos y sin pagos.
+Fase 1 terminada (motor de render). Fase 2 en curso: la base de datos ya está.
+Todavía sin autenticación, sin paneles y sin cobro real (falta la spec de Whish).
 - `GET /i/[slug]` — página web de la invitación
 - `GET /api/render/[slug]` — PNG 1080x1920 generado en servidor
 - `GET /render/[slug]` — lienzo interno de captura (no indexado)
-- Datos en /data/invitations.json (4 ejemplos: ar, es, en, pt)
 - Una plantilla: `classic-gold`
+- Datos: `DATA_SOURCE=json` lee /data/invitations.json (por defecto),
+  `DATA_SOURCE=database` lee PostgreSQL. Ambos detrás de `InvitationRepository`.
+- Esquema aplicado y `npm run db:seed` carga los 4 ejemplos.
 
 ## Orden de construcción
-1. Base de datos, oficinas (multiempresa) y roles — Prisma + PostgreSQL, OTP,
-   tenant por subdominio, historial de cambios
+1. Base de datos, oficinas (multiempresa) y roles — **esquema y migración
+   hechos**; falta autenticación OTP, tenant por subdominio e historial
 2. RSVP y entregables — confirmaciones, `.ics`, mapa, exportar a Excel
 3. Formulario de creación con vista previa en vivo
 4. Panel de oficina y facturación
@@ -104,7 +107,10 @@ detrás**. Construirlas antes obliga a rehacerlas. No adelantar el paso 5.
 
 ## Reglas de producto que no se rompen
 - Todo dato de negocio cuelga de un tenant. Ninguna consulta sin filtrar por
-  oficina: una oficina jamás ve los datos de otra.
+  oficina: una oficina jamás ve los datos de otra. Se hace con `TenantScope`
+  (`src/lib/db/tenant.ts`), que no es un string suelto sino un tipo marcado.
+- La ÚNICA consulta sin tenant es buscar una invitación por su slug público.
+  Cualquier otra excepción hay que discutirla.
 - El invitado NO tiene cuenta ni instala nada. La invitación es un enlace web.
 - Los permisos se comprueban en el servidor. Ocultar un botón no es un permiso.
 - El acceso de soporte del superadmin a un evento ajeno queda siempre registrado.
