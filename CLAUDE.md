@@ -53,6 +53,17 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - El envío de correo entra por el puerto `Mailer`. El emisor de consola está
   prohibido en producción y el código lo impide.
 
+### Confirmaciones
+- El formulario de confirmación es PÚBLICO a propósito: la invitación se reenvía
+  por WhatsApp y pedir cuenta al invitado cuesta más respuestas que el spam que
+  evita. Por eso nada de lo que manda el cliente se cree: el evento sale del
+  slug, y un token personal solo vale si pertenece a ese mismo evento.
+- Sin `DATA_SOURCE=database` el formulario NO se muestra. Un formulario que no
+  puede guardar es peor que ninguno.
+- El formulario vive DEBAJO de la tarjeta, nunca dentro: la tarjeta también es
+  la imagen que se exporta.
+- El CSV lleva marca de orden de bytes o Excel destroza el árabe.
+
 ### Cobro
 - Líbano cobra con **Whish**. Costa Rica, si se abre, con Tilopay (SINPE Móvil).
 - El navegador NUNCA decide un pago. Un regreso a la URL de éxito no es una
@@ -96,9 +107,9 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
 - `docs/DECISIONES-PENDIENTES.md` — lo que no es código y bloquea fases enteras.
 
 ## Estado actual
-Fase 1 terminada (motor de render). Fase 2 casi terminada: base de datos,
-acceso por código de un solo uso, oficinas por subdominio e historial de cambios.
-Falta el cobro real (la spec de Whish) y los paneles de verdad.
+Fases 1 y 2 terminadas: motor de render, base de datos, acceso por código de un
+solo uso, oficinas por subdominio, historial, confirmaciones, calendario y
+exportación. Falta el cobro real (la spec de Whish) y el formulario de creación.
 - `GET /i/[slug]` — página web de la invitación
 - `GET /api/render/[slug]` — PNG 1080x1920 generado en servidor
 - `GET /render/[slug]` — lienzo interno de captura (no indexado)
@@ -106,12 +117,15 @@ Falta el cobro real (la spec de Whish) y los paneles de verdad.
 - Datos: `DATA_SOURCE=json` lee /data/invitations.json (por defecto),
   `DATA_SOURCE=database` lee PostgreSQL. Ambos detrás de `InvitationRepository`.
 - Esquema aplicado y `npm run db:seed` carga los 4 ejemplos y el superadmin.
-- `GET /entrar` — acceso por código de un solo uso; `GET /panel` — protegido.
+- `GET /entrar` — acceso por código de un solo uso; `GET /panel` — protegido,
+  con los eventos de la oficina y sus confirmaciones.
+- `GET /api/calendar/[slug]` — archivo `.ics`.
+- `GET /api/events/[eventId]/guests` — CSV de invitados; exige sesión y oficina.
 
 ## Orden de construcción
 1. Base de datos, oficinas (multiempresa) y roles — **hecho**: esquema,
    migraciones, acceso OTP, sesiones, oficina por subdominio e historial
-2. RSVP y entregables — confirmaciones, `.ics`, mapa, exportar a Excel
+2. RSVP y entregables — **hecho**: confirmaciones, `.ics`, mapa y exportación
 3. Formulario de creación con vista previa en vivo
 4. Panel de oficina y facturación
 5. Apps móviles — monorepo con Expo

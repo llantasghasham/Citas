@@ -148,6 +148,44 @@ oficina de Beirut ve su panel en árabe y de derecha a izquierda.
 Una vez dentro, **la oficina la manda la sesión, no el host**: cambiar el
 subdominio no cambia a qué oficina perteneces.
 
+## 4 quater. Confirmaciones y descargas
+
+### El invitado confirma
+
+Debajo de la invitación, cuando `rsvp.enabled` está activo, aparece el
+formulario: **Confirmo / No puedo / Todavía no lo sé**, nombre, número de
+asistentes y un mensaje opcional. Sale en el idioma de la invitación y en su
+dirección de escritura.
+
+- **Requiere `DATA_SOURCE=database`.** Sin base de datos el formulario no se
+  muestra: enseñar un formulario que no puede guardar es peor que no enseñarlo.
+- El formulario es **público a propósito**. En Líbano un enlace se reenvía a un
+  grupo entero de WhatsApp, y pedirle cuenta a cada invitado costaría más
+  respuestas de las que ahorraría en spam.
+- El invitado que responde queda recordado en una cookie, así que puede volver y
+  **cambiar su respuesta** sin crear ninguna cuenta.
+- Contra el abuso: un máximo de 10 altas por IP cada 10 minutos, y quien vuelve
+  a enviar el formulario actualiza su respuesta en vez de aparecer dos veces.
+- El plazo es inclusivo: una fecha límite del día 3 admite respuestas durante
+  todo el día 3.
+
+### Añadir al calendario
+
+`GET /api/calendar/[slug]` devuelve un archivo `.ics`. La hora se convierte
+desde la hora local del lugar (campo `timeZone`, por defecto `Asia/Beirut`) a un
+instante real, así que el invitado lo ve correcto esté donde esté.
+
+### Descargar la lista de invitados
+
+Desde el panel, el número de invitados de cada evento es un enlace a
+`GET /api/events/[eventId]/guests`, que devuelve un CSV con nombre, idioma,
+respuesta, acompañantes, mensaje y fecha.
+
+- Lleva marca de orden de bytes, para que **Excel abra el árabe correctamente**.
+- La autorización se comprueba en el servidor: sin sesión responde 401, y un
+  evento de otra oficina responde 404 igual que uno que no existe.
+- Cada descarga queda registrada en el historial.
+
 ## 5. Cambiar textos e idiomas
 
 Ningún texto visible está en el código. Todo vive en `locales/ar.json`,

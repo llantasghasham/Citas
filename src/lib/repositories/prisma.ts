@@ -30,6 +30,7 @@ function toInvitation(row: NonNullable<VersionRow>): Invitation {
       type: Invitation['eventType'];
       date: string;
       time: string;
+      timezone: string;
       hijriDate: string | null;
       venueName: string;
       venueAddress: string;
@@ -58,6 +59,7 @@ function toInvitation(row: NonNullable<VersionRow>): Invitation {
     honorees: event.honorees.map((honoree) => ({ name: honoree.name })),
     date: event.date,
     time: event.time,
+    timeZone: event.timezone,
     hijriDate: event.hijriDate ?? undefined,
     venue: {
       name: event.venueName,

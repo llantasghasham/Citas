@@ -55,7 +55,8 @@
     "withoutDeadline": "Se ruega confirmar asistencia"
   },
   "actions": {
-    "viewMap": "Ver ubicación en el mapa"
+    "viewMap": "Ver ubicación en el mapa",
+    "addToCalendar": "Añadir al calendario"
   },
   "aria": {
     "invitationCard": "Tarjeta de invitación",
@@ -86,6 +87,33 @@
       "TENANT_ADMIN": "Administrador de oficina",
       "OPERATOR": "Operador",
       "ORGANIZER": "Organizador"
+    },
+    "events": {
+      "heading": "Eventos",
+      "event": "Evento",
+      "date": "Fecha",
+      "attending": "Confirmados",
+      "declined": "No asisten",
+      "tentative": "Sin decidir",
+      "guests": "Invitados",
+      "download": "Descargar lista de invitados",
+      "empty": "Todavía no hay eventos."
     }
+  },
+  "rsvpForm": {
+    "heading": "Confirmar asistencia",
+    "nameLabel": "Nombre",
+    "partyLabel": "Número de asistentes",
+    "messageLabel": "Mensaje para los anfitriones (opcional)",
+    "attending": "Confirmo",
+    "declined": "No puedo asistir",
+    "tentative": "Todavía no lo sé",
+    "submit": "Enviar respuesta",
+    "thanksAttending": "Gracias. Hemos anotado su asistencia.",
+    "thanksDeclined": "Gracias por avisarnos. Le echaremos de menos.",
+    "thanksTentative": "Gracias. Quedamos a la espera de su confirmación.",
+    "change": "Cambiar la respuesta",
+    "closed": "El plazo para confirmar ha terminado.",
+    "error": "No se pudo guardar su respuesta. Inténtelo de nuevo."
   }
 }

@@ -55,7 +55,8 @@
     "withoutDeadline": "Kindly confirm your attendance"
   },
   "actions": {
-    "viewMap": "View location on the map"
+    "viewMap": "View location on the map",
+    "addToCalendar": "Add to calendar"
   },
   "aria": {
     "invitationCard": "Invitation card",
@@ -86,6 +87,33 @@
       "TENANT_ADMIN": "Office admin",
       "OPERATOR": "Operator",
       "ORGANIZER": "Organiser"
+    },
+    "events": {
+      "heading": "Events",
+      "event": "Event",
+      "date": "Date",
+      "attending": "Attending",
+      "declined": "Not coming",
+      "tentative": "Undecided",
+      "guests": "Guests",
+      "download": "Download guest list",
+      "empty": "No events yet."
     }
+  },
+  "rsvpForm": {
+    "heading": "Confirm your attendance",
+    "nameLabel": "Name",
+    "partyLabel": "Number of guests",
+    "messageLabel": "Message for the hosts (optional)",
+    "attending": "I will be there",
+    "declined": "I cannot make it",
+    "tentative": "Not sure yet",
+    "submit": "Send reply",
+    "thanksAttending": "Thank you. Your attendance is noted.",
+    "thanksDeclined": "Thank you for letting us know. You will be missed.",
+    "thanksTentative": "Thank you. We will wait for your confirmation.",
+    "change": "Change your reply",
+    "closed": "The deadline to confirm has passed.",
+    "error": "Your reply could not be saved. Please try again."
   }
 }

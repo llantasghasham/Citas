@@ -108,6 +108,7 @@ export function parseInvitation(value: unknown, path: string): Invitation {
     honorees: parseHonorees(record['honorees'], `${path}/honorees`),
     date: asIsoDate(record['date'], `${path}/date`),
     time: asTime(record['time'], `${path}/time`),
+    timeZone: asOptionalString(record['timeZone'], `${path}/timeZone`) ?? 'Asia/Beirut',
     hijriDate: asOptionalString(record['hijriDate'], `${path}/hijriDate`),
     venue: parseVenue(record['venue'], `${path}/venue`),
     message: asString(record['message'], `${path}/message`),

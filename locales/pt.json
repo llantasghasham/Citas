@@ -55,7 +55,8 @@
     "withoutDeadline": "Pedimos a confirmação de presença"
   },
   "actions": {
-    "viewMap": "Ver localização no mapa"
+    "viewMap": "Ver localização no mapa",
+    "addToCalendar": "Adicionar ao calendário"
   },
   "aria": {
     "invitationCard": "Cartão de convite",
@@ -86,6 +87,33 @@
       "TENANT_ADMIN": "Administrador de escritório",
       "OPERATOR": "Operador",
       "ORGANIZER": "Organizador"
+    },
+    "events": {
+      "heading": "Eventos",
+      "event": "Evento",
+      "date": "Data",
+      "attending": "Confirmados",
+      "declined": "Não vão",
+      "tentative": "Sem decisão",
+      "guests": "Convidados",
+      "download": "Descarregar lista de convidados",
+      "empty": "Ainda não há eventos."
     }
+  },
+  "rsvpForm": {
+    "heading": "Confirmar presença",
+    "nameLabel": "Nome",
+    "partyLabel": "Número de presentes",
+    "messageLabel": "Mensagem para os anfitriões (opcional)",
+    "attending": "Confirmo",
+    "declined": "Não posso ir",
+    "tentative": "Ainda não sei",
+    "submit": "Enviar resposta",
+    "thanksAttending": "Obrigado. A sua presença ficou registada.",
+    "thanksDeclined": "Obrigado por avisar. Vamos sentir a sua falta.",
+    "thanksTentative": "Obrigado. Ficamos à espera da sua confirmação.",
+    "change": "Alterar a resposta",
+    "closed": "O prazo para confirmar terminou.",
+    "error": "Não foi possível guardar a sua resposta. Tente de novo."
   }
 }

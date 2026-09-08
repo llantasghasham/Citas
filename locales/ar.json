@@ -55,7 +55,8 @@
     "withoutDeadline": "يرجى تأكيد الحضور"
   },
   "actions": {
-    "viewMap": "عرض الموقع على الخريطة"
+    "viewMap": "عرض الموقع على الخريطة",
+    "addToCalendar": "إضافة إلى التقويم"
   },
   "aria": {
     "invitationCard": "بطاقة الدعوة",
@@ -86,6 +87,33 @@
       "TENANT_ADMIN": "مدير المكتب",
       "OPERATOR": "مشغّل",
       "ORGANIZER": "منظّم الحدث"
+    },
+    "events": {
+      "heading": "الأحداث",
+      "event": "الحدث",
+      "date": "التاريخ",
+      "attending": "مؤكّد",
+      "declined": "معتذر",
+      "tentative": "غير مؤكّد",
+      "guests": "المدعوون",
+      "download": "تنزيل قائمة المدعوين",
+      "empty": "لا توجد أحداث بعد."
     }
+  },
+  "rsvpForm": {
+    "heading": "تأكيد الحضور",
+    "nameLabel": "الاسم",
+    "partyLabel": "عدد الحاضرين",
+    "messageLabel": "كلمة للمضيفين (اختياري)",
+    "attending": "سأحضر",
+    "declined": "أعتذر عن الحضور",
+    "tentative": "لست متأكداً بعد",
+    "submit": "إرسال الرد",
+    "thanksAttending": "شكراً لك. سجّلنا حضورك.",
+    "thanksDeclined": "شكراً لإخبارنا. سنفتقدك.",
+    "thanksTentative": "شكراً. ننتظر تأكيدك.",
+    "change": "تعديل الرد",
+    "closed": "انتهت مهلة تأكيد الحضور.",
+    "error": "تعذّر حفظ ردّك. حاول مرة أخرى."
   }
 }

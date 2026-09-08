@@ -82,6 +82,8 @@ export interface Invitation {
   date: string;
   /** 24h wall-clock time at the venue, HH:mm. */
   time: string;
+  /** IANA zone of the venue, needed to turn that wall clock into an instant. */
+  timeZone: string;
   /** Pre-computed Hijri date string. Never derived at runtime — see data/verses.json policy. */
   hijriDate?: string;
   venue: Venue;
@@ -118,6 +120,24 @@ export interface Dictionary {
   };
   actions: {
     viewMap: string;
+    addToCalendar: string;
+  };
+  /** The reply form the guest fills in. */
+  rsvpForm: {
+    heading: string;
+    nameLabel: string;
+    partyLabel: string;
+    messageLabel: string;
+    attending: string;
+    declined: string;
+    tentative: string;
+    submit: string;
+    thanksAttending: string;
+    thanksDeclined: string;
+    thanksTentative: string;
+    change: string;
+    closed: string;
+    error: string;
   };
   aria: {
     invitationCard: string;
@@ -145,5 +165,16 @@ export interface Dictionary {
       signOut: string;
     };
     roles: Record<'SUPERADMIN' | 'TENANT_ADMIN' | 'OPERATOR' | 'ORGANIZER', string>;
+    events: {
+      heading: string;
+      event: string;
+      date: string;
+      attending: string;
+      declined: string;
+      tentative: string;
+      guests: string;
+      download: string;
+      empty: string;
+    };
   };
 }

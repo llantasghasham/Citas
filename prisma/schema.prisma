@@ -315,6 +315,13 @@ model Guest {
   invitedAt DateTime?
   openedAt  DateTime?
 
+  /// Quién creó la ficha. El formulario público es abierto por necesidad —la
+  /// invitación se reenvía por WhatsApp— así que la IP es lo único que permite
+  /// frenar a quien lo inunde.
+  createdIp String?
+  /// Verdadero cuando el propio invitado se dio de alta al confirmar.
+  selfAdded Boolean @default(false)
+
   createdAt DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
