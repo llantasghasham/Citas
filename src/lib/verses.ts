@@ -40,3 +40,8 @@ const VERSES = parseVerses();
 export function findVerse(id: string): Verse | undefined {
   return VERSES.get(id);
 }
+
+/** The verses offered for a language. Nothing outside this list can be chosen. */
+export function listVerses(locale: Locale): Verse[] {
+  return [...VERSES.values()].filter((verse) => verse.locale === locale);
+}

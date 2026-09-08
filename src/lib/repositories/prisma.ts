@@ -35,8 +35,8 @@ function toInvitation(row: NonNullable<VersionRow>): Invitation {
       venueName: string;
       venueAddress: string;
       venueMapUrl: string;
-      venueLat: number;
-      venueLng: number;
+      venueLat: number | null;
+      venueLng: number | null;
       rsvpEnabled: boolean;
       rsvpDeadline: Date | null;
       hosts: { name: string; role: Invitation['hosts'][number]['role'] }[];

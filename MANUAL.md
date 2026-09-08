@@ -186,6 +186,40 @@ respuesta, acompañantes, mensaje y fecha.
   evento de otra oficina responde 404 igual que uno que no existe.
 - Cada descarga queda registrada en el historial.
 
+## 4 quinquies. Crear una invitación desde la web
+
+`/crear` es un formulario de cinco pasos con **vista previa al lado**:
+
+1. Idioma y tipo de evento
+2. Nombres de los homenajeados y de quién invita
+3. Fecha, hora, zona horaria y lugar
+4. Mensaje, versículo, forma de los números y confirmación de asistencia
+5. Revisión y publicación
+
+Detalles que conviene conocer:
+
+- **El formulario habla el idioma de la invitación.** En cuanto se elige árabe
+  en el paso 1, el resto del formulario pasa a árabe y a derecha-izquierda.
+- **La vista previa es la invitación de verdad**, el mismo componente que
+  produce la página pública y el PNG, renderizado en el servidor. No es una
+  maqueta que pueda desviarse. Se actualiza al pasar de paso, no al teclear:
+  las invitaciones se componen en el servidor, nunca en el cliente.
+- **Funciona sin JavaScript de cliente.** Por eso los nombres son dos casillas
+  fijas y no un botón de «añadir otro».
+- **La lista de versículos es cerrada.** Solo se puede elegir entre los que ya
+  están verificados en `data/verses.json`; no hay campo libre para un texto
+  sagrado.
+- **El borrador vive en una cookie** durante siete días, así que se puede cerrar
+  el navegador y seguir después.
+- **Publicar exige sesión.** Sin ella el formulario funciona y la vista previa
+  también, pero el botón de publicar está desactivado: una puerta abierta aquí
+  dejaría a cualquiera crear páginas en el dominio.
+- **El enlace se genera solo.** Con nombres en alfabeto latino sale legible
+  (`james-nadia-a1b2c3`); con nombres en árabe sale `invitacion-a1b2c3`, porque
+  transliterar un nombre automáticamente es justo lo que este proyecto prohíbe.
+- Si no se indica enlace de mapa, se genera una búsqueda con el nombre y la
+  dirección del lugar.
+
 ## 5. Cambiar textos e idiomas
 
 Ningún texto visible está en el código. Todo vive en `locales/ar.json`,

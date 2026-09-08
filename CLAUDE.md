@@ -53,6 +53,19 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - El envío de correo entra por el puerto `Mailer`. El emisor de consola está
   prohibido en producción y el código lo impide.
 
+### Creación
+- La vista previa es el MISMO `InvitationCard`, renderizado en el servidor. Nunca
+  una maqueta aparte que pueda desviarse de lo que se publica.
+- El formulario habla el idioma de la invitación: elegir árabe lo pasa entero a
+  árabe y a RTL.
+- Sin JavaScript de cliente. Por eso hay casillas fijas en vez de «añadir otro».
+- La lista de versículos es CERRADA: solo lo verificado en `data/verses.json`.
+  Jamás un campo de texto libre para un texto sagrado.
+- Publicar exige sesión. Publicar de forma anónima sería una puerta abierta para
+  crear páginas en el dominio.
+- El slug no translitera nombres árabes: sale `invitacion-<azar>`. Transliterar
+  un apellido automáticamente es justo lo que este proyecto prohíbe.
+
 ### Confirmaciones
 - El formulario de confirmación es PÚBLICO a propósito: la invitación se reenvía
   por WhatsApp y pedir cuenta al invitado cuesta más respuestas que el spam que
@@ -107,9 +120,10 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
 - `docs/DECISIONES-PENDIENTES.md` — lo que no es código y bloquea fases enteras.
 
 ## Estado actual
-Fases 1 y 2 terminadas: motor de render, base de datos, acceso por código de un
-solo uso, oficinas por subdominio, historial, confirmaciones, calendario y
-exportación. Falta el cobro real (la spec de Whish) y el formulario de creación.
+Fases 1, 2 y 3 terminadas: motor de render, base de datos, acceso por código de
+un solo uso, oficinas por subdominio, historial, confirmaciones, calendario,
+exportación y formulario de creación. Falta el cobro real (la spec de Whish) y
+el panel de oficina con facturación.
 - `GET /i/[slug]` — página web de la invitación
 - `GET /api/render/[slug]` — PNG 1080x1920 generado en servidor
 - `GET /render/[slug]` — lienzo interno de captura (no indexado)
@@ -121,12 +135,13 @@ exportación. Falta el cobro real (la spec de Whish) y el formulario de creació
   con los eventos de la oficina y sus confirmaciones.
 - `GET /api/calendar/[slug]` — archivo `.ics`.
 - `GET /api/events/[eventId]/guests` — CSV de invitados; exige sesión y oficina.
+- `GET /crear` — creación en cinco pasos con vista previa; publicar exige sesión.
 
 ## Orden de construcción
 1. Base de datos, oficinas (multiempresa) y roles — **hecho**: esquema,
    migraciones, acceso OTP, sesiones, oficina por subdominio e historial
 2. RSVP y entregables — **hecho**: confirmaciones, `.ics`, mapa y exportación
-3. Formulario de creación con vista previa en vivo
+3. Formulario de creación con vista previa — **hecho**
 4. Panel de oficina y facturación
 5. Apps móviles — monorepo con Expo
 

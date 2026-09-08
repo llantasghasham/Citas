@@ -192,8 +192,10 @@ model Event {
   venueName    String
   venueAddress String
   venueMapUrl  String
-  venueLat     Float
-  venueLng     Float
+  /// Opcionales: se piden pero pocos organizadores las conocen, y guardar 0,0
+  /// sería mentir sobre dónde es la boda.
+  venueLat     Float?
+  venueLng     Float?
 
   rsvpEnabled  Boolean   @default(true)
   rsvpDeadline DateTime?

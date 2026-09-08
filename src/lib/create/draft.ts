@@ -1,0 +1,183 @@
+import {
+  EVENT_TYPES,
+  HOST_ROLES,
+  LOCALES,
+  NUMERAL_SYSTEMS,
+  type EventType,
+  type HostRole,
+  type Invitation,
+  type Locale,
+  type NumeralSystem,
+} from '@/lib/types';
+import { findVerse } from '@/lib/verses';
+
+/** Slots offered per person list. Fixed, so the form needs no client JavaScript. */
+export const MAX_HONOREES = 2;
+export const MAX_HOSTS = 2;
+
+export interface DraftHost {
+  name: string;
+  role: HostRole;
+}
+
+/** What someone has typed so far. Every field is a string: nothing is trusted yet. */
+export interface InvitationDraft {
+  locale: Locale;
+  eventType: EventType;
+  honorees: string[];
+  hosts: DraftHost[];
+  date: string;
+  time: string;
+  timeZone: string;
+  venueName: string;
+  venueAddress: string;
+  mapUrl: string;
+  message: string;
+  quoteId: string;
+  numeralSystem: NumeralSystem;
+  rsvpEnabled: boolean;
+  rsvpDeadline: string;
+}
+
+export const EMPTY_DRAFT: InvitationDraft = {
+  locale: 'ar',
+  eventType: 'wedding',
+  honorees: ['', ''],
+  hosts: [
+    { name: '', role: 'parents' },
+    { name: '', role: 'parents' },
+  ],
+  date: '',
+  time: '',
+  timeZone: 'Asia/Beirut',
+  venueName: '',
+  venueAddress: '',
+  mapUrl: '',
+  message: '',
+  quoteId: '',
+  numeralSystem: 'arabic',
+  rsvpEnabled: true,
+  rsvpDeadline: '',
+};
+
+function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
+  return allowed.find((candidate) => candidate === value) ?? fallback;
+}
+
+function text(value: unknown, max = 200): string {
+  return typeof value === 'string' ? value.trim().slice(0, max) : '';
+}
+
+/**
+ * Reads a draft back from its cookie. Tolerant on purpose: a half-written or
+ * tampered draft becomes a valid empty one rather than an error page. Nothing
+ * here is trusted — publishing validates again.
+ */
+export function parseDraft(raw: string | undefined): InvitationDraft {
+  if (raw === undefined || raw.length === 0) return EMPTY_DRAFT;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return EMPTY_DRAFT;
+  }
+  if (typeof parsed !== 'object' || parsed === null) return EMPTY_DRAFT;
+
+  const draft = parsed as Record<string, unknown>;
+  const honorees = Array.isArray(draft['honorees']) ? draft['honorees'] : [];
+  const hosts = Array.isArray(draft['hosts']) ? draft['hosts'] : [];
+
+  return {
+    locale: oneOf(draft['locale'], LOCALES, EMPTY_DRAFT.locale),
+    eventType: oneOf(draft['eventType'], EVENT_TYPES, EMPTY_DRAFT.eventType),
+    honorees: Array.from({ length: MAX_HONOREES }, (_, index) => text(honorees[index], 120)),
+    hosts: Array.from({ length: MAX_HOSTS }, (_, index) => {
+      const host = hosts[index];
+      const record = typeof host === 'object' && host !== null ? (host as Record<string, unknown>) : {};
+      return {
+        name: text(record['name'], 120),
+        role: oneOf(record['role'], HOST_ROLES, 'parents'),
+      };
+    }),
+    date: text(draft['date'], 10),
+    time: text(draft['time'], 5),
+    timeZone: text(draft['timeZone'], 60) || EMPTY_DRAFT.timeZone,
+    venueName: text(draft['venueName'], 120),
+    venueAddress: text(draft['venueAddress'], 200),
+    mapUrl: text(draft['mapUrl'], 500),
+    message: text(draft['message'], 600),
+    quoteId: text(draft['quoteId'], 80),
+    numeralSystem: oneOf(draft['numeralSystem'], NUMERAL_SYSTEMS, 'latin'),
+    rsvpEnabled: draft['rsvpEnabled'] !== false,
+    rsvpDeadline: text(draft['rsvpDeadline'], 10),
+  };
+}
+
+export function serializeDraft(draft: InvitationDraft): string {
+  return JSON.stringify(draft);
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const WALL_CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Field names that are not yet good enough to publish. */
+export function draftProblems(draft: InvitationDraft): string[] {
+  const problems: string[] = [];
+  if (draft.honorees.every((name) => name.length === 0)) problems.push('honorees');
+  if (!ISO_DATE.test(draft.date)) problems.push('date');
+  if (!WALL_CLOCK.test(draft.time)) problems.push('time');
+  if (draft.venueName.length === 0) problems.push('venueName');
+  if (draft.venueAddress.length === 0) problems.push('venueAddress');
+  if (draft.rsvpEnabled && draft.rsvpDeadline.length > 0 && !ISO_DATE.test(draft.rsvpDeadline)) {
+    problems.push('rsvpDeadline');
+  }
+  return problems;
+}
+
+/** When no map link was given, point at a search for the address itself. */
+export function mapUrlFor(draft: InvitationDraft): string {
+  if (draft.mapUrl.startsWith('http://') || draft.mapUrl.startsWith('https://')) {
+    return draft.mapUrl;
+  }
+  const query = encodeURIComponent(`${draft.venueName} ${draft.venueAddress}`.trim());
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
+
+/**
+ * Turns the draft into something the real card component can render, so the
+ * preview is the invitation itself and not a second, drifting mock-up.
+ */
+export function draftToInvitation(draft: InvitationDraft): Invitation {
+  const verse = draft.quoteId.length === 0 ? undefined : findVerse(draft.quoteId);
+
+  return {
+    id: 'draft',
+    slug: 'draft',
+    eventType: draft.eventType,
+    locale: draft.locale,
+    direction: draft.locale === 'ar' ? 'rtl' : 'ltr',
+    templateId: 'classic-gold',
+    numeralSystem: draft.numeralSystem,
+    hosts: draft.hosts.filter((host) => host.name.length > 0),
+    honorees: draft.honorees.filter((name) => name.length > 0).map((name) => ({ name })),
+    date: ISO_DATE.test(draft.date) ? draft.date : '2026-01-01',
+    time: WALL_CLOCK.test(draft.time) ? draft.time : '00:00',
+    timeZone: draft.timeZone,
+    venue: {
+      name: draft.venueName,
+      address: draft.venueAddress,
+      mapUrl: mapUrlFor(draft),
+      lat: null,
+      lng: null,
+    },
+    message: draft.message,
+    quote: verse === undefined ? undefined : { text: verse.text, source: verse.source },
+    quoteId: draft.quoteId.length === 0 ? undefined : draft.quoteId,
+    theme: { primary: '#6B4E16', accent: '#C9A227', background: '#FBF6EC' },
+    rsvp: {
+      enabled: draft.rsvpEnabled,
+      deadline: ISO_DATE.test(draft.rsvpDeadline) ? draft.rsvpDeadline : null,
+    },
+  };
+}

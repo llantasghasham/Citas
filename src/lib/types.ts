@@ -47,8 +47,9 @@ export interface Venue {
   name: string;
   address: string;
   mapUrl: string;
-  lat: number;
-  lng: number;
+  /** Optional: most hosts do not know them, and 0,0 would be a lie. */
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface Quote {
@@ -142,6 +143,41 @@ export interface Dictionary {
   aria: {
     invitationCard: string;
     ornament: string;
+  };
+  /** The creation flow. Reuses `labels` and `roles` rather than repeating them. */
+  create: {
+    title: string;
+    stepOf: string;
+    next: string;
+    back: string;
+    publish: string;
+    preview: string;
+    steps: Record<'language' | 'names' | 'when' | 'details' | 'review', string>;
+    localeLabel: string;
+    eventTypeLabel: string;
+    honoreesLabel: string;
+    hostsLabel: string;
+    hostRoleLabel: string;
+    optional: string;
+    timeZoneLabel: string;
+    mapUrlLabel: string;
+    messageLabel: string;
+    quoteLabel: string;
+    quoteNone: string;
+    numeralsLabel: string;
+    numeralsArabic: string;
+    numeralsLatin: string;
+    rsvpLabel: string;
+    rsvpYes: string;
+    rsvpNo: string;
+    rsvpDeadlineLabel: string;
+    signInToPublish: string;
+    publishedTitle: string;
+    publishedHint: string;
+    openInvitation: string;
+    downloadImage: string;
+    startOver: string;
+    errorInvalid: string;
   };
   /** Staff-facing screens. Office staff in Beirut read these in Arabic too. */
   admin: {

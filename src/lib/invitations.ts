@@ -55,8 +55,8 @@ function parseVenue(value: unknown, path: string): Venue {
     name: asString(record['name'], `${path}/name`),
     address: asString(record['address'], `${path}/address`),
     mapUrl: asHttpUrl(record['mapUrl'], `${path}/mapUrl`),
-    lat: asNumber(record['lat'], `${path}/lat`),
-    lng: asNumber(record['lng'], `${path}/lng`),
+    lat: record['lat'] === undefined || record['lat'] === null ? null : asNumber(record['lat'], `${path}/lat`),
+    lng: record['lng'] === undefined || record['lng'] === null ? null : asNumber(record['lng'], `${path}/lng`),
   };
 }
 
