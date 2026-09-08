@@ -1,0 +1,30 @@
+# Servicio de la web de Citas.
+#
+# Copiar a /etc/systemd/system/citas.service y ajustar la ruta de node
+# (`which node`). Next lee apps/web/.env solo, por eso no hay EnvironmentFile:
+# los secretos se quedan en un archivo 600 y no en la unidad de systemd.
+[Unit]
+Description=Citas — invitaciones digitales
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=www
+Group=www
+WorkingDirectory=/www/wwwroot/citas/apps/web
+ExecStart=/usr/bin/node /www/wwwroot/citas/node_modules/next/dist/bin/next start --port 3000
+Restart=always
+RestartSec=5
+# Solo escucha en local: quien entra, entra por nginx.
+Environment=HOSTNAME=127.0.0.1
+Environment=NODE_ENV=production
+
+# Endurecimiento básico: el proceso no necesita más que su propia carpeta.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
