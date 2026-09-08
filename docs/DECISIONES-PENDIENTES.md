@@ -10,56 +10,82 @@ de diseñar nada encima: son cosas que cambian de un mes a otro.
 
 ## Bloque 1 — Cobrar
 
-### 1.1 Cómo se cobra en Líbano
+### 1.1 Hay dos países en juego, y cobran distinto
 
-**Confirmado (septiembre 2026): Stripe no opera en Líbano.** Líbano no está entre
-los países soportados. El camino habitual —constituir una LLC en EE. UU. o una
-Ltd en Reino Unido para acceder a Stripe— es real, pero implica una entidad
-extranjera con sus obligaciones fiscales y contables. No es un atajo, es otra
-empresa.
+El producto apunta a Líbano, pero la operación está en Costa Rica. Son dos
+sistemas de cobro sin nada que ver, y **hay que decidir en cuál entra el dinero**
+antes de integrar nada:
 
-Las opciones locales, que sí existen:
+- Si el cliente que paga está **en Costa Rica** (por ejemplo la comunidad árabe
+  de aquí), el cobro está prácticamente resuelto y se puede empezar esta semana.
+- Si el cliente que paga está **en Líbano**, hay que integrar Whish y/o una
+  pasarela local, y eso sí es trabajo.
 
-| Vía | Qué es | Sirve para |
-| --- | --- | --- |
-| **Areeba** | Institución financiera libanesa con licencia. POS, pasarela de comercio electrónico, **pay-by-link**, cobros recurrentes y 3-D Secure | Cobrar con tarjeta, dentro y fuera de Líbano |
-| **Whish Money** | Billetera móvil local, con integración por API. Enorme alcance, incluida la población sin banco | El cliente libanés medio |
-| **OMT** | Red de transferencia en efectivo | Quien no tiene tarjeta ni billetera |
-| **Tap Payments** | Pasarela del Golfo, alternativa a Areeba | Comparar contra Areeba antes de firmar |
+No son excluyentes. Pero el primero es barato y el segundo no, así que conviene
+que el primer mercado sea el que ya se puede cobrar.
 
-> Las tarifas y los requisitos de alta hay que pedirlos directamente a cada uno:
-> lo publicado en blogs no sirve para firmar un contrato.
+### 1.2 Costa Rica — resuelto con Tilopay (SINPE Móvil + tarjeta)
 
-**Lo más inteligente: reutilizar la relación que ya existe por el POS.**
+**Tilopay** cobra por SINPE Móvil de forma automatizada y también con tarjeta.
+Alta 100 % en línea, sin coste de afiliación ni mensualidad, con enlaces de pago,
+cobros recurrentes y API. Seguridad 3-D Secure 2.0 sobre PowerTranz.
 
-Si ya hay un TPV funcionando en otro negocio, ya hay un contrato de comercio, una
-entidad registrada y un historial. En ese caso **añadir cobros por internet suele
-ser una ampliación del contrato existente, no un alta nueva**: Areeba, por
-ejemplo, vende POS y pasarela online bajo el mismo paraguas. Preguntar al
-proveedor del POS actual «¿me activáis pay-by-link y comercio electrónico sobre
-esta misma cuenta?» puede ahorrar meses y el coste de constituir nada.
+| | Comisión |
+| --- | --- |
+| SINPE Móvil | 2 % + 0,35 US$ |
+| Tarjeta | 4,25 % + 0,35 US$ |
 
-Lo que hay que averiguar, en este orden:
+Sobre una invitación de 30 US$ eso es 0,95 US$ por SINPE y 1,63 US$ por tarjeta.
+Asumible.
 
-1. **Quién provee el POS actual** y si ofrece pasarela online o pay-by-link.
-2. **Qué entidad legal está detrás** de ese contrato (empresa individual, SARL) y
-   si sirve para facturar invitaciones o hace falta otra.
-3. **Comisión por transacción** de cada vía, sobre un ticket realista.
+Alternativas si hace falta algo más pegado al banco: **SINPE Móvil Empresarial**
+de Davivienda (valida los pagos recibidos y los liga a facturas por API) y
+**CyberSINPE** (aplica automáticamente los SINPE recibidos, con integración para
+comercio electrónico).
 
-**Plan escalonado sugerido** (sin escribir una línea de código para empezar):
+Dos obligaciones que no son opcionales:
 
-1. **Concierge.** Pay-by-link del proveedor del POS + Whish + efectivo. Se manda
-   el enlace de pago por WhatsApp, igual que la invitación. Cero integración.
-2. **Autoservicio en Líbano.** Whish integrado por API para el cliente local, más
-   tarjeta por la pasarela del POS. Aquí sí hay trabajo de código.
-3. **Fuera de Líbano.** Solo si aparecen oficinas licenciadas en Europa o el
-   Golfo: ahí sí compensa la entidad extranjera con Stripe o Paddle.
+- **Facturación electrónica.** Desde septiembre de 2025 Hacienda exige registrar
+  los pagos recibidos por SINPE en la factura electrónica, con el método de pago
+  **código 06**. El sistema de facturación tiene que estar al día.
+- **Límites de SINPE Móvil (desde el 1 de junio de 2026).** Por SMS o WhatsApp,
+  ₡100.000 diarios; desde la app o la banca en línea, ₡500.000 diarios. Para
+  tickets de invitación sobra, pero condiciona cualquier venta grande a una
+  oficina.
 
-**Moneda.** El precio se fija en dólares y se indica claramente en la factura en
-qué se cobra. Dólar fresco y lira no son la misma cosa, y una invitación vendida
-hoy se entrega dentro de meses.
+### 1.3 Líbano — Whish sí tiene API
 
-### 1.2 El precio
+**Sí se puede conectar.** Whish tiene producto de comercio (**Whish Pay**) y un
+servicio web documentado (**Whish Collect**) con operaciones de consulta de
+saldo, consulta de tipo de cambio y cobro. Existe además un plugin de WordPress
+que lo usa, lo que confirma que la integración por API es real y no una promesa
+comercial.
+
+Lo que hace falta para empezar: **una cuenta de comercio con Whish**, que es
+quien entrega las credenciales y la especificación técnica. Sin cuenta no hay
+documentación pública completa.
+
+Para tarjeta en Líbano, **Areeba** (institución financiera libanesa con licencia:
+POS, pasarela, pay-by-link, recurrentes, 3-D Secure) y **Tap Payments** como
+alternativa a comparar. Y ahí sigue en pie lo más barato: si ya hay un POS
+funcionando, preguntar si activan pay-by-link y comercio electrónico sobre esa
+misma cuenta.
+
+**Stripe queda descartado en ambos casos para Líbano:** no opera en el país. La
+vía de una LLC en EE. UU. o Ltd en Reino Unido implica constituir y mantener otra
+empresa, no es un atajo.
+
+> Las comisiones y requisitos de arriba vienen de fuentes secundarias de 2026.
+> Antes de firmar, confirmarlos con cada proveedor.
+
+### 1.4 Moneda
+
+El precio se fija en dólares y se indica en la factura en qué se cobra. En Costa
+Rica hay que decidir además si se muestra en colones, porque SINPE mueve colones
+y el redondeo lo paga alguien. En Líbano, dólar fresco y lira no son la misma
+cosa, y una invitación vendida hoy se entrega dentro de meses.
+
+### 1.5 El precio
 
 No hay ni un número escrito. Sin precio no se puede decidir si el autoservicio
 tiene sentido o si esto es solo un negocio de servicio.
