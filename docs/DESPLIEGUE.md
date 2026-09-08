@@ -51,6 +51,13 @@ creación. Sirve para enseñar el resultado en dos minutos.
 
 ---
 
+## 1 bis. Windows
+
+Si vas a trabajar en Windows, la guía propia es [`WINDOWS.md`](WINDOWS.md).
+Resumen: **XAMPP no sirve** —es Apache, MySQL y PHP; esto es Node y
+PostgreSQL— y las variables van en `apps\web\.env`, porque
+`VARIABLE=valor comando` no funciona en la consola de Windows.
+
 ## 2. Ponerlo online
 
 ### La condición que manda
@@ -76,6 +83,41 @@ megabytes y no se despliega ahí.
 > El `Dockerfile` está escrito y revisado, pero **la imagen no se ha construido**
 > durante el desarrollo: no había un entorno donde hacerlo. Cuenta con dedicarle
 > una primera pasada de ajustes.
+
+### El camino más corto a una URL pública
+
+Quince minutos, sin tocar un servidor por SSH. Hace falta **una cuenta tuya** en
+el proveedor: nadie puede desplegar esto en tu nombre sin ella.
+
+1. **Sube la rama a `main`** (o apunta el proveedor a la rama de trabajo).
+2. Crea una cuenta en **Railway** o **Render** y elige *desplegar desde un
+   repositorio de GitHub*. Detectan el `Dockerfile` solo; no hay que configurar
+   compilación.
+3. **Añade PostgreSQL** desde el mismo panel del proveedor. Copia la cadena de
+   conexión que te dé.
+4. **Pon las variables** en el servicio:
+   ```ini
+   DATABASE_URL=…            # la que te dio el proveedor
+   DATA_SOURCE=database
+   NEXT_PUBLIC_SITE_URL=https://tu-app.up.railway.app
+   PAYMENTS_PROVIDER=mock    # hasta que llegue la spec de Whish
+   SUPERADMIN_EMAIL=tu@correo.com
+   ```
+5. **Despliega.** La imagen aplica las migraciones al arrancar. Después, una sola
+   vez, ejecuta la semilla desde la consola del proveedor:
+   ```
+   npm run db:seed
+   ```
+6. Ya tienes URL. Entra por `https://tu-app…/entrar`.
+
+Dos cosas quedan a medias hasta que las resuelvas, y conviene saberlo:
+
+- **El correo.** Sin un proveedor real, el código de acceso no llega a ninguna
+  parte y no podrás entrar al panel en producción: el emisor de consola se niega
+  a arrancar allí. Es lo primero que hay que configurar.
+- **Los subdominios de oficina.** Con el dominio que regala el proveedor no hay
+  comodín, así que las oficinas no tienen su propio subdominio todavía. Para eso
+  hace falta un dominio propio con `*.tudominio.com`.
 
 ### Dónde alojarlo
 

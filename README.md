@@ -139,6 +139,7 @@ repositorio.
 - [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) — multiempresa, roles, formas de
   venta, apps móviles y despliegue.
 - [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md) — verlo en local y publicarlo.
+- [`docs/WINDOWS.md`](docs/WINDOWS.md) — levantarlo en Windows.
 - [`apps/web/prisma/schema.prisma`](apps/web/prisma/schema.prisma) — modelo de datos.
 
 ## Siguiente fase

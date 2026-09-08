@@ -166,6 +166,8 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
   las reglas de la integración.
 - `docs/DECISIONES-PENDIENTES.md` — lo que no es código y bloquea fases enteras.
 - `docs/DESPLIEGUE.md` — cómo verlo en local y cómo publicarlo (Docker incluido).
+- `docs/WINDOWS.md` — levantarlo en Windows. XAMPP no sirve: esto es Node y
+  PostgreSQL, y las variables van en `apps\web\.env`.
 
 ## Estado actual
 Fases 1, 2 y 3 terminadas: motor de render, base de datos, acceso por código de
