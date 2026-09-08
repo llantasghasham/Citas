@@ -6,6 +6,27 @@ los vhosts existentes ni las bases de datos de otros proyectos.
 
 Cada paso trae su comprobación. **Si una comprobación falla, para ahí.**
 
+## El camino corto: un solo comando
+
+Todo lo que viene después está automatizado en `deploy/install.sh`. Como root:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/llantasghasham/Citas/claude/invitation-render-engine-9sv1tp/deploy/install.sh | bash
+```
+
+Se puede volver a ejecutar cuantas veces haga falta: actualiza el código y
+recompila **sin tocar el `.env` ni los datos** que ya existan. Elige el puerto
+libre él solo —en este servidor corren otros proyectos—, y se detiene con un
+mensaje claro en cuanto algo no cuadra en vez de seguir a medias.
+
+**No toca sshd, ni los vhosts de nginx, ni otros proyectos de `/www/wwwroot`.**
+
+Al terminar te dice las tres cosas que quedan y que no se pueden automatizar: el
+proxy inverso en aaPanel, el correo saliente y el cron de respaldos.
+
+El resto de este documento explica **qué hace cada paso**, por si prefieres
+hacerlo a mano o algo falla y hay que mirar dentro.
+
 ---
 
 ## 0. Antes de empezar
