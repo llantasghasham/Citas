@@ -79,30 +79,63 @@ ti, no al revés. Si alguna vez alguien te la pide, no es soporte.
 
 ### Primer mensaje
 
+Va todo de una vez: quién eres, las DOS plataformas, y lo de recibir el código
+estando fuera del Líbano. Preguntarlo por partes son tres conversaciones que
+empiezan de cero cada una.
+
+Ojo con una cosa que decide la configuración: `websiteUrl` viaja como cabecera
+en CADA petición, así que si los dos dominios comparten cuenta de comercio o
+necesitan una cada uno es una pregunta técnica, no administrativa. Sea cual sea
+la respuesta, **el código no cambia**: cada instalación guarda su `channel`, su
+`secret` y su `websiteUrl` en su propio `/panel/configuracion`.
+
 > مرحبًا، أنا صاحب الحساب رقم **[Account ID]** المسجّل على الرقم **[الهاتف]**.
 >
-> عندي منصّة لبطاقات الدعوات الرقمية على النطاق **citas.posxml.com**، وبدّي
-> فعّل الدفع عبر Whish Collect لزبائني.
+> عندي **منصّتين** وبدّي فعّل الدفع عبر Whish Collect عليهما:
+> • **citas.posxml.com** — بطاقات دعوات رقمية
+> • **posxml.com** — نظام نقاط بيع وفوترة
 >
-> بحاجة لفتح **حساب تاجر (Merchant / Business)** والحصول على:
-> `channel` و`secret` و`websiteUrl` للتجربة (sandbox) وللإنتاج، مع نسخة من
+> ١) بحاجة لفتح **حساب تاجر (Merchant / Business)** والحصول على `channel`
+> و`secret` و`websiteUrl` للتجربة (sandbox) وللإنتاج، مع نسخة من
 > **Whish Collect Web Service Technical Specification**.
 >
-> شو الخطوات والأوراق المطلوبة؟ وشكرًا.
+> ٢) هل يكفي **حساب تاجر واحد للنطاقين**، أم يلزم `channel` و`websiteUrl`
+> منفصلان لكل نطاق؟
+>
+> ٣) حسابي الحالي مسجّل كـ *Individual* — هل يلزم تحويله إلى *Corporate*؟ وما
+> الأوراق المطلوبة؟
+>
+> ٤) أنا لبناني ومقيم في **كوستاريكا**، وأسافر بين البلدين. عندي رقم كوستاريكي
+> **[الرقم الثاني]**. كيف أستلم **رمز التحقّق (OTP)** وأنا خارج لبنان؟ هل يمكن
+> إضافة رقم ثانٍ للحساب، أو استلام الرمز على البريد الإلكتروني، أو تأكيد
+> الدخول من داخل التطبيق دون رسالة نصّية؟
+>
+> وشكرًا.
 
 En inglés, por si contestan en inglés:
 
 > Hello. I am the holder of account **[Account ID]**, registered to
 > **[phone]**.
 >
-> I run a digital wedding-invitation platform at **citas.posxml.com** and I
-> would like to collect payments from my clients through Whish Collect.
+> I run **two platforms** and I would like to collect payments through Whish
+> Collect on both:
+> • **citas.posxml.com** — digital invitation cards
+> • **posxml.com** — point-of-sale and invoicing
 >
-> I need to open a **merchant (business) account** and receive the `channel`,
-> `secret` and `websiteUrl` for both sandbox and production, together with a
-> copy of the **Whish Collect Web Service Technical Specification**.
+> 1. I need to open a **merchant (business) account** and receive the
+>    `channel`, `secret` and `websiteUrl` for sandbox and production, together
+>    with the **Whish Collect Web Service Technical Specification**.
+> 2. Is **one merchant account enough for both domains**, or does each domain
+>    need its own `channel` and `websiteUrl`?
+> 3. My account is registered as *Individual* — does it need to become
+>    *Corporate*? Which documents are required?
+> 4. I am Lebanese and **resident in Costa Rica**, travelling between the two.
+>    I have a Costa Rican number, **[second number]**. How do I receive the
+>    **OTP** while outside Lebanon? Can a second number be added to the
+>    account, can the code be sent by email, or can login be confirmed inside
+>    the app without an SMS?
 >
-> What are the steps and the documents required? Thank you.
+> Thank you.
 
 ### Segundo mensaje, cuando ya haya cuenta
 
