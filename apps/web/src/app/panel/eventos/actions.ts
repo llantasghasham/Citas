@@ -36,7 +36,22 @@ export async function importGuestsAction(formData: FormData): Promise<void> {
 
   const { guests, skipped } = parseGuestList(text, country, fallbackLocale);
   const result = await importGuests(scopeOf(session), eventId, guests);
-  if (result === null) redirect('/panel');
+  if (!result.ok) {
+    if (result.reason === 'notFound') redirect('/panel');
+    // Nada se escribió: se dice cuánto cabe y cuánto se pidió, para que la
+    // oficina sepa qué paquete le falta en vez de solo que "no pudo".
+    await recordAudit({
+      tenantId: session.tenantId,
+      actorId: session.userId,
+      action: 'guests.import.refused',
+      entity: 'Event',
+      entityId: eventId,
+      metadata: { allowed: result.allowed, used: result.used, asked: result.asked },
+    });
+    redirect(
+      `/panel/eventos/${eventId}?limite=1&cabe=${result.allowed}&hay=${result.used}&pedidos=${result.asked}`,
+    );
+  }
 
   await recordAudit({
     tenantId: session.tenantId,

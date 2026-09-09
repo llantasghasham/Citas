@@ -458,6 +458,10 @@ export interface Dictionary {
       language: string;
       fallbackWarning: string;
       fallbackFix: string;
+      /** Cuando la lista no cabe en lo que el evento tiene pagado. */
+      limitTitle: string;
+      limitDetail: string;
+      limitHint: string;
     };
     /** One invitation, written out in each language its guests read. */
     versions: {

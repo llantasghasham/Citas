@@ -445,6 +445,18 @@ model Order {
   description String
   status      PaymentStatus @default(pending)
 
+  /// Cuántas invitaciones desbloquea este pedido en su evento. Nulo cuando no
+  /// es un paquete: el pago de una mensualidad no abre invitaciones.
+  packageGuests Int?
+
+  /// La pareja que se casa. NO tiene cuenta aquí, así que su enlace de pago es
+  /// público y viaja por WhatsApp igual que las invitaciones.
+  clientName  String?
+  clientPhone String?
+
+  /// Token del enlace público de pago. Corto y no adivinable, como /g/<token>.
+  payToken String? @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

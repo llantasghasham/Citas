@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 
 import type { Locale } from '@citas/core';
 
+import { guestAllowanceFor } from '@/lib/billing/packages';
 import { getPrisma } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import type { ImportedGuest } from '@/lib/guests/import';
@@ -37,6 +38,11 @@ function newToken(): string {
   return randomBytes(24).toString('base64url');
 }
 
+export type ImportOutcome =
+  | { ok: true; added: number }
+  | { ok: false; reason: 'notFound' }
+  | { ok: false; reason: 'limit'; allowed: number; used: number; asked: number };
+
 /**
  * Adds a client's list to an event.
  *
@@ -44,18 +50,24 @@ function newToken(): string {
  * exception, so a guest already on the list is left alone rather than
  * duplicated: matched by phone number when there is one, by name when there
  * is not.
+ *
+ * The allowance is enforced HERE, on the server, at the moment guests are
+ * written — the same rule the event limit follows. Until now `maxGuests` was
+ * declared on all four plans and checked nowhere, so an office on the free
+ * plan's fifty could import five thousand and a paid package meant nothing.
+ * A package that does not refuse the guest after the last one is not a package.
  */
 export async function importGuests(
   scope: TenantScope,
   eventId: string,
   incoming: ImportedGuest[],
-): Promise<{ added: number } | null> {
+): Promise<ImportOutcome> {
   const prisma = getPrisma();
   const event = await prisma.event.findFirst({
     where: { id: eventId, ...scopedWhere(scope) },
     select: { id: true },
   });
-  if (event === null) return null;
+  if (event === null) return { ok: false, reason: 'notFound' };
 
   const existing = await prisma.guest.findMany({
     where: { eventId },
@@ -69,7 +81,20 @@ export async function importGuests(
     return !knownNames.has(guest.name);
   });
 
-  if (fresh.length === 0) return { added: 0 };
+  if (fresh.length === 0) return { ok: true, added: 0 };
+
+  // Comprobado contra los que YA hay, no contra los de esta importación: dos
+  // pegadas de doscientos no pueden colarse por ser cada una menor del límite.
+  const allowance = await guestAllowanceFor(scope.tenantId, eventId);
+  if (allowance.allowed !== null && allowance.used + fresh.length > allowance.allowed) {
+    return {
+      ok: false,
+      reason: 'limit',
+      allowed: allowance.allowed,
+      used: allowance.used,
+      asked: fresh.length,
+    };
+  }
 
   await prisma.guest.createMany({
     data: fresh.map((guest) => ({
@@ -82,7 +107,7 @@ export async function importGuests(
     })),
   });
 
-  return { added: fresh.length };
+  return { ok: true, added: fresh.length };
 }
 
 export async function listGuestsWithLinks(

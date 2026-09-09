@@ -346,7 +346,10 @@
       "openedCount": "Abriram: {opened} de {total}",
       "language": "Idioma",
       "fallbackWarning": "Sem versão em {language}: verá a de {fallback}.",
-      "fallbackFix": "Adicionar o idioma dele"
+      "fallbackFix": "Adicionar o idioma dele",
+      "limitTitle": "Não se importou ninguém.",
+      "limitDetail": "Este evento admite {cabe} convidados, já tem {hay} e tentaram acrescentar-se {pedidos}.",
+      "limitHint": "Amplie-o com um pacote e volte a colar a lista. Não se guardou nada."
     },
     "versions": {
       "heading": "Idiomas do convite",

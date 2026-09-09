@@ -346,7 +346,10 @@
       "openedCount": "Opened: {opened} of {total}",
       "language": "Language",
       "fallbackWarning": "No {language} version: they will see the {fallback} one.",
-      "fallbackFix": "Add their language"
+      "fallbackFix": "Add their language",
+      "limitTitle": "Nobody was imported.",
+      "limitDetail": "This event allows {cabe} guests, already has {hay}, and {pedidos} more were offered.",
+      "limitHint": "Add a package and paste the list again. Nothing was saved."
     },
     "versions": {
       "heading": "Invitation languages",

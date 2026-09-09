@@ -20,6 +20,10 @@ interface PageProps {
     skipped?: string;
     error?: string;
     version?: string;
+    limite?: string;
+    cabe?: string;
+    hay?: string;
+    pedidos?: string;
   }>;
 }
 
@@ -38,7 +42,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
   }
 
   const { eventId } = await params;
-  const { added, skipped, error, version } = await searchParams;
+  const { added, skipped, error, version, limite, cabe, hay, pedidos } = await searchParams;
   const addedLocale = LOCALES.find((candidate) => candidate === version);
   const { dictionary, locale } = await getAdminContext(session.tenantId);
   const copy = dictionary.admin.guests;
@@ -85,6 +89,19 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           })}
         </p>
       )}
+      {limite === '1' ? (
+        <div role="alert" className="flex flex-col gap-1 border border-[#8c2f1e] bg-[#fdf4f2] p-4">
+          <p className="text-sm text-[#8c2f1e]">{copy.limitTitle}</p>
+          <p className="text-sm text-[#6a6456]">
+            {interpolate(copy.limitDetail, {
+              cabe: cabe ?? '—',
+              hay: hay ?? '—',
+              pedidos: pedidos ?? '—',
+            })}
+          </p>
+          <p className="text-sm text-[#6a6456]">{copy.limitHint}</p>
+        </div>
+      ) : null}
       {error === '1' ? (
         <p role="alert" className="text-sm text-[#8c2f1e]">
           {dictionary.create.errorInvalid}

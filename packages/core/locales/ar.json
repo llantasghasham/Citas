@@ -352,7 +352,10 @@
       "openedCount": "فتحوا: {opened} من {total}",
       "language": "اللغة",
       "fallbackWarning": "لا توجد نسخة بـ{language}: سيرى نسخة {fallback}.",
-      "fallbackFix": "أضف لغته"
+      "fallbackFix": "أضف لغته",
+      "limitTitle": "لم يُستورَد أحد.",
+      "limitDetail": "تتسع هذه المناسبة لـ{cabe} مدعوّ، وفيها {hay} أصلًا، وحاولت إضافة {pedidos}.",
+      "limitHint": "وسّعها بباقة ثم ألصق القائمة من جديد. لم يُحفَظ شيء."
     },
     "versions": {
       "heading": "لغات الدعوة",
