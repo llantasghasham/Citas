@@ -4,6 +4,8 @@ import { getAdminContext } from '@/lib/admin/context';
 import { getSession } from '@/lib/auth/session';
 import { DRAFT_COOKIE } from '@/lib/create/cookie';
 import { parseDraft } from '@/lib/create/draft';
+import { loadPublicOrder } from '@/lib/billing/checkout';
+import { resolvePayLocale } from '@/lib/billing/pay-locale';
 import { resolveHomeLocale } from '@/lib/home/locale';
 import { LANG_HINT_HEADER, PATH_HEADER } from '@/proxy';
 import { loadInvitation } from '@/lib/repositories';
@@ -50,6 +52,16 @@ async function resolveLocale(): Promise<Locale> {
       // the office's default before anyone has signed in.
       const context = await getAdminContext(session?.tenantId, session?.locale);
       return context.locale;
+    }
+
+    // The payment link speaks to the couple, who have no account here: their
+    // own invitation's language, not the office's.
+    const payToken = slugAfter(path, '/pagar/');
+    if (payToken !== null) {
+      return resolvePayLocale(
+        await loadPublicOrder(payToken),
+        requestHeaders.get(LANG_HINT_HEADER) ?? undefined,
+      );
     }
 
     // The creation form is written in the language of the invitation being made.

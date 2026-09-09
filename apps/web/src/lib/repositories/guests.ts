@@ -7,7 +7,7 @@ import { getPrisma } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import type { ImportedGuest } from '@/lib/guests/import';
 import { versionForLocale, type EventVersion } from '@/lib/repositories/versions';
-import type { RsvpStatus } from '@/generated/prisma/enums';
+import type { AcquisitionChannel, RsvpStatus } from '@/generated/prisma/enums';
 
 export interface GuestWithLink {
   id: string;
@@ -29,6 +29,8 @@ export interface GuestWithLink {
 export interface EventGuests {
   eventId: string;
   title: string;
+  /** De dónde vino el evento: decide el precio del paquete, no el formulario. */
+  channel: AcquisitionChannel;
   /** Every language this event was written in, the original first. */
   versions: EventVersion[];
   guests: GuestWithLink[];
@@ -127,6 +129,7 @@ export async function listGuestsWithLinks(
   return {
     eventId: event.id,
     title: event.honorees.map((honoree) => honoree.name).join(' · '),
+    channel: event.channel,
     versions: event.versions,
     guests: event.guests.map((guest) => ({
       id: guest.id,

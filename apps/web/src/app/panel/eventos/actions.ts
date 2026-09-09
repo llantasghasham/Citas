@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { recordAudit } from '@/lib/audit';
 import { parseGuestList } from '@/lib/guests/import';
-import { COUNTRY_CODES } from '@/lib/guests/phone';
+import { openPackageOrder } from '@/lib/billing/checkout';
+import { COUNTRY_CODES, toE164 } from '@/lib/guests/phone';
 import { importGuests } from '@/lib/repositories/guests';
 import { addEventVersion } from '@/lib/repositories/versions';
 import { LOCALES, type Locale } from '@citas/core';
@@ -101,4 +102,43 @@ export async function addVersionAction(formData: FormData): Promise<void> {
   });
 
   redirect(`/panel/eventos/${eventId}?version=${locale}`);
+}
+
+/**
+ * Vende un paquete de invitaciones para esta boda.
+ *
+ * Crea el pedido y su enlace público de pago; no cobra nada y no abre ninguna
+ * invitación. Eso lo hace `settlePublicOrder()` cuando el proveedor confirma,
+ * que es el único que puede decirlo.
+ *
+ * Pide `billing:manage` y no `event:write`: quien importa una lista no
+ * necesariamente puede emitir un cobro a nombre de la oficina.
+ */
+export async function sellPackageAction(formData: FormData): Promise<void> {
+  const session = await getSession();
+  if (session === null || !sessionCan(session, 'billing:manage') || session.tenantId === null) {
+    redirect('/panel');
+  }
+
+  const eventId = String(formData.get('eventId') ?? '');
+  const clientName = String(formData.get('clientName') ?? '').trim().slice(0, 120);
+  const rawPhone = String(formData.get('clientPhone') ?? '').trim();
+  if (clientName.length === 0) redirect(`/panel/eventos/${eventId}?error=1`);
+
+  // El mismo E.164 que los invitados: un teléfono guardado de dos formas es un
+  // teléfono que no sirve para escribirle a nadie.
+  const country = COUNTRY_CODES.find((code) => code === String(formData.get('country'))) ?? '+961';
+  const clientPhone = rawPhone.length === 0 ? null : toE164(rawPhone, country);
+
+  const result = await openPackageOrder(
+    scopeOf(session),
+    { eventId, packageId: String(formData.get('packageId') ?? ''), clientName, clientPhone },
+    session.userId,
+  );
+  if ('error' in result) {
+    if (result.error === 'notFound') redirect('/panel');
+    redirect(`/panel/eventos/${eventId}?error=1`);
+  }
+
+  redirect(`/panel/eventos/${eventId}?vendido=${result.payToken}#paquetes`);
 }

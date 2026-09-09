@@ -261,6 +261,7 @@
           "extraSuperadmins": "Superadministradores de más",
           "siteUrl": "Dirección pública del sitio",
           "codeDelivery": "Códigos que no salieron",
+          "migrations": "Migraciones aplicadas",
           "verses": "Versículos sin verificar"
         }
       },
@@ -403,6 +404,24 @@
         "one": "1 invitado abrirá la invitación en {language}, porque nadie ha escrito la suya.",
         "other": "{count} invitados abrirán la invitación en {language}, porque nadie ha escrito la suya."
       }
+    },
+    "packages": {
+      "heading": "Vender un paquete",
+      "hint": "Se crea un enlace de pago que la pareja abre sin cuenta. Las invitaciones se desbloquean cuando Whish confirma el cobro, no antes.",
+      "clientLabel": "Nombre de la pareja",
+      "clientPhoneLabel": "WhatsApp de la pareja",
+      "packageLabel": "Paquete",
+      "sell": "Crear el enlace de pago",
+      "sold": "Paquetes de esta boda",
+      "noneSold": "Todavía no se ha vendido ningún paquete para esta boda.",
+      "guestsColumn": "Invitaciones",
+      "payLink": "Enlace de pago",
+      "sendLink": "Enviar por WhatsApp",
+      "created": "Se creó el enlace de pago. Envíeselo a la pareja.",
+      "allowance": "Invitaciones pagadas",
+      "fromPlan": "del plan",
+      "fromPackage": "compradas",
+      "whatsappMessage": "Hola {name}, aquí está el cobro de su paquete de {guests} invitaciones: {link}"
     }
   },
   "rsvpForm": {
@@ -599,5 +618,24 @@
   },
   "share": {
     "whatsappMessage": "Hola {name}, nos haría ilusión contar con usted. Aquí está la invitación: {link}"
+  },
+  "pay": {
+    "heading": "Su paquete de invitaciones",
+    "fromOffice": "{office} le envía este cobro.",
+    "forWedding": "Boda de {names}",
+    "packageLabel": "Paquete",
+    "guestsLine": "{guests} invitaciones",
+    "total": "Total",
+    "payNow": "Pagar con Whish",
+    "hosted": "El pago se hace en la página de Whish. Aquí no se le pide ningún dato de su tarjeta ni de su cuenta.",
+    "paidTitle": "Pago recibido",
+    "paidBody": "Gracias. Su paquete ya está activo y la oficina puede enviar las invitaciones.",
+    "pendingTitle": "Todavía no nos consta el pago",
+    "pendingBody": "Si acaba de pagar, espere un momento y vuelva a comprobarlo.",
+    "checkAgain": "Comprobar de nuevo",
+    "failedTitle": "El pago no se completó",
+    "failedBody": "No se le ha cobrado nada. Puede intentarlo otra vez.",
+    "providerError": "No se pudo abrir la pasarela de pago. Inténtelo dentro de unos minutos o avise a la oficina.",
+    "notFound": "Este enlace no existe o ya no está disponible."
   }
 }

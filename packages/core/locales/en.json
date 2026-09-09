@@ -261,6 +261,7 @@
           "extraSuperadmins": "Extra superadmins",
           "siteUrl": "Public site address",
           "codeDelivery": "Codes that never went out",
+          "migrations": "Migrations applied",
           "verses": "Verses nobody has checked"
         }
       },
@@ -403,6 +404,24 @@
         "one": "1 guest will open the invitation in {language}, because nobody wrote theirs.",
         "other": "{count} guests will open the invitation in {language}, because nobody wrote theirs."
       }
+    },
+    "packages": {
+      "heading": "Sell a package",
+      "hint": "This creates a payment link the couple opens without an account. Invitations unlock when Whish confirms the payment, not before.",
+      "clientLabel": "Couple's name",
+      "clientPhoneLabel": "Couple's WhatsApp",
+      "packageLabel": "Package",
+      "sell": "Create the payment link",
+      "sold": "Packages for this wedding",
+      "noneSold": "No package has been sold for this wedding yet.",
+      "guestsColumn": "Invitations",
+      "payLink": "Payment link",
+      "sendLink": "Send on WhatsApp",
+      "created": "Payment link created. Send it to the couple.",
+      "allowance": "Invitations paid for",
+      "fromPlan": "from the plan",
+      "fromPackage": "purchased",
+      "whatsappMessage": "Hello {name}, here is the payment for your package of {guests} invitations: {link}"
     }
   },
   "rsvpForm": {
@@ -599,5 +618,24 @@
   },
   "share": {
     "whatsappMessage": "Hello {name}, we would love to have you with us. Here is the invitation: {link}"
+  },
+  "pay": {
+    "heading": "Your invitation package",
+    "fromOffice": "{office} sent you this payment request.",
+    "forWedding": "Wedding of {names}",
+    "packageLabel": "Package",
+    "guestsLine": "{guests} invitations",
+    "total": "Total",
+    "payNow": "Pay with Whish",
+    "hosted": "Payment happens on Whish's own page. Nothing about your card or account is asked for here.",
+    "paidTitle": "Payment received",
+    "paidBody": "Thank you. Your package is active and the office can send the invitations.",
+    "pendingTitle": "We have no record of the payment yet",
+    "pendingBody": "If you have just paid, wait a moment and check again.",
+    "checkAgain": "Check again",
+    "failedTitle": "The payment did not go through",
+    "failedBody": "You have not been charged. You can try again.",
+    "providerError": "The payment page could not be opened. Try again in a few minutes, or tell the office.",
+    "notFound": "This link does not exist, or is no longer available."
   }
 }

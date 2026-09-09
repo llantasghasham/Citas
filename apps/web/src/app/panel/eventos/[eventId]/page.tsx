@@ -2,10 +2,13 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { importGuestsAction } from '@/app/panel/eventos/actions';
+import { PackagesSection } from '@/components/panel/PackagesSection';
 import { VersionsSection } from '@/components/panel/VersionsSection';
 import { Field, FIELD_CLASS } from '@/components/create/Field';
 import { getAdminContext, requestHost } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
+import { listPackageOrders } from '@/lib/billing/checkout';
+import { guestAllowanceFor } from '@/lib/billing/packages';
 import { LOCALE_NAMES } from '@/lib/create/options';
 import { COUNTRY_CODES } from '@/lib/guests/phone';
 import { toWaMe } from '@/lib/guests/phone';
@@ -24,6 +27,7 @@ interface PageProps {
     cabe?: string;
     hay?: string;
     pedidos?: string;
+    vendido?: string;
   }>;
 }
 
@@ -42,13 +46,22 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
   }
 
   const { eventId } = await params;
-  const { added, skipped, error, version, limite, cabe, hay, pedidos } = await searchParams;
+  const { added, skipped, error, version, limite, cabe, hay, pedidos, vendido } =
+    await searchParams;
   const addedLocale = LOCALES.find((candidate) => candidate === version);
   const { dictionary, locale } = await getAdminContext(session.tenantId);
   const copy = dictionary.admin.guests;
 
   const event = await listGuestsWithLinks(scopeOf(session), eventId);
   if (event === null) redirect('/panel');
+
+  // Cuánto tiene pagado esta boda y qué se le ha vendido. Va aquí, junto a la
+  // lista que no cabe, y no en la facturación de la oficina.
+  const canSell = sessionCan(session, 'billing:manage');
+  const [allowance, sold] = await Promise.all([
+    guestAllowanceFor(session.tenantId, eventId),
+    listPackageOrders(scopeOf(session), eventId),
+  ]);
 
   const origin = `https://${requestHost(await headers())}`;
   const opened = event.guests.filter((guest) => guest.openedAt !== null).length;
@@ -204,6 +217,18 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           </div>
         )}
       </section>
+
+      <PackagesSection
+        eventId={eventId}
+        channel={event.channel}
+        allowance={allowance}
+        sold={sold}
+        {...(vendido === undefined ? {} : { justSold: vendido })}
+        origin={origin}
+        dictionary={dictionary}
+        locale={locale}
+        canSell={canSell}
+      />
 
       <VersionsSection
         eventId={eventId}

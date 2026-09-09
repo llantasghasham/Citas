@@ -222,6 +222,10 @@ de los versículos.
 - `GET /g/[token]` — enlace personal del invitado. Lleva a la versión de SU
   idioma (`versionForLocale`), y a la original si nadie escribió la suya.
 - `GET /api/calendar/[slug]` — archivo `.ics`.
+- `GET /pagar/[token]` — el cobro del paquete, para la pareja que se casa. Sin
+  sesión, en SU idioma, y sin un solo campo: el pago ocurre en la página de
+  Whish, que aloja Whish. Volver a la URL de éxito no cobra ni prueba nada; lo
+  decide `getStatus()`.
 
 ### Panel
 - `GET /entrar` — correo y contraseña en la MISMA pantalla, con dos botones. La
@@ -271,8 +275,11 @@ es la especificación de Whish y la verificación humana de los versículos.
 - Todo dato de negocio cuelga de un tenant. Ninguna consulta sin filtrar por
   oficina: una oficina jamás ve los datos de otra. Se hace con `TenantScope`
   (`src/lib/db/tenant.ts`), que no es un string suelto sino un tipo marcado.
-- La ÚNICA consulta sin tenant es buscar una invitación por su slug público.
-  Cualquier otra excepción hay que discutirla.
+- Hay DOS consultas sin tenant, y solo dos: buscar una invitación por su slug
+  público, y buscar un pedido por el token de su enlace de pago
+  (`/pagar/<token>`). Las dos valen por lo mismo: el token no se adivina,
+  resuelve a UNA fila y nunca a un listado, y quien la abre no tiene cuenta aquí
+  ni va a abrirse una. Cualquier otra excepción hay que discutirla.
 - El invitado NO tiene cuenta ni instala nada. La invitación es un enlace web.
 - Los permisos se comprueban en el servidor. Ocultar un botón no es un permiso.
 - El acceso de soporte del superadmin a un evento ajeno queda siempre registrado.

@@ -94,6 +94,7 @@ export const HEALTH_KEYS = [
   'extraSuperadmins',
   'siteUrl',
   'codeDelivery',
+  'migrations',
   'verses',
 ] as const;
 export type HealthKey = (typeof HEALTH_KEYS)[number];
@@ -324,6 +325,30 @@ export interface Dictionary {
   share: {
     whatsappMessage: string;
   };
+  /**
+   * La pantalla pública de pago, `/pagar/<token>`. La lee la pareja que se
+   * casa, que no tiene cuenta aquí, así que habla su idioma y no el de la
+   * oficina.
+   */
+  pay: {
+    heading: string;
+    fromOffice: string;
+    forWedding: string;
+    packageLabel: string;
+    guestsLine: string;
+    total: string;
+    payNow: string;
+    hosted: string;
+    paidTitle: string;
+    paidBody: string;
+    pendingTitle: string;
+    pendingBody: string;
+    checkAgain: string;
+    failedTitle: string;
+    failedBody: string;
+    providerError: string;
+    notFound: string;
+  };
   /** Staff-facing screens. Office staff in Beirut read these in Arabic too. */
   admin: {
     signIn: {
@@ -471,6 +496,25 @@ export interface Dictionary {
       planAnnual: string;
       planOffice: string;
       limitReached: string;
+    };
+    /** Vender un paquete de invitaciones para UNA boda. */
+    packages: {
+      heading: string;
+      hint: string;
+      clientLabel: string;
+      clientPhoneLabel: string;
+      packageLabel: string;
+      sell: string;
+      sold: string;
+      noneSold: string;
+      guestsColumn: string;
+      payLink: string;
+      sendLink: string;
+      created: string;
+      allowance: string;
+      fromPlan: string;
+      fromPackage: string;
+      whatsappMessage: string;
     };
     guests: {
       heading: string;

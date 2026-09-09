@@ -1,4 +1,5 @@
-import { accessSync, constants } from 'node:fs';
+import { accessSync, constants, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { CODE_SEND_FAILED_ACTION } from '@/lib/auth/otp';
 import { getPrisma } from '@/lib/db/client';
@@ -43,8 +44,69 @@ export async function readHealth(): Promise<HealthCheck[]> {
     await extraSuperadminsCheck(),
     siteUrlCheck(),
     await codeDeliveryCheck(),
+    await migrationsCheck(),
     versesCheck(),
   ];
+}
+
+/**
+ * Que la base de datos del servidor tenga lo que este código da por hecho.
+ *
+ * Desplegar copia el código; aplicar las migraciones es otro paso, y si se
+ * queda sin dar, lo que falla no es el arranque sino una pantalla suelta, días
+ * después, con un error que no dice por qué. Esto lo dice antes.
+ *
+ * Se compara la carpeta de migraciones del repositorio con las que la base
+ * declara aplicadas: es la misma pregunta que responde `prisma migrate status`,
+ * hecha sin salir de la pantalla.
+ */
+async function migrationsCheck(): Promise<HealthCheck> {
+  if (env('DATA_SOURCE') !== 'database') {
+    return { key: 'migrations', level: 'warn', detail: 'DATA_SOURCE ≠ database' };
+  }
+
+  let onDisk: string[];
+  try {
+    onDisk = readdirSync(migrationsDirectory(), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
+  } catch {
+    return { key: 'migrations', level: 'warn', detail: 'prisma/migrations' };
+  }
+
+  try {
+    const rows = await getPrisma().$queryRawUnsafe<{ migration_name: string }[]>(
+      'SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL',
+    );
+    const applied = new Set(rows.map((row) => row.migration_name));
+    const missing = onDisk.filter((name) => !applied.has(name));
+
+    if (missing.length === 0) {
+      return { key: 'migrations', level: 'ok', detail: `${onDisk.length}` };
+    }
+    // Se nombra la primera que falta: es lo que hay que buscar para entenderlo.
+    return {
+      key: 'migrations',
+      level: 'fail',
+      detail: `${missing.length} · ${missing[0] ?? ''} · npm run db:deploy`,
+    };
+  } catch {
+    return { key: 'migrations', level: 'fail', detail: '_prisma_migrations' };
+  }
+}
+
+/** La carpeta de migraciones, que en el servidor cuelga del paquete web. */
+function migrationsDirectory(): string {
+  for (const base of ['.', '..', '../..']) {
+    const candidate = join(process.cwd(), base, 'prisma/migrations');
+    try {
+      accessSync(candidate, constants.R_OK);
+      return candidate;
+    } catch {
+      // La siguiente.
+    }
+  }
+  return join(process.cwd(), 'prisma/migrations');
 }
 
 /**

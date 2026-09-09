@@ -53,6 +53,30 @@ function newExternalId(): string {
     .padStart(3, '0')}`;
 }
 
+/**
+ * El importe que se le manda a Whish, desde el que guarda esta aplicación.
+ *
+ * Dentro, todo el dinero de este proyecto son enteros en la unidad menor:
+ * 2000 son veinte dólares. Whish recibe `amount` junto a `currency`, y una API
+ * que pide la moneda al lado casi siempre espera el importe en las unidades
+ * normales de esa moneda — 20, no 2000.
+ *
+ * Es una suposición, y está anotada como la primera pregunta pendiente en
+ * docs/COBRO-WHISH.md. Se elige ESTA y no la contraria por lo que cuesta
+ * equivocarse: si Whish quisiera céntimos, este código cobra 0,20 $ en vez de
+ * 20 $ y se ve en el primer cobro de prueba; al revés, le cobraría 2.000 $ a
+ * una pareja de verdad. Entre quedarse corto y cobrar cien veces de más, se
+ * elige quedarse corto.
+ *
+ * La libra libanesa no tiene subdivisión en la práctica: sus importes ya se
+ * guardan en unidades enteras y no se dividen.
+ */
+export function toProviderAmount(amount: number, currency: string): number {
+  if (currency === 'LBP') return amount;
+  // Dos decimales, y sin coma flotante de por medio en la división exacta.
+  return Number((amount / 100).toFixed(2));
+}
+
 interface WhishConfig {
   baseUrl: string;
   channel: string;
@@ -165,7 +189,7 @@ export const whishProvider: PaymentProvider = {
     const externalId = newExternalId();
 
     const data = await call(config, CONTRACT.collect, {
-      amount: request.amount.amount,
+      amount: toProviderAmount(request.amount.amount, request.amount.currency),
       currency: request.amount.currency,
       invoice: request.description,
       externalId: Number(externalId),

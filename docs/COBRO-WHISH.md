@@ -79,7 +79,14 @@ Al abrir la cuenta de comercio, pedir por escrito:
    firmado? ¿Con qué cabecera y qué algoritmo se verifica la firma? *(Si no va
    firmado, el callback no puede decidir nada por sí solo — ver reglas abajo.)*
 5. **Monedas soportadas y formato del importe.** ¿USD y LBP? ¿El importe va en
-   céntimos o en unidades enteras?
+   céntimos o en unidades enteras? **Esta es la pregunta cara.** Dentro, el
+   dinero son enteros en la unidad menor: 2000 son veinte dólares. El adaptador
+   envía 20, no 2000 (`toProviderAmount()`), porque una API que pide `currency`
+   al lado del `amount` casi siempre espera las unidades normales. Es una
+   suposición. Se eligió así por lo que cuesta fallar: si Whish quisiera
+   céntimos, cobra 0,20 $ en vez de 20 $ y se ve en el primer cobro de prueba;
+   al revés, le cobraría 2.000 $ a una pareja. **El primer cobro real, de un
+   dólar, hay que mirarlo en el panel de Whish antes de vender nada.**
 6. **Idempotencia.** Si se envía dos veces el mismo `externalId`, ¿se crea un
    segundo cobro o devuelve el primero?
 7. **Caducidad** de un cobro sin pagar.
