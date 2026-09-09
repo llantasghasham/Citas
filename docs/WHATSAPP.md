@@ -68,13 +68,25 @@ CITAS_SECRET_KEY_FILE=    # la misma que la web
 La dirección del servicio (`WHATSAPP_GATEWAY_URL`) sí se configura en el panel,
 porque no es un secreto.
 
-Arrancarlo:
+En producción NO hay que hacer nada de esto a mano: `deploy/install.sh` genera
+el token, lo escribe en el mismo `apps/web/.env` que ya lee la web, e instala y
+arranca el servicio `citas-whatsapp`. El token se genera UNA vez y no se vuelve
+a tocar: cambiarlo dejaría a la web hablándole al servicio con una llave que ya
+no vale.
+
+```
+systemctl status citas-whatsapp     # cómo va
+journalctl -u citas-whatsapp -n 40  # por qué no va
+```
+
+Si el servicio no arranca, el despliegue NO se detiene: sin él se sigue
+enviando a mano con `wa.me`, como antes de que existiera.
+
+En local:
 
 ```
 npm run whatsapp
 ```
-
-En producción va como servicio de systemd, con `Restart=always`.
 
 ## Cómo se usa
 

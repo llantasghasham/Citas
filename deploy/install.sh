@@ -22,6 +22,7 @@ KEY_FILE="/etc/citas/secret.key"
 DB_NAME="citas"
 DB_USER="citas_app"
 SERVICE="/etc/systemd/system/citas.service"
+SERVICE_WA="/etc/systemd/system/citas-whatsapp.service"
 APP_USER="www"
 
 paso() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
@@ -184,7 +185,7 @@ paso "Instalando dependencias y compilando (tarda unos minutos)"
 
 sudo -u "$APP_USER" bash -lc "
   cd '$DIR' &&
-  npm ci --ignore-scripts --include-workspace-root --workspace @citas/web --workspace @citas/core &&
+  npm ci --ignore-scripts --include-workspace-root --workspace @citas/web --workspace @citas/core --workspace @citas/whatsapp &&
   npm run db:generate --workspace @citas/web &&
   npm run db:deploy   --workspace @citas/web &&
   npm run db:seed     --workspace @citas/web &&
@@ -235,6 +236,67 @@ CODIGO="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/i/ejemp
 [ "$CODIGO" = "200" ] || alto "el servicio responde $CODIGO en el puerto $PORT — mira: journalctl -u citas -n 40"
 ok "responde en http://127.0.0.1:$PORT"
 
+# ------------------------------------------------------- 6b. WhatsApp por QR
+
+paso "Servicio de WhatsApp"
+
+# El token lo comparten DOS procesos que arrancan por separado, así que vive en
+# el mismo .env que ya lee la web y systemd se lo pasa al otro por
+# EnvironmentFile. Se genera una vez y no se vuelve a tocar: cambiarlo dejaría a
+# la web hablándole al servicio con una llave que ya no vale.
+if ! grep -q '^WHATSAPP_GATEWAY_TOKEN=' "$ENV_FILE" 2>/dev/null; then
+  TOKEN="$(openssl rand -base64 33 | tr -d '=+/' | cut -c1-40)"
+  printf '\n# Secreto compartido entre la web y el servicio de WhatsApp.\n' >> "$ENV_FILE"
+  printf 'WHATSAPP_GATEWAY_TOKEN="%s"\n' "$TOKEN" >> "$ENV_FILE"
+  printf 'WHATSAPP_GATEWAY_PORT="4100"\n' >> "$ENV_FILE"
+  chown "$APP_USER:$APP_USER" "$ENV_FILE"
+  chmod 600 "$ENV_FILE"
+  ok "token del servicio de WhatsApp generado (no se muestra)"
+else
+  ok "el token de WhatsApp ya estaba puesto"
+fi
+
+cat > "$SERVICE_WA" <<UNIT
+[Unit]
+Description=Citas — servicio de WhatsApp
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=$APP_USER
+Group=$APP_USER
+WorkingDirectory=$DIR/apps/whatsapp
+# El MISMO archivo que lee la web: un solo sitio para el token, la base de datos
+# y la llave de cifrado. systemd le quita las comillas a los valores.
+EnvironmentFile=$DIR/apps/web/.env
+ExecStart=$NODE_BIN $DIR/node_modules/tsx/dist/cli.mjs $DIR/apps/whatsapp/src/index.ts
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=HOME=/tmp
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now citas-whatsapp >/dev/null 2>&1
+systemctl restart citas-whatsapp
+sleep 3
+# No detiene el despliegue si falla: sin este servicio se sigue enviando a mano
+# con wa.me, que es como funcionaba antes de que existiera.
+if systemctl is-active --quiet citas-whatsapp; then
+  ok "el servicio de WhatsApp responde"
+else
+  aviso "el servicio de WhatsApp no arrancó — mira: journalctl -u citas-whatsapp -n 40"
+  aviso "la web sigue funcionando; se envía a mano con wa.me hasta que arranque"
+fi
+
 # SELinux impide que nginx hable con un puerto local. Es la causa del 502
 # clásico en AlmaLinux, y solo se toca este interruptor.
 if command -v getenforce >/dev/null && [ "$(getenforce)" = "Enforcing" ]; then
@@ -249,7 +311,7 @@ cat <<FIN
 ────────────────────────────────────────────────────────────
  Listo. La aplicación corre en 127.0.0.1:$PORT
 
- TE FALTAN TRES COSAS, y ninguna se puede hacer desde aquí:
+ LO QUE FALTA, y no se puede hacer desde aquí:
 
  1. nginx, EN aaPANEL (no edites los vhosts a mano)
     Sitios → citas.posxml.com → Proxy inverso
@@ -265,7 +327,13 @@ cat <<FIN
     Pega el resultado en SMTP_PASSWORD_ENC, pon MAILER="smtp",
     y luego:  systemctl restart citas && npm run db:seed --workspace @citas/web --prefix $DIR
 
- 3. RESPALDOS (aaPanel no respalda PostgreSQL)
+ 3. WHATSAPP POR QR (opcional, y léalo antes)
+    Ya está instalado y corriendo: systemctl status citas-whatsapp
+    Se conecta un número en /panel/configuracion?s=whatsapp
+    ANTES de escanear, lea docs/WHATSAPP.md: automatizar un número personal
+    va contra los términos de WhatsApp y el número que cierran es el suyo.
+
+ 4. RESPALDOS (aaPanel no respalda PostgreSQL)
     cp $DIR/deploy/backup-citas.sh /usr/local/bin/
     chmod 700 /usr/local/bin/backup-citas.sh
     crontab -e   →   30 3 * * *  /usr/local/bin/backup-citas.sh
