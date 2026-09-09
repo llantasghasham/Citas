@@ -7,7 +7,12 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.posxml.citas",
+      "buildNumber": "1",
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -16,7 +21,9 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.posxml.citas",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -28,6 +35,12 @@
     },
     "experiments": {
       "baseUrl": "/app"
+    },
+    "locales": {
+      "ar": "./locales/store.ar.json",
+      "es": "./locales/store.es.json",
+      "pt": "./locales/store.pt.json",
+      "en": "./locales/store.en.json"
     }
   }
 }
