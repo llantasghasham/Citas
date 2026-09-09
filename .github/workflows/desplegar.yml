@@ -48,8 +48,33 @@ jobs:
 
       - name: Comprobar que el sitio responde
         run: |
-          for ruta in / /entrar /i/ejemplo-ar /api/render/ejemplo-ar; do
+          # /render/... va en la lista a proposito: es el lienzo que Chromium
+          # captura, NO pasa por la tabla `Render`, y es justo lo que se rompio
+          # sin que nadie lo viera. Un 200 en /api/render/... servido desde la
+          # cache no prueba nada; este si.
+          for ruta in / /ejemplos /entrar /i/ejemplo-ar /render/ejemplo-ar /api/render/ejemplo-ar; do
             codigo="$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "https://citas.posxml.com$ruta")"
             echo "$ruta -> $codigo"
             [ "$codigo" = "200" ] || { echo "::error::$ruta devolvio $codigo"; exit 1; }
           done
+
+      - name: Comprobar que la imagen es una imagen
+        run: |
+          # Un 200 con una pagina de error dentro tambien es un 200.
+          tipo="$(curl -s -o /tmp/prueba.png -w '%{content_type}' --max-time 90 \
+            'https://citas.posxml.com/api/render/ejemplo-ar')"
+          echo "content-type: $tipo"
+          [ "$tipo" = "image/png" ] || { echo "::error::no devolvio un PNG"; exit 1; }
+          file /tmp/prueba.png | grep -q '1080 x 1920' \
+            || { echo "::error::el PNG no mide 1080x1920"; file /tmp/prueba.png; exit 1; }
+
+      - name: Comprobar que el arabe se declara arabe
+        run: |
+          # Un idioma equivocado no cambia el codigo HTTP: se lee en el documento.
+          etiqueta="$(curl -s --max-time 60 'https://citas.posxml.com/i/ejemplo-ar' \
+            | grep -o '<html[^>]*>' | head -1)"
+          echo "$etiqueta"
+          case "$etiqueta" in
+            *'lang="ar"'*'dir="rtl"'*) ;;
+            *) echo "::error::la invitacion arabe no se declara ar/rtl"; exit 1 ;;
+          esac
