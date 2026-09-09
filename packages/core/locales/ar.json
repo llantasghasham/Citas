@@ -237,7 +237,8 @@
           "superadmin": "المدير العام مضبوط",
           "extraSuperadmins": "مديرون عامّون زائدون",
           "siteUrl": "عنوان الموقع العلني",
-          "codeDelivery": "رموز لم تخرج"
+          "codeDelivery": "رموز لم تخرج",
+          "verses": "آيات لم يتحقّق منها أحد"
         }
       },
       "mail": {

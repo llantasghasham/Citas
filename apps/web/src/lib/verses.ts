@@ -1,12 +1,18 @@
 import versesFile from '../../data/verses.json';
 
-import { asArray, asEnum, asRecord, asString } from './validate';
+import { asArray, asEnum, asOptionalString, asRecord, asString } from './validate';
 import { LOCALES, type Locale, type Quote } from './types';
 
 export interface Verse extends Quote {
   id: string;
   locale: Locale;
   tradition: string;
+  /**
+   * Who checked this text against the edition it cites. Null means nobody has,
+   * which is a fact about the file and never something to paper over: the rule
+   * is that an entry is added only after a person verifies it.
+   */
+  verifiedBy: string | null;
 }
 
 /**
@@ -28,6 +34,7 @@ function parseVerses(): Map<string, Verse> {
       tradition: asString(record['tradition'], `${path}/tradition`),
       text: asString(record['text'], `${path}/text`),
       source: asString(record['source'], `${path}/source`),
+      verifiedBy: asOptionalString(record['verifiedBy'], `${path}/verifiedBy`) ?? null,
     };
     byId.set(verse.id, verse);
   });
@@ -39,6 +46,17 @@ const VERSES = parseVerses();
 
 export function findVerse(id: string): Verse | undefined {
   return VERSES.get(id);
+}
+
+/**
+ * The sacred texts nobody has checked yet.
+ *
+ * They are still rendered — refusing to draw them would take down invitations
+ * already sent — but the platform must not be quiet about it: a misquoted
+ * Qur'anic verse on a wedding invitation is not something a later deploy fixes.
+ */
+export function unverifiedVerses(): Verse[] {
+  return [...VERSES.values()].filter((verse) => verse.verifiedBy === null);
 }
 
 /** The verses offered for a language. Nothing outside this list can be chosen. */

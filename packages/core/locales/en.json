@@ -237,7 +237,8 @@
           "superadmin": "Superadmin configured",
           "extraSuperadmins": "Extra superadmins",
           "siteUrl": "Public site address",
-          "codeDelivery": "Codes that never went out"
+          "codeDelivery": "Codes that never went out",
+          "verses": "Verses nobody has checked"
         }
       },
       "mail": {

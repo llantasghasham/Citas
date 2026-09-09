@@ -2,6 +2,7 @@ import { accessSync, constants } from 'node:fs';
 
 import { CODE_SEND_FAILED_ACTION } from '@/lib/auth/otp';
 import { getPrisma } from '@/lib/db/client';
+import { unverifiedVerses } from '@/lib/verses';
 import type { HealthKey } from '@/lib/types';
 
 export type HealthLevel = 'ok' | 'warn' | 'fail';
@@ -42,7 +43,29 @@ export async function readHealth(): Promise<HealthCheck[]> {
     await extraSuperadminsCheck(),
     siteUrlCheck(),
     await codeDeliveryCheck(),
+    versesCheck(),
   ];
+}
+
+/**
+ * Sacred texts still carrying `verifiedBy: null`.
+ *
+ * The project's rule is that an entry is added only after a person checks it
+ * against the cited edition and records their name. Until that happens the
+ * platform is printing Qur'anic and biblical text on real wedding invitations
+ * on nobody's authority, and no deploy fixes a verse that went out wrong.
+ *
+ * It is a person's job, not the code's — so the code's job is to keep saying so.
+ */
+function versesCheck(): HealthCheck {
+  const pending = unverifiedVerses();
+  if (pending.length === 0) return { key: 'verses', level: 'ok', detail: '0' };
+
+  return {
+    key: 'verses',
+    level: 'fail',
+    detail: `${pending.length} · ${pending.map((verse) => verse.id).join(' · ')}`.slice(0, 200),
+  };
 }
 
 /**

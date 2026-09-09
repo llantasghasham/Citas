@@ -237,7 +237,8 @@
           "superadmin": "Superadministrador configurado",
           "extraSuperadmins": "Superadministradores a mais",
           "siteUrl": "Endereço público do site",
-          "codeDelivery": "Códigos que não saíram"
+          "codeDelivery": "Códigos que não saíram",
+          "verses": "Versículos por verificar"
         }
       },
       "mail": {
