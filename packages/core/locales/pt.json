@@ -127,6 +127,15 @@
             "A sessão fecha-se pela ligação no topo. Num computador partilhado, feche-a sempre."
           ]
         },
+        "interface": {
+          "title": "O idioma do painel",
+          "steps": [
+            "Em cima à direita há quatro botões: العربية, Español, Português e English. Carregue no seu.",
+            "A escolha fica guardada na SUA conta, não na da agência: dois colegas na mesma secretária podem lê-lo em idiomas diferentes.",
+            "Escolher árabe passa o painel inteiro da direita para a esquerda, não só o texto.",
+            "Isto não mexe no idioma dos convites: esse é decidido em cada versão, na página do evento."
+          ]
+        },
         "create": {
           "title": "Criar um convite",
           "steps": [
@@ -195,6 +204,17 @@
             "O operador cria e edita eventos e convidados. O organizador só consulta.",
             "A faturação e a equipa são geridas pelo administrador da agência.",
             "As permissões são sempre verificadas no servidor: um botão que não se vê não é uma permissão."
+          ]
+        },
+        "system": {
+          "title": "Estado do sistema",
+          "steps": [
+            "Só o superadministrador o vê, porque nomeia as variáveis de configuração que faltam.",
+            "Em cima, onze verificações: base de dados, correio a sair, gateway de pagamento, chave de cifra, Chromium e as restantes. A verde está bem; a vermelho diz exactamente o que falta.",
+            "Por baixo, as versões de tudo o que está a correr, lidas ao vivo da máquina.",
+            "O botão «Enviar um email de teste» envia uma mensagem a sério ao superadministrador e mostra a resposta do servidor. É a única coisa que distingue «mal configurado» de «o fornecedor recusa a palavra-passe».",
+            "O servidor aceitar a mensagem não garante que chegue à caixa de entrada. Se não aparecer, veja o spam antes de mexer em nada.",
+            "Actualizar pacotes faz-se pela consola, não a partir dali: o ecrã dá os comandos exactos."
           ]
         }
       }

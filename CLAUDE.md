@@ -185,29 +185,58 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
 - `docs/WINDOWS.md` — levantarlo en Windows.
 - `docs/DESPLIEGUE-VPS.md` — desplegar en un VPS con aaPanel, paso a paso. XAMPP no sirve: esto es Node y
   PostgreSQL, y las variables van en `apps\web\.env`.
+- `docs/APPS-MOVILES.md` — publicar en Apple y Google Play: qué trae el
+  repositorio (`codemagic.yaml`, `eas.json`, identificadores) y qué no puede
+  traer (las dos cuentas de tienda, las firmas, la política de privacidad).
 
 ## Estado actual
-Fases 1, 2 y 3 terminadas: motor de render, base de datos, acceso por código de
-un solo uso, oficinas por subdominio, historial, confirmaciones, calendario,
-exportación, formulario de creación, panel con oficinas, equipo, planes y
-facturas, y la app móvil. Falta el cobro real: la especificación de Whish.
-- `GET /i/[slug]` — página web de la invitación
-- `GET /api/render/[slug]` — PNG 1080x1920 generado en servidor
-- `GET /render/[slug]` — lienzo interno de captura (no indexado)
-- Dos plantillas: `classic-gold` (celebración) y `sober-memorial` (duelo)
-- Datos: `DATA_SOURCE=json` lee /data/invitations.json (por defecto),
-  `DATA_SOURCE=database` lee PostgreSQL. Ambos detrás de `InvitationRepository`.
-- Esquema aplicado y `npm run db:seed` carga los 4 ejemplos y el superadmin.
-- `GET /entrar` — acceso por código de un solo uso; `GET /panel` — protegido,
-  con los eventos de la oficina y sus confirmaciones.
+En producción, en `citas.posxml.com`. Todas las fases construidas. Lo único
+pendiente que no es código: la especificación de Whish y la verificación humana
+de los versículos.
+
+### Público
+- `GET /` — portada: qué muestra se decide en `src/config/site.ts`, qué dice
+  está en los cuatro diccionarios bajo `home`. Idioma por `?lang=` o por
+  `Accept-Language`. Vista previa al compartir en `public/og/home.png`, dibujada
+  con `npm run og:build`.
+- `GET /ejemplos` — las invitaciones de muestra, no indexado. Sale de la lista
+  blanca de `site.ts`, NUNCA de un listado de la base: eso enseñaría las bodas
+  reales de todas las oficinas.
+- `GET /i/[slug]` — la invitación. Una por idioma; cada una con su slug.
+- `GET /api/render/[slug]` — PNG 1080x1920 con caché en la tabla `Render`.
+- `GET /render/[slug]` — lienzo interno de captura.
+- `GET /g/[token]` — enlace personal del invitado. Lleva a la versión de SU
+  idioma (`versionForLocale`), y a la original si nadie escribió la suya.
 - `GET /api/calendar/[slug]` — archivo `.ics`.
-- `GET /api/events/[eventId]/guests` — CSV de invitados; exige sesión y oficina.
-- `GET /crear` — creación en cinco pasos con vista previa; publicar exige sesión.
-- `/panel/oficinas` (superadmin), `/panel/equipo` y `/panel/facturacion`.
-- `POST /api/payments/[provider]/callback` — aviso del proveedor, nunca prueba.
-- `/panel/eventos/[eventId]` — lista de invitados: importar, enviar por WhatsApp
-  y ver quién abrió y quién respondió.
-- `GET /g/[token]` — enlace personal del invitado.
+
+### Panel
+- `GET /entrar` — correo y contraseña en la MISMA pantalla, con dos botones. La
+  contraseña es opcional y solo la tienen el superadministrador y los
+  administradores de oficina; el resto entra con el código.
+- `/panel` (eventos), `/panel/oficinas` (superadmin), `/panel/equipo`,
+  `/panel/facturacion`, `/panel/eventos/[eventId]` (invitados, idiomas que
+  faltan, importar y enviar por WhatsApp).
+- `/panel/manual` — el manual de uso, en los cuatro idiomas.
+- `/panel/sistema` — SOLO superadministrador: once comprobaciones de salud,
+  las versiones leídas en vivo y un botón que envía un correo de prueba y
+  enseña la respuesta del proveedor.
+- Cuatro botones en la cabecera cambian el idioma del panel. Se guarda en
+  `User.locale`, no en la oficina.
+
+### Cómo se decide el idioma del documento
+`src/proxy.ts` (en Next 16 se llama `proxy`, no `middleware`) anota la ruta y el
+`?lang=`, y `src/lib/i18n/document.ts` termina de resolverlo para poner
+`<html lang>` y `<html dir>`. El layout raíz nunca ve los parámetros de la
+página, y por eso hace falta ese rodeo.
+
+### Datos
+- `DATA_SOURCE=json` lee /data/invitations.json (por defecto),
+  `DATA_SOURCE=database` lee PostgreSQL. Detrás de `InvitationRepository`, que
+  tiene UN solo método: buscar por slug público. No hay listado sin oficina.
+- `npm run db:seed` carga los ejemplos y el superadministrador de
+  `SUPERADMIN_EMAIL`.
+- `npm run auth:password -- <correo>` pone contraseña por entrada estándar.
+- `npm run og:build` redibuja la tarjeta de la portada.
 
 ## Orden de construcción
 1. Base de datos, oficinas (multiempresa) y roles — **hecho**: esquema,

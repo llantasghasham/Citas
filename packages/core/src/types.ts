@@ -53,6 +53,7 @@ export type PlanKey = (typeof PLAN_KEYS)[number];
 /** The chapters of the in-app manual, in the order the panel shows them. */
 export const MANUAL_CHAPTERS = [
   'signIn',
+  'interface',
   'create',
   'languages',
   'guests',
@@ -60,6 +61,7 @@ export const MANUAL_CHAPTERS = [
   'rsvp',
   'image',
   'team',
+  'system',
 ] as const;
 export type ManualChapter = (typeof MANUAL_CHAPTERS)[number];
 

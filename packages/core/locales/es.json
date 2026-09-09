@@ -127,6 +127,15 @@
             "La sesión se cierra desde el enlace de arriba a la derecha. En un ordenador compartido, ciérrela siempre."
           ]
         },
+        "interface": {
+          "title": "El idioma del panel",
+          "steps": [
+            "Arriba a la derecha hay cuatro botones: العربية, Español, Português y English. Pulse el suyo.",
+            "La elección se guarda en SU cuenta, no en la de la oficina: dos compañeros en el mismo escritorio pueden leerlo en idiomas distintos.",
+            "Elegir árabe pasa el panel entero de derecha a izquierda, no solo el texto.",
+            "Esto no toca el idioma de las invitaciones: ese lo decide cada versión, en la ficha del evento."
+          ]
+        },
         "create": {
           "title": "Crear una invitación",
           "steps": [
@@ -195,6 +204,17 @@
             "El operador crea y edita eventos e invitados. El organizador solo mira.",
             "La facturación y el equipo los gestiona el administrador de la oficina.",
             "Los permisos se comprueban siempre en el servidor: que un botón no se vea no es un permiso."
+          ]
+        },
+        "system": {
+          "title": "Estado del sistema",
+          "steps": [
+            "Solo lo ve el superadministrador, porque nombra las variables de configuración que faltan.",
+            "Arriba, once comprobaciones: base de datos, correo saliente, pasarela de cobro, llave de cifrado, Chromium y demás. En verde va bien; en rojo dice exactamente qué falta.",
+            "Debajo, las versiones de todo lo que está corriendo, leídas en vivo de la máquina.",
+            "El botón «Enviar un correo de prueba» manda un mensaje de verdad al superadministrador y enseña la respuesta del servidor. Es lo único que distingue «mal configurado» de «el proveedor rechaza la contraseña».",
+            "Que el servidor acepte el mensaje no garantiza que llegue a la bandeja. Si no aparece, mire el correo no deseado antes de tocar nada.",
+            "Actualizar paquetes se hace por consola, no desde ahí: la pantalla da los comandos exactos."
           ]
         }
       }
