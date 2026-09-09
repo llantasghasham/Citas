@@ -1,0 +1,55 @@
+# Despliegue automatico a produccion (citas.posxml.com).
+#
+# Cada empujon a la rama de trabajo despliega solo. No hace falta que nadie entre
+# al servidor: quien empuja, despliega.
+#
+# Como esta atado, porque este repositorio es PUBLICO:
+#   - La llave de SSH_DEPLOY_KEY esta atada en el servidor, en authorized_keys,
+#     a ejecutar UNICAMENTE /usr/local/bin/desplegar-citas.sh. Con ella no se
+#     abre una shell ni se lee un archivo. Aunque el secreto se filtrase, el
+#     techo es "volver a desplegar la rama publica", no "entrar al servidor".
+#   - Solo corre en `push` a la rama. Nunca en `pull_request`: GitHub no entrega
+#     secretos a los PR de terceros, y asi tampoco se intenta.
+#   - La huella del servidor va fijada aqui abajo, asi que no vale que otra
+#     maquina se haga pasar por el.
+
+name: Desplegar a produccion
+
+on:
+  push:
+    branches: [claude/invitation-render-engine-9sv1tp]
+  workflow_dispatch:
+
+# Dos despliegues a la vez se pisarian el arbol de trabajo del servidor.
+concurrency:
+  group: despliegue-produccion
+  cancel-in-progress: false
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Preparar la llave y fijar el servidor
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.SERVER_HOST }} ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPGQDpvBrmHHyMad5H54HocoGHWrzck1SU8AgkQCpsFx" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Desplegar
+        run: |
+          # No se manda ningun comando: authorized_keys ya obliga al script de
+          # despliegue. Lo que se ve aqui abajo es su salida completa.
+          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}"
+
+      - name: Comprobar que el sitio responde
+        run: |
+          for ruta in / /entrar /i/ejemplo-ar /api/render/ejemplo-ar; do
+            codigo="$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "https://citas.posxml.com$ruta")"
+            echo "$ruta -> $codigo"
+            [ "$codigo" = "200" ] || { echo "::error::$ruta devolvio $codigo"; exit 1; }
+          done
