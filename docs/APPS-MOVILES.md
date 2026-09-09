@@ -37,7 +37,35 @@ Estas cuatro cosas son cuentas y documentos, no código:
    qué datos recoge usted y qué hace con ellos, y eso es una declaración legal
    suya, no una plantilla.
 
-## Los pasos, una vez tenga lo de arriba
+## Compilar con Codemagic (el camino elegido)
+
+`codemagic.yaml`, en la raíz del repositorio, trae dos flujos ya escritos:
+`android` y `ios`. La app es de Expo gestionada —no hay carpetas `ios/` ni
+`android/` en el repositorio— así que cada compilación las genera con
+`expo prebuild`. Eso evita que el proyecto nativo se quede desfasado respecto a
+`app.json`, que es el fallo clásico de tener las dos cosas a la vez.
+
+Antes de la primera compilación hay que crear en Codemagic dos grupos de
+variables. **Ninguna credencial vive en el repositorio**, y ninguna la puedo
+crear yo:
+
+- `citas_android` — `CM_KEYSTORE`, `CM_KEYSTORE_PASSWORD`, `CM_KEY_ALIAS`,
+  `CM_KEY_PASSWORD` y `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS`.
+- `citas_ios` — `APP_STORE_CONNECT_ISSUER_ID`,
+  `APP_STORE_CONNECT_KEY_IDENTIFIER`, `APP_STORE_CONNECT_PRIVATE_KEY` y
+  `CERTIFICATE_PRIVATE_KEY`.
+
+El número de compilación lo lleva Codemagic (`PROJECT_BUILD_NUMBER`) y no el
+repositorio: dos subidas con el mismo número las rechazan las dos tiendas.
+
+Android sube a la pista interna como borrador, e iOS a TestFlight. Ninguno de
+los dos publica al público solo: eso se aprieta a mano en la consola de la
+tienda, que es como debe ser.
+
+## Alternativa rápida: EAS
+
+`eas.json` sigue en el repositorio para cuando haga falta un APK a mano sin
+montar la cuenta de Codemagic. Es el camino corto, no el de producción.
 
 ```
 cd apps/mobile

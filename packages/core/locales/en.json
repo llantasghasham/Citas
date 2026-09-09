@@ -72,7 +72,12 @@
       "codeLabel": "6-digit code",
       "verify": "Sign in",
       "invalid": "Wrong or expired code. Request a new one.",
-      "otherEmail": "Use another email"
+      "otherEmail": "Use another email",
+      "passwordLink": "Mail not arriving? Sign in with a password",
+      "passwordLabel": "Password",
+      "passwordSubmit": "Sign in",
+      "passwordHint": "Only for the platform account and office administrators. Everyone else always signs in with the code.",
+      "codeLink": "Back to the emailed code"
     },
     "panel": {
       "title": "Dashboard",
@@ -115,7 +120,8 @@
         "signIn": {
           "title": "Signing in",
           "steps": [
-            "There are no passwords. You type your email at /entrar and a six-digit code arrives.",
+            "The end client and the staff sign in without a password: you type your email at /entrar and a six-digit code arrives.",
+            "The platform account and office administrators may also have a password, to get in on the days the mail is not moving. The link sits under the code field.",
             "The code works ONCE and expires after ten minutes. If it runs out, ask for another.",
             "The answer is the same whether the account exists or not: the system never reveals who is registered.",
             "Sign out from the link at the top. On a shared computer, always sign out."

@@ -328,6 +328,12 @@ export interface Dictionary {
       verify: string;
       invalid: string;
       otherEmail: string;
+      /** The way in when the mail is not moving. Not offered to the end client. */
+      passwordLink: string;
+      passwordLabel: string;
+      passwordSubmit: string;
+      passwordHint: string;
+      codeLink: string;
     };
     panel: {
       title: string;

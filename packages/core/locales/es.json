@@ -72,7 +72,12 @@
       "codeLabel": "Código de 6 dígitos",
       "verify": "Entrar",
       "invalid": "Código incorrecto o caducado. Pida uno nuevo.",
-      "otherEmail": "Usar otro correo"
+      "otherEmail": "Usar otro correo",
+      "passwordLink": "¿No le llega el correo? Entrar con contraseña",
+      "passwordLabel": "Contraseña",
+      "passwordSubmit": "Entrar",
+      "passwordHint": "Solo para la cuenta de la plataforma y los administradores de oficina. El resto entra siempre con el código.",
+      "codeLink": "Volver al código por correo"
     },
     "panel": {
       "title": "Panel",
@@ -115,7 +120,8 @@
         "signIn": {
           "title": "Entrar",
           "steps": [
-            "No hay contraseñas. Se escribe el correo en /entrar y llega un código de seis dígitos.",
+            "El cliente final y el personal entran sin contraseña: se escribe el correo en /entrar y llega un código de seis dígitos.",
+            "La cuenta de la plataforma y los administradores de oficina pueden además tener contraseña, para entrar los días en que el correo no sale. El enlace está debajo del campo del código.",
             "El código sirve UNA vez y caduca a los diez minutos. Si se agota, se pide otro.",
             "La respuesta es la misma exista o no la cuenta: el sistema nunca revela quién está dado de alta.",
             "La sesión se cierra desde el enlace de arriba a la derecha. En un ordenador compartido, ciérrela siempre."

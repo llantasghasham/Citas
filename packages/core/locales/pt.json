@@ -72,7 +72,12 @@
       "codeLabel": "Código de 6 dígitos",
       "verify": "Entrar",
       "invalid": "Código incorreto ou expirado. Peça um novo.",
-      "otherEmail": "Usar outro correio"
+      "otherEmail": "Usar outro correio",
+      "passwordLink": "O email não chega? Entrar com palavra-passe",
+      "passwordLabel": "Palavra-passe",
+      "passwordSubmit": "Entrar",
+      "passwordHint": "Apenas para a conta da plataforma e os administradores de agência. Os restantes entram sempre com o código.",
+      "codeLink": "Voltar ao código por email"
     },
     "panel": {
       "title": "Painel",
@@ -115,7 +120,8 @@
         "signIn": {
           "title": "Entrar",
           "steps": [
-            "Não há palavras-passe. Escreve-se o email em /entrar e chega um código de seis dígitos.",
+            "O cliente final e a equipa entram sem palavra-passe: escreve-se o email em /entrar e chega um código de seis dígitos.",
+            "A conta da plataforma e os administradores de agência podem ainda ter palavra-passe, para entrar nos dias em que o email não sai. A ligação fica por baixo do campo do código.",
             "O código serve UMA vez e expira ao fim de dez minutos. Se se esgotar, pede-se outro.",
             "A resposta é a mesma exista ou não a conta: o sistema nunca revela quem está registado.",
             "A sessão fecha-se pela ligação no topo. Num computador partilhado, feche-a sempre."

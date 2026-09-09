@@ -45,6 +45,14 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 
 ### Acceso
 - Sin contraseñas para el cliente final: código de un solo uso por correo.
+- El superadministrador y los administradores de oficina SÍ pueden tener
+  contraseña, y solo ellos: el dueño de la máquina no puede quedarse fuera
+  porque se caiga un servidor de correo que no controla. Se pone con
+  `npm run auth:password`, que la lee por la entrada estándar y se niega a
+  dársela a un operador o a un organizador. Se guarda con scrypt, nunca con un
+  hash rápido, y cinco fallos por dirección cierran la puerta quince minutos.
+  Fallar la contraseña responde exactamente lo mismo que fallar un código: no
+  sirve para averiguar qué direcciones existen.
 - Los secretos (token de sesión, código) se guardan SIEMPRE con hash. Un volcado
   de la base de datos no puede suplantar a nadie.
 - Nunca se revela si una dirección tiene cuenta. La respuesta es la misma.

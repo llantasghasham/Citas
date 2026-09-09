@@ -14,7 +14,8 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "secret:encrypt": "tsx scripts/encrypt-secret.mjs"
+    "secret:encrypt": "tsx scripts/encrypt-secret.mjs",
+    "auth:password": "tsx scripts/set-password.ts"
   },
   "dependencies": {
     "@citas/core": "*",

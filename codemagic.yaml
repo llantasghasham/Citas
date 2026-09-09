@@ -1,0 +1,101 @@
+# Compilación de las apps móviles en Codemagic.
+#
+# La app de `apps/mobile` es una app de Expo gestionada: no hay carpetas `ios/`
+# ni `android/` en el repositorio, y se generan con `expo prebuild` en cada
+# compilación. Eso mantiene el repositorio limpio y evita que el proyecto nativo
+# se quede desfasado respecto a `app.json`.
+#
+# Antes de la primera compilación hay que crear en Codemagic los grupos de
+# variables que se nombran abajo. Ninguna credencial vive en este archivo.
+
+definitions:
+  instalar: &instalar
+    name: Instalar las dependencias del monorepo
+    script: |
+      npm ci
+  prebuild: &prebuild
+    name: Generar el proyecto nativo
+    script: |
+      cd apps/mobile
+      npx expo prebuild --platform $PLATAFORMA --clean
+  comprobar: &comprobar
+    name: Tipos
+    script: |
+      npm run typecheck --workspace @citas/mobile
+
+workflows:
+  android:
+    name: Citas · Android
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      # Cree este grupo en Codemagic con la firma de Android:
+      # CM_KEYSTORE, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD
+      # y GCLOUD_SERVICE_ACCOUNT_CREDENTIALS para publicar en Play.
+      groups:
+        - citas_android
+      vars:
+        PLATAFORMA: android
+        # Sin esto la app sale apuntando a localhost: instalada y rota.
+        EXPO_PUBLIC_API_URL: 'https://citas.posxml.com'
+      node: 22
+    scripts:
+      - *instalar
+      - *comprobar
+      - *prebuild
+      - name: Construir el App Bundle
+        script: |
+          cd apps/mobile/android
+          # El número de compilación lo lleva Codemagic, no el repositorio: dos
+          # subidas con el mismo número las rechaza Google.
+          ./gradlew bundleRelease -PversionCode=$(($PROJECT_BUILD_NUMBER))
+    artifacts:
+      - apps/mobile/android/app/build/outputs/**/*.aab
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
+
+  ios:
+    name: Citas · iOS
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      # Cree este grupo con la cuenta de App Store Connect:
+      # APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER,
+      # APP_STORE_CONNECT_PRIVATE_KEY y CERTIFICATE_PRIVATE_KEY.
+      groups:
+        - citas_ios
+      vars:
+        PLATAFORMA: ios
+        BUNDLE_ID: 'com.posxml.citas'
+        EXPO_PUBLIC_API_URL: 'https://citas.posxml.com'
+      node: 22
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - *instalar
+      - *comprobar
+      - *prebuild
+      - name: Firmar
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Instalar los pods
+        script: |
+          cd apps/mobile/ios && pod install
+      - name: Construir
+        script: |
+          cd apps/mobile
+          xcode-project build-ipa \
+            --workspace "ios/$(ls ios | grep -m1 '\.xcworkspace$')" \
+            --scheme "$(ls ios | grep -m1 '\.xcodeproj$' | sed 's/\.xcodeproj//')"
+    artifacts:
+      - apps/mobile/build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
