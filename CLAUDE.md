@@ -277,7 +277,13 @@ de los versículos.
     Un campo vacío es «el texto original», y no se guarda fila.
   - Los cuatro botones de idioma son ahora un icono de mundo (`<details>`, sin
     JavaScript de cliente).
-- Cuatro botones en la cabecera cambian el idioma del panel. Se guarda en
+- `/panel/perfil` — cada persona edita LO SUYO: nombre, foto, teléfono, idioma
+  y el país que maneja. El id sale de la sesión, nunca del formulario: un campo
+  oculto con el id del usuario en una pantalla de perfil es cómo se edita el
+  perfil de otro. El rol NO está aquí, para que nadie se ascienda a sí mismo.
+- `/panel/equipo` — quién trabaja en la oficina, con qué rol, en qué idioma y
+  con qué país. Cada fila se guarda por su cuenta.
+- Un icono de mundo en la cabecera cambia el idioma del panel. Se guarda en
   `User.locale`, no en la oficina.
 
 ### Cómo se decide el idioma del documento
@@ -317,6 +323,23 @@ es la especificación de Whish y la verificación humana de los versículos.
   ni va a abrirse una. Cualquier otra excepción hay que discutirla.
 - El invitado NO tiene cuenta ni instala nada. La invitación es un enlace web.
 - Los permisos se comprueban en el servidor. Ocultar un botón no es un permiso.
+- El reparto de permisos por rol se edita en `/panel/configuracion?s=roles`, con
+  DOS candados que no se negocian: **SUPERADMIN no se toca** (recortarle
+  permisos al único rol que puede volver a ampliarlos es cerrarse la puerta
+  desde dentro) y **`platform:manage` no se reparte** (abre la configuración de
+  todas las oficinas y el cobro; si se pudiera conceder, un administrador de
+  oficina se lo concedería a su propio rol). Los dos se aplican al ESCRIBIR y al
+  LEER, así que ni un envío fabricado a mano ni una fila vieja los saltan.
+- `sessionCan` es SÍNCRONA a propósito, aunque el reparto sea configurable: los
+  permisos se resuelven al abrir la sesión y viajan en ella. Si fuera asíncrona,
+  un `await` olvidado devolvería una promesa —que es verdadera— y la
+  comprobación pasaría siempre. Un permiso que falla abierto por un descuido de
+  sintaxis no es un permiso.
+- El país de cada persona (`User.country`) no es un adorno: decide el prefijo
+  con el que se normaliza una lista pegada sin prefijo y la zona horaria por
+  defecto. Los nombres de los países salen de `Intl.DisplayNames`, que ya habla
+  los cuatro idiomas: cuatro listas de doscientos nombres a mano son cuatro
+  listas que envejecen.
 - El acceso de soporte del superadmin a un evento ajeno queda siempre registrado.
 
 <!-- BEGIN:nextjs-agent-rules -->

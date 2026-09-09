@@ -81,20 +81,69 @@ export interface MemberRow {
   userId: string;
   email: string;
   role: Role;
+  name: string | null;
+  locale: Locale;
+  /** El país que maneja: ISO alfa-2, o nulo si no ha elegido. */
+  country: string | null;
+  avatarUrl: string | null;
 }
 
 export async function listMembers(scope: TenantScope): Promise<MemberRow[]> {
   const memberships = await getPrisma().membership.findMany({
     where: scopedWhere(scope),
     orderBy: { createdAt: 'asc' },
-    include: { user: { select: { email: true } } },
+    include: {
+      user: {
+        select: { email: true, name: true, locale: true, country: true, avatarUrl: true },
+      },
+    },
   });
 
   return memberships.map((membership) => ({
     userId: membership.userId,
     email: membership.user.email,
     role: membership.role,
+    name: membership.user.name,
+    locale: membership.user.locale,
+    country: membership.user.country,
+    avatarUrl: membership.user.avatarUrl,
   }));
+}
+
+/**
+ * Cambia el rol, el idioma o el país de alguien del equipo.
+ *
+ * Se resuelve la pertenencia CON el `TenantScope` antes de tocar nada: el id
+ * viaja en el formulario, así que sin esa comprobación quien tuviera sesión
+ * podría cambiarle el rol a alguien de otra oficina.
+ *
+ * No se deja poner SUPERADMIN: ese rol no sale de una membresía, sale de
+ * `User.isSuperadmin`, y ofrecerlo aquí sería ofrecer la llave de la casa.
+ */
+export async function updateMember(
+  scope: TenantScope,
+  userId: string,
+  changes: { role?: Role; locale?: Locale; country?: string | null },
+): Promise<boolean> {
+  const prisma = getPrisma();
+  const membership = await prisma.membership.findFirst({
+    where: { userId, ...scopedWhere(scope) },
+    select: { id: true },
+  });
+  if (membership === null) return false;
+
+  if (changes.role !== undefined && changes.role !== 'SUPERADMIN') {
+    await prisma.membership.update({ where: { id: membership.id }, data: { role: changes.role } });
+  }
+
+  const userData: { locale?: Locale; country?: string | null } = {};
+  if (changes.locale !== undefined) userData.locale = changes.locale;
+  if (changes.country !== undefined) userData.country = changes.country;
+  if (Object.keys(userData).length > 0) {
+    await prisma.user.update({ where: { id: userId }, data: userData });
+  }
+
+  return true;
 }
 
 /**

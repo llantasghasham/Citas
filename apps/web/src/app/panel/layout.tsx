@@ -31,6 +31,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
     { href: '/panel/equipo', label: nav.team, visible: sessionCan(session, 'tenant:staff') },
     { href: '/panel/facturacion', label: nav.billing, visible: sessionCan(session, 'billing:manage') },
     { href: '/panel/manual', label: nav.manual, visible: true },
+    { href: '/panel/perfil', label: nav.profile, visible: true },
     {
       // El administrador de una oficina entra a conectar SU WhatsApp; lo demás
       // de esa pantalla no lo ve.

@@ -11,3 +11,4 @@ export * from './numerals';
 export * from './datetime';
 export * from './presets';
 export * from './plural';
+export * from './countries';

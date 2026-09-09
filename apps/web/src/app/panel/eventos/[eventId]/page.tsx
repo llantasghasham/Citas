@@ -16,7 +16,7 @@ import { COUNTRY_CODES } from '@/lib/guests/phone';
 import { toWaMe } from '@/lib/guests/phone';
 import { listGuestsWithLinks } from '@/lib/repositories/guests';
 import { displayFont, latinOnly } from '@/lib/typography';
-import { getDictionary, interpolate, plural, LOCALES, type Locale } from '@citas/core';
+import { findCountry, getDictionary, interpolate, plural, LOCALES, type Locale } from '@citas/core';
 
 interface PageProps {
   params: Promise<{ eventId: string }>;
@@ -84,6 +84,8 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
   ]);
 
   const origin = `https://${requestHost(await headers())}`;
+  const defaultDial =
+    COUNTRY_CODES.find((code) => code === findCountry(session.country)?.dial) ?? '+961';
   const opened = event.guests.filter((guest) => guest.openedAt !== null).length;
   // How many guests are waiting for each language, so the versions section can
   // say which one to write next instead of offering four equal boxes.
@@ -307,7 +309,10 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="sm:flex-1">
               <Field label={copy.countryLabel}>
-                <select name="country" className={FIELD_CLASS} defaultValue="+961">
+                {/* El prefijo por defecto sale del país de quien importa, no
+                    de una constante: quien trabaja en Costa Rica pega listas
+                    ticas y no debería tener que cambiarlo cada vez. */}
+                <select name="country" className={FIELD_CLASS} defaultValue={defaultDial}>
                   {COUNTRY_CODES.map((code) => (
                     <option key={code} value={code}>{code}</option>
                   ))}

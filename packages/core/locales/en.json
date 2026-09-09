@@ -115,7 +115,8 @@
       "billing": "Subscription",
       "manual": "Manual",
       "system": "System",
-      "config": "Settings"
+      "config": "Settings",
+      "profile": "My profile"
     },
     "manual": {
       "title": "User manual",
@@ -335,6 +336,7 @@
         "mail": "Mail",
         "payments": "Payments",
         "whatsapp": "WhatsApp",
+        "roles": "Roles and permissions",
         "brand": "Brand",
         "home": "Home page",
         "site": "The site"
@@ -343,6 +345,7 @@
         "mail": "How sign-in codes and notices go out. Without this, nobody can sign in with a code.",
         "payments": "Which payment methods are accepted, and with which credentials. These fields decide where the money goes.",
         "whatsapp": "The numbers the invitations go out from. Connected by scanning a code with the phone, just like WhatsApp Web.",
+        "roles": "What each role can do. The superadmin is untouchable and platform administration is never handed out: those are the two locks that stop anyone widening their own access.",
         "brand": "What this is called and how it looks. It appears on the home page, the browser tab and the panel.",
         "home": "Every text on the home page, in all four languages. An empty field uses the original text.",
         "site": "The public address and the contact shown at the foot of the home page."
@@ -359,7 +362,21 @@
       "homeReset": "Empty = the original text",
       "homeOriginal": "Original:",
       "homeSections": "Blocks shown",
-      "brandPreview": "How it looks"
+      "brandPreview": "How it looks",
+      "roles": {
+        "capability": {
+          "platform:manage": "Administer the whole platform: offices, payments, mail",
+          "tenant:manage": "Administer their office and connect its WhatsApp numbers",
+          "tenant:staff": "Add and remove people from their office",
+          "event:write": "Create events, write versions and import guests",
+          "event:read": "See the events and their guests",
+          "billing:manage": "Sell packages, charge and see the billing"
+        },
+        "fixed": "fixed, cannot be changed",
+        "custom": "changed here",
+        "reset": "Back to the defaults",
+        "neverGrantable": "This one is never granted from a screen: it opens every office's configuration and the payments."
+      }
     },
     "offices": {
       "heading": "Offices",
@@ -377,7 +394,11 @@
       "role": "Role",
       "add": "Add member",
       "empty": "No members yet.",
-      "added": "Added."
+      "added": "Added.",
+      "locale": "Language",
+      "country": "Country",
+      "save": "Save",
+      "name": "Name"
     },
     "billing": {
       "heading": "Subscription",
@@ -501,6 +522,19 @@
       "queuedCount": "{queued} queued · {sent} sent · {failed} failed",
       "queuedDone": "Queued {queued}. No phone number: {skipped}.",
       "noConnection": "Connect a number first."
+    },
+    "profile": {
+      "title": "My profile",
+      "intro": "Your name, your photo, and which language and country you work in. Yours alone: changing it changes nothing for the rest of the office.",
+      "name": "Name",
+      "phone": "Phone",
+      "avatar": "Photo (image address)",
+      "locale": "Language",
+      "country": "Country you handle",
+      "countryHint": "Decides the dialling code a pasted guest list without one is normalised to, and the timezone of a new event.",
+      "save": "Save",
+      "saved": "Saved.",
+      "noCountry": "Not chosen"
     }
   },
   "rsvpForm": {

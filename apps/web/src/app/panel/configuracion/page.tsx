@@ -7,6 +7,7 @@ import { ConfigNav } from '@/components/panel/config/ConfigNav';
 import { HomeSection } from '@/components/panel/config/HomeSection';
 import { MailSection } from '@/components/panel/config/MailSection';
 import { PaymentsSection } from '@/components/panel/config/PaymentsSection';
+import { RolesSection, type RoleRow } from '@/components/panel/config/RolesSection';
 import { SiteSection } from '@/components/panel/config/SiteSection';
 import { WhatsappSection } from '@/components/panel/config/WhatsappSection';
 import { getAdminContext } from '@/lib/admin/context';
@@ -14,6 +15,7 @@ import { getSession, sessionCan } from '@/lib/auth/session';
 import { loadSite } from '@/lib/home/site';
 import { origin, secret, setting, type SecretKey, type SettingKey } from '@/lib/settings';
 import { homeTexts, isLocale } from '@/lib/settings/home';
+import { capabilitiesOf, isCustomised } from '@/lib/auth/role-config';
 import { listConnections } from '@/lib/whatsapp/connections';
 import { scopeOf } from '@/lib/auth/session';
 import { displayFont } from '@/lib/typography';
@@ -141,6 +143,10 @@ export default async function ConfigPage({ searchParams }: PageProps) {
         />
       ) : null}
 
+      {section === 'roles' ? (
+        <RolesSection roles={await roleRows()} dictionary={dictionary} locale={locale} />
+      ) : null}
+
       {section === 'brand' ? (
         <BrandSection
           action={saveConfigAction}
@@ -210,5 +216,20 @@ export default async function ConfigPage({ searchParams }: PageProps) {
         </section>
       ) : null}
     </>
+  );
+}
+
+
+/** Los cuatro roles con lo que puede cada uno hoy. */
+async function roleRows(): Promise<RoleRow[]> {
+  const roles = ['SUPERADMIN', 'TENANT_ADMIN', 'OPERATOR', 'ORGANIZER'] as const;
+
+  return Promise.all(
+    roles.map(async (role) => ({
+      role,
+      capabilities: await capabilitiesOf(role),
+      customised: await isCustomised(role),
+      editable: role !== 'SUPERADMIN',
+    })),
   );
 }

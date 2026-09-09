@@ -115,7 +115,8 @@
       "billing": "Subscrição",
       "manual": "Manual",
       "system": "Sistema",
-      "config": "Configuração"
+      "config": "Configuração",
+      "profile": "O meu perfil"
     },
     "manual": {
       "title": "Manual de uso",
@@ -335,6 +336,7 @@
         "mail": "Correio",
         "payments": "Cobrança",
         "whatsapp": "WhatsApp",
+        "roles": "Funções e permissões",
         "brand": "Marca",
         "home": "Página inicial",
         "site": "O site"
@@ -343,6 +345,7 @@
         "mail": "Por onde saem os códigos de acesso e os avisos. Sem isto configurado, ninguém entra com código.",
         "payments": "Que meios de pagamento se aceitam e com que credenciais. Estes campos decidem para que conta vai o dinheiro.",
         "whatsapp": "Os números de onde saem os convites. Liga-se lendo um código com o telemóvel, tal como o WhatsApp Web.",
+        "roles": "O que cada função pode fazer. O superadministrador não se toca e a administração da plataforma não se distribui: são os dois cadeados que impedem alguém de se ampliar a si próprio.",
         "brand": "Como isto se chama e com que aparência. Aparece na página inicial, no separador do navegador e no painel.",
         "home": "Cada texto da página inicial, nos quatro idiomas. Um campo vazio usa o texto original.",
         "site": "O endereço público e o contacto que aparece no rodapé da página inicial."
@@ -359,7 +362,21 @@
       "homeReset": "Vazio = o texto original",
       "homeOriginal": "Original:",
       "homeSections": "Blocos mostrados",
-      "brandPreview": "Assim fica"
+      "brandPreview": "Assim fica",
+      "roles": {
+        "capability": {
+          "platform:manage": "Administrar toda a plataforma: escritórios, cobrança, correio",
+          "tenant:manage": "Administrar o seu escritório e ligar os seus números de WhatsApp",
+          "tenant:staff": "Adicionar e remover pessoas do seu escritório",
+          "event:write": "Criar eventos, escrever versões e importar convidados",
+          "event:read": "Ver os eventos e os seus convidados",
+          "billing:manage": "Vender pacotes, cobrar e ver a faturação"
+        },
+        "fixed": "fixo, não se pode mudar",
+        "custom": "alterado aqui",
+        "reset": "Voltar ao original",
+        "neverGrantable": "Esta permissão nunca se concede a partir de um ecrã: abre a configuração de todos os escritórios e a cobrança."
+      }
     },
     "offices": {
       "heading": "Escritórios",
@@ -377,7 +394,11 @@
       "role": "Função",
       "add": "Adicionar membro",
       "empty": "Ainda não há membros.",
-      "added": "Adicionado."
+      "added": "Adicionado.",
+      "locale": "Idioma",
+      "country": "País",
+      "save": "Guardar",
+      "name": "Nome"
     },
     "billing": {
       "heading": "Subscrição",
@@ -501,6 +522,19 @@
       "queuedCount": "{queued} em fila · {sent} enviadas · {failed} falhadas",
       "queuedDone": "Em fila: {queued}. Sem telefone: {skipped}.",
       "noConnection": "Ligue primeiro um número."
+    },
+    "profile": {
+      "title": "O meu perfil",
+      "intro": "O seu nome, a sua foto e em que idioma e país trabalha. Só seu: mudá-lo não muda nada para o resto do escritório.",
+      "name": "Nome",
+      "phone": "Telefone",
+      "avatar": "Foto (endereço da imagem)",
+      "locale": "Idioma",
+      "country": "País que gere",
+      "countryHint": "Decide o indicativo com que se normaliza uma lista de convidados colada sem indicativo, e o fuso horário de um evento novo.",
+      "save": "Guardar",
+      "saved": "Guardado.",
+      "noCountry": "Por escolher"
     }
   },
   "rsvpForm": {

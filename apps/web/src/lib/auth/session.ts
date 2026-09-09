@@ -7,7 +7,8 @@ import { getPrisma } from '@/lib/db/client';
 import { tenantScope, type TenantScope } from '@/lib/db/tenant';
 
 import { hashSecret, newSessionToken } from './tokens';
-import { roleCan, type Capability } from './permissions';
+import type { Capability } from './permissions';
+import { capabilitiesOf } from './role-config';
 
 const COOKIE_NAME = 'citas_session';
 const SESSION_DAYS = 30;
@@ -23,6 +24,19 @@ export interface AuthenticatedSession {
   role: Role | null;
   /** The language this person reads the panel in. Theirs, not the office's. */
   locale: Locale;
+  /** El país que maneja. Decide prefijo telefónico y zona horaria por defecto. */
+  country: string | null;
+  avatarUrl: string | null;
+  /**
+   * Lo que esta persona puede hacer, YA resuelto.
+   *
+   * Se resuelve al abrir la sesión y no en cada comprobación, a propósito. El
+   * reparto de permisos por rol es configurable, así que averiguarlo es una
+   * consulta; si `sessionCan` fuera asíncrona, un `await` olvidado devolvería
+   * una promesa —que es verdadera— y la comprobación pasaría SIEMPRE. Un
+   * permiso que falla abierto por un descuido de sintaxis no es un permiso.
+   */
+  capabilities: readonly Capability[];
 }
 
 export interface SessionMetadata {
@@ -113,14 +127,21 @@ export async function resolveSession(token: string): Promise<AuthenticatedSessio
       ? undefined
       : row.user.memberships.find((entry) => entry.tenantId === row.tenantId);
 
+  const role: Role | null = row.user.isSuperadmin
+    ? 'SUPERADMIN'
+    : (membership?.role ?? null);
+
   return {
     sessionId: row.id,
     userId: row.userId,
     email: row.user.email,
     isSuperadmin: row.user.isSuperadmin,
     tenantId: row.tenantId,
-    role: row.user.isSuperadmin ? 'SUPERADMIN' : (membership?.role ?? null),
+    role,
     locale: row.user.locale,
+    country: row.user.country,
+    avatarUrl: row.user.avatarUrl,
+    capabilities: role === null ? [] : await capabilitiesOf(role),
   };
 }
 
@@ -160,7 +181,10 @@ export function sessionCan(
   capability: Capability,
 ): boolean {
   if (session === null || session.role === null) return false;
-  return roleCan(session.role, capability);
+  // Se mira la lista que ya trae la sesión: sigue siendo síncrona, así que
+  // ningún sitio puede olvidarse un `await` y quedarse con una promesa
+  // verdadera en un `if`.
+  return session.capabilities.includes(capability);
 }
 
 /**

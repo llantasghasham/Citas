@@ -84,7 +84,15 @@ export type StackKey = (typeof STACK_KEYS)[number];
 /**
  * Los sectores de la pantalla de configuración. El orden es el de la pantalla.
  */
-export const CONFIG_SECTIONS = ['mail', 'payments', 'whatsapp', 'brand', 'home', 'site'] as const;
+export const CONFIG_SECTIONS = [
+  'mail',
+  'payments',
+  'whatsapp',
+  'roles',
+  'brand',
+  'home',
+  'site',
+] as const;
 export type ConfigSection = (typeof CONFIG_SECTIONS)[number];
 
 /**
@@ -399,7 +407,14 @@ export interface Dictionary {
     };
     roles: Record<'SUPERADMIN' | 'TENANT_ADMIN' | 'OPERATOR' | 'ORGANIZER', string>;
     nav: Record<
-      'events' | 'offices' | 'team' | 'billing' | 'manual' | 'system' | 'config',
+      | 'events'
+      | 'offices'
+      | 'team'
+      | 'billing'
+      | 'manual'
+      | 'system'
+      | 'config'
+      | 'profile',
       string
     >;
     /** La configuración del sistema, editable sin entrar al servidor. */
@@ -429,6 +444,17 @@ export interface Dictionary {
       homeOriginal: string;
       homeSections: string;
       brandPreview: string;
+      /** El reparto de permisos por rol. */
+      roles: {
+        capability: Record<
+          'platform:manage' | 'tenant:manage' | 'tenant:staff' | 'event:write' | 'event:read' | 'billing:manage',
+          string
+        >;
+        fixed: string;
+        custom: string;
+        reset: string;
+        neverGrantable: string;
+      };
       testMail: string;
       testPayments: string;
       probeOk: string;
@@ -523,6 +549,24 @@ export interface Dictionary {
       add: string;
       empty: string;
       added: string;
+      name: string;
+      locale: string;
+      country: string;
+      save: string;
+    };
+    /** Lo que cada persona edita de sí misma. */
+    profile: {
+      title: string;
+      intro: string;
+      name: string;
+      phone: string;
+      avatar: string;
+      locale: string;
+      country: string;
+      countryHint: string;
+      save: string;
+      saved: string;
+      noCountry: string;
     };
     billing: {
       heading: string;

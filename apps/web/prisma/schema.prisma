@@ -146,6 +146,19 @@ model User {
   passwordHash String?
   isSuperadmin Boolean  @default(false)
   locale       Locale   @default(ar)
+
+  /// El país que maneja esta persona: ISO 3166-1 alfa-2.
+  ///
+  /// No es un adorno de perfil. Decide el prefijo con el que se normaliza una
+  /// lista de invitados pegada sin prefijo, la zona horaria por defecto de un
+  /// evento nuevo y qué medio de cobro tiene sentido ofrecer. Nulo significa
+  /// «el del sistema».
+  country String?
+
+  /// Su foto. Una dirección, no un archivo: subir archivos es otra cosa —
+  /// permisos, tamaño, tipo, almacenamiento— y colarla de refilón en un
+  /// formulario de perfil es como se cuela una subida sin límite de tamaño.
+  avatarUrl String?
   lastLoginAt  DateTime?
   createdAt    DateTime @default(now())
 
