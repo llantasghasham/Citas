@@ -1,6 +1,9 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+
+import { requestHost } from '@/lib/admin/context';
 
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { recordAudit } from '@/lib/audit';
@@ -9,7 +12,8 @@ import { markPaidInCash, openPackageOrder } from '@/lib/billing/checkout';
 import { COUNTRY_CODES, toE164 } from '@/lib/guests/phone';
 import { importGuests } from '@/lib/repositories/guests';
 import { addEventVersion } from '@/lib/repositories/versions';
-import { LOCALES, type Locale } from '@citas/core';
+import { queueEventInvitations } from '@/lib/whatsapp/connections';
+import { getDictionary, interpolate, LOCALES, type Locale } from '@citas/core';
 
 /** A client's list is not small: a wedding is two hundred lines, not five. */
 const MAX_INPUT_BYTES = 512 * 1024;
@@ -161,4 +165,45 @@ export async function markCashAction(formData: FormData): Promise<void> {
   const ok = await markPaidInCash(scopeOf(session), orderId, session.userId);
 
   redirect(`/panel/eventos/${eventId}?${ok ? 'efectivo=1' : 'error=1'}#paquetes`);
+}
+
+/**
+ * Encola las invitaciones de este evento para que salgan por WhatsApp.
+ *
+ * Encola y nada más: quien manda es el servicio, de uno en uno, con retardo al
+ * azar y tope diario. Aquí no sale un solo mensaje, y es deliberado — un botón
+ * que manda doscientos de golpe es un botón que cierra el número del cliente.
+ *
+ * Cada invitado recibe el mensaje en SU idioma y con SU enlace, la misma regla
+ * que ya seguía el envío a mano.
+ */
+export async function queueWhatsappAction(formData: FormData): Promise<void> {
+  const session = await getSession();
+  if (session === null || !sessionCan(session, 'event:write') || session.tenantId === null) {
+    redirect('/panel');
+  }
+
+  const eventId = String(formData.get('eventId') ?? '');
+  const connectionId = String(formData.get('connectionId') ?? '');
+  if (connectionId.length === 0) redirect(`/panel/eventos/${eventId}?error=1#whatsapp`);
+
+  const origin = `https://${requestHost(await headers())}`;
+  const result = await queueEventInvitations(
+    scopeOf(session),
+    eventId,
+    connectionId,
+    (guest) => {
+      const locale = LOCALES.find((candidate) => candidate === guest.locale) ?? 'ar';
+      return interpolate(getDictionary(locale).share.whatsappMessage, {
+        name: guest.name,
+        link: `${origin}/g/${guest.token}`,
+      });
+    },
+    session.userId,
+  );
+  if ('error' in result) redirect('/panel');
+
+  redirect(
+    `/panel/eventos/${eventId}?encolados=${result.queued}&sinTelefono=${result.skipped}#whatsapp`,
+  );
 }

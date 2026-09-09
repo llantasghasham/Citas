@@ -32,9 +32,11 @@ export default async function PanelLayout({ children }: { children: ReactNode })
     { href: '/panel/facturacion', label: nav.billing, visible: sessionCan(session, 'billing:manage') },
     { href: '/panel/manual', label: nav.manual, visible: true },
     {
+      // El administrador de una oficina entra a conectar SU WhatsApp; lo demás
+      // de esa pantalla no lo ve.
       href: '/panel/configuracion',
       label: nav.config,
-      visible: sessionCan(session, 'platform:manage'),
+      visible: sessionCan(session, 'tenant:manage'),
     },
     // Names the environment variables that are unset, which is a map of the
     // machine's weak spots: the platform's own account only.

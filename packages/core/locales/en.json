@@ -263,6 +263,7 @@
           "siteUrl": "Public site address",
           "codeDelivery": "Codes that never went out",
           "migrations": "Migrations applied",
+          "whatsapp": "WhatsApp service",
           "verses": "Verses nobody has checked"
         }
       },
@@ -327,11 +328,13 @@
         "CONTACT_EMAIL": "Contact email",
         "HOME_SECTIONS": "Home page blocks, in order",
         "HOME_SHOWCASE": "Sample invitations (comma-separated slugs)",
-        "HOME_DEFAULT_LOCALE": "Home page default language"
+        "HOME_DEFAULT_LOCALE": "Home page default language",
+        "WHATSAPP_GATEWAY_URL": "WhatsApp service address"
       },
       "sections": {
         "mail": "Mail",
         "payments": "Payments",
+        "whatsapp": "WhatsApp",
         "brand": "Brand",
         "home": "Home page",
         "site": "The site"
@@ -339,6 +342,7 @@
       "sectionIntros": {
         "mail": "How sign-in codes and notices go out. Without this, nobody can sign in with a code.",
         "payments": "Which payment methods are accepted, and with which credentials. These fields decide where the money goes.",
+        "whatsapp": "The numbers the invitations go out from. Connected by scanning a code with the phone, just like WhatsApp Web.",
         "brand": "What this is called and how it looks. It appears on the home page, the browser tab and the panel.",
         "home": "Every text on the home page, in all four languages. An empty field uses the original text.",
         "site": "The public address and the contact shown at the foot of the home page."
@@ -466,6 +470,37 @@
       "whatsappMessage": "Hello {name}, here is the payment for your package of {guests} invitations: {link}",
       "markCash": "Mark as paid in cash",
       "markCashDone": "Cash payment recorded."
+    },
+    "whatsapp": {
+      "heading": "WhatsApp numbers",
+      "hint": "Each number connects by scanning a code from the phone, just like WhatsApp Web. The session is stored encrypted, so there is no rescanning after a restart.",
+      "warning": "Serious warning: automating a personal number for bulk sending goes against WhatsApp's terms, and the number they can block is yours. That is why there is a delay between messages, a daily cap and a warm-up. Start small and raise it slowly.",
+      "nameLabel": "Name for this number",
+      "add": "Add a number",
+      "empty": "No number is connected yet. Without one, sending still happens by hand through wa.me.",
+      "connect": "Connect",
+      "scan": "Scan this code from WhatsApp on the phone: Settings › Linked devices › Link a device.",
+      "refresh": "The code expires in about a minute. Refresh if it no longer works.",
+      "disconnect": "Disconnect",
+      "remove": "Remove",
+      "makeDefault": "Use by default",
+      "isDefault": "default",
+      "capLabel": "Daily cap",
+      "sentToday": "Today",
+      "queued": "Queued",
+      "states": {
+        "pending": "Not connected",
+        "qr": "Waiting for the code",
+        "connected": "Connected",
+        "disconnected": "Disconnected"
+      },
+      "gatewayDown": "Could not reach the WhatsApp service.",
+      "sendHeading": "Send on WhatsApp",
+      "sendHint": "Queues this event's invitations. They go out gradually from the number you choose, each in the guest's own language. Anyone already written to is not written to again.",
+      "send": "Queue the messages",
+      "queuedCount": "{queued} queued · {sent} sent · {failed} failed",
+      "queuedDone": "Queued {queued}. No phone number: {skipped}.",
+      "noConnection": "Connect a number first."
     }
   },
   "rsvpForm": {

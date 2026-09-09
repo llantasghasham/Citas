@@ -132,6 +132,7 @@ model Tenant {
   orders       Order[]
   subscription Subscription?
   auditLogs    AuditLog[]
+  whatsapps    WhatsappConnection[]
 
   @@index([status])
 }
@@ -431,6 +432,99 @@ enum PaymentStatus {
   failed
   expired
   refunded
+}
+
+/// En qué punto está una conexión de WhatsApp.
+enum WhatsappStatus {
+  /// Creada, todavía sin abrir sesión.
+  pending
+  /// Esperando a que alguien escanee el código.
+  qr
+  connected
+  /// Se cayó o cerraron la sesión desde el teléfono.
+  disconnected
+}
+
+/// Un número de WhatsApp de una oficina.
+///
+/// MULTI-NÚMERO Y MULTI-OFICINA desde el primer día: una oficina con dos
+/// mostradores tiene dos números, y dos oficinas jamás comparten uno. Todo
+/// cuelga de `tenantId` como el resto del negocio.
+model WhatsappConnection {
+  id       String @id @default(cuid())
+  tenantId String
+
+  /// Cómo lo llama la oficina: «Mostrador Hamra», «Ventas».
+  name String
+  /// El número, en E.164, tal como lo dice WhatsApp al conectar. Antes, nulo.
+  phone String?
+
+  status WhatsappStatus @default(pending)
+  /// El código que hay que escanear AHORA. Caduca en segundos y se borra al
+  /// conectar: no es un secreto duradero, pero tampoco se deja tirado.
+  qrCode String? @db.Text
+
+  /// Las credenciales de la sesión, CIFRADAS con la llave de fuera de la base.
+  /// Sin cifrar, un volcado de la base dejaría escribir desde el WhatsApp del
+  /// cliente: es el secreto más peligroso que guarda este proyecto.
+  authEnc String? @db.Text
+
+  /// El que se usa cuando nadie elige.
+  isDefault Boolean @default(false)
+
+  /// Freno. Automatizar un número personal va contra los términos de WhatsApp
+  /// y es como se pierde el número del cliente; esto no lo hace legal, lo hace
+  /// sobrevivible. `sentDay` es la fecha local del contador, en texto.
+  dailyCap  Int     @default(200)
+  sentToday Int     @default(0)
+  sentDay   String?
+
+  lastSeenAt DateTime?
+  /// Lo último que falló, para que la pantalla diga por qué y no solo que no.
+  lastError String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages WhatsappMessage[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, status])
+}
+
+/// Un mensaje en cola.
+///
+/// La cola existe por el freno: mandar doscientas invitaciones de golpe es
+/// exactamente lo que hace que WhatsApp cierre el número. Se encolan, y un
+/// proceso aparte las va soltando con su retardo.
+model WhatsappMessage {
+  id           String @id @default(cuid())
+  tenantId     String
+  connectionId String
+
+  /// A quién, en E.164. Se guarda aunque el invitado se borre después: es el
+  /// registro de lo que se mandó.
+  toPhone String
+  body    String @db.Text
+
+  /// El invitado, cuando lo hay. Nulo en un mensaje suelto.
+  guestId String?
+  eventId String?
+
+  /// queued · sent · failed
+  status String  @default("queued")
+  error  String?
+  /// Cuántas veces se intentó. A la tercera se deja quieto.
+  tries  Int     @default(0)
+
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  connection WhatsappConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([tenantId, eventId])
 }
 
 /// Configuración del sistema, editable desde el panel.

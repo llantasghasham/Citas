@@ -3,11 +3,13 @@ import { redirect } from 'next/navigation';
 
 import { importGuestsAction } from '@/app/panel/eventos/actions';
 import { PackagesSection } from '@/components/panel/PackagesSection';
+import { WhatsappSendSection } from '@/components/panel/WhatsappSendSection';
 import { VersionsSection } from '@/components/panel/VersionsSection';
 import { Field, FIELD_CLASS } from '@/components/create/Field';
 import { getAdminContext, requestHost } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { enabledMethods, listPackageOrders } from '@/lib/billing/checkout';
+import { listConnections, queueStats } from '@/lib/whatsapp/connections';
 import { guestAllowanceFor } from '@/lib/billing/packages';
 import { LOCALE_NAMES } from '@/lib/create/options';
 import { COUNTRY_CODES } from '@/lib/guests/phone';
@@ -29,6 +31,8 @@ interface PageProps {
     pedidos?: string;
     vendido?: string;
     efectivo?: string;
+    encolados?: string;
+    sinTelefono?: string;
   }>;
 }
 
@@ -47,8 +51,20 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
   }
 
   const { eventId } = await params;
-  const { added, skipped, error, version, limite, cabe, hay, pedidos, vendido, efectivo } =
-    await searchParams;
+  const {
+    added,
+    skipped,
+    error,
+    version,
+    limite,
+    cabe,
+    hay,
+    pedidos,
+    vendido,
+    efectivo,
+    encolados,
+    sinTelefono,
+  } = await searchParams;
   const addedLocale = LOCALES.find((candidate) => candidate === version);
   const { dictionary, locale } = await getAdminContext(session.tenantId);
   const copy = dictionary.admin.guests;
@@ -59,10 +75,12 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
   // Cuánto tiene pagado esta boda y qué se le ha vendido. Va aquí, junto a la
   // lista que no cabe, y no en la facturación de la oficina.
   const canSell = sessionCan(session, 'billing:manage');
-  const [allowance, sold, methods] = await Promise.all([
+  const [allowance, sold, methods, connections, whatsappStats] = await Promise.all([
     guestAllowanceFor(session.tenantId, eventId),
     listPackageOrders(scopeOf(session), eventId),
     enabledMethods(),
+    listConnections(scopeOf(session)),
+    queueStats(scopeOf(session), eventId),
   ]);
 
   const origin = `https://${requestHost(await headers())}`;
@@ -117,6 +135,14 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           <p className="text-sm text-[#6a6456]">{copy.limitHint}</p>
         </div>
       ) : null}
+      {encolados === undefined ? null : (
+        <p className="text-sm text-[#2f6b3a]">
+          {interpolate(dictionary.admin.whatsapp.queuedDone, {
+            queued: encolados,
+            skipped: sinTelefono ?? '0',
+          })}
+        </p>
+      )}
       {efectivo === '1' ? (
         <p className="text-sm text-[#2f6b3a]">{dictionary.admin.packages.markCashDone}</p>
       ) : null}
@@ -235,6 +261,16 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
         canSell={canSell}
         cashEnabled={methods.includes('cash')}
       />
+
+      {canWrite ? (
+        <WhatsappSendSection
+          eventId={eventId}
+          connections={connections}
+          stats={whatsappStats}
+          dictionary={dictionary}
+          locale={locale}
+        />
+      ) : null}
 
       <VersionsSection
         eventId={eventId}

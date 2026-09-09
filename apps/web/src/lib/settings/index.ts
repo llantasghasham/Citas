@@ -44,6 +44,9 @@ export const SETTING_KEYS = [
   'HOME_SECTIONS',
   'HOME_SHOWCASE',
   'HOME_DEFAULT_LOCALE',
+  // WhatsApp. El TOKEN no está aquí: lo comparten dos procesos que arrancan
+  // por separado, así que va por entorno en los dos.
+  'WHATSAPP_GATEWAY_URL',
   // El sitio
   'NEXT_PUBLIC_SITE_URL',
 ] as const;

@@ -84,7 +84,7 @@ export type StackKey = (typeof STACK_KEYS)[number];
 /**
  * Los sectores de la pantalla de configuración. El orden es el de la pantalla.
  */
-export const CONFIG_SECTIONS = ['mail', 'payments', 'brand', 'home', 'site'] as const;
+export const CONFIG_SECTIONS = ['mail', 'payments', 'whatsapp', 'brand', 'home', 'site'] as const;
 export type ConfigSection = (typeof CONFIG_SECTIONS)[number];
 
 /**
@@ -108,6 +108,7 @@ export const HEALTH_KEYS = [
   'siteUrl',
   'codeDelivery',
   'migrations',
+  'whatsapp',
   'verses',
 ] as const;
 export type HealthKey = (typeof HEALTH_KEYS)[number];
@@ -458,6 +459,7 @@ export interface Dictionary {
         | 'HOME_SECTIONS'
         | 'HOME_SHOWCASE'
         | 'HOME_DEFAULT_LOCALE'
+        | 'WHATSAPP_GATEWAY_URL'
         | 'NEXT_PUBLIC_SITE_URL',
         string
       >;
@@ -540,6 +542,34 @@ export interface Dictionary {
       planAnnual: string;
       planOffice: string;
       limitReached: string;
+    };
+    /** Los números de WhatsApp de la oficina, y la cola de envíos. */
+    whatsapp: {
+      heading: string;
+      hint: string;
+      /** Lo que puede costar automatizar un número. Se dice, no se esconde. */
+      warning: string;
+      nameLabel: string;
+      add: string;
+      empty: string;
+      connect: string;
+      scan: string;
+      refresh: string;
+      disconnect: string;
+      remove: string;
+      makeDefault: string;
+      isDefault: string;
+      capLabel: string;
+      sentToday: string;
+      queued: string;
+      states: Record<'pending' | 'qr' | 'connected' | 'disconnected', string>;
+      gatewayDown: string;
+      sendHeading: string;
+      sendHint: string;
+      send: string;
+      queuedCount: string;
+      queuedDone: string;
+      noConnection: string;
     };
     /** Vender un paquete de invitaciones para UNA boda. */
     packages: {

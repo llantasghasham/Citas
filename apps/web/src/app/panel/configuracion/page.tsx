@@ -8,11 +8,14 @@ import { HomeSection } from '@/components/panel/config/HomeSection';
 import { MailSection } from '@/components/panel/config/MailSection';
 import { PaymentsSection } from '@/components/panel/config/PaymentsSection';
 import { SiteSection } from '@/components/panel/config/SiteSection';
+import { WhatsappSection } from '@/components/panel/config/WhatsappSection';
 import { getAdminContext } from '@/lib/admin/context';
 import { getSession, sessionCan } from '@/lib/auth/session';
 import { loadSite } from '@/lib/home/site';
 import { origin, secret, setting, type SecretKey, type SettingKey } from '@/lib/settings';
 import { homeTexts, isLocale } from '@/lib/settings/home';
+import { listConnections } from '@/lib/whatsapp/connections';
+import { scopeOf } from '@/lib/auth/session';
 import { displayFont } from '@/lib/typography';
 import { CONFIG_SECTIONS, type ConfigSection } from '@citas/core';
 
@@ -23,6 +26,7 @@ interface PageProps {
     s?: string;
     idioma?: string;
     guardado?: string;
+    servicio?: string;
     pago?: string;
     motivo?: string;
     mail?: string;
@@ -45,14 +49,23 @@ const BOTON_SUAVE = 'border border-[#23201a] px-5 py-2.5 text-sm text-[#23201a] 
  */
 export default async function ConfigPage({ searchParams }: PageProps) {
   const session = await getSession();
-  if (session === null || !sessionCan(session, 'platform:manage')) redirect('/panel');
+  if (session === null) redirect('/entrar');
+
+  // Los números de WhatsApp son de la OFICINA, no de la plataforma: quien
+  // administra una agencia conecta el suyo sin pasar por el dueño del sistema.
+  // Todo lo demás —el correo, el cobro, la marca— sigue siendo de la
+  // plataforma, y un administrador de oficina no lo ve.
+  const platform = sessionCan(session, 'platform:manage');
+  const ownWhatsapp = sessionCan(session, 'tenant:manage');
+  if (!platform && !ownWhatsapp) redirect('/panel');
 
   const params = await searchParams;
   const { dictionary, locale } = await getAdminContext(session.tenantId);
   const copy = dictionary.admin.config;
 
-  const section: ConfigSection =
-    CONFIG_SECTIONS.find((candidate) => candidate === params.s) ?? 'mail';
+  const section: ConfigSection = platform
+    ? (CONFIG_SECTIONS.find((candidate) => candidate === params.s) ?? 'mail')
+    : 'whatsapp';
 
   // Un campo, con su valor de hoy y de dónde salió.
   const campo = async (key: SettingKey) => ({
@@ -74,7 +87,7 @@ export default async function ConfigPage({ searchParams }: PageProps) {
         <p className="max-w-2xl text-sm text-[#6a6456]">{copy.intro}</p>
       </header>
 
-      <ConfigNav current={section} dictionary={dictionary} locale={locale} />
+      {platform ? <ConfigNav current={section} dictionary={dictionary} locale={locale} /> : null}
 
       <p className="max-w-2xl text-sm text-[#6a6456]">{copy.sectionIntros[section]}</p>
       {params.guardado === '1' ? <p className="text-sm text-[#2f6b3a]">{copy.saved}</p> : null}
@@ -112,6 +125,17 @@ export default async function ConfigPage({ searchParams }: PageProps) {
             campo('TILOPAY_API_KEY'),
           ])}
           tilopayPassword={await clave('TILOPAY_PASSWORD')}
+          dictionary={dictionary}
+          locale={locale}
+        />
+      ) : null}
+
+      {section === 'whatsapp' ? (
+        <WhatsappSection
+          connections={session.tenantId === null ? [] : await listConnections(scopeOf(session))}
+          gatewayUrl={await campo('WHATSAPP_GATEWAY_URL')}
+          canEditGateway={platform}
+          {...(params.servicio === undefined ? {} : { gatewayError: params.servicio })}
           dictionary={dictionary}
           locale={locale}
         />

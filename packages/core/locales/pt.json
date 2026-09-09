@@ -263,6 +263,7 @@
           "siteUrl": "Endereço público do site",
           "codeDelivery": "Códigos que não saíram",
           "migrations": "Migrações aplicadas",
+          "whatsapp": "Serviço de WhatsApp",
           "verses": "Versículos por verificar"
         }
       },
@@ -327,11 +328,13 @@
         "CONTACT_EMAIL": "E-mail de contacto",
         "HOME_SECTIONS": "Blocos da página inicial, por ordem",
         "HOME_SHOWCASE": "Convites de amostra (slugs separados por vírgulas)",
-        "HOME_DEFAULT_LOCALE": "Idioma predefinido da página inicial"
+        "HOME_DEFAULT_LOCALE": "Idioma predefinido da página inicial",
+        "WHATSAPP_GATEWAY_URL": "Endereço do serviço de WhatsApp"
       },
       "sections": {
         "mail": "Correio",
         "payments": "Cobrança",
+        "whatsapp": "WhatsApp",
         "brand": "Marca",
         "home": "Página inicial",
         "site": "O site"
@@ -339,6 +342,7 @@
       "sectionIntros": {
         "mail": "Por onde saem os códigos de acesso e os avisos. Sem isto configurado, ninguém entra com código.",
         "payments": "Que meios de pagamento se aceitam e com que credenciais. Estes campos decidem para que conta vai o dinheiro.",
+        "whatsapp": "Os números de onde saem os convites. Liga-se lendo um código com o telemóvel, tal como o WhatsApp Web.",
         "brand": "Como isto se chama e com que aparência. Aparece na página inicial, no separador do navegador e no painel.",
         "home": "Cada texto da página inicial, nos quatro idiomas. Um campo vazio usa o texto original.",
         "site": "O endereço público e o contacto que aparece no rodapé da página inicial."
@@ -466,6 +470,37 @@
       "whatsappMessage": "Olá {name}, aqui está a cobrança do seu pacote de {guests} convites: {link}",
       "markCash": "Marcar como pago em dinheiro",
       "markCashDone": "Pagamento em dinheiro registado."
+    },
+    "whatsapp": {
+      "heading": "Números de WhatsApp",
+      "hint": "Cada número liga-se lendo um código a partir do telemóvel, tal como o WhatsApp Web. A sessão é guardada cifrada, por isso não é preciso voltar a ler em cada reinício.",
+      "warning": "Aviso sério: automatizar um número pessoal para envios em massa vai contra os termos do WhatsApp, e o número que podem bloquear é o seu. Por isso há atraso entre mensagens, limite diário e aquecimento. Comece com poucos e suba devagar.",
+      "nameLabel": "Nome deste número",
+      "add": "Adicionar um número",
+      "empty": "Ainda não há nenhum número ligado. Sem um, continua a enviar-se à mão com wa.me.",
+      "connect": "Ligar",
+      "scan": "Leia este código no WhatsApp do telemóvel: Definições › Dispositivos ligados › Ligar um dispositivo.",
+      "refresh": "O código expira dentro de um minuto. Atualize se já não servir.",
+      "disconnect": "Desligar",
+      "remove": "Remover",
+      "makeDefault": "Usar por omissão",
+      "isDefault": "por omissão",
+      "capLabel": "Limite diário",
+      "sentToday": "Hoje",
+      "queued": "Em fila",
+      "states": {
+        "pending": "Sem ligação",
+        "qr": "À espera do código",
+        "connected": "Ligado",
+        "disconnected": "Desligado"
+      },
+      "gatewayDown": "Não foi possível falar com o serviço de WhatsApp.",
+      "sendHeading": "Enviar por WhatsApp",
+      "sendHint": "Põe em fila os convites deste evento. Saem aos poucos do número que escolher, no idioma de cada convidado. Quem já recebeu não recebe outra vez.",
+      "send": "Pôr os envios em fila",
+      "queuedCount": "{queued} em fila · {sent} enviadas · {failed} falhadas",
+      "queuedDone": "Em fila: {queued}. Sem telefone: {skipped}.",
+      "noConnection": "Ligue primeiro um número."
     }
   },
   "rsvpForm": {

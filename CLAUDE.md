@@ -10,8 +10,11 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - PostgreSQL vía Prisma 7 (adaptador `@prisma/adapter-pg`)
 - Render de imágenes en servidor (Chromium headless vía puppeteer-core)
 - Expo/React Native para la app móvil (`apps/mobile`)
+- WhatsApp por QR en un proceso APARTE (`apps/whatsapp`, Baileys): un socket de
+  WhatsApp es una conexión larga y Next no puede sostenerla dentro de una
+  petición.
 - Monorepo con espacios de trabajo de npm: `apps/web`, `apps/mobile`,
-  `packages/core`
+  `apps/whatsapp`, `packages/core`
 
 ## Reglas innegociables
 
@@ -123,9 +126,27 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 ### Invitados y envío
 - El enlace personal es `/g/<token>`: corto y sin el slug, para que reenviarlo no
   revele de quién es el evento. Abrirlo marca `openedAt` y recuerda al invitado.
-- Se envía con enlaces `wa.me`, NO con la API de WhatsApp: abre el WhatsApp del
-  operador con el mensaje escrito. Sin plantillas aprobadas, sin coste por
-  mensaje y desde el número que el cliente ya conoce.
+- Hay DOS formas de enviar, y la segunda no sustituye a la primera.
+  1. **`wa.me`**, invitado por invitado: abre el WhatsApp del operador con el
+     mensaje escrito. Sin plantillas aprobadas, sin coste por mensaje y desde el
+     número que el cliente ya conoce. Es lo que funciona SIEMPRE.
+  2. **El número conectado por QR** (`apps/whatsapp`, Baileys), para no pegar
+     doscientos enlaces a mano. La web ENCOLA filas; quien manda es ese proceso,
+     de uno en uno.
+- Automatizar un número personal va CONTRA los términos de WhatsApp y el número
+  que pueden cerrar es el del cliente. Eso no se esconde: el aviso está arriba
+  en la pantalla, en rojo, antes del botón. Y el código lleva freno —retardo al
+  azar entre mensajes, tope diario por número, calentamiento del número nuevo,
+  de uno en uno— porque sin él lo que se pierde es el número de una boda.
+- La sesión de WhatsApp se guarda CIFRADA (`authEnc`), con la llave fuera de la
+  base. Es el secreto más peligroso del proyecto: quien la tiene escribe desde
+  el WhatsApp del cliente.
+- Multi-número y multi-oficina. Cada `WhatsappConnection` cuelga de su
+  `tenantId`, y toda acción resuelve la conexión con el `TenantScope` antes de
+  tocarla: el id viaja en un campo oculto del formulario.
+- El servicio NO expone «manda este mensaje». Solo «abre la sesión» y «ciérrala».
+  Un extremo que manda al momento es un extremo con el que se vacía el cupo de
+  un número en un bucle.
 - El mensaje va en el idioma DEL INVITADO, no en el de la oficina.
 - Reimportar la misma lista no duplica: se reconoce por teléfono, y por nombre
   cuando no hay teléfono.
@@ -199,6 +220,8 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
 - `docs/WINDOWS.md` — levantarlo en Windows.
 - `docs/DESPLIEGUE-VPS.md` — desplegar en un VPS con aaPanel, paso a paso. XAMPP no sirve: esto es Node y
   PostgreSQL, y las variables van en `apps\web\.env`.
+- `docs/WHATSAPP.md` — el envío por número propio con código QR: por qué lleva
+  freno, qué se arriesga, cómo se monta y qué mirar cuando falla.
 - `docs/APPS-MOVILES.md` — publicar en Apple y Google Play: qué trae el
   repositorio (`codemagic.yaml`, `eas.json`, identificadores) y qué no puede
   traer (las dos cuentas de tienda, las firmas, la política de privacidad).

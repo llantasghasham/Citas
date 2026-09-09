@@ -15,6 +15,7 @@
     "db:deploy": "npm run db:deploy --workspace @citas/web",
     "db:seed": "npm run db:seed --workspace @citas/web",
     "db:studio": "npm run db:studio --workspace @citas/web",
-    "mobile": "npm run start --workspace @citas/mobile"
+    "mobile": "npm run start --workspace @citas/mobile",
+    "whatsapp": "npm run start --workspace @citas/whatsapp"
   }
 }

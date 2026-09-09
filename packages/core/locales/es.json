@@ -263,6 +263,7 @@
           "siteUrl": "Dirección pública del sitio",
           "codeDelivery": "Códigos que no salieron",
           "migrations": "Migraciones aplicadas",
+          "whatsapp": "Servicio de WhatsApp",
           "verses": "Versículos sin verificar"
         }
       },
@@ -327,11 +328,13 @@
         "CONTACT_EMAIL": "Correo de contacto",
         "HOME_SECTIONS": "Bloques de la portada, en orden",
         "HOME_SHOWCASE": "Invitaciones de muestra (slugs separados por comas)",
-        "HOME_DEFAULT_LOCALE": "Idioma por defecto de la portada"
+        "HOME_DEFAULT_LOCALE": "Idioma por defecto de la portada",
+        "WHATSAPP_GATEWAY_URL": "Dirección del servicio de WhatsApp"
       },
       "sections": {
         "mail": "Correo",
         "payments": "Cobro",
+        "whatsapp": "WhatsApp",
         "brand": "Marca",
         "home": "Portada",
         "site": "El sitio"
@@ -339,6 +342,7 @@
       "sectionIntros": {
         "mail": "Por dónde salen los códigos de acceso y los avisos. Sin esto configurado, nadie puede entrar con código.",
         "payments": "Qué medios de pago se aceptan y con qué credenciales. Estos campos deciden a qué cuenta va el dinero.",
+        "whatsapp": "Los números desde los que salen las invitaciones. Se conecta escaneando un código con el teléfono, igual que WhatsApp Web.",
         "brand": "Cómo se llama esto y con qué se ve. Sale en la portada, en la pestaña del navegador y en el panel.",
         "home": "Cada texto de la página de inicio, en los cuatro idiomas. Un campo vacío usa el texto original.",
         "site": "La dirección pública y el contacto que aparece al pie de la portada."
@@ -466,6 +470,37 @@
       "whatsappMessage": "Hola {name}, aquí está el cobro de su paquete de {guests} invitaciones: {link}",
       "markCash": "Marcar como cobrado en efectivo",
       "markCashDone": "Cobro en efectivo anotado."
+    },
+    "whatsapp": {
+      "heading": "Números de WhatsApp",
+      "hint": "Cada número se conecta escaneando un código desde el teléfono, igual que WhatsApp Web. La sesión se guarda cifrada, así que no hay que volver a escanear en cada reinicio.",
+      "warning": "Aviso serio: automatizar un número personal para envíos masivos va contra los términos de WhatsApp, y el número que pueden bloquear es el suyo. Por eso hay retardo entre mensajes, tope diario y calentamiento. Empiece con pocos y suba despacio.",
+      "nameLabel": "Nombre de este número",
+      "add": "Añadir un número",
+      "empty": "Todavía no hay ningún número conectado. Sin uno, se sigue enviando a mano con wa.me.",
+      "connect": "Conectar",
+      "scan": "Escanee este código desde WhatsApp del teléfono: Ajustes › Dispositivos vinculados › Vincular un dispositivo.",
+      "refresh": "El código caduca en un minuto. Actualice si ya no vale.",
+      "disconnect": "Desconectar",
+      "remove": "Quitar",
+      "makeDefault": "Usar por defecto",
+      "isDefault": "por defecto",
+      "capLabel": "Tope diario",
+      "sentToday": "Hoy",
+      "queued": "En cola",
+      "states": {
+        "pending": "Sin conectar",
+        "qr": "Esperando el código",
+        "connected": "Conectado",
+        "disconnected": "Desconectado"
+      },
+      "gatewayDown": "No se pudo hablar con el servicio de WhatsApp.",
+      "sendHeading": "Enviar por WhatsApp",
+      "sendHint": "Encola las invitaciones de este evento. Salen poco a poco desde el número que elija, en el idioma de cada invitado. A quien ya se le escribió no se le repite.",
+      "send": "Encolar los envíos",
+      "queuedCount": "{queued} en cola · {sent} enviadas · {failed} fallidas",
+      "queuedDone": "Encoladas {queued}. Sin teléfono: {skipped}.",
+      "noConnection": "Conecte un número primero."
     }
   },
   "rsvpForm": {

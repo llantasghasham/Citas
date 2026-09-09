@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { CODE_SEND_FAILED_ACTION } from '@/lib/auth/otp';
 import { getPrisma } from '@/lib/db/client';
 import { unverifiedVerses } from '@/lib/verses';
+import { gatewayHealth } from '@/lib/whatsapp/gateway';
 import type { HealthKey } from '@/lib/types';
 
 export type HealthLevel = 'ok' | 'warn' | 'fail';
@@ -45,8 +46,27 @@ export async function readHealth(): Promise<HealthCheck[]> {
     siteUrlCheck(),
     await codeDeliveryCheck(),
     await migrationsCheck(),
+    await whatsappCheck(),
     versesCheck(),
   ];
+}
+
+/**
+ * El servicio de WhatsApp, que es un proceso APARTE.
+ *
+ * Se despliega y se arranca por su cuenta, así que puede estar caído con la web
+ * entera funcionando. Sin esto, la oficina lo descubriría al ver que la cola no
+ * baja, y no sabría por qué.
+ *
+ * `warn` y no `fail` cuando no está: es opcional. Sin él se sigue enviando a
+ * mano con `wa.me`, como antes de que existiera.
+ */
+async function whatsappCheck(): Promise<HealthCheck> {
+  if (env('WHATSAPP_GATEWAY_TOKEN') === undefined) {
+    return { key: 'whatsapp', level: 'warn', detail: 'WHATSAPP_GATEWAY_TOKEN' };
+  }
+  const { up, detail } = await gatewayHealth();
+  return { key: 'whatsapp', level: up ? 'ok' : 'warn', detail };
 }
 
 /**
