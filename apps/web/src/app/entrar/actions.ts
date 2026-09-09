@@ -86,7 +86,7 @@ export async function signInWithPasswordAction(formData: FormData): Promise<void
       entityId: email,
       ip,
     });
-    redirect(signInUrl(email, { password: '1', error: '1' }));
+    redirect(signInUrl(email, { error: '1' }));
   }
 
   await setSessionCookie(outcome.token);

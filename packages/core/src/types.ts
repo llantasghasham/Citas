@@ -372,6 +372,15 @@ export interface Dictionary {
         fail: string;
         checks: Record<HealthKey, string>;
       };
+      /** Sends one real message, so the mail can be diagnosed from here. */
+      mail: {
+        heading: string;
+        intro: string;
+        test: string;
+        ok: string;
+        failed: string;
+        tooSoon: string;
+      };
       updates: {
         heading: string;
         intro: string;

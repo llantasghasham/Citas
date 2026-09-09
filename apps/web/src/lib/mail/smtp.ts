@@ -73,6 +73,12 @@ function getTransporter(): Transporter {
     secure: port === 465,
     requireTLS: port !== 465,
     auth: { user: required('SMTP_USER'), pass: password() },
+    // A mail server that accepts the connection and then says nothing would
+    // otherwise hold the sign-in request open for as long as it liked, and
+    // /entrar would hang for everybody, not just for the one signing in.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
   });
 
   return transporter;

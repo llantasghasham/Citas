@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 
+import { sendTestMailAction } from '@/app/panel/sistema/actions';
 import { getAdminContext } from '@/lib/admin/context';
 import { getSession, sessionCan } from '@/lib/auth/session';
 import { readHealth, type HealthLevel } from '@/lib/system/health';
@@ -23,7 +24,12 @@ const LEVEL_MARK: Record<HealthLevel, string> = { ok: '●', warn: '▲', fail: 
  * unset, which is a map of the machine's weak spots and not something an
  * office's staff needs.
  */
-export default async function SystemPage() {
+interface PageProps {
+  searchParams: Promise<{ mail?: string; reason?: string }>;
+}
+
+export default async function SystemPage({ searchParams }: PageProps) {
+  const { mail, reason } = await searchParams;
   const session = await getSession();
   if (session === null || !sessionCan(session, 'platform:manage')) redirect('/panel');
 
@@ -61,6 +67,40 @@ export default async function SystemPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="flex flex-col gap-4 border-t border-[#ddd6c6] pt-6">
+        <h2 className={`${displayFont(locale)} text-xl`}>{copy.mail.heading}</h2>
+        <p className="max-w-2xl text-sm text-[#6a6456]">{copy.mail.intro}</p>
+
+        {mail === 'ok' ? (
+          <p className="text-sm text-[#2f6b3a]">{copy.mail.ok}</p>
+        ) : mail === 'tooSoon' ? (
+          <p className="text-sm text-[#8a6c22]">{copy.mail.tooSoon}</p>
+        ) : mail === 'failed' ? (
+          <div className="flex max-w-2xl flex-col gap-2">
+            <p role="alert" className="text-sm text-[#8c2f1e]">
+              {copy.mail.failed}
+            </p>
+            {/* The provider's own words. smtp.ts has already stripped the auth
+                line, and without this there is nothing to diagnose with. */}
+            <code
+              dir="ltr"
+              className="block overflow-x-auto border border-[#ddd6c6] bg-white px-4 py-2 font-mono text-xs"
+            >
+              {reason ?? '—'}
+            </code>
+          </div>
+        ) : null}
+
+        <form action={sendTestMailAction}>
+          <button
+            type="submit"
+            className="border border-[#23201a] px-6 py-3 text-base text-[#23201a] hover:opacity-70"
+          >
+            {copy.mail.test}
+          </button>
+        </form>
       </section>
 
       <section className="flex flex-col gap-4">

@@ -76,7 +76,7 @@
       "passwordLink": "O email não chega? Entrar com palavra-passe",
       "passwordLabel": "Palavra-passe",
       "passwordSubmit": "Entrar",
-      "passwordHint": "Apenas para a conta da plataforma e os administradores de agência. Os restantes entram sempre com o código.",
+      "passwordHint": "A palavra-passe é opcional: só a conta da plataforma e os administradores de agência a têm. Os restantes deixam o campo vazio e pedem um código.",
       "codeLink": "Voltar ao código por email"
     },
     "panel": {
@@ -237,6 +237,14 @@
           "superadmin": "Superadministrador configurado",
           "extraSuperadmins": "Superadministradores a mais"
         }
+      },
+      "mail": {
+        "heading": "Testar o correio a sair",
+        "intro": "Envia uma mensagem a sério para o endereço do superadministrador. É a única forma de saber se o SMTP funciona: a configuração pode estar completa e o fornecedor recusar na mesma a autenticação.",
+        "test": "Enviar um email de teste",
+        "ok": "Enviado. Se não chegar em poucos minutos, veja a pasta de spam.",
+        "failed": "O servidor de correio recusou-o. A resposta dele, tal como veio:",
+        "tooSoon": "Espere um minuto entre testes."
       },
       "updates": {
         "heading": "Atualizações",

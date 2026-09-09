@@ -76,7 +76,7 @@
       "passwordLink": "Mail not arriving? Sign in with a password",
       "passwordLabel": "Password",
       "passwordSubmit": "Sign in",
-      "passwordHint": "Only for the platform account and office administrators. Everyone else always signs in with the code.",
+      "passwordHint": "The password is optional: only the platform account and office administrators have one. Everyone else leaves it empty and asks for a code.",
       "codeLink": "Back to the emailed code"
     },
     "panel": {
@@ -237,6 +237,14 @@
           "superadmin": "Superadmin configured",
           "extraSuperadmins": "Extra superadmins"
         }
+      },
+      "mail": {
+        "heading": "Test outgoing mail",
+        "intro": "Sends a real message to the superadmin address. It is the only way to know whether SMTP works: the configuration can be complete and the provider still refuse the login.",
+        "test": "Send a test email",
+        "ok": "Sent. If it does not arrive within a few minutes, check the spam folder.",
+        "failed": "The mail server refused it. Its answer, verbatim:",
+        "tooSoon": "Wait a minute between tests."
       },
       "updates": {
         "heading": "Updates",

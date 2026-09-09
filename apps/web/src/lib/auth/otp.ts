@@ -1,3 +1,4 @@
+import { recordAudit } from '@/lib/audit';
 import { getPrisma } from '@/lib/db/client';
 import { getMailer } from '@/lib/mail';
 
@@ -10,6 +11,9 @@ const MAX_ATTEMPTS = 5;
 /** Codes one address may request inside the window, so nobody's inbox is a weapon. */
 const MAX_CODES_PER_WINDOW = 3;
 const WINDOW_MINUTES = 15;
+
+/** Recorded when the code was made but the mail server would not take it. */
+export const CODE_SEND_FAILED_ACTION = 'auth.code.send_failed';
 
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -50,11 +54,28 @@ export async function requestLoginCode(rawEmail: string, ip?: string): Promise<v
     },
   });
 
-  await getMailer().send({
-    to: email,
-    subject: `Citas — ${code}`,
-    text: `Your one-time code is ${code}. It expires in ${CODE_TTL_MINUTES} minutes.\n\nIf you did not ask for it, ignore this message.`,
-  });
+  try {
+    await getMailer().send({
+      to: email,
+      subject: `Citas — ${code}`,
+      text: `Your one-time code is ${code}. It expires in ${CODE_TTL_MINUTES} minutes.\n\nIf you did not ask for it, ignore this message.`,
+    });
+  } catch (error) {
+    // A broken mail server must not become an oracle. This function already
+    // returns silently for an address with no account; letting a send failure
+    // escape would mean a crash for real accounts and a normal screen for the
+    // rest, which is exactly how somebody maps who is registered here.
+    //
+    // The failure is recorded instead, and /panel/sistema has a button that
+    // sends a real message and shows what the provider answered.
+    await recordAudit({
+      action: CODE_SEND_FAILED_ACTION,
+      entity: 'User',
+      entityId: email,
+      metadata: { problem: error instanceof Error ? error.message : 'unknown error' },
+      ip: ip ?? null,
+    }).catch(() => undefined);
+  }
 }
 
 export interface VerifyOutcome {
