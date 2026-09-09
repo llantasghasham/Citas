@@ -236,7 +236,8 @@
           "chromium": "Chromium لتوليد الصورة",
           "superadmin": "المدير العام مضبوط",
           "extraSuperadmins": "مديرون عامّون زائدون",
-          "siteUrl": "عنوان الموقع العلني"
+          "siteUrl": "عنوان الموقع العلني",
+          "codeDelivery": "رموز لم تخرج"
         }
       },
       "mail": {

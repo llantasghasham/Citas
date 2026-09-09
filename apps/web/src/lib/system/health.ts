@@ -1,5 +1,6 @@
 import { accessSync, constants } from 'node:fs';
 
+import { CODE_SEND_FAILED_ACTION } from '@/lib/auth/otp';
 import { getPrisma } from '@/lib/db/client';
 import type { HealthKey } from '@/lib/types';
 
@@ -40,7 +41,43 @@ export async function readHealth(): Promise<HealthCheck[]> {
     await superadminCheck(),
     await extraSuperadminsCheck(),
     siteUrlCheck(),
+    await codeDeliveryCheck(),
   ];
+}
+
+/**
+ * Sign-in codes the mail server would not take, in the last day.
+ *
+ * These failures are swallowed on purpose — letting one escape would tell a
+ * stranger which addresses have an account — so without this they are silent:
+ * the person waiting for the code just sees nothing arrive, and nobody else
+ * ever learns it happened. The reason is carried through verbatim, which is
+ * usually the whole diagnosis.
+ */
+async function codeDeliveryCheck(): Promise<HealthCheck> {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  try {
+    const failures = await getPrisma().auditLog.findMany({
+      where: { action: CODE_SEND_FAILED_ACTION, createdAt: { gte: since } },
+      orderBy: { createdAt: 'desc' },
+      select: { metadata: true },
+      take: 50,
+    });
+    if (failures.length === 0) return { key: 'codeDelivery', level: 'ok', detail: '0' };
+
+    const last = failures[0]?.metadata;
+    const problem =
+      typeof last === 'object' && last !== null && 'problem' in last
+        ? String((last as { problem?: unknown }).problem ?? '')
+        : '';
+    return {
+      key: 'codeDelivery',
+      level: 'fail',
+      detail: `${failures.length} · ${problem}`.slice(0, 160),
+    };
+  } catch {
+    return { key: 'codeDelivery', level: 'warn', detail: '—' };
+  }
 }
 
 /**

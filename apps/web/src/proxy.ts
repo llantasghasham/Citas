@@ -21,6 +21,17 @@ export const LANG_HINT_HEADER = 'x-citas-lang-hint';
 
 export function proxy(request: NextRequest): NextResponse {
   const headers = new Headers(request.headers);
+
+  // Deleted before anything is written. These two names are invented here and
+  // must only ever mean what this function decided: a visitor who sends one
+  // himself would otherwise be choosing the document's language, and the same
+  // pattern with a header that carried more weight is how trusted-header bugs
+  // get in. `x-forwarded-host` is trusted in this codebase precisely because a
+  // proxy sets it and the origin is not reachable around that proxy; nothing
+  // sets these but this line.
+  headers.delete(PATH_HEADER);
+  headers.delete(LANG_HINT_HEADER);
+
   headers.set(PATH_HEADER, request.nextUrl.pathname);
 
   const requested = request.nextUrl.searchParams.get('lang');

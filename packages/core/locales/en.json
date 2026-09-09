@@ -236,7 +236,8 @@
           "chromium": "Chromium for the PNG",
           "superadmin": "Superadmin configured",
           "extraSuperadmins": "Extra superadmins",
-          "siteUrl": "Public site address"
+          "siteUrl": "Public site address",
+          "codeDelivery": "Codes that never went out"
         }
       },
       "mail": {

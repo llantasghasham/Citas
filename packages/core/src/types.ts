@@ -91,6 +91,7 @@ export const HEALTH_KEYS = [
   'superadmin',
   'extraSuperadmins',
   'siteUrl',
+  'codeDelivery',
 ] as const;
 export type HealthKey = (typeof HEALTH_KEYS)[number];
 
