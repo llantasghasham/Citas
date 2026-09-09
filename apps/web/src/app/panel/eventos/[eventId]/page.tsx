@@ -10,7 +10,7 @@ import { LOCALE_NAMES } from '@/lib/create/options';
 import { COUNTRY_CODES } from '@/lib/guests/phone';
 import { toWaMe } from '@/lib/guests/phone';
 import { listGuestsWithLinks } from '@/lib/repositories/guests';
-import { displayFont } from '@/lib/typography';
+import { displayFont, latinOnly } from '@/lib/typography';
 import { getDictionary, interpolate, plural, LOCALES, type Locale } from '@citas/core';
 
 interface PageProps {
@@ -105,7 +105,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           <div className="overflow-x-auto">
             <table className="w-full min-w-[44rem] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-[#c9bfa6] text-xs uppercase tracking-[0.12em] text-[#8a6c22]">
+                <tr className={`border-b border-[#c9bfa6] text-xs ${latinOnly(locale, 'uppercase tracking-[0.12em]')} text-[#8a6c22]`}>
                   <th className="py-2 text-start">{copy.name}</th>
                   <th className="py-2 text-start">{copy.phone}</th>
                   <th className="py-2 text-start">{copy.language}</th>

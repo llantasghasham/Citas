@@ -96,6 +96,8 @@
     },
     "events": {
       "heading": "Eventos",
+      "create": "Crear una invitación",
+      "createHint": "Empiece por aquí: cinco pasos y una vista previa de la invitación de verdad.",
       "event": "Evento",
       "date": "Fecha",
       "attending": "Confirmados",

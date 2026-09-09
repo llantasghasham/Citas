@@ -96,6 +96,8 @@
     },
     "events": {
       "heading": "Events",
+      "create": "Create an invitation",
+      "createHint": "Start here: five steps and a preview of the real invitation.",
       "event": "Event",
       "date": "Date",
       "attending": "Attending",

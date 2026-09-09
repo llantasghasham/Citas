@@ -7,7 +7,7 @@ import { getSession, sessionCan } from '@/lib/auth/session';
 import { PLAN_CATALOGUE, planLabel } from '@/lib/billing/plans';
 import { LOCALE_NAMES } from '@/lib/create/options';
 import { listOffices } from '@/lib/repositories/tenants';
-import { displayFont } from '@/lib/typography';
+import { displayFont, latinOnly } from '@/lib/typography';
 import { LOCALES } from '@/lib/types';
 
 /** Platform-wide: only the superadmin sees other people's offices. */
@@ -26,7 +26,7 @@ export default async function OfficesPage() {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[34rem] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-[#c9bfa6] text-xs uppercase tracking-[0.12em] text-[#8a6c22]">
+            <tr className={`border-b border-[#c9bfa6] text-xs ${latinOnly(locale, 'uppercase tracking-[0.12em]')} text-[#8a6c22]`}>
               <th className="py-2 text-start">{copy.name}</th>
               <th className="py-2 text-start">{copy.subdomain}</th>
               <th className="py-2 text-start">{copy.plan}</th>

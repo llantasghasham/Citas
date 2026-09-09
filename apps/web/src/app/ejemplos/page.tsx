@@ -26,6 +26,7 @@ export default async function ExamplesPage() {
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-10 p-8">
+      {/* latin-only-ok: la marca se escribe igual en los cuatro idiomas. */}
       <h1 className="font-display text-3xl tracking-[0.3em] uppercase">Citas</h1>
 
       <ul className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-8">

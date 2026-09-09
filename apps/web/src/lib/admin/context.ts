@@ -1,5 +1,6 @@
 import { headers } from 'next/headers';
 
+import { getSession } from '@/lib/auth/session';
 import { getDictionary } from '@/lib/dictionary';
 import { getTenantById, getTenantByHost, type CurrentTenant } from '@/lib/tenancy/current';
 import { LOCALES, type Dictionary, type Direction, type Locale } from '@/lib/types';
@@ -58,7 +59,13 @@ export async function getAdminContext(
   // The person's own choice wins over the office's default. Two colleagues at
   // the same desk can read the panel in different languages, which in Beirut is
   // the normal case and not an edge one.
-  const locale = readerLocale ?? asLocale(tenant?.defaultLocale);
+  //
+  // Read from the session here rather than taken from each caller: seven panel
+  // pages ask for this context, and one of them forgetting to pass it is a page
+  // whose chrome is in Arabic and whose body is in Spanish. `getSession` is
+  // cached per request, so asking costs nothing.
+  const reader = readerLocale ?? (await getSession())?.locale;
+  const locale = reader ?? asLocale(tenant?.defaultLocale);
 
   return {
     locale,

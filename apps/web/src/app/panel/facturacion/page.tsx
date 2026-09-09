@@ -5,7 +5,7 @@ import { getAdminContext } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { listOrders } from '@/lib/billing/orders';
 import { formatMoney, limitsFor, PLAN_CATALOGUE, planLabel } from '@/lib/billing/plans';
-import { displayFont } from '@/lib/typography';
+import { displayFont, latinOnly } from '@/lib/typography';
 
 /** The office's plan, what it has used, and what it has been billed. */
 export default async function BillingPage() {
@@ -72,7 +72,7 @@ export default async function BillingPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[30rem] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-[#c9bfa6] text-xs uppercase tracking-[0.12em] text-[#8a6c22]">
+                <tr className={`border-b border-[#c9bfa6] text-xs ${latinOnly(locale, 'uppercase tracking-[0.12em]')} text-[#8a6c22]`}>
                   <th className="py-2 text-start">{copy.created}</th>
                   <th className="py-2 text-start">{copy.plan}</th>
                   <th className="py-2 text-end">{copy.amount}</th>

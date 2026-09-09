@@ -96,6 +96,8 @@
     },
     "events": {
       "heading": "Eventos",
+      "create": "Criar um convite",
+      "createHint": "Comece por aqui: cinco passos e uma pré-visualização do convite a sério.",
       "event": "Evento",
       "date": "Data",
       "attending": "Confirmados",

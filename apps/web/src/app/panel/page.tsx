@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getAdminContext } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { listEvents, type EventSummary } from '@/lib/repositories/events';
-import { displayFont } from '@/lib/typography';
+import { displayFont, latinOnly } from '@/lib/typography';
 
 /** Proves the whole chain: session, office and role, all resolved on the server. */
 export default async function PanelPage() {
@@ -45,15 +45,32 @@ export default async function PanelPage() {
       </dl>
 
       <section className="flex flex-col gap-4">
-        <h2 className={`${displayFont(locale)} text-2xl text-[#23201a]`}>{eventCopy.heading}</h2>
+        <div className="flex flex-wrap items-baseline gap-x-6 gap-y-3">
+          <h2 className={`${displayFont(locale)} text-2xl text-[#23201a]`}>{eventCopy.heading}</h2>
+          {/* The one thing an office signs in to do, and until now it was only
+              reachable by typing the address. */}
+          {sessionCan(session, 'event:write') ? (
+            <a
+              href="/crear"
+              className="bg-[#23201a] px-5 py-2.5 text-sm text-[#f4efe6] transition-opacity hover:opacity-90 ms-auto"
+            >
+              {eventCopy.create}
+            </a>
+          ) : null}
+        </div>
 
         {events.length === 0 ? (
-          <p className="text-sm text-[#6a6456]">{eventCopy.empty}</p>
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-[#6a6456]">{eventCopy.empty}</p>
+            {sessionCan(session, 'event:write') ? (
+              <p className="text-sm text-[#6a6456]">{eventCopy.createHint}</p>
+            ) : null}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[34rem] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-[#c9bfa6] text-xs uppercase tracking-[0.12em] text-[#8a6c22]">
+                <tr className={`border-b border-[#c9bfa6] text-xs ${latinOnly(locale, 'uppercase tracking-[0.12em]')} text-[#8a6c22]`}>
                   <th className="py-2 text-start">{eventCopy.event}</th>
                   <th className="py-2 text-start">{eventCopy.date}</th>
                   <th className="py-2 text-end tabular-nums">{eventCopy.attending}</th>

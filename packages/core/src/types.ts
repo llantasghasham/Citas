@@ -476,6 +476,9 @@ export interface Dictionary {
     };
     events: {
       heading: string;
+      /** The one thing an office signs in to do. */
+      create: string;
+      createHint: string;
       event: string;
       date: string;
       attending: string;

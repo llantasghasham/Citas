@@ -60,6 +60,7 @@ export default async function SignInPage({ searchParams }: PageProps) {
             <input type="hidden" name="email" value={email} />
             <label className="flex flex-col gap-2 text-sm text-[#23201a]">
               {copy.codeLabel}
+              {/* latin-only-ok: seis dígitos latinos, nunca texto árabe. */}
               <input
                 className={`${FIELD} tracking-[0.5em]`}
                 name="code"

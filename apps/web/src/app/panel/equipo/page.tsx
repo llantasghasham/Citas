@@ -5,7 +5,7 @@ import { Field, FIELD_CLASS } from '@/components/create/Field';
 import { getAdminContext } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { listMembers } from '@/lib/repositories/tenants';
-import { displayFont } from '@/lib/typography';
+import { displayFont, latinOnly } from '@/lib/typography';
 
 const ROLES = ['TENANT_ADMIN', 'OPERATOR', 'ORGANIZER'] as const;
 
@@ -27,7 +27,7 @@ export default async function TeamPage() {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[26rem] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-[#c9bfa6] text-xs uppercase tracking-[0.12em] text-[#8a6c22]">
+            <tr className={`border-b border-[#c9bfa6] text-xs ${latinOnly(locale, 'uppercase tracking-[0.12em]')} text-[#8a6c22]`}>
               <th className="py-2 text-start">{copy.email}</th>
               <th className="py-2 text-start">{copy.role}</th>
             </tr>

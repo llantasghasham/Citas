@@ -13,7 +13,7 @@ import { getSession, sessionCan } from '@/lib/auth/session';
 import { DRAFT_COOKIE } from '@/lib/create/cookie';
 import { draftToInvitation, parseDraft } from '@/lib/create/draft';
 import { getDictionary } from '@/lib/dictionary';
-import { bodyFont, displayFont } from '@/lib/typography';
+import { bodyFont, displayFont, latinOnly } from '@/lib/typography';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -117,6 +117,7 @@ export default async function CreatePage({ searchParams }: PageProps) {
             <StepShell
               step={step}
               total={TOTAL_STEPS}
+              locale={draft.locale}
               title={stepTitles[step - 1] ?? ''}
               dictionary={dictionary}
             >
@@ -130,7 +131,7 @@ export default async function CreatePage({ searchParams }: PageProps) {
         </div>
 
         <aside className="flex flex-col gap-3 lg:sticky lg:top-10">
-          <p className="text-xs uppercase tracking-[0.16em] text-[#8a6c22]">{copy.preview}</p>
+          <p className={`text-xs ${latinOnly(draft.locale, 'uppercase tracking-[0.16em]')} text-[#8a6c22]`}>{copy.preview}</p>
           <InvitationCard
             invitation={draftToInvitation(draft)}
             className="w-full overflow-hidden shadow-[0_16px_40px_-22px_rgba(59,50,38,0.6)]"

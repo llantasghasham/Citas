@@ -1,3 +1,4 @@
+import { latinOnly } from '@/lib/typography';
 import { publishDraftAction, resetDraftAction } from '@/app/crear/actions';
 import { draftProblems, draftVersions, type InvitationDraft } from '@/lib/create/draft';
 import { LOCALE_NAMES } from '@/lib/create/options';
@@ -24,7 +25,7 @@ export function ReviewStep({ draft, dictionary, signedIn, failed }: ReviewStepPr
   return (
     <div className="flex flex-col gap-5">
       <header className="flex flex-col gap-1">
-        <p className="text-xs uppercase tracking-[0.16em] text-[#8a6c22]">{copy.steps.review}</p>
+        <p className={`text-xs ${latinOnly(draft.locale, 'uppercase tracking-[0.16em]')} text-[#8a6c22]`}>{copy.steps.review}</p>
         <h2 className="text-2xl text-[#23201a]">{copy.preview}</h2>
       </header>
 
