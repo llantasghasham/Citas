@@ -13,6 +13,25 @@ interface RouteContext {
 }
 
 /**
+ * The page Chromium screenshots is served by this very process, so the capture
+ * URL has to describe the loopback, not the address the guest typed.
+ *
+ * It cannot simply be `request.url`. Behind nginx, Next keeps the internal host
+ * (`localhost:<puerto>`) but takes the scheme from `X-Forwarded-Proto`, so the
+ * URL comes out as `https://localhost:3001` — TLS against the plain HTTP port
+ * Node is listening on. Chromium refuses it with ERR_SSL_PROTOCOL_ERROR and
+ * every uncached invitation answers 500. The port is right and the host is
+ * right; only the scheme is a lie, so that is all we correct.
+ */
+function captureUrlFor(slug: string, request: Request): string {
+  const url = new URL(`/render/${slug}`, request.url);
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    url.protocol = 'http:';
+  }
+  return url.toString();
+}
+
+/**
  * GET /api/render/[slug] → a 1080×1920 PNG of the invitation.
  *
  * The image is generated once per version and kept, because this URL is also
@@ -43,8 +62,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
     const cached = png !== undefined;
 
     if (png === undefined) {
-      const captureUrl = new URL(`/render/${invitation.slug}`, request.url).toString();
-      png = await renderInvitationPng(captureUrl);
+      png = await renderInvitationPng(captureUrlFor(invitation.slug, request));
       // Failing to keep the image must not fail the request that produced it.
       await store
         ?.save({
