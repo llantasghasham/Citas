@@ -49,12 +49,21 @@ ok "node $("$NODE_BIN" -v) en $NODE_BIN"
 puerto_ocupado() {
   timeout 1 bash -c "cat < /dev/null > /dev/tcp/127.0.0.1/$1" 2>/dev/null
 }
-PORT=""
-for candidato in 3000 3001 3002 3003 3010; do
-  if ! puerto_ocupado "$candidato"; then PORT="$candidato"; break; fi
-done
-[ -n "$PORT" ] || alto "no hay ningún puerto libre entre 3000 y 3010"
-ok "puerto libre: $PORT"
+# Si ya hay un servicio instalado, se conserva SU puerto. Buscar uno libre en
+# cada reinstalación sería mudarse siempre: el puerto viejo está ocupado por esta
+# misma aplicación, se elegiría el siguiente, y nginx —que apunta al de antes—
+# empezaría a devolver 502. Pasó exactamente así el 2026-09-09.
+PORT="$(sed -n 's/.*--port \([0-9]\+\).*/\1/p' "$SERVICE" 2>/dev/null | head -1)"
+
+if [ -n "$PORT" ]; then
+  ok "puerto conservado del servicio ya instalado: $PORT"
+else
+  for candidato in 3000 3001 3002 3003 3010; do
+    if ! puerto_ocupado "$candidato"; then PORT="$candidato"; break; fi
+  done
+  [ -n "$PORT" ] || alto "no hay ningún puerto libre entre 3000 y 3010"
+  ok "puerto libre: $PORT"
+fi
 
 LIBRE_KB="$(df -Pk /www | awk 'NR==2 {print $4}')"
 [ "$LIBRE_KB" -gt 3000000 ] || alto "hacen falta al menos 3 GB libres en /www"
