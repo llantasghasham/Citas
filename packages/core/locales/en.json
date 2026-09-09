@@ -113,7 +113,8 @@
       "team": "Team",
       "billing": "Subscription",
       "manual": "Manual",
-      "system": "System"
+      "system": "System",
+      "config": "Settings"
     },
     "manual": {
       "title": "User manual",
@@ -278,6 +279,39 @@
         "howTo": "Open SSH to the server, go to the project folder and run:",
         "checkCommand": "See what has an update",
         "updateCommand": "Update one package and rebuild"
+      }
+    },
+    "config": {
+      "title": "Settings",
+      "intro": "Mail, payments and the site address. Saved here, not on the server: nobody needs SSH to change anything.",
+      "save": "Save",
+      "saved": "Saved.",
+      "fromPanel": "saved here",
+      "fromEnv": "comes from the server",
+      "missing": "not set",
+      "secretSet": "Set. It can be replaced, not read.",
+      "secretUnset": "Not set.",
+      "secretHint": "Stored encrypted. Neither this screen nor a database dump reveals it: to change it you type a new one.",
+      "mail": "Outgoing mail",
+      "payments": "Payments",
+      "site": "The site",
+      "testMail": "Send a test email",
+      "testPayments": "Test the payment credentials",
+      "probeOk": "The credentials work.",
+      "probeFailed": "The gateway refused them. Its answer:",
+      "labels": {
+        "MAILER": "How mail is sent (\"smtp\" to send for real)",
+        "SMTP_HOST": "Mail server",
+        "SMTP_PORT": "Port (587 with STARTTLS, 465 with TLS)",
+        "SMTP_USER": "Username",
+        "MAIL_FROM": "Sender",
+        "SMTP_PASSWORD": "Mail password",
+        "PAYMENTS_PROVIDER": "Gateway (\"whish\" to collect for real)",
+        "WHISH_BASE_URL": "Whish service address",
+        "WHISH_CHANNEL": "Channel",
+        "WHISH_WEBSITE_URL": "Domain registered with Whish",
+        "WHISH_SECRET": "Whish secret key",
+        "NEXT_PUBLIC_SITE_URL": "Public site address"
       }
     },
     "offices": {

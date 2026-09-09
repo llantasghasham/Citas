@@ -31,6 +31,11 @@ export default async function PanelLayout({ children }: { children: ReactNode })
     { href: '/panel/equipo', label: nav.team, visible: sessionCan(session, 'tenant:staff') },
     { href: '/panel/facturacion', label: nav.billing, visible: sessionCan(session, 'billing:manage') },
     { href: '/panel/manual', label: nav.manual, visible: true },
+    {
+      href: '/panel/configuracion',
+      label: nav.config,
+      visible: sessionCan(session, 'platform:manage'),
+    },
     // Names the environment variables that are unset, which is a map of the
     // machine's weak spots: the platform's own account only.
     { href: '/panel/sistema', label: nav.system, visible: sessionCan(session, 'platform:manage') },

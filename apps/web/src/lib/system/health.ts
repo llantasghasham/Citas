@@ -205,15 +205,37 @@ function mailerCheck(): HealthCheck {
   return { key: 'mailer', level: 'ok', detail: host };
 }
 
+/**
+ * La pasarela, variable por variable.
+ *
+ * Nombrar la que falta es todo el valor: no hay pantalla donde configurar
+ * Whish —y no la va a haber, ver más abajo—, así que esta fila es el único
+ * sitio donde alguien se entera de que el cobro no puede funcionar.
+ */
 function paymentsCheck(): HealthCheck {
   const provider = env('PAYMENTS_PROVIDER') ?? 'mock';
   if (provider === 'mock') {
     return { key: 'payments', level: inProduction() ? 'fail' : 'warn', detail: provider };
   }
-  if (provider === 'whish' && env('WHISH_SECRET') === undefined) {
-    return { key: 'payments', level: 'fail', detail: 'WHISH_SECRET' };
+  if (provider !== 'whish') return { key: 'payments', level: 'fail', detail: provider };
+
+  const falta = [
+    env('WHISH_BASE_URL') ? null : 'WHISH_BASE_URL',
+    env('WHISH_CHANNEL') ? null : 'WHISH_CHANNEL',
+    env('WHISH_WEBSITE_URL') ? null : 'WHISH_WEBSITE_URL',
+  ].filter((name): name is string => name !== null);
+
+  const cifrado = env('WHISH_SECRET_ENC');
+  if (cifrado === undefined) {
+    falta.push(env('WHISH_SECRET') === undefined ? 'WHISH_SECRET_ENC' : 'WHISH_SECRET_ENC (hay uno en claro)');
+  } else if (!cifrado.startsWith('v1.')) {
+    // Parece configurado y solo falla al cobrar: el mismo error que ya ocurrió
+    // con la contraseña del correo.
+    falta.push('WHISH_SECRET_ENC · npm run secret:encrypt');
   }
-  return { key: 'payments', level: 'ok', detail: provider };
+
+  if (falta.length > 0) return { key: 'payments', level: 'fail', detail: falta.join(' · ') };
+  return { key: 'payments', level: 'ok', detail: `whish · ${env('WHISH_BASE_URL') ?? ''}` };
 }
 
 function renderStoreCheck(): HealthCheck {

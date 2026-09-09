@@ -113,7 +113,8 @@
       "team": "Equipo",
       "billing": "Suscripción",
       "manual": "Manual",
-      "system": "Sistema"
+      "system": "Sistema",
+      "config": "Configuración"
     },
     "manual": {
       "title": "Manual de uso",
@@ -278,6 +279,39 @@
         "howTo": "Entre por SSH al servidor, sitúese en la carpeta del proyecto y ejecute:",
         "checkCommand": "Ver qué tiene actualización",
         "updateCommand": "Actualizar un paquete concreto y volver a construir"
+      }
+    },
+    "config": {
+      "title": "Configuración",
+      "intro": "El correo, el cobro y la dirección del sitio. Se guarda aquí, no en el servidor: no hace falta entrar por SSH para cambiar nada.",
+      "save": "Guardar",
+      "saved": "Guardado.",
+      "fromPanel": "guardado aquí",
+      "fromEnv": "viene del servidor",
+      "missing": "sin poner",
+      "secretSet": "Puesta. Se puede reemplazar, no leer.",
+      "secretUnset": "Sin poner.",
+      "secretHint": "Se guarda cifrada. Ni esta pantalla ni un volcado de la base la revelan: para cambiarla se escribe una nueva.",
+      "mail": "Correo saliente",
+      "payments": "Cobro",
+      "site": "El sitio",
+      "testMail": "Enviar un correo de prueba",
+      "testPayments": "Probar las credenciales de cobro",
+      "probeOk": "Las credenciales valen.",
+      "probeFailed": "La pasarela las rechazó. Su respuesta:",
+      "labels": {
+        "MAILER": "Cómo se envía («smtp» para enviar de verdad)",
+        "SMTP_HOST": "Servidor de correo",
+        "SMTP_PORT": "Puerto (587 con STARTTLS, 465 con TLS)",
+        "SMTP_USER": "Usuario",
+        "MAIL_FROM": "Remitente",
+        "SMTP_PASSWORD": "Contraseña del correo",
+        "PAYMENTS_PROVIDER": "Pasarela («whish» para cobrar de verdad)",
+        "WHISH_BASE_URL": "Dirección del servicio de Whish",
+        "WHISH_CHANNEL": "Canal (channel)",
+        "WHISH_WEBSITE_URL": "Dominio registrado en Whish",
+        "WHISH_SECRET": "Clave secreta de Whish",
+        "NEXT_PUBLIC_SITE_URL": "Dirección pública del sitio"
       }
     },
     "offices": {

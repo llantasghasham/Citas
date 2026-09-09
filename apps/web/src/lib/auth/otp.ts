@@ -55,7 +55,7 @@ export async function requestLoginCode(rawEmail: string, ip?: string): Promise<v
   });
 
   try {
-    await getMailer().send({
+    await (await getMailer()).send({
       to: email,
       subject: `Citas — ${code}`,
       text: `Your one-time code is ${code}. It expires in ${CODE_TTL_MINUTES} minutes.\n\nIf you did not ask for it, ignore this message.`,

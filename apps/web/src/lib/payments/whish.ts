@@ -1,3 +1,5 @@
+import { secret, setting } from '@/lib/settings';
+
 import {
   PaymentError,
   type CallbackResult,
@@ -58,21 +60,37 @@ interface WhishConfig {
   websiteUrl: string;
 }
 
-function readConfig(): WhishConfig {
-  const baseUrl = process.env['WHISH_BASE_URL'];
-  const channel = process.env['WHISH_CHANNEL'];
-  const secret = process.env['WHISH_SECRET'];
-  const websiteUrl = process.env['WHISH_WEBSITE_URL'];
+async function readConfig(): Promise<WhishConfig> {
+  // Todo sale de la configuración del panel. El `secret` es una contraseña de
+  // servicio y se guarda cifrada, con la llave fuera de la base de datos.
+  const [baseUrl, channel, websiteUrl, secretValue] = await Promise.all([
+    setting('WHISH_BASE_URL'),
+    setting('WHISH_CHANNEL'),
+    setting('WHISH_WEBSITE_URL'),
+    secret('WHISH_SECRET'),
+  ]);
 
-  if (!baseUrl || !channel || !secret || !websiteUrl) {
+  if (!baseUrl || !channel || !secretValue || !websiteUrl) {
+    const faltan = [
+      baseUrl ? null : 'la dirección del servicio',
+      channel ? null : 'el canal',
+      secretValue ? null : 'la clave secreta',
+      websiteUrl ? null : 'el dominio registrado',
+    ].filter((name): name is string => name !== null);
     throw new PaymentError(
-      'Whish is not configured. Set WHISH_BASE_URL, WHISH_CHANNEL, WHISH_SECRET and WHISH_WEBSITE_URL.',
+      `Whish no está configurado. Falta ${faltan.join(', ')}. Se pone en el panel, en Configuración.`,
       'whish',
     );
   }
+  const secret_ = secretValue;
   // The paths are relative, so the base has to end in a slash or `new URL`
   // swallows the last segment of it.
-  return { baseUrl: baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`, channel, secret, websiteUrl };
+  return {
+    baseUrl: baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`,
+    channel,
+    secret: secret_,
+    websiteUrl,
+  };
 }
 
 /** Maps whatever Whish calls a state onto our own. Unknown states are never "paid". */
@@ -127,8 +145,23 @@ async function call(
 export const whishProvider: PaymentProvider = {
   id: 'whish',
 
+  /**
+   * Pregunta el saldo, que es la operación de SOLO LECTURA más barata que
+   * expone Whish. Sirve para comprobar que las credenciales valen sin mover un
+   * céntimo ni crear un cobro que luego haya que limpiar.
+   */
+  async probe(): Promise<string> {
+    const config = await readConfig();
+    const data = await call(config, CONTRACT.balance, {});
+    const balance = data['balance'] ?? data['amount'];
+    const currency = data['currency'] ?? '';
+    return balance === undefined
+      ? 'credenciales válidas'
+      : `credenciales válidas · saldo ${String(balance)} ${String(currency)}`.trim();
+  },
+
   async createCollection(request: CollectionRequest): Promise<CollectionHandle> {
-    const config = readConfig();
+    const config = await readConfig();
     const externalId = newExternalId();
 
     const data = await call(config, CONTRACT.collect, {
@@ -160,7 +193,7 @@ export const whishProvider: PaymentProvider = {
    * second currency would have to travel with the reference.
    */
   async getStatus(providerRef: string): Promise<PaymentStatus> {
-    const config = readConfig();
+    const config = await readConfig();
     const data = await call(config, CONTRACT.status, {
       currency: 'USD',
       externalId: Number(providerRef),

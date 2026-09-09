@@ -8,6 +8,7 @@ import { recordAudit } from '@/lib/audit';
 import { getSession, sessionCan } from '@/lib/auth/session';
 import { getPrisma } from '@/lib/db/client';
 import { getMailer } from '@/lib/mail';
+import { getPaymentProvider } from '@/lib/payments';
 
 const TEST_ACTION = 'system.mail.test';
 /** One test a minute. A button that sends mail is a button that can send spam. */
@@ -32,20 +33,20 @@ export async function sendTestMailAction(): Promise<void> {
   // provider refusing the login are different problems with different fixes.
   const to = process.env['SUPERADMIN_EMAIL'];
   if (to === undefined || to.length === 0) {
-    redirect('/panel/sistema?mail=failed&reason=SUPERADMIN_EMAIL');
+    redirect('/panel/configuracion?mail=failed&reason=SUPERADMIN_EMAIL');
   }
 
   const since = new Date(Date.now() - COOLDOWN_SECONDS * 1000);
   const recent = await getPrisma().auditLog.count({
     where: { action: TEST_ACTION, createdAt: { gte: since } },
   });
-  if (recent > 0) redirect('/panel/sistema?mail=tooSoon');
+  if (recent > 0) redirect('/panel/configuracion?mail=tooSoon');
 
   const ip = clientIp(await headers());
   let problem: string | null = null;
   let receipt = '';
   try {
-    const result = await getMailer().send({
+    const result = await (await getMailer()).send({
       to,
       subject: 'Citas — prueba de correo saliente',
       text:
@@ -77,7 +78,49 @@ export async function sendTestMailAction(): Promise<void> {
   });
 
   if (problem !== null) {
-    redirect(`/panel/sistema?mail=failed&reason=${encodeURIComponent(problem.slice(0, 300))}`);
+    redirect(`/panel/configuracion?mail=failed&reason=${encodeURIComponent(problem.slice(0, 300))}`);
   }
-  redirect(`/panel/sistema?mail=ok&reason=${encodeURIComponent(receipt.slice(0, 300))}`);
+  redirect(`/panel/configuracion?mail=ok&reason=${encodeURIComponent(receipt.slice(0, 300))}`);
+}
+
+const PROBE_ACTION = 'system.payments.probe';
+
+/**
+ * Pregunta a la pasarela si las credenciales valen.
+ *
+ * Es de SOLO LECTURA: consulta el saldo del comercio y no crea ningún cobro,
+ * así que se puede pulsar sin ensuciar nada. Y es lo único que distingue «mal
+ * configurado» de «Whish rechaza estas credenciales».
+ */
+export async function probePaymentsAction(): Promise<void> {
+  const session = await getSession();
+  if (session === null || !sessionCan(session, 'platform:manage')) redirect('/panel');
+
+  const ip = clientIp(await headers());
+  let resultado: string;
+  let ok = true;
+  try {
+    const provider = await getPaymentProvider();
+    resultado =
+      provider.probe === undefined
+        ? `${provider.id}: no ofrece comprobación`
+        : await provider.probe();
+  } catch (error) {
+    ok = false;
+    resultado = error instanceof Error ? error.message : 'error desconocido';
+  }
+
+  await recordAudit({
+    tenantId: session.tenantId,
+    actorId: session.userId,
+    action: PROBE_ACTION,
+    entity: 'User',
+    entityId: session.userId,
+    metadata: { ok, resultado },
+    ip,
+  });
+
+  redirect(
+    `/panel/configuracion?pago=${ok ? 'ok' : 'failed'}&motivo=${encodeURIComponent(resultado.slice(0, 300))}`,
+  );
 }

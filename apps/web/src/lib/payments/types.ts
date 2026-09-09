@@ -52,6 +52,11 @@ export interface CallbackResult {
 
 export interface PaymentProvider {
   readonly id: PaymentProviderId;
+  /**
+   * Comprueba que las credenciales valen, sin mover dinero. Opcional: no todo
+   * proveedor ofrece una operación de solo lectura con la que hacerlo.
+   */
+  probe?(): Promise<string>;
   /** Opens a collection and returns where to send the payer. */
   createCollection(request: CollectionRequest): Promise<CollectionHandle>;
   /** Asks the provider for the truth. Used for reconciliation, never the browser. */

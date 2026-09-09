@@ -1,3 +1,5 @@
+import { setting } from '@/lib/settings';
+
 import { mockProvider } from './mock';
 import { PAYMENT_PROVIDERS, PaymentError, type PaymentProvider, type PaymentProviderId } from './types';
 import { whishProvider } from './whish';
@@ -11,8 +13,8 @@ const PROVIDERS: Record<PaymentProviderId, PaymentProvider> = {
  * Lebanon collects through Whish. `mock` exists so the order flow can be built
  * and tested before the merchant account is open; it is refused in production.
  */
-export function getPaymentProvider(): PaymentProvider {
-  const configured = process.env['PAYMENTS_PROVIDER'] ?? 'mock';
+export async function getPaymentProvider(): Promise<PaymentProvider> {
+  const configured = (await setting('PAYMENTS_PROVIDER')) ?? 'mock';
   const id = PAYMENT_PROVIDERS.find((candidate) => candidate === configured);
 
   if (id === undefined) {

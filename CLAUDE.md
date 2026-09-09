@@ -62,12 +62,26 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Una vez dentro, la oficina la manda la SESIÓN, no el host.
 - El envío de correo entra por el puerto `Mailer`. El emisor de consola está
   prohibido en producción y el código lo impide.
-- Las contraseñas de servicios (hoy SMTP) van CIFRADAS en el `.env`
-  (`SMTP_PASSWORD_ENC`), con la llave fuera del proyecto en
-  `CITAS_SECRET_KEY_FILE`. En claro está prohibido en producción.
+- La configuración del sistema —correo saliente, cobro, dirección del sitio— se
+  edita en `/panel/configuracion`, NO en el `.env`. Quien monta esto no debería
+  tener que abrir un archivo por SSH para cambiar un servidor de correo. El
+  `.env` se sigue leyendo como RESPALDO, y solo como respaldo: si el valor está
+  guardado en el panel, manda el panel.
+- Lo único que SÍ tiene que estar en el entorno es lo que hace falta para
+  arrancar y poder leer el resto: `DATABASE_URL`, `DATA_SOURCE`,
+  `SUPERADMIN_EMAIL` y la llave de cifrado (`CITAS_SECRET_KEY_FILE`). La llave
+  no puede vivir en la base de datos: sería guardar la llave dentro del cajón
+  que abre.
+- Las contraseñas de servicios (la del SMTP, la clave de Whish) se guardan
+  CIFRADAS con AES-256-GCM, nunca en claro, estén en la base de datos o en el
+  `.env` (`SMTP_PASSWORD_ENC`). La pantalla NUNCA las devuelve: se reemplazan,
+  no se leen. Dejar el campo vacío significa «no la toques».
 - Cifrar no sustituye a los permisos: el `.env` va en 600, fuera del repositorio,
-  y una contraseña filtrada se rota. El cifrado solo evita que el `.env` la
+  y una contraseña filtrada se rota. El cifrado solo evita que un volcado la
   revele por sí solo.
+- Cambiar la configuración es cosa del superadministrador y queda registrado con
+  su autor: esos campos deciden a qué cuenta de comercio va el dinero. En el
+  historial se anota QUÉ campos cambiaron, jamás su valor.
 - Un secreto se pasa por la entrada estándar, nunca como argumento: los
   argumentos quedan en la lista de procesos y en el historial.
 
@@ -220,6 +234,10 @@ de los versículos.
 - `/panel/sistema` — SOLO superadministrador: once comprobaciones de salud,
   las versiones leídas en vivo y un botón que envía un correo de prueba y
   enseña la respuesta del proveedor.
+- `/panel/configuracion` — SOLO superadministrador: correo saliente, cobro y
+  dirección del sitio. Cada campo dice de dónde sale hoy su valor —guardado
+  aquí, heredado del servidor o sin poner— y las dos contraseñas se escriben
+  pero no se leen.
 - Cuatro botones en la cabecera cambian el idioma del panel. Se guarda en
   `User.locale`, no en la oficina.
 

@@ -17,7 +17,7 @@ interface RouteContext {
  */
 export async function POST(request: Request, context: RouteContext): Promise<Response> {
   const { provider: name } = await context.params;
-  const provider = getPaymentProvider();
+  const provider = await getPaymentProvider();
   if (provider.id !== name) {
     return Response.json({ error: 'unknown_provider' }, { status: 404 });
   }

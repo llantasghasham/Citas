@@ -113,7 +113,8 @@
       "team": "Equipa",
       "billing": "Subscrição",
       "manual": "Manual",
-      "system": "Sistema"
+      "system": "Sistema",
+      "config": "Configuração"
     },
     "manual": {
       "title": "Manual de uso",
@@ -278,6 +279,39 @@
         "howTo": "Entre por SSH no servidor, vá para a pasta do projeto e execute:",
         "checkCommand": "Ver o que tem atualização",
         "updateCommand": "Atualizar um pacote e reconstruir"
+      }
+    },
+    "config": {
+      "title": "Configuração",
+      "intro": "O correio, a cobrança e o endereço do site. Guarda-se aqui, não no servidor: não é preciso entrar por SSH para mudar nada.",
+      "save": "Guardar",
+      "saved": "Guardado.",
+      "fromPanel": "guardado aqui",
+      "fromEnv": "vem do servidor",
+      "missing": "por pôr",
+      "secretSet": "Definida. Pode substituir-se, não ler-se.",
+      "secretUnset": "Por definir.",
+      "secretHint": "Guarda-se cifrada. Nem este ecrã nem um despejo da base a revelam: para a mudar escreve-se uma nova.",
+      "mail": "Correio a sair",
+      "payments": "Cobrança",
+      "site": "O site",
+      "testMail": "Enviar um email de teste",
+      "testPayments": "Testar as credenciais de cobrança",
+      "probeOk": "As credenciais servem.",
+      "probeFailed": "O gateway recusou-as. A resposta dele:",
+      "labels": {
+        "MAILER": "Como se envia («smtp» para enviar a sério)",
+        "SMTP_HOST": "Servidor de correio",
+        "SMTP_PORT": "Porta (587 com STARTTLS, 465 com TLS)",
+        "SMTP_USER": "Utilizador",
+        "MAIL_FROM": "Remetente",
+        "SMTP_PASSWORD": "Palavra-passe do correio",
+        "PAYMENTS_PROVIDER": "Gateway («whish» para cobrar a sério)",
+        "WHISH_BASE_URL": "Endereço do serviço Whish",
+        "WHISH_CHANNEL": "Canal",
+        "WHISH_WEBSITE_URL": "Domínio registado na Whish",
+        "WHISH_SECRET": "Chave secreta da Whish",
+        "NEXT_PUBLIC_SITE_URL": "Endereço público do site"
       }
     },
     "offices": {

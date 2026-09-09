@@ -70,3 +70,38 @@ export function decryptSecret(payload: string): string {
     decipher.final(),
   ]).toString('utf8');
 }
+
+/**
+ * Lee la contraseña de un servicio del entorno, cifrada.
+ *
+ * La regla del proyecto es que las contraseñas de servicios van cifradas en el
+ * `.env`, con la llave fuera del proyecto. Estaba escrita para el SMTP y se
+ * cumplía solo ahí; Whish leía su `secret` en claro. Ahora la regla vive en un
+ * sitio y la cumplen todos.
+ *
+ * `<NOMBRE>_ENC` es el valor cifrado. `<NOMBRE>` en claro se acepta fuera de
+ * producción —hay proveedores que no dejan otra— y se rechaza dentro.
+ */
+export function readServiceSecret(name: string): string | undefined {
+  const encrypted = process.env[`${name}_ENC`];
+  if (encrypted !== undefined && encrypted.length > 0) {
+    // El error que ya ocurrió una vez: pegar la contraseña en claro en el campo
+    // cifrado. Descifrarla solo diría «secreto mal formado», que no le dice a
+    // nadie lo que hizo.
+    if (!encrypted.startsWith(`${FORMAT}.`)) {
+      throw new Error(
+        `${name}_ENC no contiene un valor cifrado (tiene que empezar por "${FORMAT}."). ` +
+          'Parece la contraseña pegada en claro. Cífrela antes: ' +
+          'npm run secret:encrypt --workspace @citas/web',
+      );
+    }
+    return decryptSecret(encrypted);
+  }
+
+  const plain = process.env[name];
+  if (plain === undefined || plain.length === 0) return undefined;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(`${name} en claro no se permite en producción. Use ${name}_ENC.`);
+  }
+  return plain;
+}

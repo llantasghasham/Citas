@@ -63,7 +63,7 @@ export async function startPlanOrder(
     },
   });
 
-  const provider = getPaymentProvider();
+  const provider = await getPaymentProvider();
   const handle = await provider.createCollection({
     orderId: order.id,
     amount: { amount: order.amount, currency: 'USD' },
@@ -109,7 +109,7 @@ export async function settleOrder(scope: TenantScope, orderId: string): Promise<
   const payment = order?.payments[0];
   if (order === null || payment === undefined) return false;
 
-  const status = await getPaymentProvider().getStatus(payment.providerRef);
+  const status = await (await getPaymentProvider()).getStatus(payment.providerRef);
 
   await prisma.payment.update({
     where: { id: payment.id },

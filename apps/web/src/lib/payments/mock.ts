@@ -16,6 +16,10 @@ const states = new Map<string, PaymentStatus>();
 export const mockProvider: PaymentProvider = {
   id: 'mock',
 
+  probe(): Promise<string> {
+    return Promise.resolve('proveedor de desarrollo: no hay credenciales que comprobar');
+  },
+
   createCollection(request: CollectionRequest): Promise<CollectionHandle> {
     const providerRef = `mock_${request.orderId}`;
     states.set(providerRef, 'pending');

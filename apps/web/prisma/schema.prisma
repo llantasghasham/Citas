@@ -433,6 +433,27 @@ enum PaymentStatus {
   refunded
 }
 
+/// Configuración del sistema, editable desde el panel.
+///
+/// Vive aquí y no en el `.env` porque quien administra la plataforma tiene que
+/// poder cambiarla sin entrar al servidor. Lo que NO cambia es la regla de los
+/// secretos: una contraseña se guarda en `valueEnc`, cifrada con la llave de
+/// `CITAS_SECRET_KEY_FILE`, que sigue fuera de la base. Un volcado de la base no
+/// revela ni el SMTP ni el cobro.
+model Setting {
+  key String @id
+
+  /// Lo que no es secreto: un host, un puerto, una URL.
+  value String?
+
+  /// Lo que sí lo es, cifrado (`v1.…`). Nunca se devuelve a una pantalla: se
+  /// puede reemplazar, no leer.
+  valueEnc String?
+
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
 model Order {
   id       String  @id @default(cuid())
   tenantId String

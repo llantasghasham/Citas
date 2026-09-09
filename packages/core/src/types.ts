@@ -354,7 +354,45 @@ export interface Dictionary {
       restartNeeded: string;
     };
     roles: Record<'SUPERADMIN' | 'TENANT_ADMIN' | 'OPERATOR' | 'ORGANIZER', string>;
-    nav: Record<'events' | 'offices' | 'team' | 'billing' | 'manual' | 'system', string>;
+    nav: Record<
+      'events' | 'offices' | 'team' | 'billing' | 'manual' | 'system' | 'config',
+      string
+    >;
+    /** La configuración del sistema, editable sin entrar al servidor. */
+    config: {
+      title: string;
+      intro: string;
+      save: string;
+      saved: string;
+      fromPanel: string;
+      fromEnv: string;
+      missing: string;
+      secretSet: string;
+      secretUnset: string;
+      secretHint: string;
+      mail: string;
+      payments: string;
+      site: string;
+      testMail: string;
+      testPayments: string;
+      probeOk: string;
+      probeFailed: string;
+      labels: Record<
+        | 'MAILER'
+        | 'SMTP_HOST'
+        | 'SMTP_PORT'
+        | 'SMTP_USER'
+        | 'MAIL_FROM'
+        | 'SMTP_PASSWORD'
+        | 'PAYMENTS_PROVIDER'
+        | 'WHISH_BASE_URL'
+        | 'WHISH_CHANNEL'
+        | 'WHISH_WEBSITE_URL'
+        | 'WHISH_SECRET'
+        | 'NEXT_PUBLIC_SITE_URL',
+        string
+      >;
+    };
     /** The manual the office reads inside the panel, not in a PDF nobody opens. */
     manual: {
       title: string;
