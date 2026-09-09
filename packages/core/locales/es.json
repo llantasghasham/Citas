@@ -235,7 +235,8 @@
           "secretKey": "Llave de cifrado",
           "chromium": "Chromium para el PNG",
           "superadmin": "Superadministrador configurado",
-          "extraSuperadmins": "Superadministradores de más"
+          "extraSuperadmins": "Superadministradores de más",
+          "siteUrl": "Dirección pública del sitio"
         }
       },
       "mail": {

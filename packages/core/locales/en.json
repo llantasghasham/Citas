@@ -235,7 +235,8 @@
           "secretKey": "Encryption key",
           "chromium": "Chromium for the PNG",
           "superadmin": "Superadmin configured",
-          "extraSuperadmins": "Extra superadmins"
+          "extraSuperadmins": "Extra superadmins",
+          "siteUrl": "Public site address"
         }
       },
       "mail": {

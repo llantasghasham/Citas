@@ -39,7 +39,26 @@ export async function readHealth(): Promise<HealthCheck[]> {
     chromiumCheck(),
     await superadminCheck(),
     await extraSuperadminsCheck(),
+    siteUrlCheck(),
   ];
+}
+
+/**
+ * The address every share preview is built against.
+ *
+ * Without it Next resolves the Open Graph image relative to localhost, so a
+ * link pasted into a WhatsApp group shows a grey rectangle — and nothing
+ * anywhere says why, because the page itself is perfectly fine.
+ */
+function siteUrlCheck(): HealthCheck {
+  const url = env('NEXT_PUBLIC_SITE_URL');
+  if (url === undefined) {
+    return { key: 'siteUrl', level: inProduction() ? 'fail' : 'warn', detail: 'NEXT_PUBLIC_SITE_URL' };
+  }
+  if (!url.startsWith('https://') && inProduction()) {
+    return { key: 'siteUrl', level: 'warn', detail: url };
+  }
+  return { key: 'siteUrl', level: 'ok', detail: url };
 }
 
 /**

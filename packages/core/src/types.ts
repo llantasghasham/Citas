@@ -88,6 +88,7 @@ export const HEALTH_KEYS = [
   'chromium',
   'superadmin',
   'extraSuperadmins',
+  'siteUrl',
 ] as const;
 export type HealthKey = (typeof HEALTH_KEYS)[number];
 

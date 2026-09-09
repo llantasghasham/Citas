@@ -11,12 +11,12 @@ import { Showcase } from '@/components/home/Showcase';
 import { SiteFooter } from '@/components/home/SiteFooter';
 import { SiteHeader } from '@/components/home/SiteHeader';
 import { StepList } from '@/components/home/StepList';
-import { shows } from '@/config/site';
+import { SITE, shows } from '@/config/site';
 import { getDictionary } from '@/lib/dictionary';
 import { resolveHomeLocale } from '@/lib/home/locale';
 import { loadShowcase } from '@/lib/home/showcase';
 import { bodyFont } from '@/lib/typography';
-import type { Invitation } from '@/lib/types';
+import { LOCALES, type Invitation } from '@/lib/types';
 
 // Reads the visitor's language and whatever is published right now, so
 // `npm run build` needs no reachable database to compile.
@@ -34,11 +34,31 @@ async function localeOf(searchParams: PageProps['searchParams']) {
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const locale = await localeOf(searchParams);
   const copy = getDictionary(locale).home;
+  const title = `${copy.hero.titleLead} ${copy.hero.titleHighlight}`;
 
   return {
-    title: `${copy.hero.titleLead} ${copy.hero.titleHighlight}`,
+    title,
     description: copy.hero.subtitle,
-    alternates: { canonical: '/' },
+    alternates: {
+      canonical: '/',
+      // The same page in four languages, each at its own address. Without this
+      // a search engine has to guess which one to show a reader in Beirut.
+      languages: Object.fromEntries(LOCALES.map((option) => [option, `/?lang=${option}`])),
+    },
+    openGraph: {
+      type: 'website',
+      siteName: SITE.brand,
+      url: '/',
+      title,
+      description: copy.hero.subtitle,
+      locale,
+      // Drawn once by the same headless Chromium that draws the invitations
+      // (npm run og:build) and served as a static file: this link gets pasted
+      // into WhatsApp groups, and a preview that costs a render per paste is a
+      // preview that stops appearing.
+      images: [{ url: '/og/home.png', width: 1200, height: 630, alt: SITE.brand }],
+    },
+    twitter: { card: 'summary_large_image', title, description: copy.hero.subtitle },
   };
 }
 

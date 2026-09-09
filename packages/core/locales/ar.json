@@ -235,7 +235,8 @@
           "secretKey": "مفتاح التعمية",
           "chromium": "Chromium لتوليد الصورة",
           "superadmin": "المدير العام مضبوط",
-          "extraSuperadmins": "مديرون عامّون زائدون"
+          "extraSuperadmins": "مديرون عامّون زائدون",
+          "siteUrl": "عنوان الموقع العلني"
         }
       },
       "mail": {
