@@ -38,7 +38,35 @@ export async function readHealth(): Promise<HealthCheck[]> {
     secretKeyCheck(),
     chromiumCheck(),
     await superadminCheck(),
+    await extraSuperadminsCheck(),
   ];
+}
+
+/**
+ * Any other account that can reach every office.
+ *
+ * The seed leaves a placeholder superadmin behind when SUPERADMIN_EMAIL is
+ * changed afterwards, and a full-power account nobody is watching is a spare
+ * key under the mat. One is expected; more want a reason.
+ */
+async function extraSuperadminsCheck(): Promise<HealthCheck> {
+  const configured = (env('SUPERADMIN_EMAIL') ?? '').toLowerCase();
+  try {
+    const others = await getPrisma().user.findMany({
+      where: { isSuperadmin: true, email: { not: configured } },
+      select: { email: true },
+      orderBy: { email: 'asc' },
+      take: 5,
+    });
+    if (others.length === 0) return { key: 'extraSuperadmins', level: 'ok', detail: '0' };
+    return {
+      key: 'extraSuperadmins',
+      level: 'warn',
+      detail: others.map((user) => user.email).join(' · '),
+    };
+  } catch {
+    return { key: 'extraSuperadmins', level: 'warn', detail: '—' };
+  }
 }
 
 async function databaseCheck(): Promise<HealthCheck> {
@@ -60,18 +88,41 @@ function dataSourceCheck(): HealthCheck {
   return { key: 'dataSource', level: inProduction() ? 'fail' : 'warn', detail: source };
 }
 
+/**
+ * Outgoing mail, variable by variable.
+ *
+ * Every branch here is a mistake somebody has actually made on this
+ * installation. Naming the exact variable at fault is the whole point: the day
+ * the codes stopped arriving, nothing anywhere said why, and finding it took
+ * days.
+ */
 function mailerCheck(): HealthCheck {
+  const fail = (detail: string): HealthCheck => ({ key: 'mailer', level: 'fail', detail });
+
   if (env('MAILER') !== 'smtp') {
     // Without this, the one-time code never leaves the machine and nobody can
     // sign in at all. In production the console mailer also refuses to run.
     return { key: 'mailer', level: inProduction() ? 'fail' : 'warn', detail: 'console' };
   }
+
   const host = env('SMTP_HOST');
-  if (host === undefined) return { key: 'mailer', level: 'fail', detail: 'SMTP_HOST' };
-  if (env('SMTP_PASSWORD_ENC') === undefined) {
-    const detail = env('SMTP_PASSWORD') === undefined ? 'SMTP_PASSWORD_ENC' : `${host} · SMTP_PASSWORD`;
-    return { key: 'mailer', level: inProduction() ? 'fail' : 'warn', detail };
+  if (host === undefined) return fail('SMTP_HOST');
+  if (env('SMTP_USER') === undefined) return fail('SMTP_USER');
+
+  // Writing SMTP_FROM instead of MAIL_FROM has already broken one deployment.
+  if (env('MAIL_FROM') === undefined) {
+    return fail(env('SMTP_FROM') === undefined ? 'MAIL_FROM' : 'MAIL_FROM ← SMTP_FROM');
   }
+
+  const encrypted = env('SMTP_PASSWORD_ENC');
+  if (encrypted === undefined) {
+    if (env('SMTP_PASSWORD') === undefined) return fail('SMTP_PASSWORD_ENC');
+    return { key: 'mailer', level: inProduction() ? 'fail' : 'warn', detail: 'SMTP_PASSWORD' };
+  }
+  // The password pasted in the clear into the encrypted field: it looks set,
+  // and it fails only at the moment somebody tries to sign in.
+  if (!encrypted.startsWith('v1.')) return fail('SMTP_PASSWORD_ENC · npm run secret:encrypt');
+
   return { key: 'mailer', level: 'ok', detail: host };
 }
 

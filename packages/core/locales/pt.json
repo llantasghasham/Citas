@@ -234,7 +234,8 @@
           "renderStore": "Armazém de imagens",
           "secretKey": "Chave de cifra",
           "chromium": "Chromium para o PNG",
-          "superadmin": "Superadministrador configurado"
+          "superadmin": "Superadministrador configurado",
+          "extraSuperadmins": "Superadministradores a mais"
         }
       },
       "updates": {

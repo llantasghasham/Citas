@@ -234,7 +234,8 @@
           "renderStore": "مخزن الصور",
           "secretKey": "مفتاح التعمية",
           "chromium": "Chromium لتوليد الصورة",
-          "superadmin": "المدير العام مضبوط"
+          "superadmin": "المدير العام مضبوط",
+          "extraSuperadmins": "مديرون عامّون زائدون"
         }
       },
       "updates": {

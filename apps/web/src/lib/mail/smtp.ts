@@ -14,7 +14,19 @@ import type { Email, Mailer } from './types';
  */
 function password(): string {
   const encrypted = process.env['SMTP_PASSWORD_ENC'];
-  if (encrypted !== undefined && encrypted.length > 0) return decryptSecret(encrypted);
+  if (encrypted !== undefined && encrypted.length > 0) {
+    // The mistake this catches actually happened: the password was pasted into
+    // this variable in the clear. Decrypting it would only say "malformed
+    // secret", which does not tell anybody what they did.
+    if (!encrypted.startsWith('v1.')) {
+      throw new Error(
+        'SMTP_PASSWORD_ENC does not hold an encrypted value (it must start with "v1."). ' +
+          'It looks like the password was pasted in the clear. Encrypt it first: ' +
+          'npm run secret:encrypt --workspace @citas/web',
+      );
+    }
+    return decryptSecret(encrypted);
+  }
 
   const plain = process.env['SMTP_PASSWORD'];
   if (plain === undefined || plain.length === 0) {
@@ -26,10 +38,24 @@ function password(): string {
   return plain;
 }
 
+/**
+ * Reads a variable, and points at the near-miss when there is one: writing
+ * `SMTP_FROM` instead of `MAIL_FROM` has already cost one deployment, and
+ * "MAIL_FROM is not set" is a useless thing to say to somebody who is looking
+ * straight at a line that seems to set it.
+ */
+const NEAR_MISSES: Record<string, string> = { MAIL_FROM: 'SMTP_FROM' };
+
 function required(name: string): string {
   const value = process.env[name];
-  if (value === undefined || value.length === 0) throw new Error(`${name} is not set.`);
-  return value;
+  if (value !== undefined && value.length > 0) return value;
+
+  const confused = NEAR_MISSES[name];
+  const hint =
+    confused !== undefined && (process.env[confused] ?? '').length > 0
+      ? ` ${confused} is set, but that is not the name this reads.`
+      : '';
+  throw new Error(`${name} is not set.${hint}`);
 }
 
 let transporter: Transporter | undefined;

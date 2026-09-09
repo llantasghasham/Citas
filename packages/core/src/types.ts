@@ -87,6 +87,7 @@ export const HEALTH_KEYS = [
   'secretKey',
   'chromium',
   'superadmin',
+  'extraSuperadmins',
 ] as const;
 export type HealthKey = (typeof HEALTH_KEYS)[number];
 
