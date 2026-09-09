@@ -86,6 +86,20 @@ if [ -z "$CHROME" ]; then
     dnf install -y https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm >/dev/null 2>&1 || true
   CHROME="$(command -v chromium || command -v chromium-browser || command -v google-chrome-stable || true)"
 fi
+# En AlmaLinux `/usr/bin/chromium-browser` es un guion envoltorio, no el binario.
+# Puppeteer lo lanza igual, pero el proceso muere antes de abrir el puerto de
+# depuración con "chrome_crashpad_handler: --database is required", y el PNG
+# devuelve 500. Hay que apuntar al ejecutable de verdad.
+case "$(readlink -f "${CHROME:-/dev/null}")" in
+  *.sh)
+    for real in /usr/lib64/chromium-browser/chromium-browser \
+                /usr/lib/chromium-browser/chromium-browser \
+                /usr/lib64/chromium/chromium; do
+      if [ -x "$real" ]; then CHROME="$real"; break; fi
+    done
+    ;;
+esac
+
 # Sin navegador la aplicación arranca igual, pero no genera la imagen de la
 # invitación ni la vista previa de WhatsApp. Se avisa, no se detiene.
 [ -n "$CHROME" ] && ok "navegador: $CHROME" || aviso "sin Chromium: el PNG de la invitación NO funcionará"
@@ -189,6 +203,10 @@ Restart=always
 RestartSec=5
 Environment=HOSTNAME=127.0.0.1
 Environment=NODE_ENV=production
+# ProtectHome esconde /home/$APP_USER, y sin un HOME donde escribir su base de
+# datos de fallos Chromium no llega a arrancar: el PNG daría 500. PrivateTmp
+# hace que este /tmp sea exclusivo del servicio.
+Environment=HOME=/tmp
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full

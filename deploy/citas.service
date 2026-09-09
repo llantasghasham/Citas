@@ -19,6 +19,9 @@ RestartSec=5
 # Solo escucha en local: quien entra, entra por nginx.
 Environment=HOSTNAME=127.0.0.1
 Environment=NODE_ENV=production
+# ProtectHome esconde /home/www; sin un HOME donde escribir, Chromium no arranca
+# y el PNG de la invitación devuelve 500. PrivateTmp aísla este /tmp.
+Environment=HOME=/tmp
 
 # Endurecimiento básico: el proceso no necesita más que su propia carpeta.
 NoNewPrivileges=true

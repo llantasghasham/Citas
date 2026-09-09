@@ -16,15 +16,17 @@ interface PageProps {
 }
 
 /**
- * Pre-renders the invitations only while the JSON file is the data source.
- * Against the database they are rendered on demand, so publishing an invitation
- * does not require a rebuild.
+ * Rendered per request, never prerendered: the page greets a guest who already
+ * replied by reading their cookie, and that is per visitor by definition.
+ *
+ * This has to be said out loud. Leaving it to `generateStaticParams` — even
+ * returning an empty list — keeps the segment in static mode, where Next
+ * renders an unlisted slug on demand *as if it were prerendering it* and the
+ * cookie read throws DYNAMIC_SERVER_USAGE: every invitation answered with a
+ * 500. The value must be a literal string; Next parses it at compile time and
+ * refuses to build if it is computed.
  */
-export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  if (process.env['DATA_SOURCE'] === 'database') return [];
-  const invitations = await getInvitationRepository().listAll();
-  return invitations.map((invitation) => ({ slug: invitation.slug }));
-}
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -60,11 +62,12 @@ export default async function InvitationPage({ params, searchParams }: PageProps
   // database is the data source. Showing a form that cannot save is worse than
   // showing none.
   const canCollectReplies = process.env['DATA_SOURCE'] === 'database';
-  const guestToken = (await cookies()).get(guestCookieName(slug))?.value;
-  const guest =
-    !canCollectReplies || guestToken === undefined
-      ? null
-      : await findGuestByToken(slug, guestToken);
+  // Read the cookie only when there is a form to fill: touching it in JSON mode
+  // would make a page that has nothing per-visitor on it impossible to prerender.
+  const guestToken = canCollectReplies
+    ? (await cookies()).get(guestCookieName(slug))?.value
+    : undefined;
+  const guest = guestToken === undefined ? null : await findGuestByToken(slug, guestToken);
 
   return (
     <main
