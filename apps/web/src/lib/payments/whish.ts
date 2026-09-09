@@ -8,28 +8,48 @@ import {
 } from './types';
 
 /**
- * Whish Pay / Whish Collect adapter — the Lebanese rail.
+ * Whish Collect adapter — the Lebanese rail.
  *
- * ⚠ THE WIRE CONTRACT BELOW IS NOT CONFIRMED. Whish publishes the "Whish Collect
- * Web Service Technical Specification" (balance, rate and collect operations)
- * only to merchants who hold an account. Every endpoint path and field name in
- * `CONTRACT` and in the mapping functions is a placeholder until that document
- * is in hand — see docs/COBRO-WHISH.md for the exact list to request.
+ * The wire contract below is no longer a guess. It matches what Whish's own
+ * `itel-service` exposes, corroborated across several independent live
+ * integrations (the paths, the header casing, the `collectUrl` field and the
+ * numeric `externalId`); see docs/COBRO-WHISH.md for where each part was
+ * confirmed and what still has to come from Whish itself.
  *
- * Everything outside this file is contract-independent: when the spec arrives,
- * only `CONTRACT` and the two mapping functions change.
+ * How a payment actually happens, because it decides the whole flow: Whish does
+ * NOT let a site collect card details itself. `collect` returns a `collectUrl`
+ * and the payer is sent there, to a page Whish hosts. That is a feature — no
+ * card number ever reaches this server — but it means the payer always leaves
+ * the site, and there is nothing to embed.
  */
 const CONTRACT = {
-  collect: '/collect',
-  status: '/collect/status',
-  rate: '/rate',
-  /** Header names Whish uses for merchant credentials. */
+  collect: 'payment/collect',
+  status: 'payment/collect/status',
+  balance: 'payment/account/balance',
+  /** Case matters: the service reads `websiteUrl`, not `websiteurl`. */
   headers: {
     channel: 'channel',
     secret: 'secret',
-    websiteUrl: 'websiteurl',
+    websiteUrl: 'websiteUrl',
   },
 } as const;
+
+/**
+ * The reference we hand back is the `externalId` WE assign, not an id of
+ * Whish's own.
+ *
+ * That is what the service echoes in its callback and the only thing its status
+ * endpoint accepts, so storing anything else would leave a payment that can
+ * never be reconciled. It has to be numeric: several live integrations state
+ * it, and this product's ids are cuids.
+ */
+function newExternalId(): string {
+  // Milliseconds since the epoch plus three random digits: unique per
+  // collection, ordered in time, and comfortably inside a 64-bit integer.
+  return `${Date.now()}${Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0')}`;
+}
 
 interface WhishConfig {
   baseUrl: string;
@@ -50,7 +70,9 @@ function readConfig(): WhishConfig {
       'whish',
     );
   }
-  return { baseUrl, channel, secret, websiteUrl };
+  // The paths are relative, so the base has to end in a slash or `new URL`
+  // swallows the last segment of it.
+  return { baseUrl: baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`, channel, secret, websiteUrl };
 }
 
 /** Maps whatever Whish calls a state onto our own. Unknown states are never "paid". */
@@ -89,7 +111,17 @@ async function call(
   if (typeof payload !== 'object' || payload === null) {
     throw new PaymentError(`Whish returned a non-object body for ${path}`, 'whish');
   }
-  return payload as Record<string, unknown>;
+
+  const envelope = payload as Record<string, unknown>;
+  // The service wraps everything in `{ status, code, dialog, data }` and answers
+  // 200 even when it refused: a failure has to be read from the body.
+  if (envelope['status'] === false) {
+    const code = envelope['code'] ?? 'unknown';
+    throw new PaymentError(`Whish refused ${path}: ${String(code)}`, 'whish');
+  }
+
+  const data = envelope['data'];
+  return typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : envelope;
 }
 
 export const whishProvider: PaymentProvider = {
@@ -97,45 +129,49 @@ export const whishProvider: PaymentProvider = {
 
   async createCollection(request: CollectionRequest): Promise<CollectionHandle> {
     const config = readConfig();
-    const payload = await call(config, CONTRACT.collect, {
+    const externalId = newExternalId();
+
+    const data = await call(config, CONTRACT.collect, {
       amount: request.amount.amount,
       currency: request.amount.currency,
       invoice: request.description,
-      externalId: request.orderId,
-      successCallbackUrl: request.successUrl,
-      failureCallbackUrl: request.failureUrl,
+      externalId: Number(externalId),
+      // Server-to-server notice and browser redirect are different things and
+      // Whish takes both. Neither of them decides anything: only getStatus does.
+      successCallbackUrl: request.callbackUrl,
+      failureCallbackUrl: request.callbackUrl,
       successRedirectUrl: request.successUrl,
       failureRedirectUrl: request.failureUrl,
-      callbackUrl: request.callbackUrl,
       ...(request.payerPhone === undefined ? {} : { phone: request.payerPhone }),
     });
 
-    const data = (payload['data'] ?? payload) as Record<string, unknown>;
-    const providerRef = data['collectUrl'] === undefined ? data['id'] : data['transactionId'];
-
-    if (providerRef === undefined || providerRef === null) {
-      throw new PaymentError('Whish did not return a collection reference', 'whish');
+    const collectUrl = data['collectUrl'];
+    if (typeof collectUrl !== 'string' || collectUrl.length === 0) {
+      throw new PaymentError('Whish did not return a collectUrl', 'whish');
     }
 
-    return {
-      provider: 'whish',
-      providerRef: String(providerRef),
-      payUrl: typeof data['collectUrl'] === 'string' ? data['collectUrl'] : undefined,
-      status: 'pending',
-    };
+    return { provider: 'whish', providerRef: externalId, payUrl: collectUrl, status: 'pending' };
   },
 
+  /**
+   * Asks Whish what really happened. `providerRef` is the externalId we sent.
+   *
+   * The currency is required by the service and this product bills in USD; a
+   * second currency would have to travel with the reference.
+   */
   async getStatus(providerRef: string): Promise<PaymentStatus> {
     const config = readConfig();
-    const payload = await call(config, CONTRACT.status, { externalId: providerRef });
-    const data = (payload['data'] ?? payload) as Record<string, unknown>;
-    return toStatus(data['status'] ?? data['collectStatus']);
+    const data = await call(config, CONTRACT.status, {
+      currency: 'USD',
+      externalId: Number(providerRef),
+    });
+    return toStatus(data['collectStatus'] ?? data['status']);
   },
 
   async verifyCallback(_headers: Headers, rawBody: string): Promise<CallbackResult> {
-    // Whish's callback is not signed in any way we can verify yet, so the
-    // callback is treated as a *hint* only: it tells us which order changed,
-    // and getStatus() is what decides. Never mark an order paid from this body.
+    // Whish's callback carries no signature we can verify, so it is a *hint*:
+    // it says which collection moved, and getStatus() decides what that means.
+    // Nothing is ever marked paid from this body.
     let parsed: unknown;
     try {
       parsed = JSON.parse(rawBody);
@@ -147,16 +183,16 @@ export const whishProvider: PaymentProvider = {
     }
 
     const body = parsed as Record<string, unknown>;
-    const orderId = body['externalId'];
-    const providerRef = body['transactionId'] ?? body['id'];
-
-    if (orderId === undefined || providerRef === undefined) {
-      throw new PaymentError('Whish callback is missing externalId or transactionId', 'whish');
+    const externalId = body['externalId'];
+    if (externalId === undefined || externalId === null) {
+      throw new PaymentError('Whish callback is missing externalId', 'whish');
     }
 
     return {
-      orderId: String(orderId),
-      providerRef: String(providerRef),
+      // Both are the same value on this rail, and deliberately so: it is the
+      // only handle Whish and this application agree on.
+      orderId: String(externalId),
+      providerRef: String(externalId),
       status: toStatus(body['status']),
     };
   },

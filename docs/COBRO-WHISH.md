@@ -16,17 +16,63 @@ respeta.
   producción.
 - `prisma/schema.prisma` — `Order`, `Payment` y `PaymentEvent`.
 
-**Lo único que falta es el contrato exacto.** Está aislado a propósito en la
-constante `CONTRACT` y en dos funciones de mapeo dentro de `whish.ts`. Cuando
-llegue la especificación, no se toca nada más.
+## El contrato, ya confirmado
+
+Ya no es una suposición. Esto es lo que expone el servicio `itel-service` de
+Whish, contrastado en varias integraciones vivas e independientes. Lo que sigue
+faltando son las CREDENCIALES, no el formato.
+
+| | |
+|---|---|
+| Base, producción | `https://api.whish.money/itel-service/api` |
+| Base, pruebas | `https://lb.sandbox.whish.money/itel-service/api` |
+| Crear cobro | `POST payment/collect` |
+| Consultar estado | `POST payment/collect/status` |
+| Saldo | `POST payment/account/balance` |
+| Cabeceras | `channel`, `secret`, `websiteUrl` |
+
+**Tres detalles que costaron un error cada uno** y que estaban mal en el
+adaptador hasta ahora:
+
+1. Las rutas cuelgan de `payment/`, no de la raíz.
+2. La cabecera es `websiteUrl`, en camelCase. En minúsculas no autentica.
+3. El estado se consulta por el `externalId` **que enviamos nosotros**, junto
+   con la moneda — no por un identificador de Whish. Y ese `externalId` es
+   NUMÉRICO, mientras que los identificadores de este proyecto son cuids. Por
+   eso el adaptador genera uno propio y lo guarda como `providerRef`: es el
+   único asa que Whish y esta aplicación comparten, y guardarlo mal dejaría un
+   cobro imposible de reconciliar.
+
+Cuerpo de `payment/collect`: `amount`, `currency`, `invoice`, `externalId`,
+`successCallbackUrl`, `failureCallbackUrl`, `successRedirectUrl`,
+`failureRedirectUrl`. La respuesta viene envuelta en `{ status, code, dialog,
+data }` y el enlace de pago está en `data.collectUrl`. **El servicio responde
+200 aunque haya rechazado la petición**: el fallo se lee en `status: false` del
+cuerpo, no en el código HTTP.
+
+## Cómo paga el cliente, y por qué importa
+
+Whish **no permite cobrar dentro de nuestra página**. `collect` devuelve un
+`collectUrl` y al pagador se le manda allí, a una página alojada por Whish.
+
+Eso decide el diseño del producto entero:
+
+- **No se puede incrustar** el pago en la aplicación ni en la app móvil. El
+  cliente siempre sale a la página de Whish y vuelve.
+- A cambio, **ningún número de tarjeta toca este servidor**, y con eso se evita
+  todo el peso de cumplir PCI.
+- Como el pagador es el cliente final, que NO tiene cuenta aquí, el enlace de
+  pago tiene que poder abrirse sin sesión y viajar por WhatsApp, igual que las
+  invitaciones.
 
 ## Qué pedirle a Whish
 
 Al abrir la cuenta de comercio, pedir por escrito:
 
-1. La **«Whish Collect Web Service Technical Specification»**, última versión.
-2. **Credenciales de sandbox y de producción**: `channel`, `secret` y
-   `websiteUrl`, y la **URL base** de cada entorno.
+1. **Credenciales de sandbox y de producción**: `channel`, `secret` y
+   `websiteUrl`. Es lo único que bloquea hoy.
+2. La **«Whish Collect Web Service Technical Specification»**, última versión,
+   para confirmar por escrito lo que ya está en la tabla de arriba.
 3. **Endpoints y nombres de campo exactos** para: crear un cobro, consultar su
    estado, consultar tipo de cambio y consultar saldo.
 4. **Cómo se notifica el pago.** ¿Hay callback de servidor a servidor? ¿Va
