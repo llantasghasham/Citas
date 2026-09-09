@@ -241,6 +241,135 @@
     "reviewLanguages": "Idiomas",
     "reviewLanguagesNone": "Apenas {language}"
   },
+  "home": {
+    "nav": {
+      "features": "Características",
+      "how": "Como funciona",
+      "templates": "Modelos",
+      "pricing": "Preços",
+      "faq": "Perguntas",
+      "signIn": "Entrar",
+      "cta": "Criar um convite"
+    },
+    "hero": {
+      "badge": "Feito para o Líbano · árabe, espanhol, português e inglês",
+      "titleLead": "O seu convite, no idioma de cada",
+      "titleHighlight": "convidado",
+      "subtitle": "Convites digitais para casamentos, formaturas e memoriais. Uma página web, uma imagem para o WhatsApp e as confirmações — sem que ninguém instale nada.",
+      "ctaPrimary": "Criar um convite",
+      "ctaSecondary": "Ver um exemplo",
+      "proof": {
+        "languages": "Quatro idiomas, árabe incluído",
+        "noApp": "O convidado não instala nada",
+        "whatsapp": "Enviado por WhatsApp"
+      }
+    },
+    "features": {
+      "heading": "Tudo o que é preciso para convidar",
+      "subheading": "Sem modelos genéricos e sem tradução automática.",
+      "items": {
+        "languages": {
+          "title": "Quatro idiomas a sério",
+          "body": "Árabe, espanhol, português e inglês. O árabe corre da direita para a esquerda em todo o cartão, com os seus algarismos e a sua tipografia. Cada convidado abre a versão no seu próprio idioma."
+        },
+        "whatsapp": {
+          "title": "Enviado por WhatsApp",
+          "body": "Cada convidado recebe o seu link pessoal a partir do número que a família já conhece. Sem modelos aprovados e sem custo por mensagem."
+        },
+        "rsvp": {
+          "title": "Confirmações que se contam sozinhas",
+          "body": "O convidado responde na mesma página, sem conta e sem palavra-passe. Vê quem abriu, quem vem e com quantos acompanhantes."
+        },
+        "image": {
+          "title": "Uma imagem pronta a partilhar",
+          "body": "O mesmo convite sai como PNG de 1080×1920 gerado no servidor. Descarrega-se, imprime-se ou envia-se tal como está."
+        },
+        "verses": {
+          "title": "Versículos verificados por uma pessoa",
+          "body": "Os textos corânicos e bíblicos saem de uma lista fixa revista por uma pessoa. Nunca são escritos por uma máquina."
+        },
+        "offices": {
+          "title": "Pensado para agências",
+          "body": "Cada agência vê apenas os seus eventos, com a sua equipa, o seu plano e a sua faturação. Um evento nunca passa de uma agência para outra."
+        }
+      }
+    },
+    "steps": {
+      "heading": "Três passos",
+      "subheading": "Da lista de convidados às confirmações.",
+      "items": {
+        "write": {
+          "title": "Escreva-o",
+          "body": "Cinco passos com uma pré-visualização que é o convite a sério, não uma maqueta. Escolha o idioma e o formulário inteiro passa para esse idioma."
+        },
+        "send": {
+          "title": "Envie-o",
+          "body": "Cole a lista de convidados com os telefones. Cada um recebe o seu link por WhatsApp, escrito no seu idioma."
+        },
+        "track": {
+          "title": "Acompanhe-o",
+          "body": "Quem abriu, quem confirmou e quantos vêm. Exporta-se para Excel quando precisar."
+        }
+      }
+    },
+    "showcase": {
+      "heading": "Dois modelos, dois tons",
+      "subheading": "O de celebração e o de luto. O modelo é decidido pelo tipo de evento, nunca por quem preenche o formulário.",
+      "open": "Abrir o convite",
+      "empty": "Ainda não há exemplos publicados."
+    },
+    "pricing": {
+      "heading": "Preços",
+      "subheading": "Um evento avulso ou uma agência inteira.",
+      "perEvent": "por evento",
+      "perMonth": "por mês",
+      "free": "Grátis",
+      "cta": "Começar",
+      "note": "No Líbano cobra-se com Whish. Os valores são guardados em cêntimos inteiros: nenhum decimal toca no dinheiro.",
+      "benefits": {
+        "free": "1 evento e até 50 convidados. Para experimentar.",
+        "single_event": "Um evento, até 300 convidados.",
+        "annual": "10 eventos por ano, até 500 convidados cada.",
+        "office": "Eventos e convidados sem limite, com a sua marca."
+      }
+    },
+    "faq": {
+      "heading": "Perguntas",
+      "items": {
+        "guestApp": {
+          "question": "O convidado tem de instalar alguma coisa?",
+          "answer": "Não. O convite é um link web que abre no navegador do telemóvel. Sem conta, sem palavra-passe e sem aplicação."
+        },
+        "languages": {
+          "question": "Traduzem o convite?",
+          "answer": "Não automaticamente, e de propósito. É você que escreve o texto de cada idioma; nós nunca transliteramos um apelido nem parafraseamos um versículo. Os nomes, a data e o local são partilhados por todas as versões."
+        },
+        "payment": {
+          "question": "Como se cobra no Líbano?",
+          "answer": "Com Whish. O pagamento confirma-se de servidor para servidor: voltar à página de sucesso nunca é prova de que algo foi pago."
+        },
+        "print": {
+          "question": "Posso imprimi-lo?",
+          "answer": "Sim. Cada convite descarrega-se como PNG de 1080×1920 gerado no servidor — o mesmo que o convidado vê."
+        },
+        "ownNumber": {
+          "question": "As mensagens saem do meu número?",
+          "answer": "Sim. Abrimos o seu próprio WhatsApp com a mensagem já escrita, por isso sai do número que os seus clientes já conhecem."
+        }
+      }
+    },
+    "closing": {
+      "heading": "Tem um casamento esta época?",
+      "body": "Escreva o convite, cole a lista e envie-o hoje mesmo.",
+      "cta": "Criar um convite"
+    },
+    "footer": {
+      "tagline": "Convites digitais em árabe, espanhol, português e inglês.",
+      "language": "Idioma",
+      "contact": "Contacto",
+      "rights": "Todos os direitos reservados."
+    }
+  },
   "share": {
     "whatsappMessage": "Olá {name}, teríamos muito gosto na sua presença. Aqui está o convite: {link}"
   }

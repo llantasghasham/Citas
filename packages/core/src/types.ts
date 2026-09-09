@@ -29,6 +29,25 @@ export const NUMERAL_SYSTEMS = ['arabic', 'latin'] as const;
 /** `arabic` = Eastern Arabic numerals (٠١٢٣), `latin` = Western Arabic numerals (0123). */
 export type NumeralSystem = (typeof NUMERAL_SYSTEMS)[number];
 
+/** The selling points the home page can show. Which ones it shows is config. */
+export const FEATURE_KEYS = [
+  'languages',
+  'whatsapp',
+  'rsvp',
+  'image',
+  'verses',
+  'offices',
+] as const;
+export type FeatureKey = (typeof FEATURE_KEYS)[number];
+
+/** The questions the home page can answer. */
+export const FAQ_KEYS = ['guestApp', 'languages', 'payment', 'print', 'ownNumber'] as const;
+export type FaqKey = (typeof FAQ_KEYS)[number];
+
+/** The plans the home page can price. Mirrors the billing catalogue's tiers. */
+export const PLAN_KEYS = ['free', 'single_event', 'annual', 'office'] as const;
+export type PlanKey = (typeof PLAN_KEYS)[number];
+
 export const DIRECTIONS = ['rtl', 'ltr'] as const;
 export type Direction = (typeof DIRECTIONS)[number];
 
@@ -185,6 +204,71 @@ export interface Dictionary {
     translationSharedNote: string;
     reviewLanguages: string;
     reviewLanguagesNone: string;
+  };
+  /**
+   * The public home page. Marketing copy, one entry per block: what the page
+   * shows is decided in `config/site.ts`, what it says is decided here.
+   */
+  home: {
+    nav: {
+      features: string;
+      how: string;
+      templates: string;
+      pricing: string;
+      faq: string;
+      signIn: string;
+      cta: string;
+    };
+    hero: {
+      badge: string;
+      titleLead: string;
+      titleHighlight: string;
+      subtitle: string;
+      ctaPrimary: string;
+      ctaSecondary: string;
+      proof: Record<'languages' | 'noApp' | 'whatsapp', string>;
+    };
+    features: {
+      heading: string;
+      subheading: string;
+      items: Record<FeatureKey, { title: string; body: string }>;
+    };
+    steps: {
+      heading: string;
+      subheading: string;
+      items: Record<'write' | 'send' | 'track', { title: string; body: string }>;
+    };
+    showcase: {
+      heading: string;
+      subheading: string;
+      open: string;
+      empty: string;
+    };
+    pricing: {
+      heading: string;
+      subheading: string;
+      perEvent: string;
+      perMonth: string;
+      free: string;
+      cta: string;
+      note: string;
+      benefits: Record<PlanKey, string>;
+    };
+    faq: {
+      heading: string;
+      items: Record<FaqKey, { question: string; answer: string }>;
+    };
+    closing: {
+      heading: string;
+      body: string;
+      cta: string;
+    };
+    footer: {
+      tagline: string;
+      language: string;
+      contact: string;
+      rights: string;
+    };
   };
   /** Text that leaves the platform, in the guest's own language. */
   share: {

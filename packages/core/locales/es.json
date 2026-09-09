@@ -241,6 +241,135 @@
     "reviewLanguages": "Idiomas",
     "reviewLanguagesNone": "Solo {language}"
   },
+  "home": {
+    "nav": {
+      "features": "Características",
+      "how": "Cómo funciona",
+      "templates": "Plantillas",
+      "pricing": "Precios",
+      "faq": "Preguntas",
+      "signIn": "Iniciar sesión",
+      "cta": "Crear una invitación"
+    },
+    "hero": {
+      "badge": "Hecho para el Líbano · árabe, español, portugués e inglés",
+      "titleLead": "Tu invitación, en el idioma de cada",
+      "titleHighlight": "invitado",
+      "subtitle": "Invitaciones digitales para bodas, graduaciones y memoriales. Una página web, una imagen para WhatsApp y las confirmaciones — sin que nadie instale nada.",
+      "ctaPrimary": "Crear una invitación",
+      "ctaSecondary": "Ver un ejemplo",
+      "proof": {
+        "languages": "Cuatro idiomas, árabe incluido",
+        "noApp": "El invitado no instala nada",
+        "whatsapp": "Se envía por WhatsApp"
+      }
+    },
+    "features": {
+      "heading": "Todo lo que hace falta para invitar",
+      "subheading": "Sin plantillas genéricas y sin traducciones automáticas.",
+      "items": {
+        "languages": {
+          "title": "Cuatro idiomas de verdad",
+          "body": "Árabe, español, portugués e inglés. El árabe se escribe de derecha a izquierda en toda la tarjeta, con sus cifras y su tipografía. Cada invitado abre la versión en su propio idioma."
+        },
+        "whatsapp": {
+          "title": "Se envía por WhatsApp",
+          "body": "Cada invitado recibe su enlace personal desde el número que su familia ya conoce. Sin plantillas aprobadas y sin coste por mensaje."
+        },
+        "rsvp": {
+          "title": "Confirmaciones que se cuentan solas",
+          "body": "El invitado responde en la misma página, sin cuenta ni contraseña. Usted ve quién la abrió, quién viene y con cuántos acompañantes."
+        },
+        "image": {
+          "title": "Una imagen lista para compartir",
+          "body": "La misma invitación sale como PNG de 1080×1920 generado en el servidor. Se descarga, se imprime o se manda tal cual."
+        },
+        "verses": {
+          "title": "Versículos verificados a mano",
+          "body": "Los textos coránicos y bíblicos salen de una lista fija revisada por una persona. Nunca los escribe una máquina."
+        },
+        "offices": {
+          "title": "Pensado para oficinas",
+          "body": "Cada oficina ve solo sus eventos, con su equipo, su plan y su facturación. Un evento nunca cruza de una oficina a otra."
+        }
+      }
+    },
+    "steps": {
+      "heading": "Tres pasos",
+      "subheading": "De la lista de invitados a las confirmaciones.",
+      "items": {
+        "write": {
+          "title": "Escríbala",
+          "body": "Cinco pasos con una vista previa que es la invitación de verdad, no una maqueta. Elija el idioma y el formulario entero se pasa a ese idioma."
+        },
+        "send": {
+          "title": "Envíela",
+          "body": "Pegue la lista de invitados con sus teléfonos. Cada uno recibe su propio enlace por WhatsApp, escrito en su idioma."
+        },
+        "track": {
+          "title": "Sígala",
+          "body": "Quién la abrió, quién confirmó y cuántos vienen. Se exporta a Excel cuando lo necesite."
+        }
+      }
+    },
+    "showcase": {
+      "heading": "Dos plantillas, dos tonos",
+      "subheading": "La de celebración y la de duelo. La plantilla la decide el tipo de evento, nunca quien rellena el formulario.",
+      "open": "Abrir la invitación",
+      "empty": "Todavía no hay ejemplos publicados."
+    },
+    "pricing": {
+      "heading": "Precios",
+      "subheading": "Un evento suelto o una oficina entera.",
+      "perEvent": "por evento",
+      "perMonth": "al mes",
+      "free": "Gratis",
+      "cta": "Empezar",
+      "note": "En el Líbano se cobra con Whish. Los importes se guardan en centavos enteros: ningún decimal toca el dinero.",
+      "benefits": {
+        "free": "1 evento y hasta 50 invitados. Para probarlo.",
+        "single_event": "Un evento, hasta 300 invitados.",
+        "annual": "10 eventos al año, hasta 500 invitados cada uno.",
+        "office": "Eventos e invitados sin límite, con su marca."
+      }
+    },
+    "faq": {
+      "heading": "Preguntas",
+      "items": {
+        "guestApp": {
+          "question": "¿El invitado tiene que instalar algo?",
+          "answer": "No. La invitación es un enlace web que se abre en el navegador del teléfono. No hay cuenta, no hay contraseña y no hay aplicación."
+        },
+        "languages": {
+          "question": "¿Traducen la invitación?",
+          "answer": "No automáticamente, y a propósito. Usted escribe el texto de cada idioma; nosotros nunca transliteramos un apellido ni parafraseamos un versículo. Los nombres, la fecha y el lugar se comparten entre todas las versiones."
+        },
+        "payment": {
+          "question": "¿Cómo se cobra en el Líbano?",
+          "answer": "Con Whish. El cobro se confirma servidor contra servidor: volver a la página de éxito nunca es una prueba de pago."
+        },
+        "print": {
+          "question": "¿Puedo imprimirla?",
+          "answer": "Sí. Cada invitación se descarga como PNG de 1080×1920 generado en el servidor, el mismo que ve el invitado."
+        },
+        "ownNumber": {
+          "question": "¿Los mensajes salen de mi número?",
+          "answer": "Sí. Abrimos su propio WhatsApp con el mensaje ya escrito, así que sale del número que sus clientes ya conocen."
+        }
+      }
+    },
+    "closing": {
+      "heading": "¿Tiene una boda esta temporada?",
+      "body": "Cree la invitación, pegue la lista y mándela hoy mismo.",
+      "cta": "Crear una invitación"
+    },
+    "footer": {
+      "tagline": "Invitaciones digitales en árabe, español, portugués e inglés.",
+      "language": "Idioma",
+      "contact": "Contacto",
+      "rights": "Todos los derechos reservados."
+    }
+  },
   "share": {
     "whatsappMessage": "Hola {name}, nos haría ilusión contar con usted. Aquí está la invitación: {link}"
   }

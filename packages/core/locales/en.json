@@ -241,6 +241,135 @@
     "reviewLanguages": "Languages",
     "reviewLanguagesNone": "Only {language}"
   },
+  "home": {
+    "nav": {
+      "features": "Features",
+      "how": "How it works",
+      "templates": "Templates",
+      "pricing": "Pricing",
+      "faq": "Questions",
+      "signIn": "Sign in",
+      "cta": "Create an invitation"
+    },
+    "hero": {
+      "badge": "Made for Lebanon · Arabic, Spanish, Portuguese and English",
+      "titleLead": "Your invitation, in each guest's own",
+      "titleHighlight": "language",
+      "subtitle": "Digital invitations for weddings, graduations and memorials. A web page, an image for WhatsApp and the replies — with nothing for anyone to install.",
+      "ctaPrimary": "Create an invitation",
+      "ctaSecondary": "See an example",
+      "proof": {
+        "languages": "Four languages, Arabic included",
+        "noApp": "Guests install nothing",
+        "whatsapp": "Sent over WhatsApp"
+      }
+    },
+    "features": {
+      "heading": "Everything it takes to invite",
+      "subheading": "No generic templates and no machine translation.",
+      "items": {
+        "languages": {
+          "title": "Four real languages",
+          "body": "Arabic, Spanish, Portuguese and English. Arabic runs right to left across the whole card, with its own numerals and its own typeface. Each guest opens the version in their own language."
+        },
+        "whatsapp": {
+          "title": "Sent over WhatsApp",
+          "body": "Every guest gets their own link from the number their family already knows. No approved templates and no per-message fee."
+        },
+        "rsvp": {
+          "title": "Replies that count themselves",
+          "body": "Guests answer on the same page, with no account and no password. You see who opened it, who is coming and how many they bring."
+        },
+        "image": {
+          "title": "An image ready to share",
+          "body": "The same invitation comes out as a 1080×1920 PNG rendered on the server. Download it, print it, or send it as it is."
+        },
+        "verses": {
+          "title": "Verses checked by a person",
+          "body": "Qur'anic and biblical texts come from a fixed list a human has verified. A machine never writes them."
+        },
+        "offices": {
+          "title": "Built for offices",
+          "body": "Each office sees only its own events, with its own team, plan and invoices. An event never crosses from one office to another."
+        }
+      }
+    },
+    "steps": {
+      "heading": "Three steps",
+      "subheading": "From the guest list to the replies.",
+      "items": {
+        "write": {
+          "title": "Write it",
+          "body": "Five steps with a preview that is the real invitation, not a mock-up. Pick the language and the whole form switches to it."
+        },
+        "send": {
+          "title": "Send it",
+          "body": "Paste the guest list with their phone numbers. Each guest gets their own link over WhatsApp, written in their language."
+        },
+        "track": {
+          "title": "Follow it",
+          "body": "Who opened it, who replied and how many are coming. Export it to a spreadsheet whenever you need to."
+        }
+      }
+    },
+    "showcase": {
+      "heading": "Two templates, two tones",
+      "subheading": "One for celebrating and one for mourning. The event type decides which, never whoever fills in the form.",
+      "open": "Open the invitation",
+      "empty": "No examples published yet."
+    },
+    "pricing": {
+      "heading": "Pricing",
+      "subheading": "One event, or a whole office.",
+      "perEvent": "per event",
+      "perMonth": "per month",
+      "free": "Free",
+      "cta": "Get started",
+      "note": "Payment in Lebanon is taken through Whish. Amounts are stored as whole cents: no decimal ever touches money.",
+      "benefits": {
+        "free": "1 event and up to 50 guests. To try it out.",
+        "single_event": "One event, up to 300 guests.",
+        "annual": "10 events a year, up to 500 guests each.",
+        "office": "Unlimited events and guests, under your own brand."
+      }
+    },
+    "faq": {
+      "heading": "Questions",
+      "items": {
+        "guestApp": {
+          "question": "Does the guest have to install anything?",
+          "answer": "No. The invitation is a web link that opens in the phone's browser. No account, no password and no app."
+        },
+        "languages": {
+          "question": "Do you translate the invitation?",
+          "answer": "Not automatically, and that is deliberate. You write the text for each language; we never transliterate a family name or paraphrase a verse. The names, the date and the venue are shared by every version."
+        },
+        "payment": {
+          "question": "How is payment taken in Lebanon?",
+          "answer": "Through Whish. Payment is confirmed server to server: coming back to the success page is never proof that anything was paid."
+        },
+        "print": {
+          "question": "Can I print it?",
+          "answer": "Yes. Every invitation downloads as a 1080×1920 PNG rendered on the server — the same one the guest sees."
+        },
+        "ownNumber": {
+          "question": "Do the messages come from my number?",
+          "answer": "Yes. We open your own WhatsApp with the message already written, so it goes out from the number your clients already know."
+        }
+      }
+    },
+    "closing": {
+      "heading": "Is there a wedding this season?",
+      "body": "Write the invitation, paste the list and send it today.",
+      "cta": "Create an invitation"
+    },
+    "footer": {
+      "tagline": "Digital invitations in Arabic, Spanish, Portuguese and English.",
+      "language": "Language",
+      "contact": "Contact",
+      "rights": "All rights reserved."
+    }
+  },
   "share": {
     "whatsappMessage": "Hello {name}, we would love to have you with us. Here is the invitation: {link}"
   }

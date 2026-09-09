@@ -1,48 +1,133 @@
-import Link from 'next/link';
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 
-import { InvitationCard } from '@/components/invitation/InvitationCard';
+import { ClosingCta } from '@/components/home/ClosingCta';
+import { FaqList } from '@/components/home/FaqList';
+import { FeatureGrid } from '@/components/home/FeatureGrid';
+import { Hero } from '@/components/home/Hero';
+import { PricingTable } from '@/components/home/PricingTable';
+import { Section } from '@/components/home/Section';
+import { Showcase, pickShowcase } from '@/components/home/Showcase';
+import { SiteFooter } from '@/components/home/SiteFooter';
+import { SiteHeader } from '@/components/home/SiteHeader';
+import { StepList } from '@/components/home/StepList';
+import { shows } from '@/config/site';
+import { getDictionary } from '@/lib/dictionary';
+import { resolveHomeLocale } from '@/lib/home/locale';
 import { getInvitationRepository } from '@/lib/repositories';
+import { bodyFont } from '@/lib/typography';
+import type { Invitation } from '@/lib/types';
 
-// Reads whatever the data source holds right now, so `npm run build` does not
-// need a reachable database to compile.
+// Reads the visitor's language and whatever is published right now, so
+// `npm run build` needs no reachable database to compile.
 export const dynamic = 'force-dynamic';
 
+interface PageProps {
+  searchParams: Promise<{ lang?: string }>;
+}
+
+async function localeOf(searchParams: PageProps['searchParams']) {
+  const [{ lang }, requestHeaders] = await Promise.all([searchParams, headers()]);
+  return resolveHomeLocale(lang, requestHeaders.get('accept-language') ?? '');
+}
+
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const locale = await localeOf(searchParams);
+  const copy = getDictionary(locale).home;
+
+  return {
+    title: `${copy.hero.titleLead} ${copy.hero.titleHighlight}`,
+    description: copy.hero.subtitle,
+    alternates: { canonical: '/' },
+  };
+}
+
 /**
- * Internal index of the seeded invitations. It deliberately carries no prose:
- * every label here is data (slug, locale, route), so the page needs no locale
- * dictionary of its own.
+ * The public face of the platform.
+ *
+ * What it shows — which blocks, which selling points, which plans — is decided
+ * in `config/site.ts`; what it says lives in the four locale files. Neither is
+ * ever edited here.
  */
-export default async function HomePage() {
-  const invitations = await getInvitationRepository().listAll();
+export default async function HomePage({ searchParams }: PageProps) {
+  const locale = await localeOf(searchParams);
+  const dictionary = getDictionary(locale);
+  const copy = dictionary.home;
+  const direction = locale === 'ar' ? 'rtl' : 'ltr';
+
+  // The showcase is a nicety, not the page: a data source that is not there
+  // must not take the home page down with it.
+  const invitations = shows('showcase') ? await publishedInvitations() : [];
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-10 p-8">
-      <h1 className="font-display text-3xl tracking-[0.3em] uppercase">Citas</h1>
+    <div dir={direction} lang={locale} className={`${bodyFont(locale)} bg-[#14120E] text-[#F4EFE6]`}>
+      <SiteHeader dictionary={dictionary} locale={locale} />
 
-      <ul className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-8">
-        {invitations.map((invitation) => (
-          <li key={invitation.id} className="flex flex-col gap-3">
-            <Link href={`/i/${invitation.slug}`} className="block">
-              <InvitationCard
-                invitation={invitation}
-                className="overflow-hidden rounded-md shadow-[0_10px_30px_-12px_rgba(59,50,38,0.5)]"
-              />
-            </Link>
-            <p className="font-mono text-xs opacity-70">
-              {invitation.slug} · {invitation.locale} · {invitation.direction} ·{' '}
-              {invitation.numeralSystem}
-            </p>
-            <p className="flex gap-4 font-mono text-xs">
-              <Link href={`/i/${invitation.slug}`} className="underline">
-                /i/{invitation.slug}
-              </Link>
-              <a href={`/api/render/${invitation.slug}`} className="underline">
-                /api/render/{invitation.slug}
-              </a>
-            </p>
-          </li>
-        ))}
-      </ul>
-    </main>
+      <main>
+        <Hero dictionary={dictionary} locale={locale} />
+
+        {shows('features') ? (
+          <Section
+            id="features"
+            locale={locale}
+            heading={copy.features.heading}
+            subheading={copy.features.subheading}
+          >
+            <FeatureGrid dictionary={dictionary} locale={locale} />
+          </Section>
+        ) : null}
+
+        {shows('steps') ? (
+          <Section
+            id="steps"
+            locale={locale}
+            heading={copy.steps.heading}
+            subheading={copy.steps.subheading}
+          >
+            <StepList dictionary={dictionary} locale={locale} />
+          </Section>
+        ) : null}
+
+        {shows('showcase') ? (
+          <Section
+            id="showcase"
+            locale={locale}
+            heading={copy.showcase.heading}
+            subheading={copy.showcase.subheading}
+          >
+            <Showcase invitations={invitations} dictionary={dictionary} locale={locale} />
+          </Section>
+        ) : null}
+
+        {shows('pricing') ? (
+          <Section
+            id="pricing"
+            locale={locale}
+            heading={copy.pricing.heading}
+            subheading={copy.pricing.subheading}
+          >
+            <PricingTable dictionary={dictionary} locale={locale} />
+          </Section>
+        ) : null}
+
+        {shows('faq') ? (
+          <Section id="faq" locale={locale} heading={copy.faq.heading}>
+            <FaqList dictionary={dictionary} locale={locale} />
+          </Section>
+        ) : null}
+
+        {shows('closing') ? <ClosingCta dictionary={dictionary} locale={locale} /> : null}
+      </main>
+
+      <SiteFooter dictionary={dictionary} locale={locale} />
+    </div>
   );
+}
+
+async function publishedInvitations(): Promise<Invitation[]> {
+  try {
+    return pickShowcase(await getInvitationRepository().listAll());
+  } catch {
+    return [];
+  }
 }
