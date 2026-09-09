@@ -95,12 +95,4 @@ export const prismaInvitationRepository: InvitationRepository = {
     });
     return row === null ? undefined : toInvitation(row);
   },
-
-  async listAll() {
-    const rows = await getPrisma().invitationVersion.findMany({
-      include: INCLUDE,
-      orderBy: { createdAt: 'asc' },
-    });
-    return rows.map(toInvitation);
-  },
 };

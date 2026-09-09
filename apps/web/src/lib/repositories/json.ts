@@ -1,4 +1,4 @@
-import { getAllInvitations, getInvitationBySlug } from '@/lib/invitations';
+import { getInvitationBySlug } from '@/lib/invitations';
 
 import type { InvitationRepository } from './types';
 
@@ -6,8 +6,5 @@ import type { InvitationRepository } from './types';
 export const jsonInvitationRepository: InvitationRepository = {
   findBySlug(slug) {
     return Promise.resolve(getInvitationBySlug(slug));
-  },
-  listAll() {
-    return Promise.resolve(getAllInvitations());
   },
 };

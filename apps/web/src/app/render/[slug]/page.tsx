@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { InvitationCard } from '@/components/invitation/InvitationCard';
+import { getAllInvitations } from '@/lib/invitations';
 import { getInvitationRepository } from '@/lib/repositories';
 
 interface PageProps {
@@ -11,10 +12,15 @@ interface PageProps {
 /** Internal capture surface — never indexed, never linked to guests. */
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
+/**
+ * Pre-renders the demo canvases only. Reads data/invitations.json directly
+ * rather than through the repository: with a database behind it, listing every
+ * invitation would mean listing every office's, and this build step has no
+ * office to scope itself to.
+ */
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
   if (process.env['DATA_SOURCE'] === 'database') return [];
-  const invitations = await getInvitationRepository().listAll();
-  return invitations.map((invitation) => ({ slug: invitation.slug }));
+  return Promise.resolve(getAllInvitations().map((invitation) => ({ slug: invitation.slug })));
 }
 
 /**
