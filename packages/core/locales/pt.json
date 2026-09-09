@@ -104,7 +104,141 @@
       "events": "Eventos",
       "offices": "Escritórios",
       "team": "Equipa",
-      "billing": "Subscrição"
+      "billing": "Subscrição",
+      "manual": "Manual",
+      "system": "Sistema"
+    },
+    "manual": {
+      "title": "Manual de uso",
+      "intro": "Como se trabalha com a plataforma, da primeira entrada ao último convidado. Cada capítulo lê-se num minuto.",
+      "chapters": {
+        "signIn": {
+          "title": "Entrar",
+          "steps": [
+            "Não há palavras-passe. Escreve-se o email em /entrar e chega um código de seis dígitos.",
+            "O código serve UMA vez e expira ao fim de dez minutos. Se se esgotar, pede-se outro.",
+            "A resposta é a mesma exista ou não a conta: o sistema nunca revela quem está registado.",
+            "A sessão fecha-se pela ligação no topo. Num computador partilhado, feche-a sempre."
+          ]
+        },
+        "create": {
+          "title": "Criar um convite",
+          "steps": [
+            "Em /crear há seis passos: idioma e tipo de evento, nomes, quando e onde, detalhes, outros idiomas e revisão.",
+            "A pré-visualização ao lado é o convite a sério, o mesmo componente que o convidado verá. O que vê é o que se publica.",
+            "O tipo de evento decide o modelo e as cores. Um memorial nunca usa o modelo de celebração, e o formulário não o pode forçar.",
+            "O versículo escolhe-se de uma lista fechada e verificada. Não há campo livre para um texto sagrado, de propósito.",
+            "Publicar exige sessão e gasta um evento do seu plano. O limite é verificado no servidor ao publicar."
+          ]
+        },
+        "languages": {
+          "title": "Os idiomas",
+          "steps": [
+            "O idioma escolhido no passo 1 é o principal: o convite é criado nele e é esse o recurso de reserva.",
+            "No passo 5 pode escrever o mesmo convite nos outros idiomas. O texto escreve-o você: nada é traduzido automaticamente.",
+            "Os nomes, a data e o local são os mesmos em todas as versões. Só mudam a mensagem e o versículo.",
+            "Cada versão tem a sua direção de escrita, os seus algarismos e a sua ligação pública.",
+            "Também pode acrescentar um idioma mais tarde, a partir da página do evento.",
+            "Cada convidado abre a versão no SEU idioma. Quem não tiver a sua recebe a principal, e a lista de convidados avisa a vermelho."
+          ]
+        },
+        "guests": {
+          "title": "A lista de convidados",
+          "steps": [
+            "Na página do evento cola-se a lista ou carrega-se um ficheiro. Uma linha por convidado: nome, telefone, idioma.",
+            "Servem a vírgula, o ponto e vírgula e a tabulação. Se a primeira linha forem cabeçalhos, é detetada sozinha.",
+            "Escolha o indicativo do país antes de importar: os telefones são guardados em formato internacional.",
+            "Uma linha sem nome é descartada e contada. Nunca se importa um convidado vazio.",
+            "Colar a mesma lista outra vez não duplica ninguém: reconhece-se pelo telefone, e pelo nome quando não há telefone."
+          ]
+        },
+        "send": {
+          "title": "Enviar por WhatsApp",
+          "steps": [
+            "Cada convidado tem a sua ligação, curta e sem o nome do evento, para que reencaminhá-la não revele de quem é o casamento.",
+            "O botão abre O SEU WhatsApp com a mensagem já escrita. Sai do seu número, o que os seus clientes conhecem.",
+            "A mensagem vai no idioma do convidado, não no da agência.",
+            "Não há custo por mensagem nem modelos a aprovar: não é a API do WhatsApp, é o seu próprio WhatsApp.",
+            "Um convidado sem telefone mostra uma ligação para copiar e enviar por onde quiser."
+          ]
+        },
+        "rsvp": {
+          "title": "Confirmações",
+          "steps": [
+            "O convidado responde na própria página do convite, sem conta e sem palavra-passe.",
+            "Abrir a ligação regista a data, por isso vê quem o recebeu mesmo antes de responder.",
+            "A página do evento resume quem vem, quem não vem e com quantos acompanhantes.",
+            "O botão de descarregar entrega a lista em CSV com marca de ordem de bytes, para o Excel não destruir o árabe.",
+            "Há um ficheiro de calendário por convite, para o convidado o guardar no telemóvel."
+          ]
+        },
+        "image": {
+          "title": "A imagem",
+          "steps": [
+            "Cada convite é gerado como PNG de 1080×1920 no servidor, com a mesma maquetação da página.",
+            "A imagem é guardada à primeira e reutilizada. É também a pré-visualização que o WhatsApp pede ao partilhar a ligação.",
+            "Acrescentando ?download=1 ao fim do endereço da imagem, ela descarrega em vez de abrir.",
+            "Se algo do convite mudar, gera-se uma imagem nova sozinha: a impressão digital cobre tudo o que altera o desenho."
+          ]
+        },
+        "team": {
+          "title": "Equipa e permissões",
+          "steps": [
+            "Cada agência vê apenas os seus eventos. Uma agência nunca alcança os dados de outra.",
+            "Há quatro papéis: superadministrador, administrador da agência, operador e organizador.",
+            "O operador cria e edita eventos e convidados. O organizador só consulta.",
+            "A faturação e a equipa são geridas pelo administrador da agência.",
+            "As permissões são sempre verificadas no servidor: um botão que não se vê não é uma permissão."
+          ]
+        }
+      }
+    },
+    "system": {
+      "title": "Estado do sistema",
+      "intro": "O que esta instalação está a correr e se lhe falta algo para funcionar. Os dados são lidos ao vivo, não escritos à mão.",
+      "stack": {
+        "heading": "Tecnologia",
+        "component": "Componente",
+        "version": "Versão",
+        "purpose": "Para quê",
+        "purposes": {
+          "node": "O motor sobre o qual corre todo o servidor.",
+          "next": "A framework web: rotas, render no servidor e ações de formulário.",
+          "react": "A biblioteca com que os ecrãs estão escritos.",
+          "typescript": "Tipagem estrita: os erros aparecem ao compilar, não em produção.",
+          "tailwind": "Os estilos, escritos com propriedades lógicas para o árabe funcionar.",
+          "prisma": "O acesso à base de dados e as migrações.",
+          "database": "PostgreSQL: eventos, convidados, confirmações e imagens.",
+          "puppeteer": "O Chromium sem janela que transforma cada convite em PNG.",
+          "mailer": "O envio dos códigos de uso único por SMTP.",
+          "expo": "O invólucro das aplicações de iPhone e Android.",
+          "reactNative": "A base nativa dessas aplicações."
+        }
+      },
+      "health": {
+        "heading": "Verificações",
+        "ok": "Correto",
+        "warn": "Atenção",
+        "fail": "Falha",
+        "checks": {
+          "database": "Ligação à base de dados",
+          "dataSource": "Origem dos dados",
+          "mailer": "Correio a sair",
+          "payments": "Gateway de pagamento",
+          "renderStore": "Armazém de imagens",
+          "secretKey": "Chave de cifra",
+          "chromium": "Chromium para o PNG",
+          "superadmin": "Superadministrador configurado"
+        }
+      },
+      "updates": {
+        "heading": "Atualizações",
+        "intro": "As versões acima são as que estão instaladas neste servidor neste momento.",
+        "warning": "Atualizar a partir do navegador não está ativado de propósito: instalar um pacote e reiniciar o serviço a partir de uma página web seria executar código no servidor a partir de uma sessão iniciada, e uma versão má deitaria o site abaixo sem retorno. Faz-se pela consola, com cópia de segurança.",
+        "howTo": "Entre por SSH no servidor, vá para a pasta do projeto e execute:",
+        "checkCommand": "Ver o que tem atualização",
+        "updateCommand": "Atualizar um pacote e reconstruir"
+      }
     },
     "offices": {
       "heading": "Escritórios",

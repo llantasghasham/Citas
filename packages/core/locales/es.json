@@ -104,7 +104,141 @@
       "events": "Eventos",
       "offices": "Oficinas",
       "team": "Equipo",
-      "billing": "Suscripción"
+      "billing": "Suscripción",
+      "manual": "Manual",
+      "system": "Sistema"
+    },
+    "manual": {
+      "title": "Manual de uso",
+      "intro": "Cómo se trabaja con la plataforma, de la primera entrada al último invitado. Cada apartado se lee en un minuto.",
+      "chapters": {
+        "signIn": {
+          "title": "Entrar",
+          "steps": [
+            "No hay contraseñas. Se escribe el correo en /entrar y llega un código de seis dígitos.",
+            "El código sirve UNA vez y caduca a los diez minutos. Si se agota, se pide otro.",
+            "La respuesta es la misma exista o no la cuenta: el sistema nunca revela quién está dado de alta.",
+            "La sesión se cierra desde el enlace de arriba a la derecha. En un ordenador compartido, ciérrela siempre."
+          ]
+        },
+        "create": {
+          "title": "Crear una invitación",
+          "steps": [
+            "En /crear hay seis pasos: idioma y tipo de evento, nombres, cuándo y dónde, detalles, otros idiomas y revisión.",
+            "La vista previa de la derecha es la invitación de verdad, el mismo componente que verá el invitado. Lo que ve es lo que se publica.",
+            "El tipo de evento decide la plantilla y los colores. Un memorial nunca usa la plantilla de celebración, y eso no se puede forzar desde el formulario.",
+            "El versículo se elige de una lista cerrada y verificada. No hay campo libre para un texto sagrado, a propósito.",
+            "Publicar exige sesión y consume un evento de su plan. El límite se comprueba en el servidor al publicar."
+          ]
+        },
+        "languages": {
+          "title": "Los idiomas",
+          "steps": [
+            "El idioma que elige en el paso 1 es el principal: la invitación se crea en ese idioma y ese es el respaldo.",
+            "En el paso 5 puede escribir la misma invitación en los otros idiomas. El texto lo escribe usted: nada se traduce solo.",
+            "Los nombres, la fecha y el lugar son los mismos en todas las versiones. Solo cambian el mensaje y el versículo.",
+            "Cada versión tiene su propia dirección de escritura, sus cifras y su enlace público.",
+            "También puede añadir un idioma más tarde, desde la ficha del evento.",
+            "Cada invitado abre la versión de SU idioma. Quien no tenga la suya recibe la principal, y la lista de invitados se lo avisa en rojo."
+          ]
+        },
+        "guests": {
+          "title": "La lista de invitados",
+          "steps": [
+            "En la ficha del evento se pega la lista o se sube un archivo. Una línea por invitado: nombre, teléfono, idioma.",
+            "Sirven la coma, el punto y coma y la tabulación. Si la primera línea son encabezados, se detecta sola.",
+            "Elija el prefijo del país antes de importar: los teléfonos se guardan normalizados a formato internacional.",
+            "Una línea sin nombre se descarta y se cuenta. No se importa un invitado vacío.",
+            "Volver a pegar la misma lista no duplica a nadie: se reconoce por teléfono, y por nombre cuando no hay teléfono."
+          ]
+        },
+        "send": {
+          "title": "Enviar por WhatsApp",
+          "steps": [
+            "Cada invitado tiene su propio enlace, corto y sin el nombre del evento, para que reenviarlo no revele de quién es la boda.",
+            "El botón abre SU WhatsApp con el mensaje ya escrito. Sale de su número, el que sus clientes ya conocen.",
+            "El mensaje va en el idioma del invitado, no en el de la oficina.",
+            "No hay coste por mensaje ni plantillas que aprobar: no es la API de WhatsApp, es su propio WhatsApp.",
+            "Un invitado sin teléfono muestra un enlace para copiar y mandarlo por donde quiera."
+          ]
+        },
+        "rsvp": {
+          "title": "Confirmaciones",
+          "steps": [
+            "El invitado responde en la misma página de la invitación, sin cuenta y sin contraseña.",
+            "Abrir el enlace marca la fecha de apertura, así ve quién la recibió aunque todavía no conteste.",
+            "La ficha del evento resume quién viene, quién no y con cuántos acompañantes.",
+            "El botón de descarga entrega la lista en CSV con marca de orden de bytes, para que Excel no destroce el árabe.",
+            "Hay un archivo de calendario por invitación, para que el invitado se la guarde en el teléfono."
+          ]
+        },
+        "image": {
+          "title": "La imagen",
+          "steps": [
+            "Cada invitación se genera como PNG de 1080×1920 en el servidor, con la misma maquetación que la página.",
+            "La imagen se guarda la primera vez y se reutiliza. Es también la vista previa que WhatsApp pide al compartir el enlace.",
+            "Añadiendo ?download=1 al final de la dirección de la imagen se descarga en vez de abrirse.",
+            "Si cambia algo de la invitación se genera una imagen nueva sola: la huella cubre todo lo que cambia el dibujo."
+          ]
+        },
+        "team": {
+          "title": "Equipo y permisos",
+          "steps": [
+            "Cada oficina ve solo sus eventos. Una oficina jamás alcanza los datos de otra.",
+            "Hay cuatro papeles: superadministrador, administrador de oficina, operador y organizador.",
+            "El operador crea y edita eventos e invitados. El organizador solo mira.",
+            "La facturación y el equipo los gestiona el administrador de la oficina.",
+            "Los permisos se comprueban siempre en el servidor: que un botón no se vea no es un permiso."
+          ]
+        }
+      }
+    },
+    "system": {
+      "title": "Estado del sistema",
+      "intro": "Qué está corriendo esta instalación y si le falta algo para funcionar. Los datos se leen en vivo, no están escritos a mano.",
+      "stack": {
+        "heading": "Tecnología",
+        "component": "Componente",
+        "version": "Versión",
+        "purpose": "Para qué",
+        "purposes": {
+          "node": "El motor sobre el que corre todo el servidor.",
+          "next": "El marco web: rutas, render en servidor y acciones de formulario.",
+          "react": "La biblioteca con la que están escritas las pantallas.",
+          "typescript": "Tipado estricto: los errores salen al compilar, no en producción.",
+          "tailwind": "Los estilos, escritos con propiedades lógicas para que el árabe funcione.",
+          "prisma": "El acceso a la base de datos y las migraciones.",
+          "database": "PostgreSQL: eventos, invitados, confirmaciones e imágenes.",
+          "puppeteer": "El Chromium sin ventana que convierte cada invitación en PNG.",
+          "mailer": "El envío de los códigos de un solo uso por SMTP.",
+          "expo": "El armazón de las apps de iPhone y Android.",
+          "reactNative": "La base nativa de esas apps."
+        }
+      },
+      "health": {
+        "heading": "Comprobaciones",
+        "ok": "Correcto",
+        "warn": "Atención",
+        "fail": "Falla",
+        "checks": {
+          "database": "Conexión con la base de datos",
+          "dataSource": "Origen de datos",
+          "mailer": "Correo saliente",
+          "payments": "Pasarela de cobro",
+          "renderStore": "Almacén de imágenes",
+          "secretKey": "Llave de cifrado",
+          "chromium": "Chromium para el PNG",
+          "superadmin": "Superadministrador configurado"
+        }
+      },
+      "updates": {
+        "heading": "Actualizaciones",
+        "intro": "Las versiones de arriba son las que están instaladas ahora mismo en este servidor.",
+        "warning": "Actualizar desde el navegador no está activado a propósito: instalar un paquete y reiniciar el servicio desde una página web sería ejecutar código en el servidor desde una sesión iniciada, y una versión mala tumbaría el sitio sin vuelta atrás. Se hace desde la consola, con copia de seguridad.",
+        "howTo": "Entre por SSH al servidor, sitúese en la carpeta del proyecto y ejecute:",
+        "checkCommand": "Ver qué tiene actualización",
+        "updateCommand": "Actualizar un paquete concreto y volver a construir"
+      }
     },
     "offices": {
       "heading": "Oficinas",

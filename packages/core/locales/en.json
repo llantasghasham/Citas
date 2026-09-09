@@ -104,7 +104,141 @@
       "events": "Events",
       "offices": "Offices",
       "team": "Team",
-      "billing": "Subscription"
+      "billing": "Subscription",
+      "manual": "Manual",
+      "system": "System"
+    },
+    "manual": {
+      "title": "User manual",
+      "intro": "How the platform is worked, from the first sign-in to the last guest. Each chapter reads in a minute.",
+      "chapters": {
+        "signIn": {
+          "title": "Signing in",
+          "steps": [
+            "There are no passwords. You type your email at /entrar and a six-digit code arrives.",
+            "The code works ONCE and expires after ten minutes. If it runs out, ask for another.",
+            "The answer is the same whether the account exists or not: the system never reveals who is registered.",
+            "Sign out from the link at the top. On a shared computer, always sign out."
+          ]
+        },
+        "create": {
+          "title": "Creating an invitation",
+          "steps": [
+            "/crear has six steps: language and event type, names, when and where, details, other languages, and review.",
+            "The preview on the side is the real invitation — the same component the guest will see. What you see is what gets published.",
+            "The event type decides the template and the colours. A memorial never uses the celebration template, and the form cannot force it.",
+            "The verse is chosen from a closed, verified list. There is no free-text field for a sacred text, deliberately.",
+            "Publishing needs a session and uses one event of your plan. The limit is checked on the server as you publish."
+          ]
+        },
+        "languages": {
+          "title": "The languages",
+          "steps": [
+            "The language you pick in step 1 is the main one: the invitation is created in it, and it is the fallback.",
+            "In step 5 you can write the same invitation in the other languages. You write the text: nothing is translated for you.",
+            "The names, the date and the venue are the same in every version. Only the message and the verse change.",
+            "Each version has its own writing direction, its own numerals and its own public link.",
+            "You can also add a language later, from the event's page.",
+            "Each guest opens the version in THEIR language. Anyone without one gets the main version, and the guest list flags it in red."
+          ]
+        },
+        "guests": {
+          "title": "The guest list",
+          "steps": [
+            "On the event's page you paste the list or upload a file. One line per guest: name, phone, language.",
+            "Commas, semicolons and tabs all work. If the first line is headers, it is detected on its own.",
+            "Pick the country code before importing: phone numbers are stored in international format.",
+            "A line with no name is skipped and counted. An empty guest is never imported.",
+            "Pasting the same list again duplicates nobody: guests are matched by phone, and by name when there is no phone."
+          ]
+        },
+        "send": {
+          "title": "Sending over WhatsApp",
+          "steps": [
+            "Each guest has their own link, short and without the event's name, so forwarding it does not reveal whose wedding it is.",
+            "The button opens YOUR WhatsApp with the message already written. It goes out from your number, the one your clients know.",
+            "The message is in the guest's language, not the office's.",
+            "There is no per-message fee and no templates to get approved: this is not the WhatsApp API, it is your own WhatsApp.",
+            "A guest with no phone shows a link to copy and send however you like."
+          ]
+        },
+        "rsvp": {
+          "title": "Replies",
+          "steps": [
+            "The guest answers on the invitation page itself, with no account and no password.",
+            "Opening the link records the date, so you can see who received it even before they answer.",
+            "The event's page sums up who is coming, who is not, and how many they bring.",
+            "The download button hands you the list as CSV with a byte-order mark, so Excel does not wreck the Arabic.",
+            "Every invitation has a calendar file, so the guest can save it to their phone."
+          ]
+        },
+        "image": {
+          "title": "The image",
+          "steps": [
+            "Each invitation is rendered as a 1080×1920 PNG on the server, with the same layout as the page.",
+            "The image is stored the first time and reused. It is also the preview WhatsApp asks for when the link is shared.",
+            "Adding ?download=1 to the end of the image address downloads it instead of opening it.",
+            "If anything on the invitation changes, a new image is made on its own: the fingerprint covers everything that changes the drawing."
+          ]
+        },
+        "team": {
+          "title": "Team and permissions",
+          "steps": [
+            "Each office sees only its own events. One office never reaches another's data.",
+            "There are four roles: superadmin, office admin, operator and organiser.",
+            "The operator creates and edits events and guests. The organiser only looks.",
+            "Billing and the team are managed by the office admin.",
+            "Permissions are always checked on the server: a button you cannot see is not a permission."
+          ]
+        }
+      }
+    },
+    "system": {
+      "title": "System status",
+      "intro": "What this installation is running, and whether anything is missing for it to work. The figures are read live, not typed in by hand.",
+      "stack": {
+        "heading": "Technology",
+        "component": "Component",
+        "version": "Version",
+        "purpose": "What for",
+        "purposes": {
+          "node": "The engine the whole server runs on.",
+          "next": "The web framework: routes, server rendering and form actions.",
+          "react": "The library the screens are written with.",
+          "typescript": "Strict typing: mistakes surface at compile time, not in production.",
+          "tailwind": "The styles, written with logical properties so Arabic works.",
+          "prisma": "Database access and migrations.",
+          "database": "PostgreSQL: events, guests, replies and images.",
+          "puppeteer": "The windowless Chromium that turns each invitation into a PNG.",
+          "mailer": "Sending the one-time codes over SMTP.",
+          "expo": "The shell around the iPhone and Android apps.",
+          "reactNative": "The native base of those apps."
+        }
+      },
+      "health": {
+        "heading": "Checks",
+        "ok": "Good",
+        "warn": "Attention",
+        "fail": "Failing",
+        "checks": {
+          "database": "Database connection",
+          "dataSource": "Data source",
+          "mailer": "Outgoing mail",
+          "payments": "Payment gateway",
+          "renderStore": "Image store",
+          "secretKey": "Encryption key",
+          "chromium": "Chromium for the PNG",
+          "superadmin": "Superadmin configured"
+        }
+      },
+      "updates": {
+        "heading": "Updates",
+        "intro": "The versions above are the ones installed on this server right now.",
+        "warning": "Updating from the browser is deliberately not enabled: installing a package and restarting the service from a web page would be running code on the server from a signed-in session, and a bad version would take the site down with no way back. It is done from the console, with a backup.",
+        "howTo": "Open SSH to the server, go to the project folder and run:",
+        "checkCommand": "See what has an update",
+        "updateCommand": "Update one package and rebuild"
+      }
     },
     "offices": {
       "heading": "Offices",

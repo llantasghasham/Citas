@@ -48,6 +48,48 @@ export type FaqKey = (typeof FAQ_KEYS)[number];
 export const PLAN_KEYS = ['free', 'single_event', 'annual', 'office'] as const;
 export type PlanKey = (typeof PLAN_KEYS)[number];
 
+/** The chapters of the in-app manual, in the order the panel shows them. */
+export const MANUAL_CHAPTERS = [
+  'signIn',
+  'create',
+  'languages',
+  'guests',
+  'send',
+  'rsvp',
+  'image',
+  'team',
+] as const;
+export type ManualChapter = (typeof MANUAL_CHAPTERS)[number];
+
+/** The moving parts the status page names, each with its own version. */
+export const STACK_KEYS = [
+  'node',
+  'next',
+  'react',
+  'typescript',
+  'tailwind',
+  'prisma',
+  'database',
+  'puppeteer',
+  'mailer',
+  'expo',
+  'reactNative',
+] as const;
+export type StackKey = (typeof STACK_KEYS)[number];
+
+/** What the status page checks before saying the system is healthy. */
+export const HEALTH_KEYS = [
+  'database',
+  'dataSource',
+  'mailer',
+  'payments',
+  'renderStore',
+  'secretKey',
+  'chromium',
+  'superadmin',
+] as const;
+export type HealthKey = (typeof HEALTH_KEYS)[number];
+
 export const DIRECTIONS = ['rtl', 'ltr'] as const;
 export type Direction = (typeof DIRECTIONS)[number];
 
@@ -298,7 +340,40 @@ export interface Dictionary {
       restartNeeded: string;
     };
     roles: Record<'SUPERADMIN' | 'TENANT_ADMIN' | 'OPERATOR' | 'ORGANIZER', string>;
-    nav: Record<'events' | 'offices' | 'team' | 'billing', string>;
+    nav: Record<'events' | 'offices' | 'team' | 'billing' | 'manual' | 'system', string>;
+    /** The manual the office reads inside the panel, not in a PDF nobody opens. */
+    manual: {
+      title: string;
+      intro: string;
+      chapters: Record<ManualChapter, { title: string; steps: string[] }>;
+    };
+    /** What this installation is running, and whether it is healthy. */
+    system: {
+      title: string;
+      intro: string;
+      stack: {
+        heading: string;
+        component: string;
+        version: string;
+        purpose: string;
+        purposes: Record<StackKey, string>;
+      };
+      health: {
+        heading: string;
+        ok: string;
+        warn: string;
+        fail: string;
+        checks: Record<HealthKey, string>;
+      };
+      updates: {
+        heading: string;
+        intro: string;
+        warning: string;
+        howTo: string;
+        checkCommand: string;
+        updateCommand: string;
+      };
+    };
     offices: {
       heading: string;
       name: string;
