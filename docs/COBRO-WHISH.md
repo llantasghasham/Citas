@@ -67,7 +67,77 @@ Eso decide el diseño del producto entero:
 
 ## Qué pedirle a Whish
 
-Al abrir la cuenta de comercio, pedir por escrito:
+## El mensaje para Whish, listo para pegar
+
+Se manda por el canal OFICIAL de Whish —el botón «Business» de su propia
+aplicación, o `apps.whish.money`—, nunca a un número que aparezca en un grupo.
+
+**Qué se puede decir y qué no.** El **Account ID** y el teléfono registrado SÍ:
+es como te identifican y no son secretos. La **clave (`secret`) NO se manda
+nunca de vuelta**, ni siquiera a alguien que diga ser soporte: ellos te la dan a
+ti, no al revés. Si alguna vez alguien te la pide, no es soporte.
+
+### Primer mensaje
+
+> مرحبًا، أنا صاحب الحساب رقم **[Account ID]** المسجّل على الرقم **[الهاتف]**.
+>
+> عندي منصّة لبطاقات الدعوات الرقمية على النطاق **citas.posxml.com**، وبدّي
+> فعّل الدفع عبر Whish Collect لزبائني.
+>
+> بحاجة لفتح **حساب تاجر (Merchant / Business)** والحصول على:
+> `channel` و`secret` و`websiteUrl` للتجربة (sandbox) وللإنتاج، مع نسخة من
+> **Whish Collect Web Service Technical Specification**.
+>
+> شو الخطوات والأوراق المطلوبة؟ وشكرًا.
+
+En inglés, por si contestan en inglés:
+
+> Hello. I am the holder of account **[Account ID]**, registered to
+> **[phone]**.
+>
+> I run a digital wedding-invitation platform at **citas.posxml.com** and I
+> would like to collect payments from my clients through Whish Collect.
+>
+> I need to open a **merchant (business) account** and receive the `channel`,
+> `secret` and `websiteUrl` for both sandbox and production, together with a
+> copy of the **Whish Collect Web Service Technical Specification**.
+>
+> What are the steps and the documents required? Thank you.
+
+### Segundo mensaje, cuando ya haya cuenta
+
+La pregunta 3 es la cara: contestarla mal cobra cien veces de más o cien veces
+de menos. No se cierra sin respuesta POR ESCRITO.
+
+> 1. `channel`, `secret` و`websiteUrl` — للـ sandbox وللإنتاج.
+> 2. الوثيقة التقنية لـ Whish Collect، آخر نسخة.
+> 3. **صيغة المبلغ**: هل `amount` بالوحدة الكاملة (20 = عشرون دولارًا) أم
+>    بالسنتات (2000 = عشرون دولارًا)؟ وأي عملات مدعومة؟
+> 4. هل يوجد **callback** من خادم إلى خادم؟ وهل هو **موقّع**؟ بأي ترويسة وأي
+>    خوارزمية نتحقّق من التوقيع؟
+> 5. إذا أُرسل نفس `externalId` مرّتين: هل يُنشأ تحصيل ثانٍ أم يُعاد الأول؟
+> 6. متى تنتهي صلاحية طلب تحصيل غير مدفوع؟
+> 7. العمولة، ودورة التسوية، وإلى أي حساب.
+> 8. الحدود لكل عملية ولكل يوم.
+
+Y en inglés:
+
+> 1. `channel`, `secret` and `websiteUrl` — for sandbox and for production.
+> 2. The latest Whish Collect technical specification document.
+> 3. **Amount format**: is `amount` in whole currency units (20 = twenty
+>    dollars) or in cents (2000 = twenty dollars)? Which currencies?
+> 4. Is there a **server-to-server callback**? Is it **signed**? With which
+>    header and which algorithm do we verify the signature?
+> 5. If the same `externalId` is sent twice, is a second collection created or
+>    is the first one returned?
+> 6. How long before an unpaid collection expires?
+> 7. Fee, settlement cycle, and to which account.
+> 8. Limits per transaction and per day.
+
+Lo que contesten a la 3 se comprueba igual con un cobro real de un dólar mirado
+en el panel de Whish. Una respuesta por WhatsApp no es una prueba.
+
+## Al abrir la cuenta de comercio, pedir por escrito:
 
 1. **Credenciales de sandbox y de producción**: `channel`, `secret` y
    `websiteUrl`. Es lo único que bloquea hoy.
