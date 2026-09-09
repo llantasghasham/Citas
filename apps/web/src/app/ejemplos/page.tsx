@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { InvitationCard } from '@/components/invitation/InvitationCard';
-import { getInvitationRepository } from '@/lib/repositories';
+import { loadShowcase } from '@/lib/home/showcase';
 
 // Reads whatever the data source holds right now, so `npm run build` does not
 // need a reachable database to compile.
@@ -11,12 +11,18 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
- * Internal index of the published invitations. It deliberately carries no prose:
- * every label here is data (slug, locale, route), so the page needs no locale
- * dictionary of its own.
+ * The sample invitations, for anyone who wants to see one before creating it.
+ *
+ * Deliberately the same allow-list the home page draws from, and never a
+ * listing of the database: an unfiltered one would show every office's real
+ * clients — their names, their date and their address — to anyone who opened
+ * the page.
+ *
+ * It carries no prose of its own: every label here is data (slug, locale,
+ * route), so the page needs no locale dictionary.
  */
 export default async function ExamplesPage() {
-  const invitations = await getInvitationRepository().listAll();
+  const invitations = await loadShowcase();
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-10 p-8">

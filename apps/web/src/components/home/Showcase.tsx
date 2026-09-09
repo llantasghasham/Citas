@@ -1,5 +1,4 @@
 import { InvitationCard } from '@/components/invitation/InvitationCard';
-import { SITE } from '@/config/site';
 import type { Dictionary, Invitation, Locale } from '@/lib/types';
 
 /**
@@ -38,23 +37,4 @@ export function Showcase({
       ))}
     </ul>
   );
-}
-
-/**
- * What the showcase draws, capped by the configuration.
- *
- * One per template first: the heading promises a celebration tone and a
- * mourning one, and three weddings in a row would make that a lie. Whatever
- * room is left is filled in the order the repository returned.
- */
-export function pickShowcase(invitations: Invitation[]): Invitation[] {
-  const seen = new Set<string>();
-  const firstOfEach = invitations.filter((invitation) => {
-    if (seen.has(invitation.templateId)) return false;
-    seen.add(invitation.templateId);
-    return true;
-  });
-  const rest = invitations.filter((invitation) => !firstOfEach.includes(invitation));
-
-  return [...firstOfEach, ...rest].slice(0, SITE.showcaseLimit);
 }

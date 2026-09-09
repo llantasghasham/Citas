@@ -41,8 +41,16 @@ export interface SiteConfig {
   faq: readonly FaqKey[];
   /** Which plans the price table shows. */
   plans: readonly PlanKey[];
-  /** How many published invitations the showcase may display. */
-  showcaseLimit: number;
+  /**
+   * The invitations the public site may show, by slug.
+   *
+   * An allow-list, never "everything published": the database holds real
+   * clients' weddings, with their names, their date and their address, and a
+   * listing that is not filtered by office would put them on the front door.
+   * Each slug here is resolved one by one — a public slug lookup is the
+   * product's single deliberate tenant-free query.
+   */
+  showcase: readonly string[];
 }
 
 export const SECTION_KEYS = ['features', 'steps', 'showcase', 'pricing', 'faq', 'closing'] as const;
@@ -64,7 +72,7 @@ export const SITE: SiteConfig = {
   features: FEATURE_KEYS,
   faq: FAQ_KEYS,
   plans: PLAN_KEYS,
-  showcaseLimit: 3,
+  showcase: ['ejemplo-ar', 'ejemplo-memorial', 'ejemplo-es', 'ejemplo-en', 'ejemplo-pt'],
 };
 
 /** True when the block is switched on in the configuration above. */

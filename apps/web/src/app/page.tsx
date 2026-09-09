@@ -7,14 +7,14 @@ import { FeatureGrid } from '@/components/home/FeatureGrid';
 import { Hero } from '@/components/home/Hero';
 import { PricingTable } from '@/components/home/PricingTable';
 import { Section } from '@/components/home/Section';
-import { Showcase, pickShowcase } from '@/components/home/Showcase';
+import { Showcase } from '@/components/home/Showcase';
 import { SiteFooter } from '@/components/home/SiteFooter';
 import { SiteHeader } from '@/components/home/SiteHeader';
 import { StepList } from '@/components/home/StepList';
 import { shows } from '@/config/site';
 import { getDictionary } from '@/lib/dictionary';
 import { resolveHomeLocale } from '@/lib/home/locale';
-import { getInvitationRepository } from '@/lib/repositories';
+import { loadShowcase } from '@/lib/home/showcase';
 import { bodyFont } from '@/lib/typography';
 import type { Invitation } from '@/lib/types';
 
@@ -57,7 +57,7 @@ export default async function HomePage({ searchParams }: PageProps) {
 
   // The showcase is a nicety, not the page: a data source that is not there
   // must not take the home page down with it.
-  const invitations = shows('showcase') ? await publishedInvitations() : [];
+  const invitations = shows('showcase') ? await demoInvitations() : [];
 
   return (
     <div dir={direction} lang={locale} className={`${bodyFont(locale)} bg-[#14120E] text-[#F4EFE6]`}>
@@ -124,9 +124,9 @@ export default async function HomePage({ searchParams }: PageProps) {
   );
 }
 
-async function publishedInvitations(): Promise<Invitation[]> {
+async function demoInvitations(): Promise<Invitation[]> {
   try {
-    return pickShowcase(await getInvitationRepository().listAll());
+    return await loadShowcase();
   } catch {
     return [];
   }
