@@ -11,7 +11,7 @@ import { COUNTRY_CODES } from '@/lib/guests/phone';
 import { toWaMe } from '@/lib/guests/phone';
 import { listGuestsWithLinks } from '@/lib/repositories/guests';
 import { displayFont } from '@/lib/typography';
-import { getDictionary, interpolate, LOCALES } from '@citas/core';
+import { getDictionary, interpolate, plural, LOCALES, type Locale } from '@citas/core';
 
 interface PageProps {
   params: Promise<{ eventId: string }>;
@@ -48,6 +48,14 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
 
   const origin = `https://${requestHost(await headers())}`;
   const opened = event.guests.filter((guest) => guest.openedAt !== null).length;
+  // How many guests are waiting for each language, so the versions section can
+  // say which one to write next instead of offering four equal boxes.
+  const guestsByLocale = Object.fromEntries(
+    LOCALES.map((option) => [
+      option,
+      event.guests.filter((guest) => guest.locale === option).length,
+    ]),
+  ) as Record<Locale, number>;
   const canWrite = sessionCan(session, 'event:write');
 
   return (
@@ -64,10 +72,10 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
 
       {added === undefined ? null : (
         <p className="text-sm text-[#8a6c22]">
-          {interpolate(copy.imported, { count: added })}
+          {plural(locale, copy.imported, Number.parseInt(added, 10) || 0)}
           {skipped === undefined || skipped === '0'
             ? ''
-            : ` ${interpolate(copy.skipped, { count: skipped })}`}
+            : ` ${plural(locale, copy.skipped, Number.parseInt(skipped, 10) || 0)}`}
         </p>
       )}
       {addedLocale === undefined ? null : (
@@ -140,7 +148,12 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
                             {interpolate(copy.fallbackWarning, {
                               language: LOCALE_NAMES[guest.locale],
                               fallback: LOCALE_NAMES[guest.version.locale],
-                            })}
+                            })}{' '}
+                            {/* Straight to the form that fixes it: the warning
+                                and the cure were in different halves of the page. */}
+                            <a href="#idiomas" className="underline">
+                              {copy.fallbackFix}
+                            </a>
                           </span>
                         ) : null}
                       </td>
@@ -178,6 +191,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
       <VersionsSection
         eventId={eventId}
         versions={event.versions}
+        guestsByLocale={guestsByLocale}
         dictionary={dictionary}
         locale={locale}
         canWrite={canWrite}

@@ -311,11 +311,18 @@
       "empty": "No guests yet.",
       "sendWhatsapp": "Send on WhatsApp",
       "exportCsv": "Download the list",
-      "imported": "{count} guests added.",
-      "skipped": "{count} invalid lines were skipped.",
+      "imported": {
+        "one": "1 guest added.",
+        "other": "{count} guests added."
+      },
+      "skipped": {
+        "one": "1 line with no name was skipped.",
+        "other": "{count} lines with no name were skipped."
+      },
       "openedCount": "Opened: {opened} of {total}",
       "language": "Language",
-      "fallbackWarning": "No {language} version: they will see the {fallback} one."
+      "fallbackWarning": "No {language} version: they will see the {fallback} one.",
+      "fallbackFix": "Add their language"
     },
     "versions": {
       "heading": "Invitation languages",
@@ -325,7 +332,16 @@
       "add": "Add",
       "added": "The {language} version was added.",
       "complete": "The invitation is already in all four languages.",
-      "quoteHint": "Only verified verses in this language."
+      "quoteHint": "Only verified verses in this language.",
+      "waiting": {
+        "one": "1 guest is waiting for it",
+        "other": "{count} guests are waiting for it"
+      },
+      "waitingNone": "No guest needs it yet",
+      "pending": {
+        "one": "1 guest will open the invitation in {language}, because nobody wrote theirs.",
+        "other": "{count} guests will open the invitation in {language}, because nobody wrote theirs."
+      }
     }
   },
   "rsvpForm": {

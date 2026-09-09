@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { cache } from 'react';
 
 import type { Role } from '@/generated/prisma/enums';
+import type { Locale } from '@/lib/types';
 import { getPrisma } from '@/lib/db/client';
 import { tenantScope, type TenantScope } from '@/lib/db/tenant';
 
@@ -20,6 +21,8 @@ export interface AuthenticatedSession {
   isSuperadmin: boolean;
   tenantId: string | null;
   role: Role | null;
+  /** The language this person reads the panel in. Theirs, not the office's. */
+  locale: Locale;
 }
 
 export interface SessionMetadata {
@@ -117,6 +120,7 @@ export async function resolveSession(token: string): Promise<AuthenticatedSessio
     isSuperadmin: row.user.isSuperadmin,
     tenantId: row.tenantId,
     role: row.user.isSuperadmin ? 'SUPERADMIN' : (membership?.role ?? null),
+    locale: row.user.locale,
   };
 }
 

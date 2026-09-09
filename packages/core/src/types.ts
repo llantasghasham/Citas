@@ -1,3 +1,5 @@
+import type { PluralForms } from './plural';
+
 /**
  * Domain types for the invitation render engine.
  * Every user-visible label is resolved through a Dictionary; only proper nouns
@@ -446,11 +448,12 @@ export interface Dictionary {
       empty: string;
       sendWhatsapp: string;
       exportCsv: string;
-      imported: string;
-      skipped: string;
+      imported: PluralForms;
+      skipped: PluralForms;
       openedCount: string;
       language: string;
       fallbackWarning: string;
+      fallbackFix: string;
     };
     /** One invitation, written out in each language its guests read. */
     versions: {
@@ -462,6 +465,10 @@ export interface Dictionary {
       added: string;
       complete: string;
       quoteHint: string;
+      /** How many guests are waiting for a language nobody has written yet. */
+      waiting: PluralForms;
+      waitingNone: string;
+      pending: PluralForms;
     };
     events: {
       heading: string;

@@ -311,11 +311,18 @@
       "empty": "Todavía no hay invitados.",
       "sendWhatsapp": "Enviar por WhatsApp",
       "exportCsv": "Descargar la lista",
-      "imported": "Se añadieron {count} invitados.",
-      "skipped": "Se descartaron {count} líneas no válidas.",
+      "imported": {
+        "one": "Añadido 1 invitado.",
+        "other": "Añadidos {count} invitados."
+      },
+      "skipped": {
+        "one": "Se descartó 1 línea sin nombre.",
+        "other": "Se descartaron {count} líneas sin nombre."
+      },
       "openedCount": "Abrieron: {opened} de {total}",
       "language": "Idioma",
-      "fallbackWarning": "Sin versión en {language}: verá la de {fallback}."
+      "fallbackWarning": "Sin versión en {language}: verá la de {fallback}.",
+      "fallbackFix": "Añadir su idioma"
     },
     "versions": {
       "heading": "Idiomas de la invitación",
@@ -325,7 +332,16 @@
       "add": "Añadir",
       "added": "Añadida la versión en {language}.",
       "complete": "La invitación ya está en los cuatro idiomas.",
-      "quoteHint": "Solo versículos verificados en este idioma."
+      "quoteHint": "Solo versículos verificados en este idioma.",
+      "waiting": {
+        "one": "1 invitado la está esperando",
+        "other": "{count} invitados la están esperando"
+      },
+      "waitingNone": "Ningún invitado la necesita todavía",
+      "pending": {
+        "one": "1 invitado abrirá la invitación en {language}, porque nadie ha escrito la suya.",
+        "other": "{count} invitados abrirán la invitación en {language}, porque nadie ha escrito la suya."
+      }
     }
   },
   "rsvpForm": {

@@ -36,21 +36,29 @@ export function clientIp(requestHeaders: Headers): string | null {
 }
 
 /**
- * Staff screens speak the office's language: an office in Beirut sees its panel
- * in Arabic, right to left, exactly like the invitations it produces.
+ * Staff screens speak the reader's language, falling back to the office's: an
+ * office in Beirut sees its panel in Arabic, right to left, exactly like the
+ * invitations it produces, and anyone who prefers another language switches it
+ * for themselves without changing it for everybody.
  *
  * Once someone is signed in, the office comes from their session and not from
  * the host — an office is part of who you are, and must not change because a
  * header changed. The host only decides which office's sign-in page you land on.
  */
-export async function getAdminContext(sessionTenantId?: string | null): Promise<AdminContext> {
+export async function getAdminContext(
+  sessionTenantId?: string | null,
+  readerLocale?: Locale,
+): Promise<AdminContext> {
   const requestHeaders = await headers();
   const host = requestHost(requestHeaders);
   const tenant =
     sessionTenantId === undefined || sessionTenantId === null
       ? await getTenantByHost(host)
       : await getTenantById(sessionTenantId);
-  const locale = asLocale(tenant?.defaultLocale);
+  // The person's own choice wins over the office's default. Two colleagues at
+  // the same desk can read the panel in different languages, which in Beirut is
+  // the normal case and not an edge one.
+  const locale = readerLocale ?? asLocale(tenant?.defaultLocale);
 
   return {
     locale,

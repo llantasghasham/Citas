@@ -46,7 +46,9 @@ async function resolveLocale(): Promise<Locale> {
     // once someone is signed in and from the host before that.
     if (path === '/panel' || path.startsWith('/panel/') || path.startsWith('/entrar')) {
       const session = await getSession();
-      const context = await getAdminContext(session?.tenantId);
+      // The reader's own choice, exactly as the panel layout resolves it, or
+      // the office's default before anyone has signed in.
+      const context = await getAdminContext(session?.tenantId, session?.locale);
       return context.locale;
     }
 

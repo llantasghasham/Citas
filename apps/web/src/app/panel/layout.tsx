@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { signOutAction } from '@/app/entrar/actions';
+import { setPanelLocaleAction } from '@/app/panel/actions-locale';
+import { LOCALE_NAMES } from '@/lib/create/options';
+import { LOCALES } from '@/lib/types';
 import { getAdminContext } from '@/lib/admin/context';
 import { getSession, sessionCan } from '@/lib/auth/session';
 import { bodyFont, displayFont } from '@/lib/typography';
@@ -16,7 +19,10 @@ export default async function PanelLayout({ children }: { children: ReactNode })
   const session = await getSession();
   if (session === null) redirect('/entrar');
 
-  const { dictionary, direction, locale, tenant } = await getAdminContext(session.tenantId);
+  const { dictionary, direction, locale, tenant } = await getAdminContext(
+    session.tenantId,
+    session.locale,
+  );
   const nav = dictionary.admin.nav;
 
   const links = [
@@ -46,7 +52,29 @@ export default async function PanelLayout({ children }: { children: ReactNode })
               </Link>
             ))}
           </nav>
-          <form action={signOutAction} className="ms-auto">
+          {/* Four buttons, no client JavaScript. The choice is the reader's and
+              is remembered on their own account, not the office's. */}
+          <form action={setPanelLocaleAction} className="flex items-center gap-x-3 ms-auto">
+            {LOCALES.map((option) => (
+              <button
+                key={option}
+                type="submit"
+                name="locale"
+                value={option}
+                lang={option}
+                aria-current={option === locale ? 'true' : undefined}
+                className={
+                  option === locale
+                    ? 'text-xs text-[#8a6c22] underline underline-offset-4'
+                    : 'text-xs text-[#6a6456] hover:text-[#23201a]'
+                }
+              >
+                {LOCALE_NAMES[option]}
+              </button>
+            ))}
+          </form>
+
+          <form action={signOutAction}>
             <button type="submit" className="text-sm underline opacity-70 hover:opacity-100">
               {dictionary.admin.panel.signOut}
             </button>
