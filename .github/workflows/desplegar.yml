@@ -26,7 +26,48 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Antes de tocar el servidor. Hasta ahora lo unico que separaba una errata de
+  # produccion era que quien empuja se acordase de compilar en su maquina; el
+  # servidor construia lo que llegara y el fallo se descubria con el sitio ya
+  # tocado.
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar
+        run: npm ci
+
+      - name: Tipos
+        run: npm run typecheck
+
+      - name: Guardia de RTL y tipografia
+        run: npm run lint:rtl
+
+      - name: Construir, y que ninguna ruta salga estatica
+        # Sin base de datos a proposito: si el build la necesitara, seria que
+        # alguna ruta volvio a prerenderizarse, que es el fallo que ya tumbo el
+        # PNG una vez. El layout raiz lee cabeceras, asi que cualquier segmento
+        # que Next siga prerenderizando revienta al servirse, y eso se ve aqui.
+        run: |
+          npm run build 2>&1 | tee /tmp/build.txt
+          sed -n '/Route (app)/,/Dynamic/p' /tmp/build.txt > /tmp/rutas.txt
+          if grep -qE '^[|├└┌][^/]*[●○]' /tmp/rutas.txt; then
+            echo "::error::hay rutas estaticas; el layout raiz lee cabeceras y reventaran al servirse"
+            grep -E '^[|├└┌][^/]*[●○]' /tmp/rutas.txt
+            exit 1
+          fi
+          echo "OK: ninguna ruta estatica"
+
   desplegar:
+    needs: verificar
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
