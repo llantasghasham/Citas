@@ -521,7 +521,9 @@
       "send": "Pôr os envios em fila",
       "queuedCount": "{queued} em fila · {sent} enviadas · {failed} falhadas",
       "queuedDone": "Em fila: {queued}. Sem telefone: {skipped}.",
-      "noConnection": "Ligue primeiro um número."
+      "noConnection": "Ligue primeiro um número.",
+      "noOffice": "Esta conta não está atribuída a nenhum escritório, por isso não há onde guardar o número. Crie um em «Escritórios» e volte.",
+      "duplicate": "Já existe um número com esse nome."
     },
     "profile": {
       "title": "O meu perfil",

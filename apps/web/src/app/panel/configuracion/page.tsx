@@ -29,6 +29,7 @@ interface PageProps {
     idioma?: string;
     guardado?: string;
     servicio?: string;
+    error?: string;
     pago?: string;
     motivo?: string;
     mail?: string;
@@ -138,6 +139,7 @@ export default async function ConfigPage({ searchParams }: PageProps) {
           gatewayUrl={await campo('WHATSAPP_GATEWAY_URL')}
           canEditGateway={platform}
           {...(params.servicio === undefined ? {} : { gatewayError: params.servicio })}
+          {...(params.error === undefined ? {} : { error: params.error })}
           dictionary={dictionary}
           locale={locale}
         />

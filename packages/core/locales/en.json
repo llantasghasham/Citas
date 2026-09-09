@@ -521,7 +521,9 @@
       "send": "Queue the messages",
       "queuedCount": "{queued} queued · {sent} sent · {failed} failed",
       "queuedDone": "Queued {queued}. No phone number: {skipped}.",
-      "noConnection": "Connect a number first."
+      "noConnection": "Connect a number first.",
+      "noOffice": "This account belongs to no office, so there is nowhere to keep the number. Create one under “Offices” and come back.",
+      "duplicate": "There is already a number with that name."
     },
     "profile": {
       "title": "My profile",

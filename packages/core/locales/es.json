@@ -521,7 +521,9 @@
       "send": "Encolar los envíos",
       "queuedCount": "{queued} en cola · {sent} enviadas · {failed} fallidas",
       "queuedDone": "Encoladas {queued}. Sin teléfono: {skipped}.",
-      "noConnection": "Conecte un número primero."
+      "noConnection": "Conecte un número primero.",
+      "noOffice": "Esta cuenta no está asignada a ninguna oficina, así que no hay dónde guardar el número. Créela en «Oficinas» y vuelva.",
+      "duplicate": "Ya hay un número con ese nombre."
     },
     "profile": {
       "title": "Mi perfil",

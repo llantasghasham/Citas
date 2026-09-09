@@ -614,6 +614,9 @@ export interface Dictionary {
       queuedCount: string;
       queuedDone: string;
       noConnection: string;
+      /** La cuenta no pertenece a ninguna oficina: no hay dónde guardar nada. */
+      noOffice: string;
+      duplicate: string;
     };
     /** Vender un paquete de invitaciones para UNA boda. */
     packages: {

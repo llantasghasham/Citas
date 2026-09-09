@@ -136,7 +136,7 @@ export async function resolveSession(token: string): Promise<AuthenticatedSessio
     userId: row.userId,
     email: row.user.email,
     isSuperadmin: row.user.isSuperadmin,
-    tenantId: row.tenantId,
+    tenantId: row.tenantId ?? (row.user.isSuperadmin ? await rootTenantId() : null),
     role,
     locale: row.user.locale,
     country: row.user.country,
@@ -144,6 +144,28 @@ export async function resolveSession(token: string): Promise<AuthenticatedSessio
     capabilities: role === null ? [] : await capabilitiesOf(role),
   };
 }
+
+/**
+ * La oficina de la plataforma, para un superadministrador que no pertenece a
+ * ninguna.
+ *
+ * El alta lo crea SIN membresía —está por encima de las oficinas, no dentro de
+ * una— y eso deja su sesión sin `tenantId`. El resultado no era un aviso: era
+ * que media aplicación se comportaba como si no hubiera nada. La pantalla de
+ * WhatsApp salía vacía y el botón de añadir devolvía al panel sin decir por
+ * qué, que es exactamente el fallo que ya costó dos veces en este proyecto.
+ *
+ * Así que trabaja en la oficina raíz, que es la de la plataforma. Sigue siendo
+ * la ÚNICA consulta de tenant sin tenant, y no devuelve datos de negocio de
+ * nadie: devuelve cuál es la oficina propia.
+ */
+const rootTenantId = cache(async (): Promise<string | null> => {
+  const root = await getPrisma().tenant.findFirst({
+    where: { isRoot: true },
+    select: { id: true },
+  });
+  return root?.id ?? null;
+});
 
 /**
  * The signed-in user for a browser request, or null. Memoised per request, so a

@@ -27,16 +27,28 @@ import { logoutConnection, startConnection } from '@/lib/whatsapp/gateway';
  */
 const VOLVER = '/panel/configuracion?s=whatsapp';
 
-async function require(): Promise<NonNullable<Awaited<ReturnType<typeof getSession>>>> {
+/**
+ * La sesión, y que pueda administrar SU oficina.
+ *
+ * No se llama `require`: en un módulo compilado a CommonJS ese nombre ya
+ * existe, y una función propia que lo tape es una trampa esperando.
+ *
+ * Cuando falta la oficina NO se rebota al panel en silencio. Rebotar sin decir
+ * nada es lo que hizo que «añadir un número» pareciera estar roto sin ninguna
+ * pista: se vuelve a la misma pantalla y ella explica qué falta.
+ */
+async function officeSession(): Promise<
+  NonNullable<Awaited<ReturnType<typeof getSession>>>
+> {
   const session = await getSession();
-  if (session === null || !sessionCan(session, 'tenant:manage') || session.tenantId === null) {
-    redirect('/panel');
-  }
+  if (session === null) redirect('/entrar');
+  if (!sessionCan(session, 'tenant:manage')) redirect('/panel');
+  if (session.tenantId === null) redirect(`${VOLVER}&error=sinOficina`);
   return session;
 }
 
 export async function addConnectionAction(formData: FormData): Promise<void> {
-  const session = await require();
+  const session = await officeSession();
 
   // El mismo formulario sirve para la dirección del servicio: es un campo de
   // configuración, y separarlo en su propia acción era una acción de una línea.
@@ -63,7 +75,7 @@ export async function addConnectionAction(formData: FormData): Promise<void> {
  * fila; la pantalla lo enseña en cuanto se recarga.
  */
 export async function connectAction(formData: FormData): Promise<void> {
-  const session = await require();
+  const session = await officeSession();
   const id = String(formData.get('id') ?? '');
   if ((await ownedConnection(scopeOf(session), id)) === null) redirect(VOLVER);
 
@@ -72,7 +84,7 @@ export async function connectAction(formData: FormData): Promise<void> {
 }
 
 export async function disconnectAction(formData: FormData): Promise<void> {
-  const session = await require();
+  const session = await officeSession();
   const id = String(formData.get('id') ?? '');
   if ((await ownedConnection(scopeOf(session), id)) === null) redirect(VOLVER);
 
@@ -81,7 +93,7 @@ export async function disconnectAction(formData: FormData): Promise<void> {
 }
 
 export async function removeConnectionAction(formData: FormData): Promise<void> {
-  const session = await require();
+  const session = await officeSession();
   const id = String(formData.get('id') ?? '');
 
   // Se cierra la sesión ANTES de borrar la fila: borrarla sin más dejaría el
@@ -92,7 +104,7 @@ export async function removeConnectionAction(formData: FormData): Promise<void> 
 }
 
 export async function setCapAction(formData: FormData): Promise<void> {
-  const session = await require();
+  const session = await officeSession();
   await setDailyCap(
     scopeOf(session),
     String(formData.get('id') ?? ''),
@@ -103,7 +115,7 @@ export async function setCapAction(formData: FormData): Promise<void> {
 }
 
 export async function makeDefaultAction(formData: FormData): Promise<void> {
-  const session = await require();
+  const session = await officeSession();
   await makeDefault(scopeOf(session), String(formData.get('id') ?? ''));
   redirect(VOLVER);
 }

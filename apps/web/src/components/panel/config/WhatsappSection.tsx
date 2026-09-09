@@ -28,6 +28,7 @@ export function WhatsappSection({
   connections,
   gatewayUrl,
   gatewayError,
+  error,
   canEditGateway,
   dictionary,
   locale,
@@ -35,6 +36,8 @@ export function WhatsappSection({
   connections: ConnectionRow[];
   gatewayUrl: SettingProps;
   gatewayError?: string;
+  /** Lo que salió mal al añadir: `sinOficina`, `duplicate`… */
+  error?: string;
   /** La dirección del servicio es de la plataforma, no de la oficina. */
   canEditGateway: boolean;
   dictionary: Dictionary;
@@ -52,6 +55,14 @@ export function WhatsappSection({
       {gatewayError === undefined ? null : (
         <p role="alert" className="text-sm text-[#8c2f1e]">
           {copy.gatewayDown} <span className="font-mono text-xs">{gatewayError}</span>
+        </p>
+      )}
+
+      {/* Por qué no se pudo añadir. Antes esto era un salto al panel sin una
+          palabra, y desde fuera se ve igual que una pantalla rota. */}
+      {error === undefined ? null : (
+        <p role="alert" className="border border-[#8c2f1e] bg-[#fdf4f2] p-4 text-sm text-[#8c2f1e]">
+          {error === 'sinOficina' ? copy.noOffice : error === 'duplicate' ? copy.duplicate : copy.gatewayDown}
         </p>
       )}
 
