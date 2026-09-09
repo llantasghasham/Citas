@@ -209,8 +209,10 @@ pendiente que no es código: la especificación de Whish y la verificación huma
 de los versículos.
 
 ### Público
-- `GET /` — portada: qué muestra se decide en `src/config/site.ts`, qué dice
-  está en los cuatro diccionarios bajo `home`. Idioma por `?lang=` o por
+- `GET /` — portada: `src/config/site.ts` es lo que trae DE FÁBRICA y
+  `/panel/configuracion` lo tapa (`lib/home/site.ts` resuelve las dos capas);
+  qué dice está en los cuatro diccionarios bajo `home`, y el panel puede tapar
+  cada frase (`lib/settings/home.ts`). Idioma por `?lang=` o por
   `Accept-Language`. Vista previa al compartir en `public/og/home.png`, dibujada
   con `npm run og:build`.
 - `GET /ejemplos` — las invitaciones de muestra, no indexado. Sale de la lista
@@ -238,10 +240,20 @@ de los versículos.
 - `/panel/sistema` — SOLO superadministrador: once comprobaciones de salud,
   las versiones leídas en vivo y un botón que envía un correo de prueba y
   enseña la respuesta del proveedor.
-- `/panel/configuracion` — SOLO superadministrador: correo saliente, cobro y
-  dirección del sitio. Cada campo dice de dónde sale hoy su valor —guardado
-  aquí, heredado del servidor o sin poner— y las dos contraseñas se escriben
-  pero no se leen.
+- `/panel/configuracion` — SOLO superadministrador, por sectores (`?s=`):
+  **correo**, **cobro**, **marca**, **portada** y **el sitio**. Cada campo dice
+  de dónde sale hoy su valor —guardado aquí, heredado del servidor o sin
+  poner— y las contraseñas se escriben pero no se leen. Guardar un sector no
+  toca los demás: la acción solo escribe las claves que vienen en el envío.
+  - **Cobro**: los medios se encienden por separado (`PAYMENT_METHODS`). Whish
+    cobra en línea; el efectivo NO tiene pasarela y lo marca una persona con su
+    nombre desde el panel; Tilopay (SINPE Móvil) aparece bloqueado hasta que
+    haya credenciales, para que nadie crea que cobra.
+  - **Portada**: cada texto del bloque `home`, en los cuatro idiomas. La lista
+    se genera recorriendo el diccionario, así que una frase nueva aparece sola.
+    Un campo vacío es «el texto original», y no se guarda fila.
+  - Los cuatro botones de idioma son ahora un icono de mundo (`<details>`, sin
+    JavaScript de cliente).
 - Cuatro botones en la cabecera cambian el idioma del panel. Se guarda en
   `User.locale`, no en la oficina.
 

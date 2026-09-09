@@ -7,7 +7,7 @@ import { VersionsSection } from '@/components/panel/VersionsSection';
 import { Field, FIELD_CLASS } from '@/components/create/Field';
 import { getAdminContext, requestHost } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
-import { listPackageOrders } from '@/lib/billing/checkout';
+import { enabledMethods, listPackageOrders } from '@/lib/billing/checkout';
 import { guestAllowanceFor } from '@/lib/billing/packages';
 import { LOCALE_NAMES } from '@/lib/create/options';
 import { COUNTRY_CODES } from '@/lib/guests/phone';
@@ -28,6 +28,7 @@ interface PageProps {
     hay?: string;
     pedidos?: string;
     vendido?: string;
+    efectivo?: string;
   }>;
 }
 
@@ -46,7 +47,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
   }
 
   const { eventId } = await params;
-  const { added, skipped, error, version, limite, cabe, hay, pedidos, vendido } =
+  const { added, skipped, error, version, limite, cabe, hay, pedidos, vendido, efectivo } =
     await searchParams;
   const addedLocale = LOCALES.find((candidate) => candidate === version);
   const { dictionary, locale } = await getAdminContext(session.tenantId);
@@ -58,9 +59,10 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
   // Cuánto tiene pagado esta boda y qué se le ha vendido. Va aquí, junto a la
   // lista que no cabe, y no en la facturación de la oficina.
   const canSell = sessionCan(session, 'billing:manage');
-  const [allowance, sold] = await Promise.all([
+  const [allowance, sold, methods] = await Promise.all([
     guestAllowanceFor(session.tenantId, eventId),
     listPackageOrders(scopeOf(session), eventId),
+    enabledMethods(),
   ]);
 
   const origin = `https://${requestHost(await headers())}`;
@@ -114,6 +116,9 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           </p>
           <p className="text-sm text-[#6a6456]">{copy.limitHint}</p>
         </div>
+      ) : null}
+      {efectivo === '1' ? (
+        <p className="text-sm text-[#2f6b3a]">{dictionary.admin.packages.markCashDone}</p>
       ) : null}
       {error === '1' ? (
         <p role="alert" className="text-sm text-[#8c2f1e]">
@@ -228,6 +233,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
         dictionary={dictionary}
         locale={locale}
         canSell={canSell}
+        cashEnabled={methods.includes('cash')}
       />
 
       <VersionsSection

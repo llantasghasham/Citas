@@ -4,10 +4,9 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { signOutAction } from '@/app/entrar/actions';
-import { setPanelLocaleAction } from '@/app/panel/actions-locale';
-import { LOCALE_NAMES } from '@/lib/create/options';
-import { LOCALES } from '@/lib/types';
+import { LanguageMenu } from '@/components/panel/LanguageMenu';
 import { getAdminContext } from '@/lib/admin/context';
+import { loadSite } from '@/lib/home/site';
 import { getSession, sessionCan } from '@/lib/auth/session';
 import { bodyFont, displayFont } from '@/lib/typography';
 
@@ -24,6 +23,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
     session.locale,
   );
   const nav = dictionary.admin.nav;
+  const site = await loadSite();
 
   const links = [
     { href: '/panel', label: nav.events, visible: true },
@@ -49,7 +49,16 @@ export default async function PanelLayout({ children }: { children: ReactNode })
     >
       <header className="border-b border-[#ddd6c6]">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-6 gap-y-3 p-6">
-          <span className={`${displayFont(locale)} text-xl`}>{tenant?.name ?? 'Citas'}</span>
+          {/* La oficina manda sobre la marca: quien trabaja para una agencia
+              quiere ver el nombre de SU agencia, no el de la plataforma. */}
+          <span className={`${displayFont(locale)} flex items-center gap-2 text-xl`}>
+            {site.logoUrl === null ? null : (
+              // eslint-disable-next-line @next/next/no-img-element -- dirección
+              // que escribe el operador, de cualquier origen.
+              <img src={site.logoUrl} alt="" className="max-h-7 w-auto" />
+            )}
+            {tenant?.name ?? site.brand}
+          </span>
           <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
             {links.map((link) => (
               <Link key={link.href} href={link.href} className="hover:underline">
@@ -57,27 +66,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
               </Link>
             ))}
           </nav>
-          {/* Four buttons, no client JavaScript. The choice is the reader's and
-              is remembered on their own account, not the office's. */}
-          <form action={setPanelLocaleAction} className="flex items-center gap-x-3 ms-auto">
-            {LOCALES.map((option) => (
-              <button
-                key={option}
-                type="submit"
-                name="locale"
-                value={option}
-                lang={option}
-                aria-current={option === locale ? 'true' : undefined}
-                className={
-                  option === locale
-                    ? 'text-xs text-[#8a6c22] underline underline-offset-4'
-                    : 'text-xs text-[#6a6456] hover:text-[#23201a]'
-                }
-              >
-                {LOCALE_NAMES[option]}
-              </button>
-            ))}
-          </form>
+          <LanguageMenu locale={locale} dictionary={dictionary} />
 
           <form action={signOutAction}>
             <button type="submit" className="text-sm underline opacity-70 hover:opacity-100">

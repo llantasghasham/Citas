@@ -86,7 +86,8 @@
       "role": "Função",
       "noOffice": "Sem escritório",
       "signOut": "Sair",
-      "restartNeeded": "A direção do texto mudou. Reinicie a aplicação para a ver corretamente."
+      "restartNeeded": "A direção do texto mudou. Reinicie a aplicação para a ver corretamente.",
+      "language": "Idioma"
     },
     "roles": {
       "SUPERADMIN": "Superadministrador",
@@ -284,7 +285,7 @@
     },
     "config": {
       "title": "Configuração",
-      "intro": "O correio, a cobrança e o endereço do site. Guarda-se aqui, não no servidor: não é preciso entrar por SSH para mudar nada.",
+      "intro": "Tudo o que decide como o sistema se comporta: o correio, como se cobra, como se chama e o que diz a sua página inicial. Guarda-se aqui, não no servidor.",
       "save": "Guardar",
       "saved": "Guardado.",
       "fromPanel": "guardado aqui",
@@ -312,8 +313,49 @@
         "WHISH_CHANNEL": "Canal",
         "WHISH_WEBSITE_URL": "Domínio registado na Whish",
         "WHISH_SECRET": "Chave secreta da Whish",
-        "NEXT_PUBLIC_SITE_URL": "Endereço público do site"
-      }
+        "NEXT_PUBLIC_SITE_URL": "Endereço público do site",
+        "PAYMENT_METHODS": "Meios aceites (lista separada por vírgulas)",
+        "CASH_INSTRUCTIONS": "O que se diz a quem paga em dinheiro",
+        "TILOPAY_BASE_URL": "Endereço do serviço da Tilopay",
+        "TILOPAY_API_USER": "Utilizador da API da Tilopay",
+        "TILOPAY_API_KEY": "Chave da API da Tilopay",
+        "TILOPAY_PASSWORD": "Palavra-passe da API da Tilopay",
+        "BRAND_NAME": "Nome do sistema",
+        "BRAND_LOGO_URL": "Logótipo (endereço da imagem)",
+        "BRAND_ICON_URL": "Ícone do separador (endereço da imagem)",
+        "CONTACT_WHATSAPP": "WhatsApp de contacto (E.164, sem o mais)",
+        "CONTACT_EMAIL": "E-mail de contacto",
+        "HOME_SECTIONS": "Blocos da página inicial, por ordem",
+        "HOME_SHOWCASE": "Convites de amostra (slugs separados por vírgulas)",
+        "HOME_DEFAULT_LOCALE": "Idioma predefinido da página inicial"
+      },
+      "sections": {
+        "mail": "Correio",
+        "payments": "Cobrança",
+        "brand": "Marca",
+        "home": "Página inicial",
+        "site": "O site"
+      },
+      "sectionIntros": {
+        "mail": "Por onde saem os códigos de acesso e os avisos. Sem isto configurado, ninguém entra com código.",
+        "payments": "Que meios de pagamento se aceitam e com que credenciais. Estes campos decidem para que conta vai o dinheiro.",
+        "brand": "Como isto se chama e com que aparência. Aparece na página inicial, no separador do navegador e no painel.",
+        "home": "Cada texto da página inicial, nos quatro idiomas. Um campo vazio usa o texto original.",
+        "site": "O endereço público e o contacto que aparece no rodapé da página inicial."
+      },
+      "methods": {
+        "heading": "Meios de cobrança aceites",
+        "whish": "Whish — Líbano",
+        "cash": "Dinheiro — cobrado no escritório",
+        "tilopay": "SINPE Móvil / cartão — Costa Rica (Tilopay)"
+      },
+      "methodsHint": "Marque os que quiser aceitar. O que não estiver marcado nunca é oferecido.",
+      "tilopayPending": "Falta a especificação e as credenciais da Tilopay. Até chegarem, este meio não pode ser ativado.",
+      "homeLanguage": "Idioma que está a editar",
+      "homeReset": "Vazio = o texto original",
+      "homeOriginal": "Original:",
+      "homeSections": "Blocos mostrados",
+      "brandPreview": "Assim fica"
     },
     "offices": {
       "heading": "Escritórios",
@@ -421,7 +463,9 @@
       "allowance": "Convites pagos",
       "fromPlan": "do plano",
       "fromPackage": "comprados",
-      "whatsappMessage": "Olá {name}, aqui está a cobrança do seu pacote de {guests} convites: {link}"
+      "whatsappMessage": "Olá {name}, aqui está a cobrança do seu pacote de {guests} convites: {link}",
+      "markCash": "Marcar como pago em dinheiro",
+      "markCashDone": "Pagamento em dinheiro registado."
     }
   },
   "rsvpForm": {
@@ -636,6 +680,9 @@
     "failedTitle": "O pagamento não foi concluído",
     "failedBody": "Não lhe foi cobrado nada. Pode tentar outra vez.",
     "providerError": "Não foi possível abrir a página de pagamento. Tente dentro de alguns minutos ou avise o escritório.",
-    "notFound": "Este link não existe ou já não está disponível."
+    "notFound": "Este link não existe ou já não está disponível.",
+    "cashTitle": "Pagar em dinheiro",
+    "cashDefault": "Pode passar pelo escritório para pagar. Assim que o registarmos, os seus convites ficam abertos.",
+    "orNothing": "Ainda não há nenhum meio de cobrança configurado. Avise o escritório."
   }
 }

@@ -17,21 +17,40 @@ import { decryptSecret, encryptSecret } from '@/lib/secrets';
  * despliega esto, y lo que se guarde en el panel manda a partir de entonces.
  */
 export const SETTING_KEYS = [
+  // Correo saliente
   'MAILER',
   'SMTP_HOST',
   'SMTP_PORT',
   'SMTP_USER',
   'MAIL_FROM',
+  // Cobro. `PAYMENT_METHODS` es la lista separada por comas de lo que se
+  // acepta; `PAYMENTS_PROVIDER` es la pasarela que atiende un cobro en línea.
+  'PAYMENT_METHODS',
   'PAYMENTS_PROVIDER',
   'WHISH_BASE_URL',
   'WHISH_CHANNEL',
   'WHISH_WEBSITE_URL',
+  'CASH_INSTRUCTIONS',
+  'TILOPAY_BASE_URL',
+  'TILOPAY_API_USER',
+  'TILOPAY_API_KEY',
+  // Marca: cómo se llama esto y con qué se ve.
+  'BRAND_NAME',
+  'BRAND_LOGO_URL',
+  'BRAND_ICON_URL',
+  'CONTACT_WHATSAPP',
+  'CONTACT_EMAIL',
+  // La portada: qué bloques salen y qué invitaciones enseña.
+  'HOME_SECTIONS',
+  'HOME_SHOWCASE',
+  'HOME_DEFAULT_LOCALE',
+  // El sitio
   'NEXT_PUBLIC_SITE_URL',
 ] as const;
 export type SettingKey = (typeof SETTING_KEYS)[number];
 
 /** Las que son contraseñas. Se guardan cifradas y no se devuelven nunca. */
-export const SECRET_KEYS = ['SMTP_PASSWORD', 'WHISH_SECRET'] as const;
+export const SECRET_KEYS = ['SMTP_PASSWORD', 'WHISH_SECRET', 'TILOPAY_PASSWORD'] as const;
 export type SecretKey = (typeof SECRET_KEYS)[number];
 
 /** Todo lo guardado, en una sola consulta por petición. */
@@ -112,5 +131,56 @@ export async function saveSecret(key: SecretKey, value: string, actorId: string)
     where: { key },
     update: { valueEnc: clean.length === 0 ? null : encryptSecret(clean), updatedBy: actorId },
     create: { key, valueEnc: clean.length === 0 ? null : encryptSecret(clean), updatedBy: actorId },
+  });
+}
+
+
+/**
+ * Ajustes de clave libre, para lo que no cabe en una lista fija.
+ *
+ * Hoy son los textos de la portada, que son un texto por idioma y por sitio
+ * donde aparece: `home.hero.subtitle.ar`. Inventar una columna por cada uno
+ * sería inventar cien columnas, y una lista fija de cien nombres no es una
+ * lista, es un formulario disfrazado.
+ *
+ * Lo que NO se permite es que esto sirva para guardar un secreto: estas claves
+ * se leen y se devuelven a la pantalla tal cual. Un secreto va por `saveSecret`.
+ */
+const RAW_PREFIXES = ['home.'] as const;
+
+function checkRawKey(key: string): void {
+  if (!RAW_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+    throw new Error(`Clave de ajuste no permitida: "${key}".`);
+  }
+}
+
+/** Todas las claves guardadas que empiezan por este prefijo. */
+export async function settingsWithPrefix(prefix: string): Promise<Map<string, string>> {
+  const all = await loadAll();
+  const found = new Map<string, string>();
+  for (const [key, row] of all) {
+    if (key.startsWith(prefix) && row.value !== null && row.value.length > 0) {
+      found.set(key, row.value);
+    }
+  }
+  return found;
+}
+
+export async function saveRawSetting(key: string, value: string, actorId: string): Promise<void> {
+  checkRawKey(key);
+  const clean = value.trim();
+  const prisma = getPrisma();
+
+  // Vacío significa «vuelve al valor por defecto», así que la fila se borra en
+  // vez de guardarse en blanco: una fila vacía y una ausente tienen que
+  // significar lo mismo.
+  if (clean.length === 0) {
+    await prisma.setting.deleteMany({ where: { key } });
+    return;
+  }
+  await prisma.setting.upsert({
+    where: { key },
+    update: { value: clean, updatedBy: actorId },
+    create: { key, value: clean, updatedBy: actorId },
   });
 }

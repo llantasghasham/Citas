@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 
 import { payAction } from './actions';
 
-import { loadPublicOrder, settlePublicOrder } from '@/lib/billing/checkout';
+import { enabledMethods, loadPublicOrder, settlePublicOrder } from '@/lib/billing/checkout';
+import { setting } from '@/lib/settings';
 import { formatMoney } from '@/lib/billing/plans';
 import { resolvePayLocale } from '@/lib/billing/pay-locale';
 import { bodyFont, displayFont } from '@/lib/typography';
@@ -47,6 +48,12 @@ export default async function PayPage({ params, searchParams }: PageProps) {
   // Solo cuando el navegador dice que viene de pagar: cada comprobación es una
   // llamada al proveedor, y no se le llama por recargar la página de espera.
   const status = volvio === '1' ? ((await settlePublicOrder(token)) ?? order.status) : order.status;
+
+  // Lo que se le puede ofrecer. Whish manda a su propia pantalla; el efectivo
+  // no manda a ningún sitio, solo dice dónde y cómo pagar. Lo que no esté
+  // encendido en la configuración no aparece.
+  const methods = await enabledMethods();
+  const cashText = (await setting('CASH_INSTRUCTIONS')) ?? copy.cashDefault;
 
   return (
     <Shell locale={locale}>
@@ -103,18 +110,36 @@ export default async function PayPage({ params, searchParams }: PageProps) {
             </section>
           ) : null}
 
-          <form action={payAction} className="flex flex-col gap-3">
-            <input type="hidden" name="token" value={token} />
-            <button
-              type="submit"
-              className="border border-[#23201a] bg-[#23201a] px-6 py-3 text-white hover:opacity-80"
-            >
-              {copy.payNow}
-            </button>
-            {/* Dicho antes de pulsar, no después: quien paga tiene que saber
-                dónde acaba, y que aquí no se le pide ningún número. */}
-            <p className="text-xs text-[#6a6456]">{copy.hosted}</p>
-          </form>
+          {methods.includes('whish') ? (
+            <form action={payAction} className="flex flex-col gap-3">
+              <input type="hidden" name="token" value={token} />
+              <button
+                type="submit"
+                className="border border-[#23201a] bg-[#23201a] px-6 py-3 text-white hover:opacity-80"
+              >
+                {copy.payNow}
+              </button>
+              {/* Dicho antes de pulsar, no después: quien paga tiene que saber
+                  dónde acaba, y que aquí no se le pide ningún número. */}
+              <p className="text-xs text-[#6a6456]">{copy.hosted}</p>
+            </form>
+          ) : null}
+
+          {methods.includes('cash') ? (
+            <section className="flex flex-col gap-2 border border-[#ddd6c6] bg-white/60 p-5">
+              <h2 className={`${displayFont(locale)} text-lg`}>{copy.cashTitle}</h2>
+              {/* Sin botón: en efectivo no hay nada que pulsar. Lo anota la
+                  oficina cuando recibe el dinero, y hasta entonces esto sigue
+                  diciendo lo que dice. */}
+              <p className="text-sm whitespace-pre-line text-[#6a6456]">{cashText}</p>
+            </section>
+          ) : null}
+
+          {methods.length === 0 ? (
+            <p role="alert" className="border border-[#8c2f1e] bg-[#fdf4f2] p-4 text-sm text-[#8c2f1e]">
+              {copy.orNothing}
+            </p>
+          ) : null}
         </>
       )}
     </Shell>

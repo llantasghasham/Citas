@@ -1,5 +1,4 @@
 import { LOCALES, type Locale } from '@/lib/types';
-import { SITE } from '@/config/site';
 
 /**
  * Which language the home page speaks.
@@ -9,7 +8,11 @@ import { SITE } from '@/config/site';
  * a phone in Beirut opens in Arabic without anybody choosing. Falls back to the
  * configured default.
  */
-export function resolveHomeLocale(requested: string | undefined, acceptLanguage: string): Locale {
+export function resolveHomeLocale(
+  requested: string | undefined,
+  acceptLanguage: string,
+  fallback: Locale = 'ar',
+): Locale {
   const explicit = LOCALES.find((locale) => locale === requested);
   if (explicit !== undefined) return explicit;
 
@@ -29,7 +32,7 @@ export function resolveHomeLocale(requested: string | undefined, acceptLanguage:
     if (match !== undefined) return match;
   }
 
-  return SITE.defaultLocale;
+  return fallback;
 }
 
 /** The same page in another language, keeping the reader where they are. */

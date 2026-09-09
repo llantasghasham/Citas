@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { InvitationCard } from '@/components/invitation/InvitationCard';
 import { loadShowcase } from '@/lib/home/showcase';
+import { loadSite } from '@/lib/home/site';
 
 // Reads whatever the data source holds right now, so `npm run build` does not
 // need a reachable database to compile.
@@ -22,7 +23,7 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
  * route), so the page needs no locale dictionary.
  */
 export default async function ExamplesPage() {
-  const invitations = await loadShowcase();
+  const invitations = await loadShowcase((await loadSite()).showcase);
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-10 p-8">

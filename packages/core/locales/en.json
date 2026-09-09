@@ -86,7 +86,8 @@
       "role": "Role",
       "noOffice": "No office",
       "signOut": "Sign out",
-      "restartNeeded": "Text direction changed. Restart the app to see it laid out correctly."
+      "restartNeeded": "Text direction changed. Restart the app to see it laid out correctly.",
+      "language": "Language"
     },
     "roles": {
       "SUPERADMIN": "Superadmin",
@@ -284,7 +285,7 @@
     },
     "config": {
       "title": "Settings",
-      "intro": "Mail, payments and the site address. Saved here, not on the server: nobody needs SSH to change anything.",
+      "intro": "Everything that decides how the system behaves: mail, how it charges, what it is called and what its home page says. Saved here, not on the server.",
       "save": "Save",
       "saved": "Saved.",
       "fromPanel": "saved here",
@@ -312,8 +313,49 @@
         "WHISH_CHANNEL": "Channel",
         "WHISH_WEBSITE_URL": "Domain registered with Whish",
         "WHISH_SECRET": "Whish secret key",
-        "NEXT_PUBLIC_SITE_URL": "Public site address"
-      }
+        "NEXT_PUBLIC_SITE_URL": "Public site address",
+        "PAYMENT_METHODS": "Accepted methods (comma-separated list)",
+        "CASH_INSTRUCTIONS": "What a cash payer is told",
+        "TILOPAY_BASE_URL": "Tilopay service address",
+        "TILOPAY_API_USER": "Tilopay API user",
+        "TILOPAY_API_KEY": "Tilopay API key",
+        "TILOPAY_PASSWORD": "Tilopay API password",
+        "BRAND_NAME": "System name",
+        "BRAND_LOGO_URL": "Logo (image address)",
+        "BRAND_ICON_URL": "Tab icon (image address)",
+        "CONTACT_WHATSAPP": "Contact WhatsApp (E.164, no plus)",
+        "CONTACT_EMAIL": "Contact email",
+        "HOME_SECTIONS": "Home page blocks, in order",
+        "HOME_SHOWCASE": "Sample invitations (comma-separated slugs)",
+        "HOME_DEFAULT_LOCALE": "Home page default language"
+      },
+      "sections": {
+        "mail": "Mail",
+        "payments": "Payments",
+        "brand": "Brand",
+        "home": "Home page",
+        "site": "The site"
+      },
+      "sectionIntros": {
+        "mail": "How sign-in codes and notices go out. Without this, nobody can sign in with a code.",
+        "payments": "Which payment methods are accepted, and with which credentials. These fields decide where the money goes.",
+        "brand": "What this is called and how it looks. It appears on the home page, the browser tab and the panel.",
+        "home": "Every text on the home page, in all four languages. An empty field uses the original text.",
+        "site": "The public address and the contact shown at the foot of the home page."
+      },
+      "methods": {
+        "heading": "Accepted payment methods",
+        "whish": "Whish — Lebanon",
+        "cash": "Cash — collected at the office",
+        "tilopay": "SINPE Móvil / card — Costa Rica (Tilopay)"
+      },
+      "methodsHint": "Tick the ones you want to accept. Anything unticked is never offered.",
+      "tilopayPending": "Tilopay's specification and credentials are still missing. Until they arrive this method cannot be switched on.",
+      "homeLanguage": "Language you are editing",
+      "homeReset": "Empty = the original text",
+      "homeOriginal": "Original:",
+      "homeSections": "Blocks shown",
+      "brandPreview": "How it looks"
     },
     "offices": {
       "heading": "Offices",
@@ -421,7 +463,9 @@
       "allowance": "Invitations paid for",
       "fromPlan": "from the plan",
       "fromPackage": "purchased",
-      "whatsappMessage": "Hello {name}, here is the payment for your package of {guests} invitations: {link}"
+      "whatsappMessage": "Hello {name}, here is the payment for your package of {guests} invitations: {link}",
+      "markCash": "Mark as paid in cash",
+      "markCashDone": "Cash payment recorded."
     }
   },
   "rsvpForm": {
@@ -636,6 +680,9 @@
     "failedTitle": "The payment did not go through",
     "failedBody": "You have not been charged. You can try again.",
     "providerError": "The payment page could not be opened. Try again in a few minutes, or tell the office.",
-    "notFound": "This link does not exist, or is no longer available."
+    "notFound": "This link does not exist, or is no longer available.",
+    "cashTitle": "Pay in cash",
+    "cashDefault": "You can pay at the office. As soon as we record it, your invitations are unlocked.",
+    "orNothing": "No payment method is configured yet. Please tell the office."
   }
 }

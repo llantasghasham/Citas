@@ -11,9 +11,10 @@ import { Showcase } from '@/components/home/Showcase';
 import { SiteFooter } from '@/components/home/SiteFooter';
 import { SiteHeader } from '@/components/home/SiteHeader';
 import { StepList } from '@/components/home/StepList';
-import { SITE, shows } from '@/config/site';
+import { loadSite, showsIn, type ResolvedSite } from '@/lib/home/site';
 import { getDictionary } from '@/lib/dictionary';
 import { resolveHomeLocale } from '@/lib/home/locale';
+import { homeCopy } from '@/lib/settings/home';
 import { loadShowcase } from '@/lib/home/showcase';
 import { bodyFont } from '@/lib/typography';
 import { LOCALES, type Invitation } from '@/lib/types';
@@ -27,13 +28,13 @@ interface PageProps {
 }
 
 async function localeOf(searchParams: PageProps['searchParams']) {
-  const [{ lang }, requestHeaders] = await Promise.all([searchParams, headers()]);
-  return resolveHomeLocale(lang, requestHeaders.get('accept-language') ?? '');
+  const [{ lang }, requestHeaders, site] = await Promise.all([searchParams, headers(), loadSite()]);
+  return resolveHomeLocale(lang, requestHeaders.get('accept-language') ?? '', site.defaultLocale);
 }
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const locale = await localeOf(searchParams);
-  const copy = getDictionary(locale).home;
+  const [copy, site] = await Promise.all([homeCopy(locale), loadSite()]);
   const title = `${copy.hero.titleLead} ${copy.hero.titleHighlight}`;
 
   return {
@@ -47,7 +48,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     },
     openGraph: {
       type: 'website',
-      siteName: SITE.brand,
+      siteName: site.brand,
       url: '/',
       title,
       description: copy.hero.subtitle,
@@ -56,7 +57,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
       // (npm run og:build) and served as a static file: this link gets pasted
       // into WhatsApp groups, and a preview that costs a render per paste is a
       // preview that stops appearing.
-      images: [{ url: '/og/home.png', width: 1200, height: 630, alt: SITE.brand }],
+      images: [{ url: '/og/home.png', width: 1200, height: 630, alt: site.brand }],
     },
     twitter: { card: 'summary_large_image', title, description: copy.hero.subtitle },
   };
@@ -71,33 +72,37 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
  */
 export default async function HomePage({ searchParams }: PageProps) {
   const locale = await localeOf(searchParams);
-  const dictionary = getDictionary(locale);
+  const site = await loadSite();
+  // Los textos de la portada son los del diccionario CON lo que el panel haya
+  // escrito encima, así que se pasa un diccionario ya resuelto y ningún
+  // componente sabe que existe esa capa.
+  const dictionary = { ...getDictionary(locale), home: await homeCopy(locale) };
   const copy = dictionary.home;
   const direction = locale === 'ar' ? 'rtl' : 'ltr';
 
   // The showcase is a nicety, not the page: a data source that is not there
   // must not take the home page down with it.
-  const invitations = shows('showcase') ? await demoInvitations() : [];
+  const invitations = showsIn(site, 'showcase') ? await demoInvitations(site) : [];
 
   return (
     <div dir={direction} lang={locale} className={`${bodyFont(locale)} bg-[#14120E] text-[#F4EFE6]`}>
-      <SiteHeader dictionary={dictionary} locale={locale} />
+      <SiteHeader dictionary={dictionary} locale={locale} site={site} />
 
       <main>
-        <Hero dictionary={dictionary} locale={locale} />
+        <Hero dictionary={dictionary} locale={locale} site={site} />
 
-        {shows('features') ? (
+        {showsIn(site, 'features') ? (
           <Section
             id="features"
             locale={locale}
             heading={copy.features.heading}
             subheading={copy.features.subheading}
           >
-            <FeatureGrid dictionary={dictionary} locale={locale} />
+            <FeatureGrid dictionary={dictionary} locale={locale} site={site} />
           </Section>
         ) : null}
 
-        {shows('steps') ? (
+        {showsIn(site, 'steps') ? (
           <Section
             id="steps"
             locale={locale}
@@ -108,7 +113,7 @@ export default async function HomePage({ searchParams }: PageProps) {
           </Section>
         ) : null}
 
-        {shows('showcase') ? (
+        {showsIn(site, 'showcase') ? (
           <Section
             id="showcase"
             locale={locale}
@@ -119,34 +124,34 @@ export default async function HomePage({ searchParams }: PageProps) {
           </Section>
         ) : null}
 
-        {shows('pricing') ? (
+        {showsIn(site, 'pricing') ? (
           <Section
             id="pricing"
             locale={locale}
             heading={copy.pricing.heading}
             subheading={copy.pricing.subheading}
           >
-            <PricingTable dictionary={dictionary} locale={locale} />
+            <PricingTable dictionary={dictionary} locale={locale} site={site} />
           </Section>
         ) : null}
 
-        {shows('faq') ? (
+        {showsIn(site, 'faq') ? (
           <Section id="faq" locale={locale} heading={copy.faq.heading}>
-            <FaqList dictionary={dictionary} locale={locale} />
+            <FaqList dictionary={dictionary} locale={locale} site={site} />
           </Section>
         ) : null}
 
-        {shows('closing') ? <ClosingCta dictionary={dictionary} locale={locale} /> : null}
+        {showsIn(site, 'closing') ? <ClosingCta dictionary={dictionary} locale={locale} site={site} /> : null}
       </main>
 
-      <SiteFooter dictionary={dictionary} locale={locale} />
+      <SiteFooter dictionary={dictionary} locale={locale} site={site} />
     </div>
   );
 }
 
-async function demoInvitations(): Promise<Invitation[]> {
+async function demoInvitations(site: ResolvedSite): Promise<Invitation[]> {
   try {
-    return await loadShowcase();
+    return await loadShowcase(site.showcase);
   } catch {
     return [];
   }

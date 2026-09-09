@@ -3,6 +3,21 @@ import type { Dictionary } from '@/lib/types';
 
 type Origin = 'panel' | 'entorno' | 'nada';
 
+/** Lo que la pantalla necesita saber de un ajuste para dibujarlo. */
+export interface SettingProps {
+  name: string;
+  label: string;
+  value: string;
+  origin: Origin;
+}
+
+/** Lo mismo para una contraseña, que se escribe pero no se lee. */
+export interface SecretProps {
+  name: string;
+  label: string;
+  isSet: boolean;
+}
+
 /**
  * Un ajuste, con su valor y de dónde salió.
  *
@@ -17,14 +32,7 @@ export function SettingField({
   origin,
   dictionary,
   type = 'text',
-}: {
-  name: string;
-  label: string;
-  value: string;
-  origin: Origin;
-  dictionary: Dictionary;
-  type?: string;
-}) {
+}: SettingProps & { dictionary: Dictionary; type?: string }) {
   const copy = dictionary.admin.config;
   const marca =
     origin === 'panel' ? copy.fromPanel : origin === 'entorno' ? copy.fromEnv : copy.missing;
@@ -57,12 +65,7 @@ export function SecretField({
   label,
   isSet,
   dictionary,
-}: {
-  name: string;
-  label: string;
-  isSet: boolean;
-  dictionary: Dictionary;
-}) {
+}: SecretProps & { dictionary: Dictionary }) {
   const copy = dictionary.admin.config;
 
   return (

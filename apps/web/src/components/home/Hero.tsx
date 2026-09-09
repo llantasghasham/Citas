@@ -1,4 +1,4 @@
-import { SITE } from '@/config/site';
+import type { ResolvedSite } from '@/lib/home/site';
 import { displayFont, latinOnly } from '@/lib/typography';
 import type { Dictionary, Locale } from '@/lib/types';
 
@@ -6,7 +6,7 @@ import type { Dictionary, Locale } from '@/lib/types';
  * The first screen. One promise, two ways to act on it, and the three things
  * this platform is actually different about.
  */
-export function Hero({ dictionary, locale }: { dictionary: Dictionary; locale: Locale }) {
+export function Hero({ dictionary, locale, site }: { dictionary: Dictionary; locale: Locale; site: ResolvedSite }) {
   const copy = dictionary.home.hero;
   const proofs = [copy.proof.languages, copy.proof.noApp, copy.proof.whatsapp];
 
@@ -35,13 +35,13 @@ export function Hero({ dictionary, locale }: { dictionary: Dictionary; locale: L
 
         <div className="flex flex-wrap items-center justify-center gap-4">
           <a
-            href={SITE.routes.create}
+            href={site.routes.create}
             className="rounded-full bg-[#C9A227] px-7 py-3.5 text-base font-medium text-[#14120E] transition-opacity hover:opacity-90"
           >
             {copy.ctaPrimary}
           </a>
           <a
-            href={SITE.routes.examples}
+            href={site.routes.examples}
             className="rounded-full border border-[#4A3F26] px-7 py-3.5 text-base text-[#F4EFE6] transition-colors hover:border-[#C9A227]"
           >
             {copy.ctaSecondary}

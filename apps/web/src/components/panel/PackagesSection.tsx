@@ -1,4 +1,4 @@
-import { sellPackageAction } from '@/app/panel/eventos/actions';
+import { markCashAction, sellPackageAction } from '@/app/panel/eventos/actions';
 import { Field, FIELD_CLASS } from '@/components/create/Field';
 import type { SoldPackage } from '@/lib/billing/checkout';
 import { formatMoney } from '@/lib/billing/plans';
@@ -20,6 +20,8 @@ interface Props {
   dictionary: Dictionary;
   locale: Locale;
   canSell: boolean;
+  /** True cuando el efectivo está encendido en la configuración. */
+  cashEnabled: boolean;
 }
 
 /**
@@ -43,6 +45,7 @@ export function PackagesSection({
   dictionary,
   locale,
   canSell,
+  cashEnabled,
 }: Props) {
   const copy = dictionary.admin.packages;
   const billing = dictionary.admin.billing;
@@ -172,6 +175,17 @@ export function PackagesSection({
                           >
                             {copy.sendLink}
                           </a>
+                          {/* En efectivo no hay proveedor que confirme: lo
+                              anota quien recibió el dinero, con su nombre. */}
+                          {cashEnabled && canSell ? (
+                            <form action={markCashAction}>
+                              <input type="hidden" name="eventId" value={eventId} />
+                              <input type="hidden" name="orderId" value={order.orderId} />
+                              <button type="submit" className="underline text-[#6a6456]">
+                                {copy.markCash}
+                              </button>
+                            </form>
+                          ) : null}
                         </span>
                       )}
                     </td>

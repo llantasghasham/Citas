@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { recordAudit } from '@/lib/audit';
 import { parseGuestList } from '@/lib/guests/import';
-import { openPackageOrder } from '@/lib/billing/checkout';
+import { markPaidInCash, openPackageOrder } from '@/lib/billing/checkout';
 import { COUNTRY_CODES, toE164 } from '@/lib/guests/phone';
 import { importGuests } from '@/lib/repositories/guests';
 import { addEventVersion } from '@/lib/repositories/versions';
@@ -141,4 +141,24 @@ export async function sellPackageAction(formData: FormData): Promise<void> {
   }
 
   redirect(`/panel/eventos/${eventId}?vendido=${result.payToken}#paquetes`);
+}
+
+/**
+ * Anota que un paquete se cobró en efectivo.
+ *
+ * Lo hace una PERSONA con su nombre, y queda en el historial. Es la única
+ * forma de marcar pagado sin proveedor, y por eso vive aquí, en el panel, y no
+ * en el enlace público: quien paga nunca puede marcarse a sí mismo como pagado.
+ */
+export async function markCashAction(formData: FormData): Promise<void> {
+  const session = await getSession();
+  if (session === null || !sessionCan(session, 'billing:manage') || session.tenantId === null) {
+    redirect('/panel');
+  }
+
+  const eventId = String(formData.get('eventId') ?? '');
+  const orderId = String(formData.get('orderId') ?? '');
+  const ok = await markPaidInCash(scopeOf(session), orderId, session.userId);
+
+  redirect(`/panel/eventos/${eventId}?${ok ? 'efectivo=1' : 'error=1'}#paquetes`);
 }

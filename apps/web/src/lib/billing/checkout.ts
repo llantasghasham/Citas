@@ -1,13 +1,14 @@
 import { randomBytes } from 'node:crypto';
 import { cache } from 'react';
 
-import type { Locale } from '@citas/core';
+import { PAYMENT_METHODS, type Locale, type PaymentMethod } from '@citas/core';
 
 import type { Currency } from '@/generated/prisma/enums';
 import { recordAudit } from '@/lib/audit';
 import { getPrisma } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { getPaymentProvider, type PaymentStatus } from '@/lib/payments';
+import { setting } from '@/lib/settings';
 
 import { findPackage, priceFor, type InvitationPackage } from './packages';
 
@@ -320,4 +321,73 @@ export function packagesForChannel(
   channel: 'self_service' | 'licensed_office' | 'concierge',
 ): { pack: InvitationPackage; price: number }[] {
   return catalogue.map((pack) => ({ pack, price: priceFor(pack, channel) }));
+}
+
+
+/**
+ * Los medios de cobro encendidos hoy.
+ *
+ * Vacío no significa «todos»: significa que nadie ha configurado el cobro y que
+ * la pantalla de pago no debe ofrecer nada. Whish es lo que trae de fábrica
+ * porque es el mercado de arranque.
+ */
+export async function enabledMethods(): Promise<PaymentMethod[]> {
+  const raw = (await setting('PAYMENT_METHODS')) ?? 'whish';
+  return raw
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry): entry is PaymentMethod =>
+      PAYMENT_METHODS.some((candidate) => candidate === entry),
+    );
+}
+
+/**
+ * Marca un pedido como cobrado en efectivo.
+ *
+ * La regla del proyecto dice que solo la respuesta del proveedor marca pagada
+ * una factura, y sigue en pie donde hay proveedor. El efectivo no lo tiene: lo
+ * cobra una persona en un mostrador. Así que lo marca una PERSONA, con nombre,
+ * en el historial, y nunca el navegador de quien paga ni un enlace público.
+ *
+ * Por eso esto no vive en `/pagar` sino en el panel, pide `billing:manage`, y
+ * escribe un `Payment` con `provider: manual` para que la conciliación vea de
+ * dónde salió cada peso.
+ */
+export async function markPaidInCash(
+  scope: TenantScope,
+  orderId: string,
+  actorId: string,
+): Promise<boolean> {
+  const prisma = getPrisma();
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, ...scopedWhere(scope) },
+    select: { id: true, amount: true, currency: true, status: true },
+  });
+  if (order === null || order.status === 'paid') return false;
+
+  await prisma.payment.create({
+    data: {
+      orderId: order.id,
+      provider: 'manual',
+      // Sin proveedor no hay referencia del proveedor: se guarda una propia,
+      // que dice qué fue y cuándo, para no dejar el campo en blanco.
+      providerRef: `cash_${order.id}`,
+      status: 'paid',
+      amount: order.amount,
+      currency: order.currency,
+      paidAt: new Date(),
+    },
+  });
+  await prisma.order.update({ where: { id: order.id }, data: { status: 'paid' } });
+
+  await recordAudit({
+    tenantId: scope.tenantId,
+    actorId,
+    action: 'order.paid.cash',
+    entity: 'Order',
+    entityId: order.id,
+    metadata: { amount: order.amount, currency: order.currency },
+  });
+
+  return true;
 }

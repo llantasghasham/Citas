@@ -1,6 +1,6 @@
 import { numberingSystemSubtag } from '@citas/core';
 
-import { SITE } from '@/config/site';
+import type { ResolvedSite } from '@/lib/home/site';
 import { formatMoney, PLAN_CATALOGUE } from '@/lib/billing/plans';
 import { defaultNumerals } from '@/lib/create/options';
 import { displayFont } from '@/lib/typography';
@@ -11,7 +11,7 @@ import type { Dictionary, Locale } from '@/lib/types';
  * a page that advertises a price the checkout does not charge is worse than no
  * page. Amounts are whole cents until the moment they are formatted.
  */
-export function PricingTable({ dictionary, locale }: { dictionary: Dictionary; locale: Locale }) {
+export function PricingTable({ dictionary, locale, site }: { dictionary: Dictionary; locale: Locale; site: ResolvedSite }) {
   const copy = dictionary.home.pricing;
   const names = dictionary.admin.billing;
   // Arabic reading gets Arabic-Indic digits here too. A page that writes ٥٠
@@ -27,7 +27,7 @@ export function PricingTable({ dictionary, locale }: { dictionary: Dictionary; l
   return (
     <div className="flex flex-col gap-8">
       <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {SITE.plans.map((key) => {
+        {site.plans.map((key) => {
           const plan = PLAN_CATALOGUE.find((entry) => entry.tier === key);
           if (plan === undefined) return null;
 
@@ -56,7 +56,7 @@ export function PricingTable({ dictionary, locale }: { dictionary: Dictionary; l
               <p className="flex-1 text-sm leading-relaxed text-[#A79C86]">{copy.benefits[key]}</p>
 
               <a
-                href={SITE.routes.create}
+                href={site.routes.create}
                 className="rounded-full border border-[#4A3F26] px-5 py-2.5 text-center text-sm text-[#F4EFE6] transition-colors hover:border-[#C9A227]"
               >
                 {copy.cta}

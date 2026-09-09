@@ -81,6 +81,19 @@ export const STACK_KEYS = [
 ] as const;
 export type StackKey = (typeof STACK_KEYS)[number];
 
+/**
+ * Los sectores de la pantalla de configuración. El orden es el de la pantalla.
+ */
+export const CONFIG_SECTIONS = ['mail', 'payments', 'brand', 'home', 'site'] as const;
+export type ConfigSection = (typeof CONFIG_SECTIONS)[number];
+
+/**
+ * Cómo se puede cobrar. `cash` no es una pasarela: es que alguien de la oficina
+ * recibe el dinero y lo anota, y por eso lo marca una persona con su nombre.
+ */
+export const PAYMENT_METHODS = ['whish', 'cash', 'tilopay'] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
 /** What the status page checks before saying the system is healthy. */
 export const HEALTH_KEYS = [
   'database',
@@ -348,6 +361,9 @@ export interface Dictionary {
     failedBody: string;
     providerError: string;
     notFound: string;
+    cashTitle: string;
+    cashDefault: string;
+    orNothing: string;
   };
   /** Staff-facing screens. Office staff in Beirut read these in Arabic too. */
   admin: {
@@ -375,6 +391,8 @@ export interface Dictionary {
       role: string;
       noOffice: string;
       signOut: string;
+      /** El rótulo del icono de mundo que cambia el idioma. */
+      language: string;
       /** Shown when React Native needs a relaunch to flip text direction. */
       restartNeeded: string;
     };
@@ -395,9 +413,21 @@ export interface Dictionary {
       secretSet: string;
       secretUnset: string;
       secretHint: string;
+      /** Los títulos de cada sector de la pantalla. */
+      sections: Record<ConfigSection, string>;
+      /** Una línea que dice para qué sirve cada sector. */
+      sectionIntros: Record<ConfigSection, string>;
       mail: string;
       payments: string;
       site: string;
+      methods: { heading: string } & Record<PaymentMethod, string>;
+      methodsHint: string;
+      tilopayPending: string;
+      homeLanguage: string;
+      homeReset: string;
+      homeOriginal: string;
+      homeSections: string;
+      brandPreview: string;
       testMail: string;
       testPayments: string;
       probeOk: string;
@@ -414,6 +444,20 @@ export interface Dictionary {
         | 'WHISH_CHANNEL'
         | 'WHISH_WEBSITE_URL'
         | 'WHISH_SECRET'
+        | 'PAYMENT_METHODS'
+        | 'CASH_INSTRUCTIONS'
+        | 'TILOPAY_BASE_URL'
+        | 'TILOPAY_API_USER'
+        | 'TILOPAY_API_KEY'
+        | 'TILOPAY_PASSWORD'
+        | 'BRAND_NAME'
+        | 'BRAND_LOGO_URL'
+        | 'BRAND_ICON_URL'
+        | 'CONTACT_WHATSAPP'
+        | 'CONTACT_EMAIL'
+        | 'HOME_SECTIONS'
+        | 'HOME_SHOWCASE'
+        | 'HOME_DEFAULT_LOCALE'
         | 'NEXT_PUBLIC_SITE_URL',
         string
       >;
@@ -515,6 +559,8 @@ export interface Dictionary {
       fromPlan: string;
       fromPackage: string;
       whatsappMessage: string;
+      markCash: string;
+      markCashDone: string;
     };
     guests: {
       heading: string;

@@ -1,9 +1,9 @@
-import { SITE } from '@/config/site';
+import type { ResolvedSite } from '@/lib/home/site';
 import { displayFont } from '@/lib/typography';
 import type { Dictionary, Locale } from '@/lib/types';
 
 /** The last ask, for a reader who scrolled the whole way down. */
-export function ClosingCta({ dictionary, locale }: { dictionary: Dictionary; locale: Locale }) {
+export function ClosingCta({ dictionary, locale, site }: { dictionary: Dictionary; locale: Locale; site: ResolvedSite }) {
   const copy = dictionary.home.closing;
 
   return (
@@ -14,7 +14,7 @@ export function ClosingCta({ dictionary, locale }: { dictionary: Dictionary; loc
         </h2>
         <p className="max-w-xl text-base text-[#A79C86]">{copy.body}</p>
         <a
-          href={SITE.routes.create}
+          href={site.routes.create}
           className="rounded-full bg-[#C9A227] px-7 py-3.5 text-base font-medium text-[#14120E] transition-opacity hover:opacity-90"
         >
           {copy.cta}

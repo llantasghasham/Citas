@@ -86,7 +86,8 @@
       "role": "Rol",
       "noOffice": "Sin oficina",
       "signOut": "Salir",
-      "restartNeeded": "Ha cambiado la dirección del texto. Reinicie la aplicación para verla bien."
+      "restartNeeded": "Ha cambiado la dirección del texto. Reinicie la aplicación para verla bien.",
+      "language": "Idioma"
     },
     "roles": {
       "SUPERADMIN": "Superadministrador",
@@ -284,7 +285,7 @@
     },
     "config": {
       "title": "Configuración",
-      "intro": "El correo, el cobro y la dirección del sitio. Se guarda aquí, no en el servidor: no hace falta entrar por SSH para cambiar nada.",
+      "intro": "Todo lo que decide cómo se comporta el sistema: el correo, cómo se cobra, cómo se llama y qué dice su portada. Se guarda aquí, no en el servidor.",
       "save": "Guardar",
       "saved": "Guardado.",
       "fromPanel": "guardado aquí",
@@ -312,8 +313,49 @@
         "WHISH_CHANNEL": "Canal (channel)",
         "WHISH_WEBSITE_URL": "Dominio registrado en Whish",
         "WHISH_SECRET": "Clave secreta de Whish",
-        "NEXT_PUBLIC_SITE_URL": "Dirección pública del sitio"
-      }
+        "NEXT_PUBLIC_SITE_URL": "Dirección pública del sitio",
+        "PAYMENT_METHODS": "Medios aceptados (lista separada por comas)",
+        "CASH_INSTRUCTIONS": "Qué se le dice a quien paga en efectivo",
+        "TILOPAY_BASE_URL": "Dirección del servicio de Tilopay",
+        "TILOPAY_API_USER": "Usuario de la API de Tilopay",
+        "TILOPAY_API_KEY": "Llave de la API de Tilopay",
+        "TILOPAY_PASSWORD": "Contraseña de la API de Tilopay",
+        "BRAND_NAME": "Nombre del sistema",
+        "BRAND_LOGO_URL": "Logo (dirección de la imagen)",
+        "BRAND_ICON_URL": "Icono de la pestaña (dirección de la imagen)",
+        "CONTACT_WHATSAPP": "WhatsApp de contacto (E.164, sin el más)",
+        "CONTACT_EMAIL": "Correo de contacto",
+        "HOME_SECTIONS": "Bloques de la portada, en orden",
+        "HOME_SHOWCASE": "Invitaciones de muestra (slugs separados por comas)",
+        "HOME_DEFAULT_LOCALE": "Idioma por defecto de la portada"
+      },
+      "sections": {
+        "mail": "Correo",
+        "payments": "Cobro",
+        "brand": "Marca",
+        "home": "Portada",
+        "site": "El sitio"
+      },
+      "sectionIntros": {
+        "mail": "Por dónde salen los códigos de acceso y los avisos. Sin esto configurado, nadie puede entrar con código.",
+        "payments": "Qué medios de pago se aceptan y con qué credenciales. Estos campos deciden a qué cuenta va el dinero.",
+        "brand": "Cómo se llama esto y con qué se ve. Sale en la portada, en la pestaña del navegador y en el panel.",
+        "home": "Cada texto de la página de inicio, en los cuatro idiomas. Un campo vacío usa el texto original.",
+        "site": "La dirección pública y el contacto que aparece al pie de la portada."
+      },
+      "methods": {
+        "heading": "Medios de cobro aceptados",
+        "whish": "Whish — Líbano",
+        "cash": "Efectivo — se cobra en la oficina",
+        "tilopay": "SINPE Móvil / tarjeta — Costa Rica (Tilopay)"
+      },
+      "methodsHint": "Marque los que quiera aceptar. Lo que no esté marcado no se le ofrece a nadie.",
+      "tilopayPending": "Falta la especificación y las credenciales de Tilopay. Hasta que estén, este medio no se puede activar.",
+      "homeLanguage": "Idioma que está editando",
+      "homeReset": "Vacío = el texto original",
+      "homeOriginal": "Original:",
+      "homeSections": "Bloques que se muestran",
+      "brandPreview": "Así se ve"
     },
     "offices": {
       "heading": "Oficinas",
@@ -421,7 +463,9 @@
       "allowance": "Invitaciones pagadas",
       "fromPlan": "del plan",
       "fromPackage": "compradas",
-      "whatsappMessage": "Hola {name}, aquí está el cobro de su paquete de {guests} invitaciones: {link}"
+      "whatsappMessage": "Hola {name}, aquí está el cobro de su paquete de {guests} invitaciones: {link}",
+      "markCash": "Marcar como cobrado en efectivo",
+      "markCashDone": "Cobro en efectivo anotado."
     }
   },
   "rsvpForm": {
@@ -636,6 +680,9 @@
     "failedTitle": "El pago no se completó",
     "failedBody": "No se le ha cobrado nada. Puede intentarlo otra vez.",
     "providerError": "No se pudo abrir la pasarela de pago. Inténtelo dentro de unos minutos o avise a la oficina.",
-    "notFound": "Este enlace no existe o ya no está disponible."
+    "notFound": "Este enlace no existe o ya no está disponible.",
+    "cashTitle": "Pagar en efectivo",
+    "cashDefault": "Puede pasar por la oficina a pagar. En cuanto lo registremos, sus invitaciones quedan abiertas.",
+    "orNothing": "Todavía no hay ningún medio de cobro configurado. Avise a la oficina."
   }
 }

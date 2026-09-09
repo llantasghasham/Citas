@@ -1,4 +1,4 @@
-import { SITE } from '@/config/site';
+import type { ResolvedSite } from '@/lib/home/site';
 import { LOCALE_NAMES } from '@/lib/create/options';
 import { localeHref } from '@/lib/home/locale';
 import { displayFont } from '@/lib/typography';
@@ -9,9 +9,9 @@ import { LOCALES, type Dictionary, type Locale } from '@/lib/types';
  * configuration actually holds. A contact block with an invented number would
  * be worse than no contact block, so an unset one simply does not appear.
  */
-export function SiteFooter({ dictionary, locale }: { dictionary: Dictionary; locale: Locale }) {
+export function SiteFooter({ dictionary, locale, site }: { dictionary: Dictionary; locale: Locale; site: ResolvedSite }) {
   const copy = dictionary.home.footer;
-  const { whatsapp, email } = SITE.contact;
+  const { whatsapp, email } = site.contact;
   const year = new Date().getFullYear();
 
   return (
@@ -19,7 +19,7 @@ export function SiteFooter({ dictionary, locale }: { dictionary: Dictionary; loc
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-14 sm:px-10">
         <div className="flex flex-wrap gap-x-16 gap-y-10">
           <div className="flex max-w-sm flex-col gap-2">
-            <span className={`${displayFont(locale)} text-lg text-[#F4EFE6]`}>{SITE.brand}</span>
+            <span className={`${displayFont(locale)} text-lg text-[#F4EFE6]`}>{site.brand}</span>
             <p className="text-sm text-[#786F5D]">{copy.tagline}</p>
           </div>
 
@@ -73,7 +73,7 @@ export function SiteFooter({ dictionary, locale }: { dictionary: Dictionary; loc
         </div>
 
         <p className="text-xs text-[#5C5445]">
-          <span dir="ltr">© {year}</span> {SITE.brand} · {copy.rights}
+          <span dir="ltr">© {year}</span> {site.brand} · {copy.rights}
         </p>
       </div>
     </footer>

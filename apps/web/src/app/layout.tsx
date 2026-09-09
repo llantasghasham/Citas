@@ -1,17 +1,28 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
+import { loadSite } from '@/lib/home/site';
 import { documentLanguage } from '@/lib/i18n/document';
+import { setting } from '@/lib/settings';
 
 import './globals.css';
 
-const siteUrl = process.env['NEXT_PUBLIC_SITE_URL'] ?? 'http://localhost:3000';
+/**
+ * El nombre y el icono salen de la configuración, no de una constante.
+ *
+ * Quien monta esto para su negocio cambia las dos cosas desde el panel, sin
+ * desplegar. Si no hay nada guardado, se usa lo que trae de fábrica.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const [site, url] = await Promise.all([loadSite(), setting('NEXT_PUBLIC_SITE_URL')]);
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: 'Citas',
-  description: 'Multilingual digital invitations',
-};
+  return {
+    metadataBase: new URL(url ?? 'http://localhost:3000'),
+    title: site.brand,
+    description: 'Multilingual digital invitations',
+    ...(site.iconUrl === null ? {} : { icons: { icon: site.iconUrl } }),
+  };
+}
 
 /**
  * Nothing in this application can be prerendered, and it is said here rather
