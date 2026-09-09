@@ -152,7 +152,7 @@ export interface Dictionary {
     back: string;
     publish: string;
     preview: string;
-    steps: Record<'language' | 'names' | 'when' | 'details' | 'review', string>;
+    steps: Record<'language' | 'names' | 'when' | 'details' | 'translations' | 'review', string>;
     localeLabel: string;
     eventTypeLabel: string;
     honoreesLabel: string;
@@ -178,6 +178,13 @@ export interface Dictionary {
     downloadImage: string;
     startOver: string;
     errorInvalid: string;
+    /** The extra languages the same event is also written in. */
+    translationsHint: string;
+    translationEnable: string;
+    translationMessageLabel: string;
+    translationSharedNote: string;
+    reviewLanguages: string;
+    reviewLanguagesNone: string;
   };
   /** Text that leaves the platform, in the guest's own language. */
   share: {
@@ -266,6 +273,19 @@ export interface Dictionary {
       imported: string;
       skipped: string;
       openedCount: string;
+      language: string;
+      fallbackWarning: string;
+    };
+    /** One invitation, written out in each language its guests read. */
+    versions: {
+      heading: string;
+      hint: string;
+      open: string;
+      addIn: string;
+      add: string;
+      added: string;
+      complete: string;
+      quoteHint: string;
     };
     events: {
       heading: string;

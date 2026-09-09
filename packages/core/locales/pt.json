@@ -163,7 +163,19 @@
       "exportCsv": "Descarregar a lista",
       "imported": "Foram adicionados {count} convidados.",
       "skipped": "Foram descartadas {count} linhas inválidas.",
-      "openedCount": "Abriram: {opened} de {total}"
+      "openedCount": "Abriram: {opened} de {total}",
+      "language": "Idioma",
+      "fallbackWarning": "Sem versão em {language}: verá a de {fallback}."
+    },
+    "versions": {
+      "heading": "Idiomas do convite",
+      "hint": "Cada convidado abre a versão no seu idioma. Quem não tiver a sua vê a primeira.",
+      "open": "Ver",
+      "addIn": "Adicionar em {language}",
+      "add": "Adicionar",
+      "added": "Versão em {language} adicionada.",
+      "complete": "O convite já está nos quatro idiomas.",
+      "quoteHint": "Apenas versículos verificados neste idioma."
     }
   },
   "rsvpForm": {
@@ -194,6 +206,7 @@
       "names": "Nomes",
       "when": "Quando e onde",
       "details": "Detalhes",
+      "translations": "Outros idiomas",
       "review": "Revisão"
     },
     "localeLabel": "Idioma do convite",
@@ -220,7 +233,13 @@
     "openInvitation": "Abrir o convite",
     "downloadImage": "Descarregar a imagem",
     "startOver": "Criar outro convite",
-    "errorInvalid": "Reveja os campos obrigatórios."
+    "errorInvalid": "Reveja os campos obrigatórios.",
+    "translationsHint": "O mesmo convite, escrito também noutro idioma. Nada é traduzido automaticamente: o texto escreve-o você.",
+    "translationEnable": "Fazer também em {language}",
+    "translationMessageLabel": "Mensagem em {language}",
+    "translationSharedNote": "Os nomes, a data e o local são os mesmos em todas as versões. Só mudam a mensagem e o versículo.",
+    "reviewLanguages": "Idiomas",
+    "reviewLanguagesNone": "Apenas {language}"
   },
   "share": {
     "whatsappMessage": "Olá {name}, teríamos muito gosto na sua presença. Aqui está o convite: {link}"

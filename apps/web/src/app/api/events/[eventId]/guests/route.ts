@@ -46,11 +46,23 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
   // The personal link travels in the export on purpose: it is what lets an
   // office send the invitations with whatever tool it already uses.
   const csv = buildCsv(
-    ['name', 'phone', 'locale', 'personal_link', 'opened_at', 'status', 'party'],
+    [
+      'name',
+      'phone',
+      'locale',
+      // The language they will really open, which is theirs only if somebody
+      // wrote the invitation in it.
+      'invitation_locale',
+      'personal_link',
+      'opened_at',
+      'status',
+      'party',
+    ],
     guests.map((guest) => [
       guest.name,
       guest.phone,
       guest.locale,
+      guest.version?.locale ?? null,
       `${origin}/g/${guest.token}`,
       guest.openedAt === null ? null : guest.openedAt.toISOString(),
       guest.status,

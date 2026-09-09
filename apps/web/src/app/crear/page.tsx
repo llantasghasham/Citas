@@ -7,6 +7,7 @@ import { LanguageStep } from '@/components/create/LanguageStep';
 import { NamesStep } from '@/components/create/NamesStep';
 import { ReviewStep } from '@/components/create/ReviewStep';
 import { StepShell } from '@/components/create/StepShell';
+import { TranslationsStep } from '@/components/create/TranslationsStep';
 import { WhenStep } from '@/components/create/WhenStep';
 import { getSession, sessionCan } from '@/lib/auth/session';
 import { DRAFT_COOKIE } from '@/lib/create/cookie';
@@ -17,7 +18,7 @@ import { bodyFont, displayFont } from '@/lib/typography';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 interface PageProps {
   searchParams: Promise<{ step?: string; published?: string; error?: string }>;
@@ -92,6 +93,7 @@ export default async function CreatePage({ searchParams }: PageProps) {
     copy.steps.names,
     copy.steps.when,
     copy.steps.details,
+    copy.steps.translations,
   ];
 
   return (
@@ -104,7 +106,7 @@ export default async function CreatePage({ searchParams }: PageProps) {
 
       <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div>
-          {step === 5 ? (
+          {step === 6 ? (
             <ReviewStep
               draft={draft}
               dictionary={dictionary}
@@ -122,6 +124,7 @@ export default async function CreatePage({ searchParams }: PageProps) {
               {step === 2 ? <NamesStep draft={draft} dictionary={dictionary} /> : null}
               {step === 3 ? <WhenStep draft={draft} dictionary={dictionary} /> : null}
               {step === 4 ? <DetailsStep draft={draft} dictionary={dictionary} /> : null}
+              {step === 5 ? <TranslationsStep draft={draft} dictionary={dictionary} /> : null}
             </StepShell>
           )}
         </div>

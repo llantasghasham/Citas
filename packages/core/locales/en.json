@@ -163,7 +163,19 @@
       "exportCsv": "Download the list",
       "imported": "{count} guests added.",
       "skipped": "{count} invalid lines were skipped.",
-      "openedCount": "Opened: {opened} of {total}"
+      "openedCount": "Opened: {opened} of {total}",
+      "language": "Language",
+      "fallbackWarning": "No {language} version: they will see the {fallback} one."
+    },
+    "versions": {
+      "heading": "Invitation languages",
+      "hint": "Each guest opens the version in their own language. Anyone without one sees the first.",
+      "open": "Open",
+      "addIn": "Add in {language}",
+      "add": "Add",
+      "added": "The {language} version was added.",
+      "complete": "The invitation is already in all four languages.",
+      "quoteHint": "Only verified verses in this language."
     }
   },
   "rsvpForm": {
@@ -194,6 +206,7 @@
       "names": "Names",
       "when": "When and where",
       "details": "Details",
+      "translations": "Other languages",
       "review": "Review"
     },
     "localeLabel": "Invitation language",
@@ -220,7 +233,13 @@
     "openInvitation": "Open the invitation",
     "downloadImage": "Download the image",
     "startOver": "Create another invitation",
-    "errorInvalid": "Please check the required fields."
+    "errorInvalid": "Please check the required fields.",
+    "translationsHint": "The same invitation, also written in another language. Nothing is translated for you: you write the text.",
+    "translationEnable": "Also make it in {language}",
+    "translationMessageLabel": "Message in {language}",
+    "translationSharedNote": "The names, the date and the venue are the same in every version. Only the message and the verse change.",
+    "reviewLanguages": "Languages",
+    "reviewLanguagesNone": "Only {language}"
   },
   "share": {
     "whatsappMessage": "Hello {name}, we would love to have you with us. Here is the invitation: {link}"

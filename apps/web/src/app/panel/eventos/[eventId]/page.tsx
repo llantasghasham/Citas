@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { importGuestsAction } from '@/app/panel/eventos/actions';
+import { VersionsSection } from '@/components/panel/VersionsSection';
 import { Field, FIELD_CLASS } from '@/components/create/Field';
 import { getAdminContext, requestHost } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
@@ -14,7 +15,12 @@ import { getDictionary, interpolate, LOCALES } from '@citas/core';
 
 interface PageProps {
   params: Promise<{ eventId: string }>;
-  searchParams: Promise<{ added?: string; skipped?: string; error?: string }>;
+  searchParams: Promise<{
+    added?: string;
+    skipped?: string;
+    error?: string;
+    version?: string;
+  }>;
 }
 
 /**
@@ -32,7 +38,8 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
   }
 
   const { eventId } = await params;
-  const { added, skipped, error } = await searchParams;
+  const { added, skipped, error, version } = await searchParams;
+  const addedLocale = LOCALES.find((candidate) => candidate === version);
   const { dictionary, locale } = await getAdminContext(session.tenantId);
   const copy = dictionary.admin.guests;
 
@@ -63,6 +70,13 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
             : ` ${interpolate(copy.skipped, { count: skipped })}`}
         </p>
       )}
+      {addedLocale === undefined ? null : (
+        <p className="text-sm text-[#8a6c22]">
+          {interpolate(dictionary.admin.versions.added, {
+            language: LOCALE_NAMES[addedLocale],
+          })}
+        </p>
+      )}
       {error === '1' ? (
         <p role="alert" className="text-sm text-[#8c2f1e]">
           {dictionary.create.errorInvalid}
@@ -86,6 +100,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
                 <tr className="border-b border-[#c9bfa6] text-xs uppercase tracking-[0.12em] text-[#8a6c22]">
                   <th className="py-2 text-start">{copy.name}</th>
                   <th className="py-2 text-start">{copy.phone}</th>
+                  <th className="py-2 text-start">{copy.language}</th>
                   <th className="py-2 text-start">{copy.opened}</th>
                   <th className="py-2 text-start">{copy.reply}</th>
                   <th className="py-2 text-end">{copy.sendWhatsapp}</th>
@@ -114,6 +129,20 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
                       <td className="py-3">{guest.name}</td>
                       <td className="py-3 font-mono text-xs" dir="ltr">
                         {guest.phone ?? '—'}
+                      </td>
+                      {/* What they will really open. When nobody wrote their
+                          language they get the original, and the office should
+                          see that before the list goes out, not after. */}
+                      <td className="py-3">
+                        {LOCALE_NAMES[guest.locale]}
+                        {guest.version !== null && guest.version.locale !== guest.locale ? (
+                          <span className="block text-xs text-[#8c2f1e]">
+                            {interpolate(copy.fallbackWarning, {
+                              language: LOCALE_NAMES[guest.locale],
+                              fallback: LOCALE_NAMES[guest.version.locale],
+                            })}
+                          </span>
+                        ) : null}
                       </td>
                       <td className="py-3 text-[#6a6456]">
                         {guest.openedAt === null
@@ -145,6 +174,14 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           </div>
         )}
       </section>
+
+      <VersionsSection
+        eventId={eventId}
+        versions={event.versions}
+        dictionary={dictionary}
+        locale={locale}
+        canWrite={canWrite}
+      />
 
       {canWrite ? (
         <form

@@ -5,6 +5,7 @@ import type { Locale } from '@citas/core';
 import { getPrisma } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import type { ImportedGuest } from '@/lib/guests/import';
+import { versionForLocale, type EventVersion } from '@/lib/repositories/versions';
 import type { RsvpStatus } from '@/generated/prisma/enums';
 
 export interface GuestWithLink {
@@ -16,12 +17,19 @@ export interface GuestWithLink {
   openedAt: Date | null;
   status: RsvpStatus | null;
   party: number | null;
+  /**
+   * The invitation this guest actually opens. `locale` is the version's, not
+   * the guest's: when it differs, nobody wrote their language and they are
+   * being sent the original.
+   */
+  version: EventVersion | null;
 }
 
 export interface EventGuests {
   eventId: string;
   title: string;
-  slug: string;
+  /** Every language this event was written in, the original first. */
+  versions: EventVersion[];
   guests: GuestWithLink[];
 }
 
@@ -85,7 +93,7 @@ export async function listGuestsWithLinks(
     where: { id: eventId, ...scopedWhere(scope) },
     include: {
       honorees: { orderBy: { order: 'asc' }, select: { name: true } },
-      versions: { orderBy: { createdAt: 'asc' }, take: 1, select: { slug: true } },
+      versions: { orderBy: { createdAt: 'asc' }, select: { slug: true, locale: true } },
       guests: { orderBy: { createdAt: 'asc' }, include: { rsvp: true } },
     },
   });
@@ -94,7 +102,7 @@ export async function listGuestsWithLinks(
   return {
     eventId: event.id,
     title: event.honorees.map((honoree) => honoree.name).join(' · '),
-    slug: event.versions[0]?.slug ?? '',
+    versions: event.versions,
     guests: event.guests.map((guest) => ({
       id: guest.id,
       name: guest.name,
@@ -104,6 +112,9 @@ export async function listGuestsWithLinks(
       openedAt: guest.openedAt,
       status: guest.rsvp?.status ?? null,
       party: guest.rsvp?.party ?? null,
+      // Resolved with the same rule /g/[token] applies, so what the office is
+      // shown here is what the guest will really open.
+      version: versionForLocale(event.versions, guest.locale) ?? null,
     })),
   };
 }

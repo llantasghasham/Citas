@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { getPrisma } from '@/lib/db/client';
+import { versionForLocale } from '@/lib/repositories/versions';
 import { guestCookieName } from '@/lib/rsvp/cookie';
 
 export const runtime = 'nodejs';
@@ -29,13 +30,19 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
       id: true,
       locale: true,
       openedAt: true,
-      event: { select: { versions: { select: { slug: true, locale: true } } } },
+      event: {
+        select: {
+          // Oldest first: when this guest's language was never written, the
+          // fallback has to be the language the invitation was created in, not
+          // whichever row the database happened to return first.
+          versions: { orderBy: { createdAt: 'asc' }, select: { slug: true, locale: true } },
+        },
+      },
     },
   });
   if (guest === null) redirect('/');
 
-  const versions = guest.event.versions;
-  const version = versions.find((entry) => entry.locale === guest.locale) ?? versions[0];
+  const version = versionForLocale(guest.event.versions, guest.locale);
   if (version === undefined) redirect('/');
 
   if (guest.openedAt === null) {

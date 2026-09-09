@@ -163,7 +163,19 @@
       "exportCsv": "تنزيل القائمة",
       "imported": "أُضيف {count} مدعواً.",
       "skipped": "تُجوهل {count} سطراً غير صالح.",
-      "openedCount": "فتحوا: {opened} من {total}"
+      "openedCount": "فتحوا: {opened} من {total}",
+      "language": "اللغة",
+      "fallbackWarning": "لا توجد نسخة بـ{language}: سيرى نسخة {fallback}."
+    },
+    "versions": {
+      "heading": "لغات الدعوة",
+      "hint": "يفتح كل مدعوّ النسخة بلغته. ومن لا نسخة بلغته يرى الأولى.",
+      "open": "افتح",
+      "addIn": "أضف بـ{language}",
+      "add": "أضف",
+      "added": "أُضيفت النسخة بـ{language}.",
+      "complete": "الدعوة موجودة بالفعل باللغات الأربع.",
+      "quoteHint": "الآيات المُتحقَّق منها بهذه اللغة فقط."
     }
   },
   "rsvpForm": {
@@ -194,6 +206,7 @@
       "names": "الأسماء",
       "when": "الموعد والمكان",
       "details": "التفاصيل",
+      "translations": "لغات أخرى",
       "review": "المراجعة"
     },
     "localeLabel": "لغة الدعوة",
@@ -220,7 +233,13 @@
     "openInvitation": "فتح الدعوة",
     "downloadImage": "تنزيل الصورة",
     "startOver": "إنشاء دعوة أخرى",
-    "errorInvalid": "راجع الحقول المطلوبة."
+    "errorInvalid": "راجع الحقول المطلوبة.",
+    "translationsHint": "الدعوة نفسها، مكتوبة أيضًا بلغة أخرى. لا شيء يُترجم تلقائيًا: النص تكتبه بنفسك.",
+    "translationEnable": "اصنعها أيضًا بـ{language}",
+    "translationMessageLabel": "النص بـ{language}",
+    "translationSharedNote": "الأسماء والتاريخ والمكان نفسها في كل النسخ. يتغيّر النص والآية فقط.",
+    "reviewLanguages": "اللغات",
+    "reviewLanguagesNone": "بـ{language} فقط"
   },
   "share": {
     "whatsappMessage": "مرحباً {name}، يشرّفنا دعوتكم. تفاصيل الدعوة هنا: {link}"

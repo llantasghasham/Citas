@@ -22,6 +22,28 @@ export interface DraftHost {
   role: HostRole;
 }
 
+/**
+ * The same event written out in one more language.
+ *
+ * Only the wording travels: names, date and venue live on the event and are
+ * shared by every version. Nothing here is translated automatically — the
+ * organiser writes each language, which is the whole point of a platform that
+ * refuses to transliterate a family name on its own.
+ */
+export interface DraftTranslation {
+  enabled: boolean;
+  message: string;
+  quoteId: string;
+}
+
+const EMPTY_TRANSLATION: DraftTranslation = { enabled: false, message: '', quoteId: '' };
+
+function emptyTranslations(): Record<Locale, DraftTranslation> {
+  return Object.fromEntries(
+    LOCALES.map((locale) => [locale, { ...EMPTY_TRANSLATION }]),
+  ) as Record<Locale, DraftTranslation>;
+}
+
 /** What someone has typed so far. Every field is a string: nothing is trusted yet. */
 export interface InvitationDraft {
   locale: Locale;
@@ -39,6 +61,8 @@ export interface InvitationDraft {
   numeralSystem: NumeralSystem;
   rsvpEnabled: boolean;
   rsvpDeadline: string;
+  /** One entry per language, including the main one, which is ignored. */
+  translations: Record<Locale, DraftTranslation>;
 }
 
 export const EMPTY_DRAFT: InvitationDraft = {
@@ -60,6 +84,7 @@ export const EMPTY_DRAFT: InvitationDraft = {
   numeralSystem: 'arabic',
   rsvpEnabled: true,
   rsvpDeadline: '',
+  translations: emptyTranslations(),
 };
 
 function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
@@ -113,7 +138,58 @@ export function parseDraft(raw: string | undefined): InvitationDraft {
     numeralSystem: oneOf(draft['numeralSystem'], NUMERAL_SYSTEMS, 'latin'),
     rsvpEnabled: draft['rsvpEnabled'] !== false,
     rsvpDeadline: text(draft['rsvpDeadline'], 10),
+    translations: parseTranslations(draft['translations']),
   };
+}
+
+function parseTranslations(raw: unknown): Record<Locale, DraftTranslation> {
+  const source = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {};
+
+  return Object.fromEntries(
+    LOCALES.map((locale) => {
+      const entry = source[locale];
+      const record =
+        typeof entry === 'object' && entry !== null ? (entry as Record<string, unknown>) : {};
+      return [
+        locale,
+        {
+          enabled: record['enabled'] === true,
+          message: text(record['message'], 600),
+          quoteId: text(record['quoteId'], 80),
+        },
+      ];
+    }),
+  ) as Record<Locale, DraftTranslation>;
+}
+
+export interface DraftVersion {
+  locale: Locale;
+  message: string;
+  quoteId: string;
+}
+
+/**
+ * Every language this draft publishes as, main one first.
+ *
+ * A verse only survives if it belongs to the language it was picked for: the
+ * list is closed per language, so a mismatched id would silently render the
+ * wrong script rather than nothing.
+ */
+export function draftVersions(draft: InvitationDraft): DraftVersion[] {
+  const versionFor = (locale: Locale, message: string, quoteId: string): DraftVersion => ({
+    locale,
+    message,
+    quoteId: findVerse(quoteId)?.locale === locale ? quoteId : '',
+  });
+
+  const extra = LOCALES.filter(
+    (locale) => locale !== draft.locale && draft.translations[locale].enabled,
+  ).map((locale) => {
+    const translation = draft.translations[locale];
+    return versionFor(locale, translation.message, translation.quoteId);
+  });
+
+  return [versionFor(draft.locale, draft.message, draft.quoteId), ...extra];
 }
 
 export function serializeDraft(draft: InvitationDraft): string {

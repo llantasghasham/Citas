@@ -6,15 +6,18 @@ import { redirect } from 'next/navigation';
 import { getSession, sessionCan } from '@/lib/auth/session';
 import { DRAFT_COOKIE } from '@/lib/create/cookie';
 import {
+  EMPTY_DRAFT,
   MAX_HONOREES,
   MAX_HOSTS,
   parseDraft,
   serializeDraft,
   type InvitationDraft,
 } from '@/lib/create/draft';
+import { defaultNumerals } from '@/lib/create/options';
 import { publishDraft } from '@/lib/create/publish';
+import { LOCALES } from '@/lib/types';
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 async function readDraft(): Promise<InvitationDraft> {
   const store = await cookies();
@@ -47,8 +50,9 @@ export async function saveStepAction(formData: FormData): Promise<void> {
   if (step === 1) {
     merged['locale'] = field(formData, 'locale');
     merged['eventType'] = field(formData, 'eventType');
-    // Eastern numerals are the sensible default for Arabic and wrong elsewhere.
-    merged['numeralSystem'] = field(formData, 'locale') === 'ar' ? 'arabic' : 'latin';
+    merged['numeralSystem'] = defaultNumerals(
+      LOCALES.find((locale) => locale === field(formData, 'locale')) ?? EMPTY_DRAFT.locale,
+    );
   }
 
   if (step === 2) {
@@ -76,6 +80,22 @@ export async function saveStepAction(formData: FormData): Promise<void> {
     merged['numeralSystem'] = field(formData, 'numeralSystem');
     merged['rsvpEnabled'] = formData.get('rsvpEnabled') === 'on';
     merged['rsvpDeadline'] = field(formData, 'rsvpDeadline');
+  }
+
+  if (step === 5) {
+    // One entry per language, the invitation's own included: publishing ignores
+    // that one, and keeping it makes the shape the same however the draft was
+    // reached.
+    merged['translations'] = Object.fromEntries(
+      LOCALES.map((locale) => [
+        locale,
+        {
+          enabled: formData.get(`translationEnabled_${locale}`) === 'on',
+          message: field(formData, `translationMessage_${locale}`),
+          quoteId: field(formData, `translationQuote_${locale}`),
+        },
+      ]),
+    );
   }
 
   await writeDraft(parseDraft(JSON.stringify(merged)));

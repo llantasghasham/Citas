@@ -1,36 +1,13 @@
-import { randomBytes } from 'node:crypto';
-
 import { templateFor, themeFor } from '@citas/core';
 
 import { recordAudit } from '@/lib/audit';
+import { defaultNumerals } from '@/lib/create/options';
+import { buildSlug } from '@/lib/create/slug';
 import { eventLimitReached } from '@/lib/billing/plans';
 import type { AuthenticatedSession } from '@/lib/auth/session';
 import { getPrisma } from '@/lib/db/client';
 
-import { draftProblems, mapUrlFor, type InvitationDraft } from './draft';
-
-/**
- * A readable stem when the names are in Latin script, plus a random tail so the
- * slug is unique without a retry loop and cannot be guessed from the couple's
- * names. Arabic names fall back to the neutral stem: transliterating them
- * automatically is exactly what the project forbids.
- */
-function buildSlug(names: string[]): string {
-  const stem = names
-    .join(' ')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .split('-')
-    .filter(Boolean)
-    .slice(0, 3)
-    .join('-');
-
-  const tail = randomBytes(4).toString('hex').slice(0, 6);
-  return `${stem.length === 0 ? 'invitacion' : stem}-${tail}`;
-}
+import { draftProblems, draftVersions, mapUrlFor, type InvitationDraft } from './draft';
 
 export type PublishResult =
   | { ok: true; slug: string }
@@ -62,7 +39,25 @@ export async function publishDraft(
 
   const honorees = draft.honorees.filter((name) => name.length > 0);
   const hosts = draft.hosts.filter((host) => host.name.length > 0);
-  const slug = buildSlug(honorees);
+
+  // One row per language the organiser wrote, the invitation's own first. Each
+  // gets its own public slug: a guest reading English must be able to be sent a
+  // URL that is the English card, not the Arabic one with a language switch.
+  const versions = draftVersions(draft).map((version) => ({
+    slug: buildSlug(honorees),
+    locale: version.locale,
+    direction: version.locale === 'ar' ? ('rtl' as const) : ('ltr' as const),
+    numeralSystem:
+      version.locale === draft.locale ? draft.numeralSystem : defaultNumerals(version.locale),
+    templateId: templateFor(draft.eventType),
+    message: version.message,
+    quoteId: version.quoteId.length === 0 ? null : version.quoteId,
+    themePrimary: themeFor(draft.eventType).primary,
+    themeAccent: themeFor(draft.eventType).accent,
+    themeBackground: themeFor(draft.eventType).background,
+    publishedAt: new Date(),
+  }));
+  const slug = versions[0]?.slug ?? buildSlug(honorees);
 
   const event = await prisma.event.create({
     data: {
@@ -82,23 +77,7 @@ export async function publishDraft(
         draft.rsvpDeadline.length === 0 ? null : new Date(`${draft.rsvpDeadline}T00:00:00Z`),
       honorees: { create: honorees.map((name, order) => ({ name, order })) },
       hosts: { create: hosts.map((host, order) => ({ name: host.name, role: host.role, order })) },
-      versions: {
-        create: [
-          {
-            slug,
-            locale: draft.locale,
-            direction: draft.locale === 'ar' ? 'rtl' : 'ltr',
-            numeralSystem: draft.numeralSystem,
-            templateId: templateFor(draft.eventType),
-            message: draft.message,
-            quoteId: draft.quoteId.length === 0 ? null : draft.quoteId,
-            themePrimary: themeFor(draft.eventType).primary,
-            themeAccent: themeFor(draft.eventType).accent,
-            themeBackground: themeFor(draft.eventType).background,
-            publishedAt: new Date(),
-          },
-        ],
-      },
+      versions: { create: versions },
     },
     select: { id: true },
   });
@@ -109,7 +88,7 @@ export async function publishDraft(
     action: 'event.publish',
     entity: 'Event',
     entityId: event.id,
-    metadata: { slug, locale: draft.locale },
+    metadata: { slug, locales: versions.map((version) => version.locale).join(',') },
   });
 
   return { ok: true, slug };

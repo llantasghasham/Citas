@@ -1,4 +1,9 @@
-import type { Locale } from '@/lib/types';
+import type { Locale, NumeralSystem } from '@/lib/types';
+
+/** Eastern numerals are the sensible default for Arabic and wrong elsewhere. */
+export function defaultNumerals(locale: Locale): NumeralSystem {
+  return locale === 'ar' ? 'arabic' : 'latin';
+}
 
 /**
  * Language names are written in their own language, so they read the same in
