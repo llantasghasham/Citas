@@ -14,6 +14,18 @@ export const metadata: Metadata = {
 };
 
 /**
+ * Nothing in this application can be prerendered, and it is said here rather
+ * than left to each route to remember.
+ *
+ * `documentLanguage()` below reads cookies and headers, so any segment Next
+ * still treats as static throws the moment it renders. That already cost one
+ * deploy: `/render/[slug]` kept a `generateStaticParams`, stayed static, and
+ * the failure surfaced as WhatsApp previews answering 500 — a page no guest
+ * ever opens, breaking the one thing every guest sees.
+ */
+export const dynamic = 'force-dynamic';
+
+/**
  * App shell.
  *
  * One shell serves four languages, so `lang` and `dir` cannot be constants:

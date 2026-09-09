@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { InvitationCard } from '@/components/invitation/InvitationCard';
-import { getAllInvitations } from '@/lib/invitations';
 import { getInvitationRepository } from '@/lib/repositories';
 
 interface PageProps {
@@ -13,25 +12,18 @@ interface PageProps {
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /**
- * Pre-renders the demo canvases only. Reads data/invitations.json directly
- * rather than through the repository: with a database behind it, listing every
- * invitation would mean listing every office's, and this build step has no
- * office to scope itself to.
- */
-export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  if (process.env['DATA_SOURCE'] === 'database') return [];
-  return Promise.resolve(getAllInvitations().map((invitation) => ({ slug: invitation.slug })));
-}
-
-/**
  * Rendered per request, like the guest page it mirrors.
  *
  * The root layout resolves `<html lang>` through `documentLanguage()`, which
- * reads cookies and headers. That makes every dynamic API a hard error in a
- * segment Next still treats as static — and `generateStaticParams` keeps this
- * one static even when it returns nothing. The symptom is not a broken page
- * here, because no guest opens this URL: it is `/api/render/[slug]` answering
- * 500, because Chromium captures this page and gets an error instead.
+ * reads cookies and headers, so nothing here can be prerendered. The
+ * `generateStaticParams` that used to sit above is gone with it: it kept this
+ * segment static even while returning nothing, and left the build output
+ * claiming a prerendered route that could only ever fail. The symptom was not a
+ * broken page here — no guest opens this URL — but `/api/render/[slug]`
+ * answering 500, because Chromium captures this page and got an error instead.
+ *
+ * Kept as a declaration of intent even though the root layout now says the same:
+ * this is the segment that got it wrong once.
  */
 export const dynamic = 'force-dynamic';
 
