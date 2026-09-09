@@ -376,6 +376,18 @@
         "custom": "غُيِّر هنا",
         "reset": "العودة إلى الأصل",
         "neverGrantable": "هذه الصلاحية لا تُمنح من شاشة أبدًا: تفتح إعدادات كل المكاتب والتحصيل."
+      },
+      "hints": {
+        "PAYMENTS_PROVIDER": "اكتب «whish» للتحصيل فعليًا. أي شيء آخر لا يحصّل، وفي الإنتاج يرفض الكود العمل بوسيلة التجربة.",
+        "WHISH_BASE_URL": "الإنتاج: https://api.whish.money/itel-service/api — التجربة: https://lb.sandbox.whish.money/itel-service/api",
+        "WHISH_CHANNEL": "تعطيك إياه Whish عند فتح حساب التاجر. ليس موجودًا في التطبيق الشخصي: اطلبه من Whish Business.",
+        "WHISH_WEBSITE_URL": "النطاق الذي سجّلته لدى Whish، بلا https://. هنا: citas.posxml.com",
+        "WHISH_SECRET": "تعطيك إياه Whish أيضًا مع حساب التاجر. ليس كلمة مرور تطبيقك.",
+        "MAILER": "اكتب «smtp» للإرسال فعليًا. أي شيء آخر يطبع في السجلّ فقط.",
+        "MAIL_FROM": "اسمه MAIL_FROM لا SMTP_FROM. الشكل: علامتك <info@نطاقك.com>",
+        "CONTACT_WHATSAPP": "بصيغة E.164 وبلا علامة الزائد: 96170123456. الفراغ يعني ألّا يظهر في الصفحة الرئيسية.",
+        "HOME_SECTIONS": "مفصولة بفواصل وبهذا الترتيب: features, steps, showcase, pricing, faq, closing. احذف واحدًا لإخفائه.",
+        "WHATSAPP_GATEWAY_URL": "حيث تستمع خدمة واتساب. الافتراضي http://127.0.0.1:4100، ولا يجوز نشرها."
       }
     },
     "offices": {

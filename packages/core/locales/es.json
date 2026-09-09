@@ -376,6 +376,18 @@
         "custom": "cambiado aquí",
         "reset": "Volver a lo de fábrica",
         "neverGrantable": "Este permiso no se concede desde una pantalla: abre la configuración de todas las oficinas y el cobro."
+      },
+      "hints": {
+        "PAYMENTS_PROVIDER": "Escriba «whish» para cobrar de verdad. Cualquier otra cosa no cobra, y en producción el código se niega a arrancar con la de pruebas.",
+        "WHISH_BASE_URL": "Producción: https://api.whish.money/itel-service/api — Pruebas: https://lb.sandbox.whish.money/itel-service/api",
+        "WHISH_CHANNEL": "Se lo da Whish al abrir la CUENTA DE COMERCIO. No está en la aplicación personal: pídalo en Whish Business.",
+        "WHISH_WEBSITE_URL": "El dominio que registró en Whish, sin https://. Aquí: citas.posxml.com",
+        "WHISH_SECRET": "También se lo da Whish con la cuenta de comercio. No es su contraseña de la aplicación.",
+        "MAILER": "Escriba «smtp» para enviar de verdad. Cualquier otra cosa solo imprime en el log.",
+        "MAIL_FROM": "Se llama MAIL_FROM, no SMTP_FROM. Formato: Su Marca <info@su-dominio.com>",
+        "CONTACT_WHATSAPP": "En E.164 y sin el más: 96170123456. Vacío = no sale en la portada.",
+        "HOME_SECTIONS": "Separados por comas y en este orden: features, steps, showcase, pricing, faq, closing. Quite uno para ocultarlo.",
+        "WHATSAPP_GATEWAY_URL": "Dónde escucha el servicio de WhatsApp. Por defecto http://127.0.0.1:4100, y no debe publicarse."
       }
     },
     "offices": {

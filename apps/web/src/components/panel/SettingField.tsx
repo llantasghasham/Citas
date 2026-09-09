@@ -9,6 +9,8 @@ export interface SettingProps {
   label: string;
   value: string;
   origin: Origin;
+  /** De dónde sale este valor y qué forma tiene, cuando no es obvio. */
+  hint?: string | undefined;
 }
 
 /** Lo mismo para una contraseña, que se escribe pero no se lee. */
@@ -16,6 +18,7 @@ export interface SecretProps {
   name: string;
   label: string;
   isSet: boolean;
+  hint?: string | undefined;
 }
 
 /**
@@ -30,6 +33,7 @@ export function SettingField({
   label,
   value,
   origin,
+  hint,
   dictionary,
   type = 'text',
 }: SettingProps & { dictionary: Dictionary; type?: string }) {
@@ -52,6 +56,12 @@ export function SettingField({
         autoComplete="off"
         spellCheck={false}
       />
+      {/* Debajo del campo, no en un tooltip: se lee mientras se escribe. */}
+      {hint === undefined ? null : (
+        <span className="text-xs text-[#6a6456]" dir="ltr">
+          {hint}
+        </span>
+      )}
     </label>
   );
 }
@@ -64,6 +74,7 @@ export function SecretField({
   name,
   label,
   isSet,
+  hint,
   dictionary,
 }: SecretProps & { dictionary: Dictionary }) {
   const copy = dictionary.admin.config;
@@ -85,6 +96,11 @@ export function SecretField({
         dir="ltr"
         autoComplete="new-password"
       />
+      {hint === undefined ? null : (
+        <span className="text-xs text-[#6a6456]" dir="ltr">
+          {hint}
+        </span>
+      )}
       <span className="text-xs text-[#6a6456]">{copy.secretHint}</span>
     </label>
   );

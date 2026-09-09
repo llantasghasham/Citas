@@ -40,6 +40,19 @@ interface PageProps {
 const BOTON_SUAVE = 'border border-[#23201a] px-5 py-2.5 text-sm text-[#23201a] hover:opacity-70';
 
 /**
+ * Lo que se propone cuando el campo está vacío.
+ *
+ * Solo donde hay UNA respuesta sensata y escribirla mal cuesta una tarde. No es
+ * un valor guardado: sigue diciendo «sin poner» hasta que alguien le dé a
+ * guardar, porque proponer no es lo mismo que haber configurado.
+ */
+const SUGERIDO: Partial<Record<SettingKey, string>> = {
+  WHISH_BASE_URL: 'https://api.whish.money/itel-service/api',
+  WHATSAPP_GATEWAY_URL: 'http://127.0.0.1:4100',
+  SMTP_PORT: '587',
+};
+
+/**
  * La configuración del sistema, por sectores.
  *
  * Un solo formulario con veinte campos obliga a leerlos todos para cambiar uno.
@@ -74,13 +87,18 @@ export default async function ConfigPage({ searchParams }: PageProps) {
   const campo = async (key: SettingKey) => ({
     name: key,
     label: copy.labels[key],
-    value: (await setting(key)) ?? '',
+    // Un valor sugerido para lo que solo tiene una respuesta razonable: sin
+    // esto, «Dirección del servicio de Whish» es un campo en blanco frente a
+    // alguien que no puede adivinar una URL.
+    value: (await setting(key)) ?? SUGERIDO[key] ?? '',
     origin: await origin(key),
+    hint: copy.hints[key as keyof typeof copy.hints],
   });
   const clave = async (key: SecretKey) => ({
     name: key,
     label: copy.labels[key],
     isSet: (await secret(key).catch(() => undefined)) !== undefined,
+    hint: copy.hints[key as keyof typeof copy.hints],
   });
 
   return (

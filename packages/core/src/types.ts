@@ -459,6 +459,25 @@ export interface Dictionary {
       testPayments: string;
       probeOk: string;
       probeFailed: string;
+      /**
+       * De dónde sale cada valor y qué forma tiene. No todos lo necesitan:
+       * los que sí, son los que hacen perder una tarde si se escriben mal.
+       */
+      hints: Partial<
+        Record<
+          | 'MAILER'
+          | 'MAIL_FROM'
+          | 'PAYMENTS_PROVIDER'
+          | 'WHISH_BASE_URL'
+          | 'WHISH_CHANNEL'
+          | 'WHISH_WEBSITE_URL'
+          | 'WHISH_SECRET'
+          | 'CONTACT_WHATSAPP'
+          | 'HOME_SECTIONS'
+          | 'WHATSAPP_GATEWAY_URL',
+          string
+        >
+      >;
       labels: Record<
         | 'MAILER'
         | 'SMTP_HOST'
