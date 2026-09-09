@@ -43,14 +43,25 @@ export async function sendTestMailAction(): Promise<void> {
 
   const ip = clientIp(await headers());
   let problem: string | null = null;
+  let receipt = '';
   try {
-    await getMailer().send({
+    const result = await getMailer().send({
       to,
       subject: 'Citas — prueba de correo saliente',
       text:
         'Este mensaje confirma que el envío de correo funciona en esta instalación.\n' +
         'Si lo está leyendo, los códigos de un solo uso también saldrán.\n',
     });
+
+    // What the provider actually said. Handing a message over is not delivering
+    // it — a server can take it and drop it, and nobody is told — so the last
+    // witnessed fact is worth showing instead of a bare "sent".
+    receipt = `${result.response} · aceptados: ${result.accepted.join(', ') || '—'}${
+      result.rejected.length > 0 ? ` · rechazados: ${result.rejected.join(', ')}` : ''
+    }`;
+    if (result.accepted.length === 0) {
+      problem = `El servidor no aceptó ningún destinatario. ${receipt}`;
+    }
   } catch (error) {
     problem = error instanceof Error ? error.message : 'unknown error';
   }
@@ -61,12 +72,12 @@ export async function sendTestMailAction(): Promise<void> {
     action: TEST_ACTION,
     entity: 'User',
     entityId: session.userId,
-    metadata: { ok: problem === null, problem },
+    metadata: { ok: problem === null, problem, receipt },
     ip,
   });
 
   if (problem !== null) {
     redirect(`/panel/sistema?mail=failed&reason=${encodeURIComponent(problem.slice(0, 300))}`);
   }
-  redirect('/panel/sistema?mail=ok');
+  redirect(`/panel/sistema?mail=ok&reason=${encodeURIComponent(receipt.slice(0, 300))}`);
 }

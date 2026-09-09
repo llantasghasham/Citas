@@ -242,7 +242,7 @@
         "heading": "Testar o correio a sair",
         "intro": "Envia uma mensagem a sério para o endereço do superadministrador. É a única forma de saber se o SMTP funciona: a configuração pode estar completa e o fornecedor recusar na mesma a autenticação.",
         "test": "Enviar um email de teste",
-        "ok": "Enviado. Se não chegar em poucos minutos, veja a pasta de spam.",
+        "ok": "Entregue ao servidor de correio. Atenção: aceitá-lo não garante que chegue à caixa de entrada — se não aparecer em poucos minutos, veja o spam.",
         "failed": "O servidor de correio recusou-o. A resposta dele, tal como veio:",
         "tooSoon": "Espere um minuto entre testes."
       },

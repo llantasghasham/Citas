@@ -2,7 +2,7 @@ import { createTransport, type Transporter } from 'nodemailer';
 
 import { decryptSecret } from '@/lib/secrets';
 
-import type { Email, Mailer } from './types';
+import type { Email, Mailer, MailReceipt } from './types';
 
 /**
  * SMTP delivery.
@@ -87,14 +87,23 @@ function getTransporter(): Transporter {
 export const smtpMailer: Mailer = {
   id: 'smtp',
 
-  async send(email: Email): Promise<void> {
+  async send(email: Email): Promise<MailReceipt> {
     try {
-      await getTransporter().sendMail({
+      const info = await getTransporter().sendMail({
         from: required('MAIL_FROM'),
         to: email.to,
         subject: email.subject,
         text: email.text,
       });
+
+      // Kept because `verify()` never reaches this far: it stops after the
+      // login, so a server that authenticates happily and then refuses the
+      // recipient looks identical to one that works.
+      return {
+        accepted: (info.accepted ?? []).map(String),
+        rejected: (info.rejected ?? []).map(String),
+        response: info.response ?? '',
+      };
     } catch (error) {
       // Never let the credentials travel in an error: nodemailer's messages can
       // carry the auth line, and this ends up in the journal.

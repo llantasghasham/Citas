@@ -74,7 +74,17 @@ export default async function SystemPage({ searchParams }: PageProps) {
         <p className="max-w-2xl text-sm text-[#6a6456]">{copy.mail.intro}</p>
 
         {mail === 'ok' ? (
-          <p className="text-sm text-[#2f6b3a]">{copy.mail.ok}</p>
+          <div className="flex max-w-2xl flex-col gap-2">
+            <p className="text-sm text-[#2f6b3a]">{copy.mail.ok}</p>
+            {/* The provider's own receipt. "Sent" alone proves nothing: a
+                server can accept a message and drop it without telling anyone. */}
+            <code
+              dir="ltr"
+              className="block overflow-x-auto border border-[#ddd6c6] bg-white px-4 py-2 font-mono text-xs"
+            >
+              {reason ?? '—'}
+            </code>
+          </div>
         ) : mail === 'tooSoon' ? (
           <p className="text-sm text-[#8a6c22]">{copy.mail.tooSoon}</p>
         ) : mail === 'failed' ? (
