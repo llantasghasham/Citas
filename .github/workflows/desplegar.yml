@@ -68,6 +68,24 @@ jobs:
           file /tmp/prueba.png | grep -q '1080 x 1920' \
             || { echo "::error::el PNG no mide 1080x1920"; file /tmp/prueba.png; exit 1; }
 
+      - name: Comprobar la vista previa al compartir
+        run: |
+          # Sin NEXT_PUBLIC_SITE_URL, Next resuelve og:image contra localhost y
+          # el enlace pegado en WhatsApp sale con un rectangulo gris. La pagina
+          # se ve perfecta: el fallo solo existe fuera del navegador, asi que
+          # tiene que comprobarse aqui o no se comprueba nunca.
+          imagen="$(curl -s --max-time 60 'https://citas.posxml.com/' \
+            | grep -o '<meta property="og:image" content="[^"]*"' | head -1)"
+          echo "$imagen"
+          case "$imagen" in
+            *'https://citas.posxml.com/og/home.png'*) ;;
+            *) echo "::error::og:image no apunta al dominio: revisa NEXT_PUBLIC_SITE_URL en el .env"; exit 1 ;;
+          esac
+          codigo="$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 \
+            'https://citas.posxml.com/og/home.png')"
+          echo "/og/home.png -> $codigo"
+          [ "$codigo" = "200" ] || { echo "::error::la tarjeta de vista previa no existe"; exit 1; }
+
       - name: Comprobar que el arabe se declara arabe
         run: |
           # Un idioma equivocado no cambia el codigo HTTP: se lee en el documento.
