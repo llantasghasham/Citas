@@ -24,6 +24,18 @@ export async function generateStaticParams(): Promise<{ slug: string }[]> {
 }
 
 /**
+ * Rendered per request, like the guest page it mirrors.
+ *
+ * The root layout resolves `<html lang>` through `documentLanguage()`, which
+ * reads cookies and headers. That makes every dynamic API a hard error in a
+ * segment Next still treats as static — and `generateStaticParams` keeps this
+ * one static even when it returns nothing. The symptom is not a broken page
+ * here, because no guest opens this URL: it is `/api/render/[slug]` answering
+ * 500, because Chromium captures this page and gets an error instead.
+ */
+export const dynamic = 'force-dynamic';
+
+/**
  * The exact 1080×1920 canvas that /api/render/[slug] screenshots. It reuses the
  * same InvitationCard as the web page, so the PNG and the page can never drift.
  */
