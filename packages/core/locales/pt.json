@@ -542,7 +542,12 @@
       "noConnection": "Ligue primeiro um número.",
       "noOffice": "Esta conta não está atribuída a nenhum escritório, por isso não há onde guardar o número. Crie um em «Escritórios» e volte.",
       "duplicate": "Já existe um número com esse nome.",
-      "waiting": "A pedir o código ao WhatsApp… este ecrã atualiza-se sozinho."
+      "waiting": "A pedir o código ao WhatsApp… este ecrã atualiza-se sozinho.",
+      "stepsTitle": "Como se liga um número",
+      "step1": "Escreva um nome para o número — por exemplo «Balcão Hamra» — e carregue em Adicionar.",
+      "step2": "Na linha que aparece, carregue em Ligar. O código demora alguns segundos a chegar.",
+      "step3": "Leia-o no telemóvel: WhatsApp › Definições › Dispositivos ligados › Ligar um dispositivo.",
+      "advanced": "Definições avançadas"
     },
     "profile": {
       "title": "O meu perfil",

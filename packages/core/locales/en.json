@@ -542,7 +542,12 @@
       "noConnection": "Connect a number first.",
       "noOffice": "This account belongs to no office, so there is nowhere to keep the number. Create one under “Offices” and come back.",
       "duplicate": "There is already a number with that name.",
-      "waiting": "Asking WhatsApp for the code… this screen refreshes by itself."
+      "waiting": "Asking WhatsApp for the code… this screen refreshes by itself.",
+      "stepsTitle": "How to connect a number",
+      "step1": "Give the number a name — «Hamra counter», say — and press Add.",
+      "step2": "On the row that appears, press Connect. The code takes a few seconds to arrive.",
+      "step3": "Scan it from the phone: WhatsApp › Settings › Linked devices › Link a device.",
+      "advanced": "Advanced settings"
     },
     "profile": {
       "title": "My profile",

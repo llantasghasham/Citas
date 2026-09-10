@@ -78,7 +78,6 @@ export function WhatsappSection({
       <p className="border border-[#8c2f1e] bg-[#fdf4f2] p-4 text-sm text-[#8c2f1e]">
         {copy.warning}
       </p>
-      <p className="text-sm text-[#6a6456]">{copy.hint}</p>
 
       {gatewayError === undefined ? null : (
         <p role="alert" className="text-sm text-[#8c2f1e]">
@@ -93,6 +92,31 @@ export function WhatsappSection({
           {error === 'sinOficina' ? copy.noOffice : error === 'duplicate' ? copy.duplicate : copy.gatewayDown}
         </p>
       )}
+
+      {/* Los tres pasos, JUNTO al formulario que empieza el primero.
+          Sin esto, quien abre esta pantalla buscando el código encuentra tres
+          párrafos y un campo «Nombre» sin explicar para qué: el código está a
+          dos pasos y nada lo decía. */}
+      <section className="flex flex-col gap-4 border border-[#ddd6c6] bg-white/60 p-5">
+        <h2 className={`${displayFont(locale)} text-lg`}>{copy.stepsTitle}</h2>
+        <ol className="flex list-inside list-decimal flex-col gap-2 text-sm text-[#6a6456]">
+          <li>{copy.step1}</li>
+          <li>{copy.step2}</li>
+          <li>{copy.step3}</li>
+        </ol>
+
+        <form action={addConnectionAction} className="flex flex-col gap-4 border-t border-[#ddd6c6] pt-4">
+          <Field label={copy.nameLabel}>
+            <input name="name" required maxLength={60} className={FIELD_CLASS} />
+          </Field>
+          <button
+            type="submit"
+            className="self-start bg-[#23201a] px-6 py-3 text-base text-[#f4efe6] hover:opacity-90"
+          >
+            {copy.add}
+          </button>
+        </form>
+      </section>
 
       {connections.length === 0 ? (
         <p className="text-sm text-[#6a6456]">{copy.empty}</p>
@@ -209,20 +233,15 @@ export function WhatsappSection({
         </ul>
       )}
 
-      <form action={addConnectionAction} className="flex flex-col gap-4 border-t border-[#ddd6c6] pt-6">
-        <Field label={copy.nameLabel}>
-          <input name="name" required maxLength={60} className={FIELD_CLASS} />
-        </Field>
-        <button
-          type="submit"
-          className="self-start bg-[#23201a] px-6 py-3 text-base text-[#f4efe6] hover:opacity-90"
-        >
-          {copy.add}
-        </button>
-      </form>
-
+      {/* La dirección del servicio y el freno se tocan una vez cada mucho, así
+          que van plegados: lo que se viene a hacer aquí es conectar un número, y
+          cinco campos técnicos delante estorban a eso. */}
       {canEditGateway ? (
-        <form action={addConnectionAction} className="flex flex-col gap-5 border-t border-[#ddd6c6] pt-6">
+        <details className="border-t border-[#ddd6c6] pt-6">
+          <summary className="cursor-pointer text-sm text-[#6a6456] hover:text-[#23201a]">
+            {copy.advanced}
+          </summary>
+        <form action={addConnectionAction} className="mt-5 flex flex-col gap-5">
           <input type="hidden" name="sector" value="whatsapp-url" />
           <SettingField {...gatewayUrl} dictionary={dictionary} />
 
@@ -235,6 +254,7 @@ export function WhatsappSection({
 
           <SaveButton dictionary={dictionary} />
         </form>
+        </details>
       ) : null}
     </div>
   );

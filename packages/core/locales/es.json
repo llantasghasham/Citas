@@ -542,7 +542,12 @@
       "noConnection": "Conecte un número primero.",
       "noOffice": "Esta cuenta no está asignada a ninguna oficina, así que no hay dónde guardar el número. Créela en «Oficinas» y vuelva.",
       "duplicate": "Ya hay un número con ese nombre.",
-      "waiting": "Pidiendo el código a WhatsApp… esta pantalla se actualiza sola."
+      "waiting": "Pidiendo el código a WhatsApp… esta pantalla se actualiza sola.",
+      "stepsTitle": "Cómo se conecta un número",
+      "step1": "Escriba un nombre para el número —por ejemplo «Mostrador Hamra»— y pulse Añadir.",
+      "step2": "En la fila que aparece, pulse Conectar. El código tarda unos segundos en llegar.",
+      "step3": "Escanéelo desde el teléfono: WhatsApp › Ajustes › Dispositivos vinculados › Vincular un dispositivo.",
+      "advanced": "Ajustes avanzados"
     },
     "profile": {
       "title": "Mi perfil",

@@ -644,6 +644,12 @@ export interface Dictionary {
       duplicate: string;
       /** Se pulsó conectar y el código todavía no ha llegado de WhatsApp. */
       waiting: string;
+      /** Los tres pasos hasta el código. Sin esto, la pantalla no dice cómo. */
+      stepsTitle: string;
+      step1: string;
+      step2: string;
+      step3: string;
+      advanced: string;
     };
     /** Vender un paquete de invitaciones para UNA boda. */
     packages: {

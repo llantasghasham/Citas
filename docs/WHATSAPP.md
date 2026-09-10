@@ -115,11 +115,18 @@ npm run whatsapp
 ## Cómo se usa
 
 1. `/panel/configuracion?s=whatsapp` — lo ve el administrador de la oficina, no
-   hace falta ser el dueño del sistema.
+   hace falta ser el dueño del sistema. La pantalla lleva los tres pasos
+   escritos, junto al campo que empieza el primero.
 2. Añadir un número con un nombre («Mostrador Hamra»).
-3. **Conectar** → aparece el código.
+3. **Conectar** → el código aparece solo en unos segundos; la pantalla se
+   actualiza sola mientras espera.
 4. Escanearlo desde el teléfono: Ajustes › Dispositivos vinculados › Vincular un
    dispositivo. Es el mismo gesto que WhatsApp Web.
+
+El código NO está en la pantalla al abrirla: sale del paso 3, cuando WhatsApp lo
+manda. La dirección del servicio y el freno quedan plegados en «Ajustes
+avanzados», porque se tocan una vez cada mucho y lo que se viene a hacer aquí es
+conectar un número.
 5. En la pantalla del evento, **Encolar los envíos**. A quien ya se le escribió
    no se le repite.
 
