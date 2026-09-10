@@ -325,6 +325,7 @@
           "database": "Database connection",
           "dataSource": "Data source",
           "mailer": "Outgoing mail",
+          "senderDns": "Sender authorised (SPF/DMARC)",
           "payments": "Payment gateway",
           "renderStore": "Image store",
           "secretKey": "Encryption key",

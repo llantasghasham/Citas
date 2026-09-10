@@ -115,7 +115,7 @@ export default async function ProfilePage({ searchParams }: PageProps) {
                   configuración—, así que la mitad del mercado vería «ese
                   archivo no es una imagen» subiendo una foto perfectamente
                   buena. Sin enumerarlo, iOS la convierte a JPEG al enviarla. */}
-              <input type="file" name="avatar" accept="image/*" className={FIELD_CLASS} />
+              <input type="file" name="avatar" accept="image/*" className="file-field" />
             </Field>
 
             {photo === null ? null : (

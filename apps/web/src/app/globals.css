@@ -79,3 +79,56 @@
     text-rendering: optimizeLegibility;
   }
 }
+
+@layer components {
+  /*
+   * El selector de archivo tal y como lo dibuja el navegador —«Seleccionar
+   * archivo · Sin archivos seleccionados» dentro de una caja blanca— es lo
+   * único de todo el panel que no se parece al resto: tipografía del sistema,
+   * botón gris y un texto que no está traducido. Aquí se le da la misma forma
+   * que a los demás controles, sin JavaScript: el botón es el pseudoelemento
+   * `::file-selector-button` y el nombre del archivo elegido sigue saliendo al
+   * lado, que es la única señal de que se ha seleccionado algo.
+   *
+   * `margin-inline-end` y no `margin-right`: en árabe el botón va a la derecha
+   * y el nombre del archivo a su izquierda.
+   */
+  .file-field {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    cursor: pointer;
+    border: 1px dashed #cdc6b6;
+    background: #fbf9f4;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #6a6456;
+  }
+
+  .file-field:hover {
+    border-color: #8a6c22;
+    background: #f6f1e6;
+  }
+
+  .file-field:focus-visible {
+    outline: none;
+    border-color: #8a6c22;
+    box-shadow: 0 0 0 2px #c9a227;
+  }
+
+  .file-field::file-selector-button {
+    margin-inline-end: 0.875rem;
+    cursor: pointer;
+    border: 0;
+    background: #23201a;
+    padding: 0.5rem 1.125rem;
+    font: inherit;
+    font-weight: 500;
+    color: #f4efe6;
+  }
+
+  .file-field:hover::file-selector-button {
+    background: #3d372c;
+  }
+}

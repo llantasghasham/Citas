@@ -21,18 +21,23 @@ const COOLDOWN_SECONDS = 60;
  * a provider refusing the login, a blocked port. Nothing short of an actual send
  * tells you that, and the day the codes stopped arriving there was no way to ask.
  *
- * It only ever writes to the configured superadmin address. A field for an
- * arbitrary recipient would turn this panel into a way to send mail from the
- * office's own domain to anyone.
+ * It only ever writes to the address of whoever pressed the button (falling back
+ * to the configured superadmin address). A field for an arbitrary recipient
+ * would turn this panel into a way to send mail from the office's own domain to
+ * anyone.
  */
 export async function sendTestMailAction(): Promise<void> {
   const session = await getSession();
   if (session === null || !sessionCan(session, 'platform:manage')) redirect('/panel');
 
-  // Naming the missing variable, not just "it failed": an unset address and a
-  // provider refusing the login are different problems with different fixes.
-  const to = process.env['SUPERADMIN_EMAIL'];
-  if (to === undefined || to.length === 0) {
+  // A QUIÉN se le manda: a la dirección de QUIEN pulsa el botón, y solo si no
+  // la tiene, a la del entorno. Es la misma clase de destinatario —una cuenta
+  // de esta instalación, nunca una escrita a mano— y es la única que la persona
+  // que está mirando la pantalla puede abrir. Con `SUPERADMIN_EMAIL` a secas,
+  // un correo que salía perfectamente parecía no salir: llegaba a un buzón que
+  // no era el suyo, y el panel decía «enviado» sin decir adónde.
+  const to = session.email.length > 0 ? session.email : (process.env['SUPERADMIN_EMAIL'] ?? '');
+  if (to.length === 0) {
     redirect('/panel/configuracion?mail=failed&reason=SUPERADMIN_EMAIL');
   }
 
@@ -57,7 +62,10 @@ export async function sendTestMailAction(): Promise<void> {
     // What the provider actually said. Handing a message over is not delivering
     // it — a server can take it and drop it, and nobody is told — so the last
     // witnessed fact is worth showing instead of a bare "sent".
-    receipt = `${result.response} · aceptados: ${result.accepted.join(', ') || '—'}${
+    // El destinatario va PRIMERO. «Enviado» sin decir adónde es lo que hace que
+    // se busque el fallo en el servidor de correo cuando el mensaje está en
+    // otro buzón —o en la carpeta de no deseado de este.
+    receipt = `para ${to} · ${result.response} · aceptados: ${result.accepted.join(', ') || '—'}${
       result.rejected.length > 0 ? ` · rechazados: ${result.rejected.join(', ')}` : ''
     }`;
     if (result.accepted.length === 0) {

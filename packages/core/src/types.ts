@@ -112,6 +112,7 @@ export const HEALTH_KEYS = [
   'database',
   'dataSource',
   'mailer',
+  'senderDns',
   'payments',
   'renderStore',
   'secretKey',

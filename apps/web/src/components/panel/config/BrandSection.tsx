@@ -1,6 +1,5 @@
 import { SaveButton } from '@/components/panel/config/MailSection';
 import { SettingField, type SettingProps } from '@/components/panel/SettingField';
-import { FIELD_CLASS } from '@/components/create/Field';
 import type { ResolvedSite } from '@/lib/home/site';
 import { displayFont } from '@/lib/typography';
 import { interpolate, type Dictionary, type Locale } from '@/lib/types';
@@ -127,14 +126,16 @@ function BrandUpload({
   copy: Dictionary['admin']['config'];
 }) {
   return (
-    <div className="flex flex-wrap items-start gap-5 border-t border-[#ddd6c6] pt-5">
+    <div className="flex flex-wrap items-start gap-5 border-t border-[#ddd6c6] pt-6">
       <div
         className={`grid size-20 shrink-0 place-items-center border border-[#ddd6c6] ${
           dark ? 'bg-[#14120E]' : 'bg-white'
         }`}
       >
         {current === null ? (
-          <span className="text-xs text-[#8a8272]">—</span>
+          <span aria-hidden className={`text-2xl ${dark ? 'text-[#3d372c]' : 'text-[#ddd6c6]'}`}>
+            &#9633;
+          </span>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- ver arriba.
           <img
@@ -146,16 +147,17 @@ function BrandUpload({
         )}
       </div>
 
-      <div className="flex min-w-60 flex-1 flex-col gap-2">
-        <label className="flex flex-col gap-2 text-sm text-[#23201a]">
-          <span>
-            {label}
-            <span className="opacity-60"> · {hint}</span>
-          </span>
+      <div className="flex min-w-60 flex-1 flex-col gap-3">
+        {/* El nombre y la explicación, en dos líneas. En una sola separadas por
+            un punto, la explicación —que es lo largo— empujaba el nombre fuera
+            de la vista en cuanto la ventana se estrechaba. */}
+        <label className="flex cursor-pointer flex-col gap-1">
+          <span className="text-sm font-medium text-[#23201a]">{label}</span>
+          <span className="text-xs leading-relaxed text-[#6a6456]">{hint}</span>
           {/* `image/*` a secas: enumerar `image/heic` haría que un iPhone
               mandara el HEIC tal cual, y el descodificador de este servidor no
               trae HEVC. Sin enumerarlo, iOS lo convierte al enviarlo. */}
-          <input type="file" name={kind} accept="image/*" className={FIELD_CLASS} />
+          <input type="file" name={kind} accept="image/*" className="file-field mt-1" />
         </label>
 
         {current === null ? null : (

@@ -2,6 +2,7 @@ import { accessSync, constants, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { CODE_SEND_FAILED_ACTION } from '@/lib/auth/otp';
+import { readSenderDns } from '@/lib/mail/dns';
 import { getPrisma } from '@/lib/db/client';
 import { unverifiedVerses } from '@/lib/verses';
 import { gatewayHealth } from '@/lib/whatsapp/gateway';
@@ -37,6 +38,7 @@ export async function readHealth(): Promise<HealthCheck[]> {
     await databaseCheck(),
     dataSourceCheck(),
     mailerCheck(),
+    await senderDnsCheck(),
     paymentsCheck(),
     renderStoreCheck(),
     secretKeyCheck(),
@@ -49,6 +51,35 @@ export async function readHealth(): Promise<HealthCheck[]> {
     await whatsappCheck(),
     versesCheck(),
   ];
+}
+
+/**
+ * Si el dominio desde el que se escribe está autorizado a escribir.
+ *
+ * Esta fila existe por un caso concreto: el botón de prueba devolvió «250 OK»
+ * con el número de cola del servidor, y el correo no llegó nunca. Aceptar no es
+ * entregar. Quien lo descarta es el que recibe —Hotmail y Gmail tiran en
+ * SILENCIO, sin rebote, lo que viene de un dominio que no publica SPF— y desde
+ * aquí eso se ve idéntico a un envío perfecto.
+ *
+ * Sin SPF es `fail`: no es una recomendación, es la diferencia entre que los
+ * códigos de acceso lleguen o no. Sin DMARC es `warn`: ayuda mucho y no es
+ * imprescindible. DKIM no se mira, ver `lib/mail/dns.ts`.
+ */
+async function senderDnsCheck(): Promise<HealthCheck> {
+  const dns = await readSenderDns();
+  if (dns.domain === null) return { key: 'senderDns', level: 'warn', detail: 'MAIL_FROM' };
+  if (dns.unreachable === true) return { key: 'senderDns', level: 'warn', detail: `${dns.domain} · DNS` };
+
+  if (dns.spf === null) {
+    return { key: 'senderDns', level: 'fail', detail: `${dns.domain} · sin SPF` };
+  }
+  // La firma es una pista y no un veredicto: se busca a tientas, ver `dns.ts`.
+  const dkim = dns.dkimSelector === null ? '' : ` · DKIM (${dns.dkimSelector})`;
+  if (dns.dmarc === null) {
+    return { key: 'senderDns', level: 'warn', detail: `${dns.domain} · SPF · sin DMARC${dkim}` };
+  }
+  return { key: 'senderDns', level: 'ok', detail: `${dns.domain} · SPF · DMARC${dkim}` };
 }
 
 /**

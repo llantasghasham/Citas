@@ -325,6 +325,7 @@
           "database": "Conexión con la base de datos",
           "dataSource": "Origen de datos",
           "mailer": "Correo saliente",
+          "senderDns": "Remitente autorizado (SPF/DMARC)",
           "payments": "Pasarela de cobro",
           "renderStore": "Almacén de imágenes",
           "secretKey": "Llave de cifrado",

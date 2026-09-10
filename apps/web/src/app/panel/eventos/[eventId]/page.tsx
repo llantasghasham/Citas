@@ -315,7 +315,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           </Field>
 
           <Field label={copy.fileLabel}>
-            <input type="file" name="file" accept=".csv,.txt,text/csv,text/plain" className={FIELD_CLASS} />
+            <input type="file" name="file" accept=".csv,.txt,text/csv,text/plain" className="file-field" />
           </Field>
 
           <div className="flex flex-col gap-4 sm:flex-row">

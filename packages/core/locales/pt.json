@@ -325,6 +325,7 @@
           "database": "Ligação à base de dados",
           "dataSource": "Origem dos dados",
           "mailer": "Correio a sair",
+          "senderDns": "Remetente autorizado (SPF/DMARC)",
           "payments": "Gateway de pagamento",
           "renderStore": "Armazém de imagens",
           "secretKey": "Chave de cifra",

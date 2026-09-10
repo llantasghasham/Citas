@@ -14,6 +14,20 @@ import { hasExpired, isWaiting } from '@/lib/whatsapp/waiting';
 import { displayFont, latinOnly } from '@/lib/typography';
 import { interpolate, type Dictionary, type Locale } from '@citas/core';
 
+/*
+ * Los controles de la fila de un número van todos al MISMO alto.
+ *
+ * Antes cada uno traía el suyo: el botón de conectar era pequeño, la casilla
+ * del tope venía del campo de formulario grande —con su etiqueta encima, que la
+ * hacía todavía más alta— y «Guardar» era un tercer tamaño. Alineados por abajo,
+ * la fila parecía tres cosas pegadas en vez de una. Aquí se fija un alto común
+ * y la etiqueta pasa a ir AL LADO, que es lo que deja los tres en una línea.
+ */
+const ROW_H = 'h-11';
+const ROW_BUTTON = `${ROW_H} border border-[#ddd6c6] bg-white px-4 text-sm text-[#23201a] hover:opacity-70`;
+const ROW_BUTTON_STRONG = `${ROW_H} border border-[#23201a] bg-white px-5 text-sm text-[#23201a] hover:opacity-70`;
+const ROW_INPUT = `${ROW_H} w-20 border border-[#cdc6b6] bg-white px-3 text-sm tabular-nums text-[#23201a] outline-none focus-visible:border-[#8a6c22] focus-visible:ring-2 focus-visible:ring-[#c9a227]`;
+
 /**
  * Los números de WhatsApp de la oficina.
  *
@@ -162,38 +176,41 @@ export function WhatsappSection({
                 <p className="text-sm text-[#8a6c22]">{copy.expired}</p>
               ) : null}
 
-              <div className="flex flex-wrap items-end gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 {connection.status === 'connected' ? (
                   <form action={disconnectAction}>
                     <input type="hidden" name="id" value={connection.id} />
-                    <button type="submit" className="border border-[#23201a] px-4 py-2 text-sm hover:opacity-70">
+                    <button type="submit" className={ROW_BUTTON_STRONG}>
                       {copy.disconnect}
                     </button>
                   </form>
                 ) : (
                   <form action={connectAction}>
                     <input type="hidden" name="id" value={connection.id} />
-                    <button type="submit" className="border border-[#23201a] px-4 py-2 text-sm hover:opacity-70">
+                    <button type="submit" className={ROW_BUTTON_STRONG}>
                       {copy.connect}
                     </button>
                   </form>
                 )}
 
-                <form action={setCapAction} className="flex items-end gap-2">
+                <form action={setCapAction} className="flex items-center gap-2">
                   <input type="hidden" name="id" value={connection.id} />
-                  <label className="flex flex-col gap-1 text-xs text-[#6a6456]">
+                  {/* La etiqueta al lado y unida por `htmlFor`: encima subía
+                      esta casilla media línea por encima de los botones. */}
+                  <label htmlFor={`cap-${connection.id}`} className="text-xs text-[#6a6456]">
                     {copy.capLabel}
-                    <input
-                      type="number"
-                      name="cap"
-                      min={1}
-                      max={500}
-                      defaultValue={connection.dailyCap}
-                      className={`${FIELD_CLASS} w-24`}
-                      dir="ltr"
-                    />
                   </label>
-                  <button type="submit" className="border border-[#ddd6c6] px-3 py-2 text-sm hover:opacity-70">
+                  <input
+                    id={`cap-${connection.id}`}
+                    type="number"
+                    name="cap"
+                    min={1}
+                    max={500}
+                    defaultValue={connection.dailyCap}
+                    className={ROW_INPUT}
+                    dir="ltr"
+                  />
+                  <button type="submit" className={ROW_BUTTON}>
                     {dictionary.admin.config.save}
                   </button>
                 </form>

@@ -150,6 +150,11 @@ describe('los candados de los roles', { skip: HAS_DB ? false : 'sin DATABASE_URL
 
 describe('lo que no puede salir hacia fuera', () => {
   it('la dirección del servicio de WhatsApp solo apunta al bucle local', async () => {
+    // El guardia va PRIMERO. `getPrisma()` lanza si no hay `DATABASE_URL`, así
+    // que dejarlo por encima convertía en un fallo lo que tenía que ser un
+    // salto: sin base de datos, esta prueba se salta como todas las demás.
+    if (!HAS_DB) return;
+
     const prisma = getPrisma();
     const put = async (value: string): Promise<void> => {
       await prisma.setting.upsert({
@@ -157,7 +162,6 @@ describe('lo que no puede salir hacia fuera', () => {
         create: { key: 'WHATSAPP_GATEWAY_URL', value },
       });
     };
-    if (!HAS_DB) return;
 
     for (const bad of [
       'https://evil.example.com',

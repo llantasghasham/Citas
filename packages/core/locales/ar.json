@@ -325,6 +325,7 @@
           "database": "الاتصال بقاعدة البيانات",
           "dataSource": "مصدر البيانات",
           "mailer": "البريد الصادر",
+          "senderDns": "توثيق المُرسِل (SPF/DMARC)",
           "payments": "بوّابة الدفع",
           "renderStore": "مخزن الصور",
           "secretKey": "مفتاح التعمية",
