@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Citas">
+  <!-- La misma marca en trazo, para cuando va junto a texto y el bloque
+       macizo pesaría más que el nombre. Ver mark.svg. -->
+  <path d="M14 56 L14 26 A 25.46 25.46 0 0 1 32 8 A 25.46 25.46 0 0 1 50 26 L50 56 Z"
+        fill="none" stroke="#C9A227" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M32 22.5 Q33.4 31.5 41 33 Q33.4 34.5 32 43.5 Q30.6 34.5 23 33 Q30.6 31.5 32 22.5 Z" fill="#C9A227"/>
+</svg>

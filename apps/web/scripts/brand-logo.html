@@ -1,0 +1,37 @@
+<!doctype html>
+<meta charset="utf-8" />
+<!--
+  El logotipo: la marca y el nombre, en la tipografía del proyecto.
+
+  Va como HTML y no como SVG porque el nombre se escribe con Playfair Display,
+  que vive en public/fonts. Un SVG con `font-family` dentro depende de que el
+  navegador que lo abra tenga esa fuente, y como <img> no la carga nunca: se
+  dibujaría con la de respaldo. Así que lo fotografía el mismo Chromium que
+  dibuja las invitaciones, con la fuente cargada de verdad.
+
+  Fondo transparente: el logo va sobre la cabecera oscura, y un rectángulo
+  propio se vería como un parche.
+
+    npm run brand:build --workspace @citas/web
+-->
+<style>
+  @font-face { font-family: 'Playfair'; src: url('../public/fonts/PlayfairDisplay-500.ttf'); font-weight: 500; }
+
+  * { margin: 0; box-sizing: border-box; }
+  html, body { background: transparent; }
+  body {
+    width: 720px; height: 180px;
+    display: flex; align-items: center; gap: 34px;
+    padding-inline: 8px;
+  }
+  .mark { width: 116px; height: 116px; }
+  .word {
+    font-family: 'Playfair', serif; font-weight: 500;
+    font-size: 88px; line-height: 1;
+    letter-spacing: 0.16em; color: #F4EFE6;
+    /* El interletraje se come el hueco de la última letra. */
+    margin-inline-end: -0.16em;
+  }
+</style>
+<img class="mark" src="../public/brand/mark-outline.svg" alt="" />
+<span class="word">Citas</span>

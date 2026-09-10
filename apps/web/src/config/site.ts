@@ -56,6 +56,21 @@ export interface SiteConfig {
 export const SECTION_KEYS = ['features', 'steps', 'showcase', 'pricing', 'faq', 'closing'] as const;
 export type SectionKey = (typeof SECTION_KEYS)[number];
 
+/**
+ * La marca que trae de fábrica, dibujada a mano en `public/brand`.
+ *
+ * Va aparte de `SiteConfig` porque no es un ajuste con tres capas como los
+ * demás: es el último recurso. Una instalación recién levantada enseñaba el
+ * nombre en texto pelado y una pestaña en blanco, y parecía a medio terminar
+ * antes de que nadie hubiera hecho nada mal.
+ *
+ * Quien monta lo suyo lo tapa subiendo el suyo, que es lo que manda. Y quitar
+ * el suyo vuelve AQUÍ, no a nada: una cabecera sin marca no es un estado que
+ * nadie quiera dejar puesto.
+ */
+export const DEFAULT_LOGO = '/brand/logo.png';
+export const DEFAULT_ICON = '/brand/icon.png';
+
 export const SITE: SiteConfig = {
   brand: 'Citas',
   defaultLocale: 'ar',

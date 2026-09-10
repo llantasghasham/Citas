@@ -39,6 +39,26 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Una entrada nueva solo se añade tras verificación humana contra la edición
   citada, anotando el nombre en `verifiedBy`.
 
+### La marca
+- El logo es GEOMETRÍA escrita a mano en `public/brand/mark.svg` —un arco
+  apuntado con una estrella de cuatro puntas dentro—, nunca una imagen
+  generada. El arco es la forma que comparten la arquitectura del Levante y la
+  tarjeta de boda de siempre, y se lee a 16 píxeles, que es donde vive el icono
+  de una pestaña.
+- Todo lo demás SALE de ahí con `npm run brand:build`: el logotipo con el
+  nombre, el icono de la pestaña, los cinco iconos de la app y la tarjeta al
+  compartir. Cambiar la marca es cambiar el SVG y volver a ejecutarlo, no ir
+  buscando doce PNG por el repositorio. Los resultados se commitean: son
+  archivos estáticos y nadie va a arrancar Chromium para servirlos.
+- El nombre va en HTML y no dentro del SVG: se escribe con Playfair Display, y
+  un `font-family` dentro de un SVG cargado como `<img>` no encuentra nunca la
+  fuente — se dibujaría con la de respaldo.
+- `DEFAULT_LOGO` y `DEFAULT_ICON` en `config/site.ts` son el último recurso, no
+  un ajuste con capas: una instalación recién levantada enseñaba el nombre en
+  texto pelado y una pestaña en blanco. Quien sube el suyo lo tapa, y quitarlo
+  vuelve a la marca de fábrica — una cabecera sin nada no es un estado que
+  nadie quiera dejar puesto.
+
 ### Tipografía
 - Fuentes en /public/fonts, cargadas localmente
 - Árabe: Amiri, Cairo, Reem Kufi
@@ -383,6 +403,7 @@ npm run dev        # servidor de desarrollo
 npm run build      # build de producción
 npm run typecheck  # tsc --noEmit
 npm run lint:rtl   # guardia de CSS lógico (RTL)
+npm run brand:build # redibuja el logo, los iconos y los de la app móvil
 npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
 ```
 
