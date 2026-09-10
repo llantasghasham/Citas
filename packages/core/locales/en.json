@@ -466,9 +466,9 @@
         "WHATSAPP_WARMUP_CAP": "Between 1 and 100. A newly connected number sends this on its first day, even if its daily cap is higher. Raise it slowly: over weeks, not hours."
       },
       "brandLogo": "Logo",
-      "brandLogoHint": "Uploaded from your computer. It appears on the home page and in the panel header, on a dark background.",
+      "brandLogoHint": "Uploaded from your computer, up to {mb} MB. It appears on the home page and in the panel header, on a dark background.",
       "brandIcon": "Tab icon",
-      "brandIconHint": "The little square on the browser tab. It is cropped to a square.",
+      "brandIconHint": "The little square on the browser tab, up to {mb} MB. It is cropped to a square.",
       "brandRemove": "Remove on save",
       "brandByUrl": "Or point at an image address instead of uploading one",
       "brandTooBig": "The image is over {mb} MB. Pick a smaller one.",
@@ -669,7 +669,7 @@
       "timezoneAuto": "The one of the country you handle",
       "photo": {
         "label": "Photo",
-        "hint": "JPG, PNG or WEBP. The server crops it to a square and shrinks it.",
+        "hint": "JPG, PNG or WEBP, up to {mb} MB. The server crops it to a square and shrinks it.",
         "remove": "Remove the photo on save",
         "tooBig": "The image is over {mb} MB. Pick a smaller one.",
         "notAnImage": "That file is not an image that can be opened."

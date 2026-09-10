@@ -72,7 +72,7 @@ export function BrandSection({
       <BrandUpload
         kind="logo"
         label={copy.brandLogo}
-        hint={copy.brandLogoHint}
+        hint={interpolate(copy.brandLogoHint, { mb: String(maxMb) })}
         current={site.logoUrl}
         dark
         copy={copy}
@@ -80,7 +80,7 @@ export function BrandSection({
       <BrandUpload
         kind="icon"
         label={copy.brandIcon}
-        hint={copy.brandIconHint}
+        hint={interpolate(copy.brandIconHint, { mb: String(maxMb) })}
         current={site.iconUrl}
         copy={copy}
       />

@@ -112,18 +112,17 @@ export async function verifyLoginCode(
   });
   if (challenge === null) return failure;
 
-  if (challenge.attempts >= MAX_ATTEMPTS) {
-    await prisma.loginCode.update({
-      where: { id: challenge.id },
-      data: { consumedAt: new Date() },
-    });
-    return failure;
-  }
-
-  await prisma.loginCode.update({
-    where: { id: challenge.id },
+  // Contar el intento y comprobar que quedan, EN LA MISMA escritura.
+  //
+  // Estaban separados —leer los intentos, decidir, incrementar— y entre las dos
+  // cosas cabe otra petición. Dos intentos simultáneos con el quinto disponible
+  // pasaban los dos. `updateMany` con la condición dentro no deja: de dos, uno
+  // afecta la fila y el otro no.
+  const attempt = await prisma.loginCode.updateMany({
+    where: { id: challenge.id, consumedAt: null, attempts: { lt: MAX_ATTEMPTS } },
     data: { attempts: { increment: 1 } },
   });
+  if (attempt.count === 0) return failure;
 
   if (!secretMatches(code, challenge.codeHash)) return failure;
 
@@ -144,11 +143,18 @@ export async function verifyLoginCode(
     tenantId = user.memberships[0]?.tenantId ?? null;
   }
 
-  // The code is spent the moment it works, so it cannot be replayed.
-  await prisma.loginCode.update({
-    where: { id: challenge.id },
+  // El código se gasta EN EL MOMENTO en que sirve, y la sesión se abre solo si
+  // se ganó ese gasto.
+  //
+  // Era una escritura sin condición, así que dos peticiones con el mismo código
+  // válido —un doble clic, o el mismo enlace abierto dos veces— lo consumían
+  // las dos y abrían DOS sesiones. Un código de un solo uso que abre dos
+  // sesiones no es de un solo uso.
+  const spent = await prisma.loginCode.updateMany({
+    where: { id: challenge.id, consumedAt: null },
     data: { consumedAt: new Date() },
   });
+  if (spent.count === 0) return failure;
 
   const token = await issueSession(user.id, tenantId, metadata);
 

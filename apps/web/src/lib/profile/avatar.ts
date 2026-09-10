@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 
 import sharp from 'sharp';
 
+import { MAX_INPUT_PIXELS, withImageSlot } from '@/lib/images/limits';
+
 /**
  * La foto de perfil: lo que entra por el formulario y lo que acaba en la base.
  *
@@ -32,16 +34,8 @@ export const AVATAR_SIZE = 256;
  */
 export const MAX_AVATAR_BYTES = 8 * 1024 * 1024;
 
-/**
- * Tope de píxeles al DESCODIFICAR. Un archivo de doscientos kilobytes puede
- * declarar cincuenta mil por cincuenta mil y reventar la memoria del servidor
- * al abrirlo; es un ataque viejo y conocido, y esto es lo que lo para.
- *
- * Ciento veinte millones deja pasar hasta la cámara de doscientos megapíxeles
- * que ya llevan algunos teléfonos, y sigue muy por debajo de lo que hace falta
- * para tumbar el proceso.
- */
-const MAX_INPUT_PIXELS = 120_000_000;
+// El tope de píxeles y la cola de descodificación son comunes a todas las
+// imágenes que sube alguien: ver `lib/images/limits.ts`.
 
 export type AvatarProblem = 'tooBig' | 'notAnImage';
 
@@ -76,14 +70,16 @@ export async function processAvatar(
   if (input.byteLength > MAX_AVATAR_BYTES) return { error: 'tooBig' };
 
   try {
-    const data = await sharp(input, { limitInputPixels: MAX_INPUT_PIXELS, animated: false })
-      // Las fotos de teléfono vienen tumbadas con una nota que dice «gírame».
-      // Sin esto, media oficina sale de lado.
-      .rotate()
-      .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: 'cover', position: 'attention' })
-      // Sin `withMetadata()`: es justo lo que se quiere tirar.
-      .webp({ quality: 82 })
-      .toBuffer();
+    const data = await withImageSlot(() =>
+      sharp(input, { limitInputPixels: MAX_INPUT_PIXELS, animated: false })
+        // Las fotos de teléfono vienen tumbadas con una nota que dice «gírame».
+        // Sin esto, media oficina sale de lado.
+        .rotate()
+        .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: 'cover', position: 'attention' })
+        // Sin `withMetadata()`: es justo lo que se quiere tirar.
+        .webp({ quality: 82 })
+        .toBuffer(),
+    );
 
     return {
       data: new Uint8Array(data),

@@ -58,6 +58,19 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   sirve para averiguar qué direcciones existen.
 - Los secretos (token de sesión, código) se guardan SIEMPRE con hash. Un volcado
   de la base de datos no puede suplantar a nadie.
+- El código de un solo uso se GASTA con una escritura condicional
+  (`updateMany … where consumedAt: null`), y la sesión se abre solo si se ganó
+  ese gasto. Contar el intento y comprobar que quedan es también UNA sola
+  escritura. Estaban separados, y entre leer y escribir cabe otra petición: dos
+  peticiones con el mismo código válido abrían DOS sesiones, y dos intentos
+  simultáneos con el último disponible pasaban los dos.
+- Subir una imagen tiene TRES frenos, y los tres hacen falta: el tamaño del
+  archivo, los píxeles al descodificar —que es lo que cuesta memoria— y cuántas
+  se abren a la vez (`lib/images/limits.ts`). El límite de Next para los
+  formularios se pone POR ENCIMA del que comprueba el código, para que quien
+  decide y quien lo explica sean el mismo: estaba en un mega por defecto mientras
+  el código decía ocho, así que una foto de dos megas se rechazaba con un error
+  del framework en vez de con el mensaje escrito para ese caso.
 - Nunca se revela si una dirección tiene cuenta. La respuesta es la misma.
 - La oficina se resuelve por `x-forwarded-host`, no por `host`: en las peticiones
   de una Server Action, Next reescribe `host`. El origen debe estar detrás del

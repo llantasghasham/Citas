@@ -63,6 +63,10 @@ export default async function ProfilePage({ searchParams }: PageProps) {
   });
 
   const countries = countriesFor(locale);
+  // El tope, DICHO. Lo que pasa del límite del formulario lo corta Next con su
+  // propio error, no con el nuestro: decirlo antes es lo único que evita que
+  // alguien arrastre una foto de treinta megas y vea una pantalla rota.
+  const maxMb = Math.round(MAX_AVATAR_BYTES / 1024 / 1024);
   const photo = user === null ? null : avatarSrc(session.userId, user);
 
   // La zona con la que se leen las horas de esta pantalla: la elegida, la del
@@ -89,7 +93,7 @@ export default async function ProfilePage({ searchParams }: PageProps) {
       {params.foto === undefined ? null : (
         <p role="alert" className="text-sm text-[#8c2f1e]">
           {params.foto === 'tooBig'
-            ? interpolate(copy.photo.tooBig, { mb: String(Math.round(MAX_AVATAR_BYTES / 1024 / 1024)) })
+            ? interpolate(copy.photo.tooBig, { mb: String(maxMb) })
             : copy.photo.notAnImage}
         </p>
       )}
@@ -101,7 +105,10 @@ export default async function ProfilePage({ searchParams }: PageProps) {
           <Avatar src={photo} name={user?.name ?? session.email} size={96} />
 
           <div className="flex min-w-60 flex-1 flex-col gap-2">
-            <Field label={copy.photo.label} hint={copy.photo.hint}>
+            <Field
+              label={copy.photo.label}
+              hint={interpolate(copy.photo.hint, { mb: String(maxMb) })}
+            >
               {/* `image/*` a secas, y a propósito. Enumerar `image/heic` haría
                   que un iPhone mandara el HEIC tal cual, y el descodificador de
                   este servidor no trae HEVC —es una cuestión de patentes, no de

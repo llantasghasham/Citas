@@ -4,6 +4,7 @@ import { cache } from 'react';
 import sharp from 'sharp';
 
 import { recordAudit } from '@/lib/audit';
+import { MAX_INPUT_PIXELS, withImageSlot } from '@/lib/images/limits';
 import { getPrisma } from '@/lib/db/client';
 
 /**
@@ -26,8 +27,8 @@ export type BrandKind = (typeof BRAND_KINDS)[number];
 /** Un logo no es la foto de una cámara. Cuatro megas sobran de largo. */
 export const MAX_BRAND_BYTES = 4 * 1024 * 1024;
 
-/** Tope al DESCODIFICAR: un archivo pequeño puede declarar un lienzo enorme. */
-const MAX_INPUT_PIXELS = 120_000_000;
+// El tope de píxeles y la cola de descodificación son comunes: ver
+// `lib/images/limits.ts`.
 
 export type BrandProblem = 'tooBig' | 'notAnImage';
 
@@ -66,7 +67,7 @@ export async function processBrandImage(
   try {
     const image = sharp(input, { limitInputPixels: MAX_INPUT_PIXELS, animated: false }).rotate();
 
-    const data =
+    const data = await withImageSlot(async () =>
       kind === 'icon'
         ? // PNG y no WEBP para el icono: es el formato que TODO navegador acepta
           // como icono de pestaña sin discusión, y pesa lo que pesa un cuadrado
@@ -75,7 +76,8 @@ export async function processBrandImage(
         : await image
             .resize(640, 200, { fit: 'inside', withoutEnlargement: true })
             .webp({ quality: 92 })
-            .toBuffer();
+            .toBuffer(),
+    );
 
     return {
       data: new Uint8Array(data),

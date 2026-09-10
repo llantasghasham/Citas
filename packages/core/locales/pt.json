@@ -466,9 +466,9 @@
         "WHATSAPP_WARMUP_CAP": "Entre 1 e 100. Um número recém-ligado envia isto no primeiro dia, mesmo que o limite diário seja maior. Suba devagar: em semanas, não em horas."
       },
       "brandLogo": "Logótipo",
-      "brandLogoHint": "Envia-se do seu computador. Sai na página inicial e no cabeçalho do painel, sobre fundo escuro.",
+      "brandLogoHint": "Envia-se do seu computador, até {mb} MB. Sai na página inicial e no cabeçalho do painel, sobre fundo escuro.",
       "brandIcon": "Ícone do separador",
-      "brandIconHint": "O quadradinho do separador do navegador. É cortado em quadrado.",
+      "brandIconHint": "O quadradinho do separador do navegador, até {mb} MB. É cortado em quadrado.",
       "brandRemove": "Retirar ao guardar",
       "brandByUrl": "Ou pôr um endereço de imagem em vez de a enviar",
       "brandTooBig": "A imagem pesa mais de {mb} MB. Escolha uma mais pequena.",
@@ -669,7 +669,7 @@
       "timezoneAuto": "O do país que gere",
       "photo": {
         "label": "Foto",
-        "hint": "JPG, PNG ou WEBP. O servidor corta-a num quadrado e reduz-la.",
+        "hint": "JPG, PNG ou WEBP, até {mb} MB. O servidor corta-a num quadrado e reduz-la.",
         "remove": "Retirar a foto ao guardar",
         "tooBig": "A imagem pesa mais de {mb} MB. Escolha uma mais pequena.",
         "notAnImage": "Esse ficheiro não é uma imagem que se possa abrir."
