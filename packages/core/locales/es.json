@@ -609,7 +609,9 @@
       "step1": "Escriba un nombre para el número —por ejemplo «Mostrador Hamra»— y pulse Añadir.",
       "step2": "En la fila que aparece, pulse Conectar. El código tarda unos segundos en llegar.",
       "step3": "Escanéelo desde el teléfono: WhatsApp › Ajustes › Dispositivos vinculados › Vincular un dispositivo.",
-      "advanced": "Ajustes avanzados"
+      "advanced": "Ajustes avanzados",
+      "expired": "El código caducó sin llegar a escanearse. Vuelva a pulsar «Conectar».",
+      "continueHere": "Continuar"
     },
     "profile": {
       "title": "Mi perfil",

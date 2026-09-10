@@ -25,6 +25,8 @@ export interface ConnectionRow {
   sentDay: string | null;
   lastSeenAt: Date | null;
   lastError: string | null;
+  /** Cuándo se tocó la fila por última vez: es lo que dice si sigue viva. */
+  updatedAt: Date;
   /** Lo que le queda por salir de la cola. */
   queued: number;
 }
@@ -46,6 +48,7 @@ export async function listConnections(scope: TenantScope): Promise<ConnectionRow
       sentDay: true,
       lastSeenAt: true,
       lastError: true,
+      updatedAt: true,
       _count: { select: { messages: { where: { status: 'queued' } } } },
     },
   });
@@ -95,6 +98,38 @@ export async function ownedConnection(
   return getPrisma().whatsappConnection.findFirst({
     where: { id, ...scopedWhere(scope) },
     select: { id: true, name: true },
+  });
+}
+
+/**
+ * Lo justo para dibujar la espera del código, resuelto CON el scope.
+ *
+ * Va aparte de `listConnections` porque lo pide la pantallita del marco, que
+ * se recarga cada pocos segundos: contar la cola y traer el resto de números
+ * en cada una de esas recargas sería pagar la lista entera por enseñar un
+ * cuadrado.
+ */
+export async function connectionState(
+  scope: TenantScope,
+  id: string,
+): Promise<{
+  id: string;
+  name: string;
+  status: WhatsappStatus;
+  qrCode: string | null;
+  lastError: string | null;
+  updatedAt: Date;
+} | null> {
+  return getPrisma().whatsappConnection.findFirst({
+    where: { id, ...scopedWhere(scope) },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      qrCode: true,
+      lastError: true,
+      updatedAt: true,
+    },
   });
 }
 

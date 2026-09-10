@@ -609,7 +609,9 @@
       "step1": "Escreva um nome para o número — por exemplo «Balcão Hamra» — e carregue em Adicionar.",
       "step2": "Na linha que aparece, carregue em Ligar. O código demora alguns segundos a chegar.",
       "step3": "Leia-o no telemóvel: WhatsApp › Definições › Dispositivos ligados › Ligar um dispositivo.",
-      "advanced": "Definições avançadas"
+      "advanced": "Definições avançadas",
+      "expired": "O código caducou sem ter sido lido. Volte a carregar em «Ligar».",
+      "continueHere": "Continuar"
     },
     "profile": {
       "title": "O meu perfil",

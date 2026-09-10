@@ -10,6 +10,7 @@ import { SaveButton } from '@/components/panel/config/MailSection';
 import { Field, FIELD_CLASS } from '@/components/create/Field';
 import { SettingField, type SettingProps } from '@/components/panel/SettingField';
 import type { ConnectionRow } from '@/lib/whatsapp/connections';
+import { hasExpired, isWaiting } from '@/lib/whatsapp/waiting';
 import { displayFont, latinOnly } from '@/lib/typography';
 import { interpolate, type Dictionary, type Locale } from '@citas/core';
 
@@ -51,30 +52,8 @@ export function WhatsappSection({
 }) {
   const copy = dictionary.admin.whatsapp;
 
-  /**
-   * Este número está pidiendo el código AHORA.
-   *
-   * Se ata al botón —`?esperando=<id>`— y no al estado `pending`, porque un
-   * número recién añadido también está `pending` y ahí nadie ha pedido nada
-   * todavía: decirle «pidiendo el código» sería mentirle.
-   */
-  const pidiendo = (id: string, status: string): boolean =>
-    (esperando === id && status === 'pending') || status === 'qr';
-
-  const refrescar = connections.some((connection) => pidiendo(connection.id, connection.status));
-
   return (
     <div className="flex max-w-3xl flex-col gap-8">
-      {/* El código tarda unos segundos en llegar de WhatsApp, y esta pantalla no
-          lleva JavaScript de cliente, así que sin esto hay que recargar a mano
-          — y «pulsé Conectar y no veo nada» se parece demasiado a que está
-          roto. `meta refresh` es HTML del navegador, no un script: la regla del
-          proyecto sigue intacta.
-
-          Solo mientras se espera. Una pantalla que se recarga cada cinco
-          segundos para siempre tira lo que estés escribiendo en otro campo. */}
-      {refrescar ? <meta httpEquiv="refresh" content="5" /> : null}
-
       <p className="border border-[#8c2f1e] bg-[#fdf4f2] p-4 text-sm text-[#8c2f1e]">
         {copy.warning}
       </p>
@@ -159,21 +138,28 @@ export function WhatsappSection({
                 </span>
               </p>
 
-              {/* Se pulsó conectar y el código todavía no ha llegado. Decirlo
-                  es la diferencia entre «está tardando» y «no funciona». */}
-              {esperando === connection.id && connection.status === 'pending' ? (
-                <p className="text-sm text-[#8a6c22]">{copy.waiting}</p>
+              {/* La espera del código va en un MARCO, y no es un capricho.
+                  Esa pantallita se recarga sola con `<meta refresh>`, y ese
+                  temporizador lo guarda el documento —no la etiqueta— junto con
+                  la dirección que tenía al leerse. Como el panel navega sin
+                  recargar la página, armarlo aquí significaba que seguía vivo
+                  después de irse: se entraba al perfil y cinco segundos después
+                  el navegador te devolvía a WhatsApp. Dentro del marco, el
+                  documento se destruye al salir de esta pantalla y el
+                  temporizador se va con él. */}
+              {isWaiting(connection, esperando) ? (
+                <iframe
+                  src={`/qr/${connection.id}${esperando === undefined ? '' : `?esperando=${esperando}`}`}
+                  title={copy.scan}
+                  className="h-[27rem] w-full max-w-80 border-0"
+                />
               ) : null}
 
-              {/* El código. Solo mientras WhatsApp lo está pidiendo. */}
-              {connection.status === 'qr' && connection.qrCode !== null ? (
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm">{copy.scan}</p>
-                  {/* eslint-disable-next-line @next/next/no-img-element -- una
-                      imagen en data:, dibujada en el servidor. */}
-                  <img src={connection.qrCode} alt="" width={280} height={280} />
-                  <p className="text-xs text-[#6a6456]">{copy.refresh}</p>
-                </div>
+              {/* Se pidió el código y no llegó nunca. Antes esto se quedaba
+                  «esperando el código» para siempre, que es la forma más larga
+                  de no decir nada. */}
+              {hasExpired(connection, esperando) ? (
+                <p className="text-sm text-[#8a6c22]">{copy.expired}</p>
               ) : null}
 
               <div className="flex flex-wrap items-end gap-3">

@@ -692,6 +692,10 @@ export interface Dictionary {
       duplicate: string;
       /** Se pulsó conectar y el código todavía no ha llegado de WhatsApp. */
       waiting: string;
+      /** Se pidió el código y nadie lo escaneó: la espera se da por muerta. */
+      expired: string;
+      /** Sale del marco del código y devuelve la pantalla entera al panel. */
+      continueHere: string;
       /** Los tres pasos hasta el código. Sin esto, la pantalla no dice cómo. */
       stepsTitle: string;
       step1: string;
