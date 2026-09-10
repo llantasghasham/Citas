@@ -199,6 +199,25 @@ Las reglas del recordatorio, que no se negocian:
 - Si en ese momento no hay ningún número conectado, **no se marca a nadie**: la
   siguiente pasada lo vuelve a intentar.
 
+## La dirección del servicio, y por qué está limitada
+
+`WHATSAPP_GATEWAY_URL` se edita en el panel, pero **solo se acepta el bucle
+local** (`127.0.0.1`, `localhost`) o lo que declare `WHATSAPP_GATEWAY_HOST` en
+el **entorno** — un archivo en disco con permisos, no una fila de la base.
+
+La razón: el token que viaja en esa llamada controla **todos los números de
+todas las oficinas**. Sin este filtro, cambiar un campo de texto de la
+configuración convertía el servidor en un ariete: una petición saliente a donde
+quisiera el atacante, con el token dentro. Dicho corto: **el panel puede cambiar
+el puerto, no la máquina.** Tampoco se siguen redirecciones, que es el mismo
+problema por otra puerta.
+
+Si el servicio corre en otra máquina, se declara así en `apps/web/.env`:
+
+```bash
+WHATSAPP_GATEWAY_HOST="wa.interno.lan"
+```
+
 ## Cuando algo falla
 
 - **«WhatsApp no respondió»** en la fila: el servidor no puede salir a

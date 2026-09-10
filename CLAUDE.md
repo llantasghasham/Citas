@@ -168,8 +168,18 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   base. Es el secreto más peligroso del proyecto: quien la tiene escribe desde
   el WhatsApp del cliente.
 - Multi-número y multi-oficina. Cada `WhatsappConnection` cuelga de su
-  `tenantId`, y toda acción resuelve la conexión con el `TenantScope` antes de
-  tocarla: el id viaja en un campo oculto del formulario.
+  `tenantId`, y toda acción resuelve la conexión con el `TenantScope` **antes de
+  tocarla, y antes de llamar al servicio**: el id viaja en un campo oculto del
+  formulario. Quitar un número lo hacía al revés —servicio primero, comprobación
+  después— y eso era un agujero: el servicio acepta un id cualquiera con un token
+  global, así que quien administra la oficina A y consiguiera el id de una
+  conexión de B le cerraba el WhatsApp y le destruía las credenciales.
+- La dirección del servicio solo puede apuntar al BUCLE LOCAL, o a lo que declare
+  `WHATSAPP_GATEWAY_HOST` en el entorno. El token que viaja en esa llamada
+  controla todos los números de todas las oficinas, y la dirección se edita desde
+  el panel: sin filtro, cambiar un campo de texto convertía el servidor en un
+  ariete con el token dentro. El panel puede cambiar el puerto, no la máquina. Y
+  no se siguen redirecciones, que es el mismo problema por otra puerta.
 - El servicio NO expone «manda este mensaje». Solo «abre la sesión» y «ciérrala».
   Un extremo que manda al momento es un extremo con el que se vacía el cupo de
   un número en un bucle.
