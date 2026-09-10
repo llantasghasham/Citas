@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
-import { saveSetting } from '@/lib/settings';
+import { saveSetting, type SettingKey } from '@/lib/settings';
 import {
   createConnection,
   deleteConnection,
@@ -47,15 +47,47 @@ async function officeSession(): Promise<
   return session;
 }
 
+/**
+ * Los límites del freno, LOS MISMOS que aplica el servicio.
+ *
+ * Están escritos dos veces —aquí y en `apps/whatsapp/src/config.ts`— porque son
+ * dos procesos que no comparten código a propósito. La copia que MANDA es la
+ * del servicio, que recorta al leer: si un día se separan, lo que gana es el
+ * freno, no la pantalla.
+ *
+ * El mínimo no es cero y no se negocia: quien monta esto eligió la versión CON
+ * freno sobre la versión sin él, y un retardo de cero la convertiría en la que
+ * descartó sin que nadie lo decidiera.
+ */
+const BRAKE = {
+  WHATSAPP_DELAY_MIN: { min: 3, max: 300 },
+  WHATSAPP_DELAY_MAX: { min: 3, max: 600 },
+  WHATSAPP_WARMUP_CAP: { min: 1, max: 100 },
+} as const;
+
+async function saveBrake(formData: FormData, actorId: string): Promise<void> {
+  for (const [key, bounds] of Object.entries(BRAKE)) {
+    const raw = formData.get(key);
+    if (raw === null) continue;
+
+    const parsed = Number.parseInt(String(raw), 10);
+    if (!Number.isFinite(parsed)) continue;
+
+    const safe = Math.min(bounds.max, Math.max(bounds.min, Math.trunc(parsed)));
+    await saveSetting(key as SettingKey, String(safe), actorId);
+  }
+}
+
 export async function addConnectionAction(formData: FormData): Promise<void> {
   const session = await officeSession();
 
-  // El mismo formulario sirve para la dirección del servicio: es un campo de
-  // configuración, y separarlo en su propia acción era una acción de una línea.
+  // El mismo formulario sirve para lo que es de la plataforma y no de la
+  // oficina: la dirección del servicio y el freno.
   if (String(formData.get('sector') ?? '') === 'whatsapp-url') {
-    const raw = formData.get('WHATSAPP_GATEWAY_URL');
-    if (raw !== null && sessionCan(session, 'platform:manage')) {
-      await saveSetting('WHATSAPP_GATEWAY_URL', String(raw), session.userId);
+    if (sessionCan(session, 'platform:manage')) {
+      const url = formData.get('WHATSAPP_GATEWAY_URL');
+      if (url !== null) await saveSetting('WHATSAPP_GATEWAY_URL', String(url), session.userId);
+      await saveBrake(formData, session.userId);
     }
     redirect(`${VOLVER}&guardado=1`);
   }

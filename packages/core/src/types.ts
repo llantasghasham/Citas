@@ -474,7 +474,10 @@ export interface Dictionary {
           | 'WHISH_SECRET'
           | 'CONTACT_WHATSAPP'
           | 'HOME_SECTIONS'
-          | 'WHATSAPP_GATEWAY_URL',
+          | 'WHATSAPP_GATEWAY_URL'
+          | 'WHATSAPP_DELAY_MIN'
+          | 'WHATSAPP_DELAY_MAX'
+          | 'WHATSAPP_WARMUP_CAP',
           string
         >
       >;
@@ -505,6 +508,9 @@ export interface Dictionary {
         | 'HOME_SHOWCASE'
         | 'HOME_DEFAULT_LOCALE'
         | 'WHATSAPP_GATEWAY_URL'
+        | 'WHATSAPP_DELAY_MIN'
+        | 'WHATSAPP_DELAY_MAX'
+        | 'WHATSAPP_WARMUP_CAP'
         | 'NEXT_PUBLIC_SITE_URL',
         string
       >;

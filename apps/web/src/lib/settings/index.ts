@@ -47,6 +47,12 @@ export const SETTING_KEYS = [
   // WhatsApp. El TOKEN no está aquí: lo comparten dos procesos que arrancan
   // por separado, así que va por entorno en los dos.
   'WHATSAPP_GATEWAY_URL',
+  // El freno. Se ajusta desde la pantalla porque es lo que el dueño va a querer
+  // tocar cuando un número vaya apretado, y la regla es que eso no exija SSH.
+  // El servicio los relee cada minuto, así que no hay que reiniciarlo.
+  'WHATSAPP_DELAY_MIN',
+  'WHATSAPP_DELAY_MAX',
+  'WHATSAPP_WARMUP_CAP',
   // El sitio
   'NEXT_PUBLIC_SITE_URL',
 ] as const;

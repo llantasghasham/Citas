@@ -27,6 +27,7 @@ import { interpolate, type Dictionary, type Locale } from '@citas/core';
 export function WhatsappSection({
   connections,
   gatewayUrl,
+  brake,
   gatewayError,
   error,
   canEditGateway,
@@ -35,6 +36,8 @@ export function WhatsappSection({
 }: {
   connections: ConnectionRow[];
   gatewayUrl: SettingProps;
+  /** El freno: retardo mínimo, máximo y calentamiento. */
+  brake: SettingProps[];
   gatewayError?: string;
   /** Lo que salió mal al añadir: `sinOficina`, `duplicate`… */
   error?: string;
@@ -191,6 +194,14 @@ export function WhatsappSection({
         <form action={addConnectionAction} className="flex flex-col gap-5 border-t border-[#ddd6c6] pt-6">
           <input type="hidden" name="sector" value="whatsapp-url" />
           <SettingField {...gatewayUrl} dictionary={dictionary} />
+
+          {/* El freno, aquí y no en el servidor: es lo que hay que tocar cuando
+              un número va apretado, y para eso nadie debería entrar por SSH. El
+              servicio lo relee cada minuto, así que no hay que reiniciarlo. */}
+          {brake.map((field) => (
+            <SettingField key={field.name} {...field} dictionary={dictionary} type="number" />
+          ))}
+
           <SaveButton dictionary={dictionary} />
         </form>
       ) : null}

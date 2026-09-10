@@ -147,6 +147,14 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - El servicio NO expone «manda este mensaje». Solo «abre la sesión» y «ciérrala».
   Un extremo que manda al momento es un extremo con el que se vacía el cupo de
   un número en un bucle.
+- El freno se ajusta en `/panel/configuracion?s=whatsapp` —retardo mínimo y
+  máximo, calentamiento— y el servicio lo RELEE cada minuto: reiniciarlo para
+  bajar unos segundos costaría que cada oficina volviera a escanear. En el
+  entorno solo queda lo que hace falta para arrancar: el token (lo comparten dos
+  procesos), `DATABASE_URL` y la llave.
+- El freno se acorta, NO se quita. El mínimo son tres segundos, recortado al
+  guardar Y al leer; lo que manda es el servicio, porque una fila escrita a mano
+  tampoco puede quitarlo.
 - El mensaje va en el idioma DEL INVITADO, no en el de la oficina.
 - Reimportar la misma lista no duplica: se reconoce por teléfono, y por nombre
   cuando no hay teléfono.

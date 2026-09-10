@@ -330,7 +330,10 @@
         "HOME_SECTIONS": "Home page blocks, in order",
         "HOME_SHOWCASE": "Sample invitations (comma-separated slugs)",
         "HOME_DEFAULT_LOCALE": "Home page default language",
-        "WHATSAPP_GATEWAY_URL": "WhatsApp service address"
+        "WHATSAPP_GATEWAY_URL": "WhatsApp service address",
+        "WHATSAPP_DELAY_MIN": "Wait between messages, minimum seconds",
+        "WHATSAPP_DELAY_MAX": "Wait between messages, maximum seconds",
+        "WHATSAPP_WARMUP_CAP": "Messages on a new number's first day"
       },
       "sections": {
         "mail": "Mail",
@@ -387,7 +390,10 @@
         "MAIL_FROM": "It is called MAIL_FROM, not SMTP_FROM. Format: Your Brand <info@your-domain.com>",
         "CONTACT_WHATSAPP": "In E.164 without the plus: 96170123456. Empty = it does not appear on the home page.",
         "HOME_SECTIONS": "Comma-separated, in this order: features, steps, showcase, pricing, faq, closing. Remove one to hide it.",
-        "WHATSAPP_GATEWAY_URL": "Where the WhatsApp service listens. Defaults to http://127.0.0.1:4100, and must not be published."
+        "WHATSAPP_GATEWAY_URL": "Where the WhatsApp service listens. Defaults to http://127.0.0.1:4100, and must not be published.",
+        "WHATSAPP_DELAY_MIN": "Between 3 and 300. The real delay is random between minimum and maximum: an exact interval is a machine's signature. It cannot be zero — the brake can be shortened, not removed.",
+        "WHATSAPP_DELAY_MAX": "Between 3 and 600. If it falls below the minimum, the minimum is used.",
+        "WHATSAPP_WARMUP_CAP": "Between 1 and 100. A newly connected number sends this on its first day, even if its daily cap is higher. Raise it slowly: over weeks, not hours."
       }
     },
     "offices": {

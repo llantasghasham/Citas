@@ -330,7 +330,10 @@
         "HOME_SECTIONS": "Blocos da página inicial, por ordem",
         "HOME_SHOWCASE": "Convites de amostra (slugs separados por vírgulas)",
         "HOME_DEFAULT_LOCALE": "Idioma predefinido da página inicial",
-        "WHATSAPP_GATEWAY_URL": "Endereço do serviço de WhatsApp"
+        "WHATSAPP_GATEWAY_URL": "Endereço do serviço de WhatsApp",
+        "WHATSAPP_DELAY_MIN": "Segundos de espera, mínimo",
+        "WHATSAPP_DELAY_MAX": "Segundos de espera, máximo",
+        "WHATSAPP_WARMUP_CAP": "Envios no primeiro dia de um número novo"
       },
       "sections": {
         "mail": "Correio",
@@ -387,7 +390,10 @@
         "MAIL_FROM": "Chama-se MAIL_FROM, não SMTP_FROM. Formato: A Sua Marca <info@o-seu-dominio.com>",
         "CONTACT_WHATSAPP": "Em E.164 e sem o mais: 96170123456. Vazio = não aparece na página inicial.",
         "HOME_SECTIONS": "Separados por vírgulas e por esta ordem: features, steps, showcase, pricing, faq, closing. Retire um para o ocultar.",
-        "WHATSAPP_GATEWAY_URL": "Onde escuta o serviço de WhatsApp. Por omissão http://127.0.0.1:4100, e não deve ser publicado."
+        "WHATSAPP_GATEWAY_URL": "Onde escuta o serviço de WhatsApp. Por omissão http://127.0.0.1:4100, e não deve ser publicado.",
+        "WHATSAPP_DELAY_MIN": "Entre 3 e 300. O atraso real é aleatório entre o mínimo e o máximo: um intervalo exato é uma assinatura de máquina. Não pode ser zero — o travão encurta-se, não se retira.",
+        "WHATSAPP_DELAY_MAX": "Entre 3 e 600. Se ficar abaixo do mínimo, usa-se o mínimo.",
+        "WHATSAPP_WARMUP_CAP": "Entre 1 e 100. Um número recém-ligado envia isto no primeiro dia, mesmo que o limite diário seja maior. Suba devagar: em semanas, não em horas."
       }
     },
     "offices": {

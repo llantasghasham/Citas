@@ -58,15 +58,39 @@ compartido por dos programas que arrancan por separado.
 ```
 WHATSAPP_GATEWAY_TOKEN=   # al menos 24 caracteres; el mismo en los dos
 WHATSAPP_GATEWAY_PORT=4100
-WHATSAPP_DELAY_MIN=8      # segundos
-WHATSAPP_DELAY_MAX=25
-WHATSAPP_WARMUP_CAP=20
 DATABASE_URL=             # la misma que la web
 CITAS_SECRET_KEY_FILE=    # la misma que la web
 ```
 
-La dirección del servicio (`WHATSAPP_GATEWAY_URL`) sí se configura en el panel,
-porque no es un secreto.
+Eso es TODO lo que va en el entorno, y solo porque hace falta para arrancar:
+el token lo comparten dos procesos que arrancan por separado, y lo demás es lo
+que se necesita para poder leer la base de datos.
+
+### El freno se ajusta en la pantalla
+
+`/panel/configuracion?s=whatsapp`, solo el superadministrador:
+
+| Campo | Rango | Por defecto |
+|---|---|---|
+| Segundos de espera, mínimo | 3 – 300 | 8 |
+| Segundos de espera, máximo | 3 – 600 | 25 |
+| Envíos el primer día de un número nuevo | 1 – 100 | 20 |
+| Tope diario (por número, en su fila) | 1 – 500 | 200 |
+
+Ahí va lo que hay que tocar cuando un número va apretado, y para eso nadie
+debería entrar por SSH. **El servicio los relee cada minuto**, así que un cambio
+surte efecto sin reiniciarlo — reiniciarlo para bajar unos segundos costaría que
+cada oficina volviera a escanear su código.
+
+**El freno se acorta, no se quita.** El mínimo son tres segundos y el código lo
+recorta en los dos sitios: al guardar en el panel y al leer en el servicio. Lo
+segundo es lo que manda, porque una fila escrita a mano en la base tampoco puede
+quitarlo. Quien montó esto eligió expresamente la versión con freno sobre la
+versión sin él; un retardo de cero la convertiría en la que descartó sin que
+nadie lo decidiera.
+
+Las tres variables siguen leyéndose del entorno como RESPALDO, para una
+instalación que ya las tuviera puestas.
 
 En producción NO hay que hacer nada de esto a mano: `deploy/install.sh` genera
 el token, lo escribe en el mismo `apps/web/.env` que ya lee la web, e instala y

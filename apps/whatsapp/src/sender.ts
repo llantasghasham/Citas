@@ -1,9 +1,9 @@
-import { readConfig } from './config.js';
 import {
   listConnections,
   markFailed,
   markSent,
   nextQueued,
+  readTunables,
   usedToday,
   type ConnectionRow,
 } from './db.js';
@@ -21,7 +21,8 @@ import { isUp, socketFor, toJid } from './sessions.js';
  * Nada de esto lo hace permitido. Lo hace sobrevivible:
  *
  * - Un retardo AL AZAR entre mensajes, no fijo: un intervalo exacto es una
- *   firma de máquina.
+ *   firma de máquina. Se ajusta en /panel/configuracion, y se puede acortar
+ *   pero no anular: el mínimo son tres segundos.
  * - Un tope diario por número, que la oficina puede bajar y no subir sin querer.
  * - Calentamiento: un número recién conectado manda mucho menos el primer día.
  * - De uno en uno por número. Nunca en paralelo.
@@ -49,10 +50,13 @@ export function capFor(connection: ConnectionRow, warmupCap: number): number {
 }
 
 async function drainOne(connection: ConnectionRow): Promise<boolean> {
-  const config = readConfig();
+  // Se relee en cada mensaje, no al arrancar: bajar el retardo desde la
+  // pantalla surte efecto en menos de un minuto, sin reiniciar un servicio que
+  // está sosteniendo sesiones abiertas.
+  const tunables = await readTunables();
   const day = today();
 
-  if (usedToday(connection, day) >= capFor(connection, config.warmupCap)) return false;
+  if (usedToday(connection, day) >= capFor(connection, tunables.warmupCap)) return false;
   if (!isUp(connection.id)) return false;
 
   const message = await nextQueued(connection.id);
@@ -81,7 +85,7 @@ async function drainOne(connection: ConnectionRow): Promise<boolean> {
   }
 
   // El retardo va DESPUÉS del envío y es al azar dentro de la horquilla.
-  const { delayMin, delayMax } = config;
+  const { delayMin, delayMax } = tunables;
   const seconds = delayMin + Math.random() * Math.max(0, delayMax - delayMin);
   await sleep(seconds * 1000);
 

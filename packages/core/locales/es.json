@@ -330,7 +330,10 @@
         "HOME_SECTIONS": "Bloques de la portada, en orden",
         "HOME_SHOWCASE": "Invitaciones de muestra (slugs separados por comas)",
         "HOME_DEFAULT_LOCALE": "Idioma por defecto de la portada",
-        "WHATSAPP_GATEWAY_URL": "Dirección del servicio de WhatsApp"
+        "WHATSAPP_GATEWAY_URL": "Dirección del servicio de WhatsApp",
+        "WHATSAPP_DELAY_MIN": "Segundos de espera, mínimo",
+        "WHATSAPP_DELAY_MAX": "Segundos de espera, máximo",
+        "WHATSAPP_WARMUP_CAP": "Envíos el primer día de un número nuevo"
       },
       "sections": {
         "mail": "Correo",
@@ -387,7 +390,10 @@
         "MAIL_FROM": "Se llama MAIL_FROM, no SMTP_FROM. Formato: Su Marca <info@su-dominio.com>",
         "CONTACT_WHATSAPP": "En E.164 y sin el más: 96170123456. Vacío = no sale en la portada.",
         "HOME_SECTIONS": "Separados por comas y en este orden: features, steps, showcase, pricing, faq, closing. Quite uno para ocultarlo.",
-        "WHATSAPP_GATEWAY_URL": "Dónde escucha el servicio de WhatsApp. Por defecto http://127.0.0.1:4100, y no debe publicarse."
+        "WHATSAPP_GATEWAY_URL": "Dónde escucha el servicio de WhatsApp. Por defecto http://127.0.0.1:4100, y no debe publicarse.",
+        "WHATSAPP_DELAY_MIN": "Entre 3 y 300. El retardo real es al azar entre el mínimo y el máximo: un intervalo exacto es una firma de máquina. No se puede poner a cero — se puede acortar el freno, no quitarlo.",
+        "WHATSAPP_DELAY_MAX": "Entre 3 y 600. Si queda por debajo del mínimo, se usa el mínimo.",
+        "WHATSAPP_WARMUP_CAP": "Entre 1 y 100. Un número recién conectado manda esto el primer día, aunque su tope diario sea mayor. Suba despacio: en semanas, no en horas."
       }
     },
     "offices": {

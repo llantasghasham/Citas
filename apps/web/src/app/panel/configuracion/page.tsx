@@ -50,6 +50,11 @@ const SUGERIDO: Partial<Record<SettingKey, string>> = {
   WHISH_BASE_URL: 'https://api.whish.money/itel-service/api',
   WHATSAPP_GATEWAY_URL: 'http://127.0.0.1:4100',
   SMTP_PORT: '587',
+  // Los mismos que traía el servicio de fábrica, para que el campo no salga en
+  // blanco cuando nadie los ha tocado todavía.
+  WHATSAPP_DELAY_MIN: '8',
+  WHATSAPP_DELAY_MAX: '25',
+  WHATSAPP_WARMUP_CAP: '20',
 };
 
 /**
@@ -155,6 +160,11 @@ export default async function ConfigPage({ searchParams }: PageProps) {
         <WhatsappSection
           connections={session.tenantId === null ? [] : await listConnections(scopeOf(session))}
           gatewayUrl={await campo('WHATSAPP_GATEWAY_URL')}
+          brake={await Promise.all([
+            campo('WHATSAPP_DELAY_MIN'),
+            campo('WHATSAPP_DELAY_MAX'),
+            campo('WHATSAPP_WARMUP_CAP'),
+          ])}
           canEditGateway={platform}
           {...(params.servicio === undefined ? {} : { gatewayError: params.servicio })}
           {...(params.error === undefined ? {} : { error: params.error })}

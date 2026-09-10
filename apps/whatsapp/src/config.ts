@@ -1,22 +1,53 @@
 import { readFileSync } from 'node:fs';
 
 /**
- * Lo que este servicio necesita para arrancar, y nada más.
+ * Lo que este servicio necesita para ARRANCAR, y nada más.
  *
  * Va por entorno y no por la tabla `Setting` a propósito: esto es un proceso
  * aparte que arranca solo, y lo que hace falta para leer la base de datos no
- * puede vivir dentro de la base de datos.
+ * puede vivir dentro de la base de datos. El token, además, lo comparten dos
+ * procesos que arrancan por separado.
+ *
+ * Lo que SÍ se ajusta en caliente —el retardo y el calentamiento— ya no está
+ * aquí: vive en `Setting` y se lee en `readTunables()`. La regla del proyecto
+ * es que nada que el dueño quiera cambiar exija entrar por SSH, y el retardo
+ * es justo lo que va a querer tocar cuando un número vaya apretado.
  */
 export interface GatewayConfig {
   databaseUrl: string;
   /** El secreto compartido con la web. Sin él, cualquiera manda mensajes. */
   token: string;
   port: number;
+}
+
+/**
+ * Los límites del freno, y por qué existen.
+ *
+ * Se pueden ajustar, pero no anular. Quien monta esto eligió expresamente la
+ * versión CON freno sobre la versión sin él, así que un retardo de cero
+ * convertiría el sistema en la opción que descartó, sin que nadie lo decidiera.
+ * Un mínimo de tres segundos deja margen para ir más rápido y sigue sin
+ * parecerse a un bucle.
+ *
+ * Se recortan al LEER y no solo al guardar: una fila escrita a mano en la base
+ * no debe poder quitar el freno.
+ */
+export const LIMITS = {
+  delayMin: { min: 3, max: 300, fallback: 8 },
+  delayMax: { min: 3, max: 600, fallback: 25 },
+  warmupCap: { min: 1, max: 100, fallback: 20 },
+} as const;
+
+export interface Tunables {
   /** Segundos entre mensajes, mínimo y máximo. El azar entre medias. */
   delayMin: number;
   delayMax: number;
   /** Cuántos mensajes manda un número nuevo el primer día. */
   warmupCap: number;
+}
+
+export function clamp(value: number, bounds: { min: number; max: number }): number {
+  return Math.min(bounds.max, Math.max(bounds.min, Math.trunc(value)));
 }
 
 function required(name: string): string {
@@ -46,10 +77,12 @@ export function readConfig(): GatewayConfig {
     databaseUrl: required('DATABASE_URL'),
     token,
     port: number('WHATSAPP_GATEWAY_PORT', 4100),
-    delayMin: number('WHATSAPP_DELAY_MIN', 8),
-    delayMax: number('WHATSAPP_DELAY_MAX', 25),
-    warmupCap: number('WHATSAPP_WARMUP_CAP', 20),
   };
+}
+
+/** Lo mismo, para el respaldo por entorno de los tres ajustables. */
+export function fromEnv(name: string, fallback: number): number {
+  return number(name, fallback);
 }
 
 /**
