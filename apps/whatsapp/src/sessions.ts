@@ -24,6 +24,18 @@ import { clearQr, forgetAuth, getConnection, setStatus } from './db.js';
  * dentro de Next: una petición termina, un socket no. Por eso este proceso.
  */
 const sockets = new Map<string, WASocket>();
+
+/**
+ * Los arranques en curso, por conexión.
+ *
+ * `startSession` era comprobar-y-actuar: miraba si había socket y LUEGO se iba
+ * a la base y a la red. Dos peticiones seguidas —o pulsar «Conectar» dos veces—
+ * pasaban las dos por el hueco y abrían DOS sockets contra WhatsApp con las
+ * mismas credenciales, que es una forma excelente de que te cierren el número.
+ *
+ * Guardando la promesa, el segundo espera al primero en vez de duplicarlo.
+ */
+const starting = new Map<string, Promise<void>>();
 /** Cuántas veces seguidas se ha reintentado, para no reconectar en bucle. */
 const retries = new Map<string, number>();
 
@@ -43,6 +55,15 @@ export function isUp(connectionId: string): boolean {
  * enseñe: es lo que el cliente escanea desde su teléfono.
  */
 export async function startSession(connectionId: string): Promise<void> {
+  const inFlight = starting.get(connectionId);
+  if (inFlight !== undefined) return inFlight;
+
+  const run = openSession(connectionId).finally(() => starting.delete(connectionId));
+  starting.set(connectionId, run);
+  return run;
+}
+
+async function openSession(connectionId: string): Promise<void> {
   if (sockets.has(connectionId)) return;
 
   const row = await getConnection(connectionId);
@@ -221,6 +242,24 @@ export async function resumeAll(rows: { id: string; authEnc: string | null }[]):
 }
 
 /** El destino tal y como lo quiere WhatsApp, desde un E.164. */
+/**
+ * Cierra los sockets sin desvincular nada.
+ *
+ * `logoutSession` le dice a WhatsApp «olvídame» y borra las credenciales; esto
+ * es lo contrario: soltar la conexión para poder apagarse, dejando la sesión
+ * guardada para volver a levantarla al arrancar.
+ */
+export function closeAllSockets(): void {
+  for (const [id, socket] of sockets) {
+    try {
+      socket.end(undefined);
+    } catch {
+      // Cerrar un socket que ya está roto no es un problema que resolver.
+    }
+    sockets.delete(id);
+  }
+}
+
 export function toJid(e164: string): string {
   return `${e164.replace(/\D/g, '')}@s.whatsapp.net`;
 }

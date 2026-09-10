@@ -254,6 +254,7 @@ model Event {
   hosts    EventHost[]
   honorees EventHonoree[]
   guests   Guest[]
+  messages WhatsappMessage[]
 
   @@index([tenantId, status])
   @@index([tenantId, date])
@@ -382,8 +383,9 @@ model Guest {
 
   createdAt DateTime @default(now())
 
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  rsvp  Rsvp?
+  event    Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  rsvp     Rsvp?
+  messages WhatsappMessage[]
 
   @@index([eventId])
   @@index([eventId, locale])
@@ -566,6 +568,10 @@ model WhatsappConnection {
   messages WhatsappMessage[]
 
   @@unique([tenantId, name])
+  // Para que un mensaje pueda apuntar a (id, tenantId) A LA VEZ: es lo que
+  // hace IMPOSIBLE —no improbable— que una fila de la oficina A cuelgue de un
+  // número de la B.
+  @@unique([id, tenantId])
   @@index([tenantId, status])
 }
 
@@ -624,7 +630,18 @@ model WhatsappMessage {
   sentAt    DateTime?
   createdAt DateTime  @default(now())
 
-  connection WhatsappConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  /// La conexión, por (id, tenantId) y no solo por id.
+  ///
+  /// Esa es la diferencia entre «el código siempre pone el tenant correcto» y
+  /// «la base no admite otra cosa». `tenantId`, `eventId` y `guestId` no tenían
+  /// ninguna clave foránea: una consulta escrita a mano, o un descuido futuro,
+  /// podía dejar un mensaje de una oficina colgando del número de otra.
+  connection WhatsappConnection @relation(fields: [connectionId, tenantId], references: [id, tenantId], onDelete: Cascade)
+
+  /// A `null` cuando se borra: el mensaje es el REGISTRO de lo que se mandó, y
+  /// borrarlo porque el evento ya pasó sería borrar la prueba.
+  event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  guest Guest? @relation(fields: [guestId], references: [id], onDelete: SetNull)
 
   // Por `connectionId` primero: es por donde filtra el repartidor. El índice
   // anterior empezaba por `status` y no le servía para nada.

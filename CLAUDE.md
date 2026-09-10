@@ -177,6 +177,20 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   en la pantalla, en rojo, antes del botón. Y el código lleva freno —retardo al
   azar entre mensajes, tope diario por número, calentamiento del número nuevo,
   de uno en uno— porque sin él lo que se pierde es el número de una boda.
+- Un mensaje cuelga de su conexión por `(id, tenantId)`, con clave foránea
+  COMPUESTA. No es «el código siempre pone el tenant correcto»: es que la base no
+  admite otra cosa. `tenantId`, `eventId` y `guestId` no tenían ninguna clave
+  foránea, y una consulta a mano o un descuido futuro podía dejar un mensaje de
+  una oficina colgando del número de otra. Borrar el evento o el invitado deja
+  el mensaje con el campo a nulo, no lo borra: es el REGISTRO de lo que se mandó.
+- El servicio se apaga CON ORDEN: deja de repartir, espera al envío en curso,
+  cierra los sockets, deja de escuchar y suelta la base, con tope de diez
+  segundos. Era `process.exit(0)` en la misma línea que `server.close()`, lo que
+  mataba el proceso con la escritura de las credenciales de Baileys posiblemente
+  a medio hacer — y esas credenciales son el secreto más caro del proyecto.
+- Abrir una sesión de WhatsApp guarda su promesa por conexión. Era
+  comprobar-y-actuar, así que pulsar «Conectar» dos veces abría DOS sockets con
+  las mismas credenciales, que es una manera excelente de que cierren el número.
 - La sesión de WhatsApp se guarda CIFRADA (`authEnc`), con la llave fuera de la
   base. Es el secreto más peligroso del proyecto: quien la tiene escribe desde
   el WhatsApp del cliente.

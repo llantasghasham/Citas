@@ -126,11 +126,34 @@ async function drainOne(connection: ConnectionRow): Promise<boolean> {
 }
 
 /**
+ * Que pare, y que se sepa CUÁNDO ha parado.
+ *
+ * Un apagado que mata el proceso a mitad de un envío deja la fila reclamada y
+ * el mensaje en el aire: recuperable —para eso está el arriendo— pero dudoso.
+ * Esperar a que termine el que está en curso convierte casi todos los apagados
+ * en limpios.
+ */
+let stopping = false;
+let idle: (() => void) | null = null;
+
+export function stopSender(): Promise<void> {
+  stopping = true;
+  return new Promise((resolve) => {
+    idle = resolve;
+  });
+}
+
+/**
  * El bucle. Recorre los números conectados y suelta uno de cada uno por vuelta,
  * así que dos oficinas con cola avanzan a la vez sin que una espere a la otra.
  */
-export async function runSender(): Promise<never> {
+export async function runSender(): Promise<void> {
   for (;;) {
+    if (stopping) {
+      idle?.();
+      return;
+    }
+
     let sentAnything = false;
 
     try {
@@ -147,7 +170,12 @@ export async function runSender(): Promise<never> {
       console.error(`[wa] el repartidor tropezó: ${String(error)}`);
     }
 
-    // Con la cola vacía no se consulta cada segundo.
-    if (!sentAnything) await sleep(HALF_MINUTE);
+    // Con la cola vacía no se consulta cada segundo. Se trocea el descanso
+    // para que un apagado no tenga que esperar medio minuto a que despierte.
+    if (!sentAnything) {
+      for (let waited = 0; waited < HALF_MINUTE && !stopping; waited += 1000) {
+        await sleep(1000);
+      }
+    }
   }
 }

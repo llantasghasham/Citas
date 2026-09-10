@@ -3,8 +3,8 @@ import { timingSafeEqual } from 'node:crypto';
 
 import { readConfig } from './config.js';
 import { getConnection, getPool, listConnections } from './db.js';
-import { runSender } from './sender.js';
-import { isUp, logoutSession, resumeAll, startSession } from './sessions.js';
+import { runSender, stopSender } from './sender.js';
+import { closeAllSockets, isUp, logoutSession, resumeAll, startSession } from './sessions.js';
 
 /**
  * La puerta de servicio del WhatsApp.
@@ -102,11 +102,48 @@ server.listen(config.port, '127.0.0.1', () => {
   })();
 });
 
+/**
+ * Apagarse sin dejar nada a medias.
+ *
+ * Era `process.exit(0)` en la misma línea que `server.close()`: se mataba el
+ * proceso con el envío en curso todavía en el aire y, peor, con la escritura de
+ * las credenciales de Baileys posiblemente a medio hacer — y esas credenciales
+ * son el secreto más caro del proyecto.
+ *
+ * Ahora, en orden: se deja de repartir, se espera al envío en curso, se cierran
+ * los sockets, se deja de escuchar y se suelta la base. Con un tope de diez
+ * segundos, porque un apagado que no termina es un servidor que hay que matar a
+ * mano y ahí no se ha ganado nada.
+ */
+let shuttingDown = false;
+
+async function shutdown(signal: string): Promise<void> {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`[wa] ${signal}: cerrando con orden`);
+
+  const forced = setTimeout(() => {
+    console.warn('[wa] el cierre tardó demasiado; se corta');
+    process.exit(1);
+  }, 10_000);
+  // Que este temporizador no sea lo único que mantenga vivo el proceso.
+  forced.unref();
+
+  try {
+    await stopSender();
+    closeAllSockets();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await getPool().end();
+    console.log('[wa] cerrado');
+  } catch (error) {
+    console.error(`[wa] al cerrar: ${String(error)}`);
+  }
+  clearTimeout(forced);
+  process.exit(0);
+}
+
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {
-    console.log(`[wa] ${signal}: cerrando`);
-    server.close();
-    void getPool().end();
-    process.exit(0);
+    void shutdown(signal);
   });
 }
