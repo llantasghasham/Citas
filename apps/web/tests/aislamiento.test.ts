@@ -126,7 +126,7 @@ describe('los candados de los roles', { skip: HAS_DB ? false : 'sin DATABASE_URL
     await saveRoleCapabilities('TENANT_ADMIN', ['tenant:manage', 'platform:manage'], 'prueba');
     const caps = await capabilitiesOf('TENANT_ADMIN');
     assert.ok(!caps.includes('platform:manage'), 'ni escribiéndolo a mano');
-    await resetRoleCapabilities('TENANT_ADMIN', 'prueba');
+    await resetRoleCapabilities('TENANT_ADMIN');
   });
 
   it('a SUPERADMIN no se le recortan los permisos', async () => {
