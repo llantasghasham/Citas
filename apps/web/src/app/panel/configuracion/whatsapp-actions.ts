@@ -128,6 +128,13 @@ export async function removeConnectionAction(formData: FormData): Promise<void> 
   const session = await officeSession();
   const id = String(formData.get('id') ?? '');
 
+  // PRIMERO de quién es, y solo después el servicio. Estaba al revés, y era un
+  // agujero de verdad: el servicio acepta un id y un token global, así que un
+  // administrador de la oficina A que consiguiera el id de una conexión de B le
+  // cerraba el WhatsApp y le destruía las credenciales — la comprobación con el
+  // `TenantScope` llegaba cuando el daño ya estaba hecho.
+  if ((await ownedConnection(scopeOf(session), id)) === null) redirect(VOLVER);
+
   // Se cierra la sesión ANTES de borrar la fila: borrarla sin más dejaría el
   // teléfono del cliente con un dispositivo vinculado que ya no controla nadie.
   await logoutConnection(id);

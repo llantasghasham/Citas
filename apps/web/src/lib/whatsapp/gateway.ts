@@ -17,8 +17,49 @@ export interface GatewayResult {
   reason?: string;
 }
 
-async function gatewayUrl(): Promise<string> {
-  return (await setting('WHATSAPP_GATEWAY_URL')) ?? 'http://127.0.0.1:4100';
+const DEFAULT_URL = 'http://127.0.0.1:4100';
+
+/**
+ * Direcciones a las que se puede llamar. La del bucle local, siempre.
+ *
+ * Esto existe porque el token que viaja en la cabecera controla TODOS los
+ * números de TODAS las oficinas, y la dirección se edita desde el panel. Sin
+ * este filtro, cambiar un campo de texto convertía el servidor en un ariete:
+ * una petición saliente a donde quisiera el atacante, con el token dentro.
+ *
+ * Quien de verdad tenga el servicio en otra máquina lo declara en el ENTORNO,
+ * que es un archivo en el disco con permisos, no una fila de la base. Dicho
+ * corto: el panel puede cambiar el puerto, no la máquina.
+ */
+const LOOPBACK = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
+
+function allowedHosts(): Set<string> {
+  const extra = (process.env['WHATSAPP_GATEWAY_HOST'] ?? '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter((entry) => entry.length > 0);
+  return new Set([...LOOPBACK, ...extra]);
+}
+
+/** La dirección guardada, si pasa el filtro. Si no, la de fábrica. */
+export async function gatewayUrl(): Promise<{ url: string; refused?: string }> {
+  const raw = (await setting('WHATSAPP_GATEWAY_URL'))?.trim();
+  if (raw === undefined || raw.length === 0) return { url: DEFAULT_URL };
+
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return { url: DEFAULT_URL, refused: raw };
+  }
+
+  // Solo http/https —`file:` y demás no tienen nada que hacer aquí— y solo un
+  // destino permitido.
+  const scheme = parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  if (!scheme || !allowedHosts().has(parsed.hostname.toLowerCase())) {
+    return { url: DEFAULT_URL, refused: raw };
+  }
+  return { url: parsed.origin };
 }
 
 async function call(path: string, method: string): Promise<GatewayResult> {
@@ -30,10 +71,23 @@ async function call(path: string, method: string): Promise<GatewayResult> {
     return { ok: false, reason: 'Falta WHATSAPP_GATEWAY_TOKEN en el servidor.' };
   }
 
+  const target = await gatewayUrl();
+  if (target.refused !== undefined) {
+    return {
+      ok: false,
+      reason:
+        'La dirección del servicio de WhatsApp no está permitida. Solo el bucle local, ' +
+        'o lo que declare WHATSAPP_GATEWAY_HOST en el entorno.',
+    };
+  }
+
   try {
-    const response = await fetch(`${await gatewayUrl()}${path}`, {
+    const response = await fetch(`${target.url}${path}`, {
       method,
       headers: { authorization: `Bearer ${token}` },
+      // Una redirección se la llevaría el token a donde apunte el `Location`,
+      // que es el mismo problema por otra puerta.
+      redirect: 'error',
       // El servicio abre un socket contra WhatsApp: puede tardar unos segundos.
       signal: AbortSignal.timeout(20_000),
     });
@@ -59,12 +113,14 @@ async function call(path: string, method: string): Promise<GatewayResult> {
   }
 }
 
+// El id se codifica: viaja dentro de la ruta, y uno con `../` dentro llamaría
+// a un extremo distinto del que dice este código.
 export function startConnection(id: string): Promise<GatewayResult> {
-  return call(`/connections/${id}/start`, 'POST');
+  return call(`/connections/${encodeURIComponent(id)}/start`, 'POST');
 }
 
 export function logoutConnection(id: string): Promise<GatewayResult> {
-  return call(`/connections/${id}/logout`, 'POST');
+  return call(`/connections/${encodeURIComponent(id)}/logout`, 'POST');
 }
 
 /** Para `/panel/sistema`: si contesta, está vivo. */
@@ -74,9 +130,13 @@ export async function gatewayHealth(): Promise<{ up: boolean; detail: string }> 
     return { up: false, detail: 'WHATSAPP_GATEWAY_TOKEN' };
   }
 
+  const target = await gatewayUrl();
+  if (target.refused !== undefined) return { up: false, detail: 'dirección no permitida' };
+
   try {
-    const response = await fetch(`${await gatewayUrl()}/health`, {
+    const response = await fetch(`${target.url}/health`, {
       headers: { authorization: `Bearer ${token}` },
+      redirect: 'error',
       signal: AbortSignal.timeout(4000),
     });
     if (!response.ok) return { up: false, detail: `HTTP ${response.status}` };
