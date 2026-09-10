@@ -460,6 +460,31 @@ mira cada cuarto de hora y encola cuando toca.
 
 Comprobar que corre: `systemctl status citas-recordatorios.timer`.
 
+## 4 terdecies. Las pruebas
+
+```bash
+npm test --workspace @citas/web
+```
+
+Necesitan PostgreSQL levantado y `DATABASE_URL`. Sin eso **no fallan: se
+saltan** — quien solo quiere comprobar que el código compila no tiene por qué
+levantar una base.
+
+Van contra PostgreSQL de verdad y no contra un doble, a propósito: lo que
+cubren —dos repartidores peleándose por una fila, dos avisos de pago llegando a
+la vez, una oficina intentando tocar los datos de otra— lo resuelve la base, no
+el código. Un doble que no lo implemente daría verde a los mismos fallos que
+estas pruebas existen para atrapar.
+
+Cubren cuatro frentes, que son los que costaron dinero o confianza:
+
+| | |
+| --- | --- |
+| `pagos` | Doble clic, aviso repetido, respuesta atrasada, dos liquidaciones a la vez, el proveedor guardado |
+| `cola` | Dos repartidores, el tope diario, morir a mitad, cancelar mientras sale, recordatorios simultáneos |
+| `aislamiento` | Una oficina con el identificador de otra en la mano; los candados de los roles; la dirección del servicio |
+| `tiempo` | Fechas que no existen, el `.ics`, el horario de verano, las fechas en pantalla |
+
 ## 5. Cambiar textos e idiomas
 
 Ningún texto visible está en el código. Todo vive en `locales/ar.json`,

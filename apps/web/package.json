@@ -18,7 +18,8 @@
     "secret:encrypt": "tsx scripts/encrypt-secret.mjs",
     "auth:password": "tsx scripts/set-password.ts",
     "payments:reconcile": "tsx scripts/reconcile-payments.ts",
-    "whatsapp:reminders": "tsx scripts/send-reminders.ts"
+    "whatsapp:reminders": "tsx scripts/send-reminders.ts",
+    "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts"
   },
   "dependencies": {
     "@citas/core": "*",

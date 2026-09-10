@@ -343,7 +343,19 @@ npm run dev        # servidor de desarrollo
 npm run build      # build de producción
 npm run typecheck  # tsc --noEmit
 npm run lint:rtl   # guardia de CSS lógico (RTL)
+npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
 ```
+
+### Las pruebas
+- Con el corredor que trae Node (`node --test`), sin instalar nada.
+- Contra PostgreSQL DE VERDAD, no contra un doble. Casi todo lo que cubren
+  —bloqueos de fila, `SKIP LOCKED`, índices únicos parciales, claves foráneas
+  compuestas— lo hace la base, no el código: un doble que no las implemente daría
+  verde a los mismos fallos que estas pruebas existen para atrapar.
+- **En serie** (`--test-concurrency=1`): comparten una sola base.
+- Cuatro frentes, los que costaron dinero o confianza: el cobro y su liquidación,
+  la concurrencia de la cola de WhatsApp, el aislamiento entre oficinas, y las
+  fechas con el calendario.
 
 ## Documentos
 - `MANUAL.md` — manual de uso: arrancar, crear invitaciones, idiomas, PNG,
