@@ -27,6 +27,16 @@ async function main(): Promise<void> {
     return;
   }
 
+  // De paso, la limpieza: una sesión caducada guarda la IP de quien entró, y un
+  // dato que ya no hace falta y que nadie borra es un dato que solo puede
+  // filtrarse. Va aquí y no en su propio temporizador porque es una consulta
+  // cada cuarto de hora, no un trabajo.
+  const { purgeExpired } = await import('../src/lib/auth/purge');
+  const purged = await purgeExpired();
+  if (purged.sessions > 0 || purged.codes > 0) {
+    console.log(`[limpieza] ${purged.sessions} sesión(es) y ${purged.codes} código(s) caducados`);
+  }
+
   const { queueDueReminders } = await import('../src/lib/whatsapp/reminders');
   const outcome = await queueDueReminders();
 

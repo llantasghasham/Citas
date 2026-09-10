@@ -29,7 +29,7 @@ export function SiteHeader({ dictionary, locale, site }: { dictionary: Dictionar
             // eslint-disable-next-line @next/next/no-img-element -- o son bytes
             // que sirve este mismo proceso, o una dirección de fuera: ninguna
             // pasa por el optimizador de Next.
-            <img src={site.logoUrl} alt="" className="max-h-8 w-auto" />
+            <img src={site.logoUrl} alt="" referrerPolicy="no-referrer" className="max-h-8 w-auto" />
           )}
           {site.brand}
         </a>

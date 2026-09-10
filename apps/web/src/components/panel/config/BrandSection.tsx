@@ -59,7 +59,7 @@ export function BrandSection({
           // eslint-disable-next-line @next/next/no-img-element -- o son bytes
           // que sirve este mismo proceso, o una dirección de fuera: ninguna de
           // las dos pasa por el optimizador de Next.
-          <img src={site.logoUrl} alt="" className="max-h-10 w-auto" />
+          <img src={site.logoUrl} alt="" referrerPolicy="no-referrer" className="max-h-10 w-auto" />
         )}
         <span className={`${displayFont(locale)} text-xl text-[#F4EFE6]`}>{site.brand}</span>
         <span className="ms-auto text-xs text-[#786F5D]">{copy.brandPreview}</span>
@@ -137,7 +137,12 @@ function BrandUpload({
           <span className="text-xs text-[#8a8272]">—</span>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- ver arriba.
-          <img src={current} alt="" className="max-h-16 max-w-16 object-contain" />
+          <img
+            src={current}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="max-h-16 max-w-16 object-contain"
+          />
         )}
       </div>
 

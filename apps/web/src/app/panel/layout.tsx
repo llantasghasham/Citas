@@ -56,7 +56,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
             {site.logoUrl === null ? null : (
               // eslint-disable-next-line @next/next/no-img-element -- dirección
               // que escribe el operador, de cualquier origen.
-              <img src={site.logoUrl} alt="" className="max-h-7 w-auto" />
+              <img src={site.logoUrl} alt="" referrerPolicy="no-referrer" className="max-h-7 w-auto" />
             )}
             {tenant?.name ?? site.brand}
           </span>

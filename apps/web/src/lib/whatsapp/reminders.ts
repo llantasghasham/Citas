@@ -88,6 +88,19 @@ export async function queueDueReminders(now = new Date()): Promise<ReminderOutco
   });
 
   const outcome: ReminderOutcome = { events: 0, queued: 0 };
+  if (events.length === 0) return outcome;
+
+  // Los números conectados, de una vez. Era una consulta POR EVENTO: veinte
+  // bodas del mismo mes, veinte consultas para preguntar lo mismo veinte veces.
+  const connections = await prisma.whatsappConnection.findMany({
+    where: { tenantId: { in: [...new Set(events.map((event) => event.tenantId))] }, status: 'connected' },
+    orderBy: { isDefault: 'desc' },
+    select: { id: true, tenantId: true },
+  });
+  const connectionOf = new Map<string, string>();
+  for (const connection of connections) {
+    if (!connectionOf.has(connection.tenantId)) connectionOf.set(connection.tenantId, connection.id);
+  }
 
   for (const event of events) {
     if (event.reminderDaysBefore === null || event.guests.length === 0) continue;
@@ -104,14 +117,10 @@ export async function queueDueReminders(now = new Date()): Promise<ReminderOutco
     // confirme su asistencia a una boda que ya pasó es peor que no escribirle.
     if (now.getTime() < dueAt || now.getTime() >= start.getTime()) continue;
 
-    const connection = await prisma.whatsappConnection.findFirst({
-      where: { tenantId: event.tenantId, status: 'connected' },
-      orderBy: { isDefault: 'desc' },
-      select: { id: true },
-    });
     // Sin número conectado no hay por dónde mandarlo. No se marca a nadie como
     // recordado: cuando la oficina conecte uno, la siguiente pasada lo hará.
-    if (connection === null) continue;
+    const connectionId = connectionOf.get(event.tenantId);
+    if (connectionId === undefined) continue;
 
     const rows = event.guests.flatMap((guest) => {
       const phone = guest.phone === null ? null : toE164(guest.phone, '+961');
@@ -121,7 +130,7 @@ export async function queueDueReminders(now = new Date()): Promise<ReminderOutco
       return [
         {
           tenantId: event.tenantId,
-          connectionId: connection.id,
+          connectionId,
           eventId: event.id,
           guestId: guest.id,
           toPhone: phone,

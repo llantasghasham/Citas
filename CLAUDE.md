@@ -58,6 +58,16 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   sirve para averiguar qué direcciones existen.
 - Los secretos (token de sesión, código) se guardan SIEMPRE con hash. Un volcado
   de la base de datos no puede suplantar a nadie.
+- Las sesiones caducadas y los códigos gastados SE BORRAN (`purgeExpired`, en el
+  temporizador de recordatorios). Una fila de `Session` guarda la IP y el
+  navegador de quien entró; pasado el plazo ya no sirve para nada y lo único que
+  sigue haciendo es guardar desde dónde se conectó una persona. Un dato que ya no
+  hace falta y que nadie borra es un dato que solo puede filtrarse.
+- La foto de perfil NO se dibuja desde una dirección de fuera, aunque quede
+  alguna guardada de cuando el formulario las pedía: pintar una imagen alojada en
+  otro sitio le cuenta a ese sitio la IP de todo el que abre la lista del equipo.
+  El logo de la marca sí admite una dirección externa a propósito —es la marca,
+  y sale en la portada—, y por eso va con `referrerPolicy="no-referrer"`.
 - El código de un solo uso se GASTA con una escritura condicional
   (`updateMany … where consumedAt: null`), y la sesión se abre solo si se ganó
   ese gasto. Contar el intento y comprobar que quedan es también UNA sola

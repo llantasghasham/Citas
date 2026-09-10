@@ -107,5 +107,11 @@ export function avatarSrc(
   if (user.avatarVersion != null && user.avatarVersion.length > 0) {
     return `/api/avatar/${userId}?v=${user.avatarVersion}`;
   }
-  return user.avatarUrl;
+
+  // Una dirección de FUERA no se dibuja, aunque quede alguna guardada de cuando
+  // el formulario las pedía. Pintar una imagen alojada en otro sitio le cuenta a
+  // ese sitio la IP de todo el que abre la lista del equipo, cada vez, y eso es
+  // contarle a un tercero quién trabaja aquí y desde dónde. Quien tenga una
+  // puesta sube su foto y se acabó: el formulario ya solo acepta archivos.
+  return user.avatarUrl != null && user.avatarUrl.startsWith('/') ? user.avatarUrl : null;
 }
