@@ -183,6 +183,29 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - El servicio NO expone «manda este mensaje». Solo «abre la sesión» y «ciérrala».
   Un extremo que manda al momento es un extremo con el que se vacía el cupo de
   un número en un bucle.
+- La cola se RECLAMA, no se lee. `claimNext` coge la fila con
+  `FOR UPDATE SKIP LOCKED`, la pasa a `processing` y le pone un arriendo de dos
+  minutos — todo en la misma transacción que RESERVA el hueco del cupo diario.
+  Antes eran dos lecturas seguidas de dos escrituras: dos repartidores leían la
+  misma fila y el invitado recibía dos mensajes, y los dos leían «van 199 de 200»
+  y los dos mandaban.
+- Un arriendo vencido NO se reencola: pasa a `sent_unknown`. Un repartidor puede
+  morir DESPUÉS de que WhatsApp aceptara el mensaje; reenviar sería duplicar y
+  callarse sería perderlo, y no hay forma de saber cuál. Así que se dice, sale en
+  la pantalla distinguido de un fallo, y lo decide una persona — que es quien
+  puede mirar el teléfono. `markSent` y `markFailed` solo escriben si el arriendo
+  sigue siendo suyo.
+- Cancelar marca `canceled`; no borra, y no toca lo que ya está en `processing`:
+  esa fila puede estar en el aire, y borrarla no la detiene — solo borra el
+  rastro de que salió.
+- El día del cupo es UTC, dicho a las claras: una oficina en Beirut ve el
+  contador reiniciarse a las tres de la madrugada. Un día por oficina daría dos
+  medianoches al mismo número compartido, que es peor.
+- Los recordatorios RECLAMAN al invitado antes de escribirle (`updateMany` con
+  `remindedAt: null` y `rsvp: null` en el WHERE) y solo escriben a los
+  reclamados. Al revés —escribir y luego marcar— dos repasos simultáneos
+  escribían los dos, y una confirmación que llegara en medio recibía igualmente
+  el recordatorio de que confirmara.
 - El freno se ajusta en `/panel/configuracion?s=whatsapp` —retardo mínimo y
   máximo, calentamiento— y el servicio lo RELEE cada minuto: reiniciarlo para
   bajar unos segundos costaría que cada oficina volviera a escanear. En el

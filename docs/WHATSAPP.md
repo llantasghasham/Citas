@@ -199,6 +199,43 @@ Las reglas del recordatorio, que no se negocian:
 - Si en ese momento no hay ningún número conectado, **no se marca a nadie**: la
   siguiente pasada lo vuelve a intentar.
 
+## Cómo se reparte la cola, y por qué así
+
+El repartidor no LEE la fila siguiente: la **reclama**. La coge con
+`FOR UPDATE SKIP LOCKED`, la pasa a `processing` y le pone un arriendo de dos
+minutos — y en la misma transacción **reserva el hueco del cupo diario**.
+
+Las dos cosas eran antes una lectura seguida de una escritura, con hueco en
+medio, y las dos fallaban igual: dos repartidores leían la misma fila y el
+invitado recibía **dos mensajes**; y los dos leían «van 199 de 200» y los dos
+mandaban.
+
+### Cuando no se sabe si llegó
+
+Un repartidor puede morir **después** de que WhatsApp aceptara el mensaje.
+Reenviar sería duplicar, callarse sería perderlo, y no hay forma de saber cuál
+de las dos. Así que la fila no se reencola sola: pasa a **`sent_unknown`**, sale
+en la pantalla distinguida de un fallo —«no consta si llegó»— y lo decide una
+persona, que es quien puede mirar el teléfono.
+
+| Estado | Qué significa |
+| --- | --- |
+| `queued` | Esperando turno |
+| `processing` | Un repartidor la tiene cogida ahora mismo |
+| `sent` | Salió, con el identificador que devolvió WhatsApp |
+| `sent_unknown` | WhatsApp pudo aceptarlo; el repartidor se cayó antes de anotarlo |
+| `failed` | No salió, tres veces |
+| `canceled` | La canceló una persona antes de que saliera |
+
+**Cancelar** marca, no borra, y **no toca lo que ya está en `processing`**: esa
+fila puede estar en el aire, y borrarla no la detiene — solo borra el rastro.
+
+### El día del cupo es UTC
+
+Dicho a las claras: una oficina en Beirut ve el contador reiniciarse a las tres
+de la madrugada. Un día por oficina daría dos medianoches distintas al mismo
+número si lo comparten dos zonas, que es peor.
+
 ## La dirección del servicio, y por qué está limitada
 
 `WHATSAPP_GATEWAY_URL` se edita en el panel, pero **solo se acepta el bucle
