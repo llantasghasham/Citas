@@ -1,9 +1,14 @@
-import { queueWhatsappAction } from '@/app/panel/eventos/actions';
+import {
+  cancelScheduledAction,
+  queueWhatsappAction,
+  setReminderAction,
+} from '@/app/panel/eventos/actions';
 import { FIELD_CLASS } from '@/components/create/Field';
-import type { ConnectionRow } from '@/lib/whatsapp/connections';
-import type { QueueStats } from '@/lib/whatsapp/connections';
+import type { ConnectionRow, QueueStats } from '@/lib/whatsapp/connections';
+import { REMINDER_DAYS } from '@/lib/whatsapp/reminders';
+import { utcToZoned } from '@/lib/time/zoned';
 import { displayFont } from '@/lib/typography';
-import { interpolate, type Dictionary, type Locale } from '@citas/core';
+import { interpolate, plural, type Dictionary, type Locale } from '@citas/core';
 
 /**
  * Mandar las invitaciones desde el número de la oficina.
@@ -19,17 +24,30 @@ export function WhatsappSendSection({
   eventId,
   connections,
   stats,
+  scheduled,
+  reminderDays,
+  timezone,
   dictionary,
   locale,
 }: {
   eventId: string;
   connections: ConnectionRow[];
   stats: QueueStats;
+  /** La tanda que está esperando su hora, si es que hay una. */
+  scheduled: { count: number; at: Date } | null;
+  /** Cuántos días antes se recuerda a quien no ha contestado. Nulo = nunca. */
+  reminderDays: number | null;
+  /** El reloj de quien mira: con él se escribe y con él se lee la hora. */
+  timezone: string;
   dictionary: Dictionary;
   locale: Locale;
 }) {
   const copy = dictionary.admin.whatsapp;
   const connected = connections.filter((connection) => connection.status === 'connected');
+
+  const cuando = (instant: Date): string =>
+    new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'short', timeZone: timezone })
+      .format(instant);
 
   return (
     <section id="whatsapp" className="flex flex-col gap-4 border-t border-[#ddd6c6] pt-6">
@@ -43,6 +61,24 @@ export function WhatsappSendSection({
           failed: String(stats.failed),
         })}
       </p>
+
+      {/* Una tanda con fecha es una promesa a plazo. Verla y poder deshacerla es
+          lo que la separa de una bomba: la pareja cambia el día, o alguien se
+          equivoca de mes, y hasta ahora no habría forma de enterarse antes de
+          que doscientas personas recibieran el mensaje. */}
+      {scheduled === null ? null : (
+        <div className="flex flex-wrap items-center gap-4 border border-[#c9a227] bg-[#fdf9ee] p-4">
+          <p className="text-sm text-[#8a6c22]">
+            {plural(locale, copy.scheduledFor, scheduled.count, { when: cuando(scheduled.at) })}
+          </p>
+          <form action={cancelScheduledAction} className="ms-auto">
+            <input type="hidden" name="eventId" value={eventId} />
+            <button type="submit" className="text-sm underline text-[#8c2f1e]">
+              {copy.cancelScheduled}
+            </button>
+          </form>
+        </div>
+      )}
 
       {connected.length === 0 ? (
         <p className="text-sm text-[#8a6c22]">
@@ -65,11 +101,56 @@ export function WhatsappSendSection({
               ))}
             </select>
           </label>
+
+          {/* Vacío es «ahora», que es como funcionaba antes de existir esto:
+              quien no quiera programar nada no tiene que tocar el campo. */}
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-[#6a6456]">{copy.scheduleLabel}</span>
+            <input
+              type="datetime-local"
+              name="scheduledAt"
+              min={utcToZoned(new Date(), timezone)}
+              className={FIELD_CLASS}
+              dir="ltr"
+            />
+          </label>
+
           <button type="submit" className="border border-[#23201a] px-5 py-2.5 text-sm hover:opacity-70">
             {copy.send}
           </button>
         </form>
       )}
+
+      {connected.length === 0 ? null : (
+        <p className="max-w-xl text-xs text-[#6a6456]">
+          {interpolate(copy.scheduleHint, { zone: timezone })}
+        </p>
+      )}
+
+      {/* El recordatorio. Va aquí y no en la ficha del evento porque sale por
+          el mismo número y por la misma cola: quien decide una cosa está
+          decidiendo la otra. */}
+      <form
+        action={setReminderAction}
+        className="flex flex-wrap items-end gap-3 border-t border-[#ddd6c6] pt-5"
+      >
+        <input type="hidden" name="eventId" value={eventId} />
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-[#6a6456]">{copy.reminderLabel}</span>
+          <select name="reminderDays" defaultValue={reminderDays ?? ''} className={FIELD_CLASS}>
+            <option value="">{copy.reminderOff}</option>
+            {REMINDER_DAYS.map((days) => (
+              <option key={days} value={days}>
+                {plural(locale, copy.reminderDays, days)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="submit" className="border border-[#ddd6c6] px-4 py-2.5 text-sm hover:opacity-70">
+          {dictionary.admin.config.save}
+        </button>
+        <p className="w-full max-w-xl text-xs text-[#6a6456]">{copy.reminderHint}</p>
+      </form>
     </section>
   );
 }

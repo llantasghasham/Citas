@@ -109,13 +109,26 @@ export interface QueuedMessage {
  *
  * El cupo se comprueba EN LA CONSULTA y no en memoria: si el proceso se
  * reinicia a mitad de una tanda, el contador que manda es el de la base.
+ *
+ * `scheduledAt` es la hora antes de la cual no puede salir, y nulo significa
+ * «ya». Quien decide que ha llegado el momento es la BASE, con su propio reloj
+ * y no con el de este proceso: son dos máquinas que pueden ir descuadradas, y
+ * la fila la escribió la web.
+ *
+ * El orden es por esa hora primero: si hay una tanda programada para el sábado
+ * y alguien encola un mensaje suelto hoy, el suelto sale antes. Lo contrario
+ * —que un envío programado hace un mes tapone la cola— es lo que haría que
+ * nadie volviera a usar la programación.
  */
 export async function nextQueued(connectionId: string): Promise<QueuedMessage | undefined> {
   const { rows } = await getPool().query<QueuedMessage>(
     `SELECT m.id, m."connectionId", m."toPhone", m.body, m.tries
        FROM "WhatsappMessage" m
-      WHERE m."connectionId" = $1 AND m.status = 'queued' AND m.tries < 3
-      ORDER BY m."createdAt" ASC
+      WHERE m."connectionId" = $1
+        AND m.status = 'queued'
+        AND m.tries < 3
+        AND (m."scheduledAt" IS NULL OR m."scheduledAt" <= now())
+      ORDER BY COALESCE(m."scheduledAt", m."createdAt") ASC, m."createdAt" ASC
       LIMIT 1`,
     [connectionId],
   );

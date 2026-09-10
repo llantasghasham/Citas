@@ -9,7 +9,8 @@ import { Field, FIELD_CLASS } from '@/components/create/Field';
 import { getAdminContext, requestHost } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { enabledMethods, listPackageOrders } from '@/lib/billing/checkout';
-import { listConnections, queueStats } from '@/lib/whatsapp/connections';
+import { getPrisma } from '@/lib/db/client';
+import { listConnections, queueStats, scheduledBatch } from '@/lib/whatsapp/connections';
 import { guestAllowanceFor } from '@/lib/billing/packages';
 import { LOCALE_NAMES } from '@/lib/create/options';
 import { COUNTRY_CODES } from '@/lib/guests/phone';
@@ -75,13 +76,26 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
   // Cuánto tiene pagado esta boda y qué se le ha vendido. Va aquí, junto a la
   // lista que no cabe, y no en la facturación de la oficina.
   const canSell = sessionCan(session, 'billing:manage');
-  const [allowance, sold, methods, connections, whatsappStats] = await Promise.all([
-    guestAllowanceFor(session.tenantId, eventId),
-    listPackageOrders(scopeOf(session), eventId),
-    enabledMethods(),
-    listConnections(scopeOf(session)),
-    queueStats(scopeOf(session), eventId),
-  ]);
+  const [allowance, sold, methods, connections, whatsappStats, scheduled, actor] =
+    await Promise.all([
+      guestAllowanceFor(session.tenantId, eventId),
+      listPackageOrders(scopeOf(session), eventId),
+      enabledMethods(),
+      listConnections(scopeOf(session)),
+      queueStats(scopeOf(session), eventId),
+      scheduledBatch(scopeOf(session), eventId),
+      getPrisma().user.findUnique({
+        where: { id: session.userId },
+        select: { timezone: true },
+      }),
+    ]);
+
+  // Con qué reloj se escribe y se lee una hora de envío: el de esta persona, el
+  // del país que maneja, o el del servidor. El mismo orden que su perfil.
+  const actorZone =
+    actor?.timezone ??
+    findCountry(session.country)?.timezone ??
+    Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const origin = `https://${requestHost(await headers())}`;
   const defaultDial =
@@ -269,6 +283,9 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           eventId={eventId}
           connections={connections}
           stats={whatsappStats}
+          scheduled={scheduled}
+          reminderDays={event.reminderDaysBefore}
+          timezone={actorZone}
           dictionary={dictionary}
           locale={locale}
         />

@@ -14,6 +14,11 @@
  * este proyecto: el temporizador del sistema lee `apps/web/.env` con
  * `EnvironmentFile`, exactamente como hace el servicio de WhatsApp.
  */
+
+// Sin esto TypeScript trata el archivo como un guion suelto y no como un
+// módulo, y dos guiones con una función `main` chocan entre sí.
+export {};
+
 async function main(): Promise<void> {
   if (process.env['DATABASE_URL'] === undefined) {
     console.error('DATABASE_URL no está puesta.');

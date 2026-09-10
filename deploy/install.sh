@@ -24,6 +24,8 @@ DB_USER="citas_app"
 SERVICE="/etc/systemd/system/citas.service"
 SERVICE_WA="/etc/systemd/system/citas-whatsapp.service"
 SERVICE_REC="/etc/systemd/system/citas-conciliar.service"
+SERVICE_REM="/etc/systemd/system/citas-recordatorios.service"
+TIMER_REM="/etc/systemd/system/citas-recordatorios.timer"
 TIMER_REC="/etc/systemd/system/citas-conciliar.timer"
 APP_USER="www"
 
@@ -350,6 +352,54 @@ if systemctl is-active --quiet citas-conciliar.timer; then
   ok "el repaso de cobros corre cada cinco minutos"
 else
   aviso "el repaso de cobros no arrancó — mira: journalctl -u citas-conciliar -n 40"
+fi
+
+paso "Recordatorios"
+
+# Encola —no manda— los recordatorios a quien no ha contestado, los días antes
+# que cada evento tenga puestos. Quien manda sigue siendo el servicio de
+# WhatsApp, de uno en uno y con su freno: un trabajo automático que mandara
+# directamente es un trabajo que vacía el cupo de un número mientras nadie mira.
+cat > "$SERVICE_REM" <<UNIT
+[Unit]
+Description=Citas — recordatorios a quien no ha contestado
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+User=$APP_USER
+Group=$APP_USER
+WorkingDirectory=$DIR/apps/web
+EnvironmentFile=$DIR/apps/web/.env
+ExecStart=$NODE_BIN $DIR/node_modules/tsx/dist/cli.mjs $DIR/apps/web/scripts/send-reminders.ts
+Environment=NODE_ENV=production
+Environment=HOME=/tmp
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+UNIT
+
+cat > "$TIMER_REM" <<UNIT
+[Unit]
+Description=Citas — recordatorios, cada cuarto de hora
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now citas-recordatorios.timer >/dev/null 2>&1
+if systemctl is-active --quiet citas-recordatorios.timer; then
+  ok "los recordatorios se revisan cada cuarto de hora"
+else
+  aviso "los recordatorios no arrancaron — mira: journalctl -u citas-recordatorios -n 40"
 fi
 
 # SELinux impide que nginx hable con un puerto local. Es la causa del 502

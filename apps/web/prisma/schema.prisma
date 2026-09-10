@@ -237,6 +237,14 @@ model Event {
   rsvpEnabled  Boolean   @default(true)
   rsvpDeadline DateTime?
 
+  /// Cuántos días antes se le recuerda a quien no ha contestado. Nulo = nunca.
+  ///
+  /// Es lo que decide si una boda sabe cuánta gente va. Un invitado que abrió
+  /// el enlace y no contestó no es un «no»: es alguien que iba a hacerlo luego
+  /// y se le olvidó. Perseguir eso a mano en una lista de doscientos no lo
+  /// hace nadie, y por eso hasta ahora no se hacía.
+  reminderDaysBefore Int?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -359,6 +367,9 @@ model Guest {
   maxParty  Int       @default(1)
   invitedAt DateTime?
   openedAt  DateTime?
+  /// Cuándo se le encoló el recordatorio. Se escribe UNA vez: recordar dos
+  /// veces lo mismo deja de ser un recordatorio y pasa a ser spam.
+  remindedAt DateTime?
 
   /// Quién creó la ficha. El formulario público es abierto por necesidad —la
   /// invitación se reenvía por WhatsApp— así que la IP es lo único que permite
@@ -554,12 +565,23 @@ model WhatsappMessage {
   /// Cuántas veces se intentó. A la tercera se deja quieto.
   tries  Int     @default(0)
 
+  /// Antes de esta hora no sale. Nulo significa «en cuanto le toque».
+  ///
+  /// Una boda se anuncia el día que la pareja decide, no el día que la oficina
+  /// se sienta a preparar la lista. Sin esto había que acordarse de volver a
+  /// entrar esa mañana y pulsar el botón — y quien se acuerda de eso a las ocho
+  /// de la mañana de un sábado no existe.
+  ///
+  /// Se guarda en UTC, como todo aquí. Quien la escribe lo hace en su reloj, y
+  /// la conversión ocurre en el servidor con la zona de esa persona.
+  scheduledAt DateTime?
+
   sentAt    DateTime?
   createdAt DateTime  @default(now())
 
   connection WhatsappConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
-  @@index([status, createdAt])
+  @@index([status, scheduledAt, createdAt])
   @@index([tenantId, eventId])
 }
 

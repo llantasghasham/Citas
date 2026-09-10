@@ -165,6 +165,23 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   guardar Y al leer; lo que manda es el servicio, porque una fila escrita a mano
   tampoco puede quitarlo.
 - El mensaje va en el idioma DEL INVITADO, no en el de la oficina.
+- Una tanda puede llevar FECHA (`WhatsappMessage.scheduledAt`). Antes de esa hora
+  el servicio no la coge, y quien decide que ha llegado es la BASE con su reloj:
+  son dos procesos que pueden ir descuadrados. Vacío significa «ya», que es como
+  se comportaba toda la cola antes. La hora se escribe en el reloj de QUIEN la
+  escribe y se guarda en UTC (`lib/time/zoned.ts`): sin eso, una oficina en Costa
+  Rica programando una boda de Beirut mandaría de madrugada.
+- Un mensaje suelto de hoy adelanta a una tanda programada para el sábado. Lo
+  contrario —que un envío programado taponara la cola— es lo que haría que nadie
+  volviera a usar la programación.
+- Lo programado se VE y se puede cancelar mientras no haya salido. Una promesa a
+  plazo que no se puede deshacer no tranquiliza, asusta.
+- `Event.reminderDaysBefore` recuerda UNA vez a quien no ha contestado, N días
+  antes, en su idioma y solo si tiene teléfono. `citas-recordatorios.timer` mira
+  cada cuarto de hora y ENCOLA; sigue mandando el servicio, porque un trabajo
+  automático que mandara al momento es el que vacía el cupo de un número mientras
+  nadie mira. Se marca `Guest.remindedAt` en la misma transacción que se encola.
+  Sin número conectado no se marca a nadie: se reintenta cuando lo haya.
 - Reimportar la misma lista no duplica: se reconoce por teléfono, y por nombre
   cuando no hay teléfono.
 - Los teléfonos se guardan normalizados a E.164. Una línea sin nombre se

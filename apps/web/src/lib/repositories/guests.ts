@@ -31,6 +31,8 @@ export interface EventGuests {
   title: string;
   /** De dónde vino el evento: decide el precio del paquete, no el formulario. */
   channel: AcquisitionChannel;
+  /** Cuántos días antes se recuerda a quien no ha contestado. Nulo = nunca. */
+  reminderDaysBefore: number | null;
   /** Every language this event was written in, the original first. */
   versions: EventVersion[];
   guests: GuestWithLink[];
@@ -130,6 +132,7 @@ export async function listGuestsWithLinks(
     eventId: event.id,
     title: event.honorees.map((honoree) => honoree.name).join(' · '),
     channel: event.channel,
+    reminderDaysBefore: event.reminderDaysBefore,
     versions: event.versions,
     guests: event.guests.map((guest) => ({
       id: guest.id,

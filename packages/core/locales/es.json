@@ -193,7 +193,13 @@
             "El mensaje va en el idioma del invitado, no en el de la oficina.",
             "No hay coste por mensaje ni plantillas que aprobar: no es la API de WhatsApp, es su propio WhatsApp.",
             "Un invitado sin teléfono muestra un enlace para copiar y mandarlo por donde quiera.",
-            "Si pegar los enlaces uno a uno se le hace largo, puede conectar su propio número por código QR y que salgan solos, poco a poco. Está en el capítulo siguiente, y conviene leer el aviso antes."
+            "Si pegar los enlaces uno a uno se le hace largo, puede conectar su propio número por código QR y que salgan solos, poco a poco. Está en el capítulo siguiente, y conviene leer el aviso antes.",
+            "Cuando ya tiene un número conectado, la sección «Enviar por WhatsApp» de la ficha del evento encola la tanda entera. El botón NO manda: escribe filas, y quien manda es el servicio con su freno.",
+            "El campo «Enviar el» decide CUÁNDO. Vacío significa ahora. Con fecha, la tanda espera y sale sola ese día aunque nadie entre al panel: una boda se anuncia el día que la pareja decide, no el día que usted se sentó a preparar la lista.",
+            "La hora es la de SU reloj, no la del servidor. Si trabaja desde Costa Rica y la boda es en Beirut, escriba la hora a la que quiere que salga y el sistema la convierte. La zona sale de su perfil.",
+            "Mientras espera, la pantalla lo dice y hay un botón para cancelarlo. Lo que YA salió no se cancela: está en el teléfono de alguien.",
+            "Debajo, «Recordar a quien no haya contestado»: se elige cuántos días antes de la boda y ya está. El sistema mira solo cada cuarto de hora y encola el recordatorio cuando toca.",
+            "Ese recordatorio va SOLO a quien no ha contestado y tiene teléfono, una sola vez, y en su idioma. A quien ya dijo que sí o que no no se le vuelve a escribir, y después de la boda no se manda nada."
           ]
         },
         "whatsappQr": {
@@ -611,7 +617,21 @@
       "step3": "Escanéelo desde el teléfono: WhatsApp › Ajustes › Dispositivos vinculados › Vincular un dispositivo.",
       "advanced": "Ajustes avanzados",
       "expired": "El código caducó sin llegar a escanearse. Vuelva a pulsar «Conectar».",
-      "continueHere": "Continuar"
+      "continueHere": "Continuar",
+      "scheduleLabel": "Enviar el (opcional)",
+      "scheduleHint": "Vacío significa ahora. La hora es la de su reloj ({zone}), no la del servidor; se guarda convertida y sale sola ese día aunque nadie entre.",
+      "scheduledFor": {
+        "one": "1 invitación esperando a salir el {when}.",
+        "other": "{count} invitaciones esperando a salir el {when}."
+      },
+      "cancelScheduled": "Cancelar el envío programado",
+      "reminderLabel": "Recordar a quien no haya contestado",
+      "reminderOff": "No recordar",
+      "reminderDays": {
+        "one": "1 día antes",
+        "other": "{count} días antes"
+      },
+      "reminderHint": "Se manda una sola vez, por el número conectado, y solo a quien no ha contestado y tiene teléfono. A quien ya contestó no se le escribe."
     },
     "profile": {
       "title": "Mi perfil",
@@ -860,7 +880,8 @@
     }
   },
   "share": {
-    "whatsappMessage": "Hola {name}, nos haría ilusión contar con usted. Aquí está la invitación: {link}"
+    "whatsappMessage": "Hola {name}, nos haría ilusión contar con usted. Aquí está la invitación: {link}",
+    "reminderMessage": "Hola {name}, seguimos esperando su respuesta y nos haría ilusión contar con usted. Aquí está la invitación: {link}"
   },
   "pay": {
     "heading": "Su paquete de invitaciones",

@@ -212,6 +212,8 @@ export async function queueEventInvitations(
   connectionId: string,
   messageFor: (guest: { name: string; token: string; locale: string }) => string,
   actorId: string,
+  /** Antes de esta hora no salen. Nulo es «en cuanto le toque», como siempre. */
+  scheduledAt: Date | null = null,
 ): Promise<QueueOutcome | { error: 'notFound' }> {
   const prisma = getPrisma();
 
@@ -255,6 +257,7 @@ export async function queueEventInvitations(
         guestId: guest.id,
         toPhone: phone,
         body: messageFor({ name: guest.name, token: guest.token, locale: guest.locale }),
+        scheduledAt,
       },
     ];
   });
@@ -267,10 +270,79 @@ export async function queueEventInvitations(
     action: 'whatsapp.queue',
     entity: 'Event',
     entityId: eventId,
-    metadata: { queued: rows.length, skipped, connection: connection.name },
+    metadata: {
+      queued: rows.length,
+      skipped,
+      connection: connection.name,
+      scheduledAt: scheduledAt === null ? null : scheduledAt.toISOString(),
+    },
   });
 
   return { queued: rows.length, skipped };
+}
+
+/**
+ * Lo que hay programado para un evento y todavía no ha salido.
+ *
+ * Se enseña porque un envío con fecha es una promesa a plazo, y una promesa que
+ * no se puede ver ni deshacer da más miedo que tranquilidad: la pareja cambia
+ * la fecha, o alguien se equivoca de mes, y hasta ahora no habría forma de
+ * saberlo hasta que doscientas personas recibieran el mensaje.
+ */
+export async function scheduledBatch(
+  scope: TenantScope,
+  eventId: string,
+): Promise<{ count: number; at: Date } | null> {
+  const row = await getPrisma().whatsappMessage.findFirst({
+    where: {
+      ...scopedWhere(scope),
+      eventId,
+      status: 'queued',
+      scheduledAt: { gt: new Date() },
+    },
+    orderBy: { scheduledAt: 'asc' },
+    select: { scheduledAt: true },
+  });
+  if (row?.scheduledAt == null) return null;
+
+  const count = await getPrisma().whatsappMessage.count({
+    where: { ...scopedWhere(scope), eventId, status: 'queued', scheduledAt: { gt: new Date() } },
+  });
+  return { count, at: row.scheduledAt };
+}
+
+/**
+ * Cancela lo que todavía no ha salido.
+ *
+ * Solo lo PROGRAMADO y solo lo que aún no ha llegado su hora: borrar una cola
+ * que ya está saliendo dejaría media lista avisada y media no, que es peor que
+ * cualquiera de las dos cosas enteras.
+ */
+export async function cancelScheduled(
+  scope: TenantScope,
+  eventId: string,
+  actorId: string,
+): Promise<number> {
+  const { count } = await getPrisma().whatsappMessage.deleteMany({
+    where: {
+      ...scopedWhere(scope),
+      eventId,
+      status: 'queued',
+      scheduledAt: { gt: new Date() },
+    },
+  });
+
+  if (count > 0) {
+    await recordAudit({
+      tenantId: scope.tenantId,
+      actorId,
+      action: 'whatsapp.queue.cancel',
+      entity: 'Event',
+      entityId: eventId,
+      metadata: { cancelled: count },
+    });
+  }
+  return count;
 }
 
 export interface QueueStats {

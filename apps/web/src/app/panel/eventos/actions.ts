@@ -12,8 +12,11 @@ import { markPaidInCash, openPackageOrder } from '@/lib/billing/checkout';
 import { COUNTRY_CODES, toE164 } from '@/lib/guests/phone';
 import { importGuests } from '@/lib/repositories/guests';
 import { addEventVersion } from '@/lib/repositories/versions';
-import { queueEventInvitations } from '@/lib/whatsapp/connections';
-import { getDictionary, interpolate, LOCALES, type Locale } from '@citas/core';
+import { getPrisma } from '@/lib/db/client';
+import { zonedToUtc } from '@/lib/time/zoned';
+import { cancelScheduled, queueEventInvitations } from '@/lib/whatsapp/connections';
+import { setReminder } from '@/lib/whatsapp/reminders';
+import { COUNTRIES, getDictionary, interpolate, LOCALES, type Locale } from '@citas/core';
 
 /** A client's list is not small: a wedding is two hundred lines, not five. */
 const MAX_INPUT_BYTES = 512 * 1024;
@@ -187,6 +190,19 @@ export async function queueWhatsappAction(formData: FormData): Promise<void> {
   const connectionId = String(formData.get('connectionId') ?? '');
   if (connectionId.length === 0) redirect(`/panel/eventos/${eventId}?error=1#whatsapp`);
 
+  // La hora se escribe en el reloj de quien la escribe, y se guarda en UTC. Si
+  // se interpretara con el del servidor, una oficina en Costa Rica programando
+  // una boda de Beirut mandaría las invitaciones de madrugada.
+  const wall = String(formData.get('scheduledAt') ?? '').trim();
+  let scheduledAt: Date | null = null;
+  if (wall.length > 0) {
+    scheduledAt = zonedToUtc(wall, await actorTimezone(session));
+    if (scheduledAt === null) redirect(`/panel/eventos/${eventId}?error=fecha#whatsapp`);
+    // Una fecha pasada no se rechaza: se manda ya. Rechazarla obligaría a
+    // corregir un formulario para pedir exactamente lo que ya se pedía.
+    if (scheduledAt.getTime() <= Date.now()) scheduledAt = null;
+  }
+
   const origin = `https://${requestHost(await headers())}`;
   const result = await queueEventInvitations(
     scopeOf(session),
@@ -200,10 +216,66 @@ export async function queueWhatsappAction(formData: FormData): Promise<void> {
       });
     },
     session.userId,
+    scheduledAt,
   );
   if ('error' in result) redirect('/panel');
 
+  const cuando = scheduledAt === null ? '' : `&para=${encodeURIComponent(scheduledAt.toISOString())}`;
   redirect(
-    `/panel/eventos/${eventId}?encolados=${result.queued}&sinTelefono=${result.skipped}#whatsapp`,
+    `/panel/eventos/${eventId}?encolados=${result.queued}&sinTelefono=${result.skipped}${cuando}#whatsapp`,
   );
+}
+
+/**
+ * Pone —o quita— el recordatorio automático de un evento.
+ *
+ * No manda nada ahora: escribe cuántos días antes hay que recordar. Quien mira
+ * si toca es el temporizador, y quien manda sigue siendo el servicio.
+ */
+export async function setReminderAction(formData: FormData): Promise<void> {
+  const session = await getSession();
+  if (session === null || !sessionCan(session, 'event:write') || session.tenantId === null) {
+    redirect('/panel');
+  }
+
+  const eventId = String(formData.get('eventId') ?? '');
+  const raw = String(formData.get('reminderDays') ?? '');
+  const days = raw === '' ? null : Number.parseInt(raw, 10);
+
+  await setReminder(
+    scopeOf(session),
+    eventId,
+    days === null || !Number.isFinite(days) ? null : days,
+    session.userId,
+  );
+  redirect(`/panel/eventos/${eventId}?recordatorio=1#whatsapp`);
+}
+
+/** Cancela una tanda programada que todavía no ha salido. */
+export async function cancelScheduledAction(formData: FormData): Promise<void> {
+  const session = await getSession();
+  if (session === null || !sessionCan(session, 'event:write') || session.tenantId === null) {
+    redirect('/panel');
+  }
+
+  const eventId = String(formData.get('eventId') ?? '');
+  const cancelled = await cancelScheduled(scopeOf(session), eventId, session.userId);
+  redirect(`/panel/eventos/${eventId}?cancelados=${cancelled}#whatsapp`);
+}
+
+/**
+ * La zona con la que se lee lo que esta persona escribe.
+ *
+ * La suya si la eligió, si no la del país que maneja, y si tampoco la del
+ * servidor. El mismo orden que usa su propio perfil.
+ */
+async function actorTimezone(session: { userId: string; country: string | null }): Promise<string> {
+  const user = await getPrisma().user.findUnique({
+    where: { id: session.userId },
+    select: { timezone: true },
+  });
+  if (user?.timezone != null && user.timezone.length > 0) return user.timezone;
+
+  const country = COUNTRIES.find((entry) => entry.code === session.country);
+  return country?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 }

@@ -399,6 +399,40 @@ npm run whatsapp
 Los enlaces `wa.me` uno a uno NO se van: siguen en la tabla de invitados y son
 lo que funciona siempre.
 
+## 4 duodecies. Enviar otro día, y recordar a quien no contesta
+
+Las dos cosas viven en la ficha del evento, debajo de «Enviar por WhatsApp», y
+las dos **encolan**: quien manda sigue siendo el servicio, de uno en uno y con su
+freno.
+
+### Enviar el …
+
+| Campo vacío | Con fecha |
+| --- | --- |
+| Sale ahora, como siempre | La tanda espera y sale sola ese día |
+
+La hora es **la de su reloj**, no la del servidor: se guarda convertida usando la
+zona de su perfil. Quien decide que ha llegado el momento es PostgreSQL, no el
+proceso que envía — son dos máquinas que pueden ir descuadradas.
+
+Mientras espera, la pantalla lo dice y hay un botón para **cancelar**. Lo que ya
+salió no se cancela: está en el teléfono de alguien.
+
+Un mensaje suelto de hoy **adelanta** a una tanda programada para el sábado; lo
+contrario taponaría la cola.
+
+### Recordar a quien no haya contestado
+
+Se elige cuántos días antes de la boda: 15, 7, 3, 2 o 1. `citas-recordatorios.timer`
+mira cada cuarto de hora y encola cuando toca.
+
+- Solo a quien **no ha contestado** y **tiene teléfono**.
+- **Una sola vez**, y en el idioma del invitado.
+- **Nunca después de la boda.**
+- Sin número conectado no se marca a nadie: se reintenta cuando lo haya.
+
+Comprobar que corre: `systemctl status citas-recordatorios.timer`.
+
 ## 5. Cambiar textos e idiomas
 
 Ningún texto visible está en el código. Todo vive en `locales/ar.json`,

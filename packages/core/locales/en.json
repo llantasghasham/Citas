@@ -193,7 +193,13 @@
             "The message is in the guest's language, not the office's.",
             "There is no per-message fee and no templates to get approved: this is not the WhatsApp API, it is your own WhatsApp.",
             "A guest with no phone shows a link to copy and send however you like.",
-            "If pasting the links one by one gets long, you can connect your own number by QR code and let them go out gradually. That is the next chapter, and the warning there is worth reading first."
+            "If pasting the links one by one gets long, you can connect your own number by QR code and let them go out gradually. That is the next chapter, and the warning there is worth reading first.",
+            "Once a number is connected, the “Send by WhatsApp” section on the event screen queues the whole batch. The button does NOT send: it writes rows, and the sender is the service with its brake.",
+            "The “Send on” field decides WHEN. Empty means now. With a date, the batch waits and goes out on its own that day even if nobody signs in: a wedding is announced on the day the couple chose, not the day you sat down with the list.",
+            "The time is on YOUR clock, not the server’s. If you work from Costa Rica and the wedding is in Beirut, write the time you want it to go out and the system converts it. The timezone comes from your profile.",
+            "While it waits, the screen says so and there is a button to cancel it. What already went out cannot be cancelled: it is on somebody’s phone.",
+            "Below, “Remind whoever has not replied”: pick how many days before the wedding and that is all. The system checks by itself every fifteen minutes and queues the reminder when it is due.",
+            "That reminder goes ONLY to those who have not replied and have a phone, once, in their own language. Whoever already said yes or no is not written to again, and after the wedding nothing is sent."
           ]
         },
         "whatsappQr": {
@@ -611,7 +617,21 @@
       "step3": "Scan it from the phone: WhatsApp › Settings › Linked devices › Link a device.",
       "advanced": "Advanced settings",
       "expired": "The code expired before it was scanned. Press “Connect” again.",
-      "continueHere": "Continue"
+      "continueHere": "Continue",
+      "scheduleLabel": "Send on (optional)",
+      "scheduleHint": "Empty means now. The time is on your clock ({zone}), not the server’s; it is stored converted and goes out on its own that day even if nobody signs in.",
+      "scheduledFor": {
+        "one": "1 invitation waiting to go out on {when}.",
+        "other": "{count} invitations waiting to go out on {when}."
+      },
+      "cancelScheduled": "Cancel the scheduled send",
+      "reminderLabel": "Remind whoever has not replied",
+      "reminderOff": "Do not remind",
+      "reminderDays": {
+        "one": "1 day before",
+        "other": "{count} days before"
+      },
+      "reminderHint": "Sent once, from the connected number, and only to those who have not replied and have a phone. Whoever already replied is not written to."
     },
     "profile": {
       "title": "My profile",
@@ -860,7 +880,8 @@
     }
   },
   "share": {
-    "whatsappMessage": "Hello {name}, we would love to have you with us. Here is the invitation: {link}"
+    "whatsappMessage": "Hello {name}, we would love to have you with us. Here is the invitation: {link}",
+    "reminderMessage": "Hello {name}, we are still hoping to hear from you and it would mean a lot to have you there. Here is the invitation: {link}"
   },
   "pay": {
     "heading": "Your invitation package",

@@ -17,7 +17,8 @@
     "postinstall": "prisma generate",
     "secret:encrypt": "tsx scripts/encrypt-secret.mjs",
     "auth:password": "tsx scripts/set-password.ts",
-    "payments:reconcile": "tsx scripts/reconcile-payments.ts"
+    "payments:reconcile": "tsx scripts/reconcile-payments.ts",
+    "whatsapp:reminders": "tsx scripts/send-reminders.ts"
   },
   "dependencies": {
     "@citas/core": "*",

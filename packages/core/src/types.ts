@@ -351,6 +351,8 @@ export interface Dictionary {
   /** Text that leaves the platform, in the guest's own language. */
   share: {
     whatsappMessage: string;
+    /** El segundo mensaje, al que no contestó. Lleva `{name}` y `{link}`. */
+    reminderMessage: string;
   };
   /**
    * La pantalla pública de pago, `/pagar/<token>`. La lee la pareja que se
@@ -696,6 +698,23 @@ export interface Dictionary {
       expired: string;
       /** Sale del marco del código y devuelve la pantalla entera al panel. */
       continueHere: string;
+      /** Cuándo sale la tanda. Vacío es «ahora». */
+      scheduleLabel: string;
+      /** Lleva `{zone}`. */
+      scheduleHint: string;
+      /** Lleva `{when}`, y el número en formas de plural. */
+      scheduledFor: PluralForms;
+      cancelScheduled: string;
+      /** El recordatorio a quien no ha contestado. */
+      reminderLabel: string;
+      reminderOff: string;
+      /**
+       * «3 días antes». Con formas de plural: «1 días antes» en español y
+       * «قبل 1 أيام» en árabe son las dos maneras de que se note que esto lo
+       * escribió una máquina.
+       */
+      reminderDays: PluralForms;
+      reminderHint: string;
       /** Los tres pasos hasta el código. Sin esto, la pantalla no dice cómo. */
       stepsTitle: string;
       step1: string;

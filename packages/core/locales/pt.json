@@ -193,7 +193,13 @@
             "A mensagem vai no idioma do convidado, não no da agência.",
             "Não há custo por mensagem nem modelos a aprovar: não é a API do WhatsApp, é o seu próprio WhatsApp.",
             "Um convidado sem telefone mostra uma ligação para copiar e enviar por onde quiser.",
-            "Se colar os links um a um se tornar demorado, pode ligar o seu próprio número por código QR e deixá-los sair aos poucos. É o capítulo seguinte, e convém ler o aviso antes."
+            "Se colar os links um a um se tornar demorado, pode ligar o seu próprio número por código QR e deixá-los sair aos poucos. É o capítulo seguinte, e convém ler o aviso antes.",
+            "Quando já tem um número ligado, a secção «Enviar por WhatsApp» da ficha do evento põe o lote inteiro em espera. O botão NÃO manda: escreve linhas, e quem manda é o serviço com o seu travão.",
+            "O campo «Enviar a» decide QUANDO. Vazio significa agora. Com data, o lote espera e sai sozinho nesse dia mesmo que ninguém entre no painel: um casamento anuncia-se no dia que o casal decidiu, não no dia em que se sentou a preparar a lista.",
+            "A hora é a do SEU relógio, não a do servidor. Se trabalha da Costa Rica e o casamento é em Beirute, escreva a hora a que quer que saia e o sistema converte-a. O fuso sai do seu perfil.",
+            "Enquanto espera, o ecrã di-lo e há um botão para cancelar. O que JÁ saiu não se cancela: está no telemóvel de alguém.",
+            "Em baixo, «Lembrar quem não tenha respondido»: escolhe-se quantos dias antes do casamento e já está. O sistema vê sozinho de quinze em quinze minutos e põe o lembrete em espera quando toca.",
+            "Esse lembrete vai SÓ a quem não respondeu e tem telefone, uma só vez, e no seu idioma. A quem já disse que sim ou que não não se volta a escrever, e depois do casamento não se manda nada."
           ]
         },
         "whatsappQr": {
@@ -611,7 +617,21 @@
       "step3": "Leia-o no telemóvel: WhatsApp › Definições › Dispositivos ligados › Ligar um dispositivo.",
       "advanced": "Definições avançadas",
       "expired": "O código caducou sem ter sido lido. Volte a carregar em «Ligar».",
-      "continueHere": "Continuar"
+      "continueHere": "Continuar",
+      "scheduleLabel": "Enviar a (opcional)",
+      "scheduleHint": "Vazio significa agora. A hora é a do seu relógio ({zone}), não a do servidor; guarda-se convertida e sai sozinha nesse dia mesmo que ninguém entre.",
+      "scheduledFor": {
+        "one": "1 convite à espera de sair a {when}.",
+        "other": "{count} convites à espera de sair a {when}."
+      },
+      "cancelScheduled": "Cancelar o envio programado",
+      "reminderLabel": "Lembrar quem não tenha respondido",
+      "reminderOff": "Não lembrar",
+      "reminderDays": {
+        "one": "1 dia antes",
+        "other": "{count} dias antes"
+      },
+      "reminderHint": "Manda-se uma só vez, pelo número ligado, e só a quem não respondeu e tem telefone. A quem já respondeu não se escreve."
     },
     "profile": {
       "title": "O meu perfil",
@@ -860,7 +880,8 @@
     }
   },
   "share": {
-    "whatsappMessage": "Olá {name}, teríamos muito gosto na sua presença. Aqui está o convite: {link}"
+    "whatsappMessage": "Olá {name}, teríamos muito gosto na sua presença. Aqui está o convite: {link}",
+    "reminderMessage": "Olá {name}, continuamos à espera da sua resposta e far-nos-ia muita ilusão contar consigo. Aqui está o convite: {link}"
   },
   "pay": {
     "heading": "O seu pacote de convites",

@@ -133,6 +133,53 @@ conectar un número.
 Cada invitado recibe el mensaje en **su** idioma y con **su** enlace, la misma
 regla que ya seguía el envío a mano.
 
+### Enviar otro día
+
+El campo **«Enviar el»** decide cuándo. Vacío es *ahora*, que es como se
+comportaba toda la cola antes de existir esto. Con fecha, las filas esperan y
+salen solas ese día **aunque nadie entre al panel**: una boda se anuncia el día
+que la pareja decide, no el día que la oficina se sentó a preparar la lista.
+
+Tres cosas que decide ese campo y conviene saber:
+
+- **La hora es la de quien la escribe**, no la del servidor. Se guarda convertida
+  a UTC con la zona del perfil de esa persona. Sin eso, una oficina en Costa Rica
+  programando una boda de Beirut mandaría de madrugada.
+- **Quien decide que ha llegado la hora es PostgreSQL**, con su propio reloj. La
+  web escribe la fila y el servicio la lee: son dos procesos que pueden ir
+  descuadrados, y el reloj que manda tiene que ser uno solo.
+- **Un mensaje suelto de hoy adelanta a una tanda programada para el sábado.** Lo
+  contrario taponaría la cola, y una cola taponada es lo que hace que nadie
+  vuelva a usar la programación.
+
+Lo programado **se ve y se cancela** mientras no haya salido: la pantalla dice
+«2 invitaciones esperando a salir el domingo…» con un botón al lado. Cambió la
+fecha la pareja, o alguien se equivocó de mes. Lo que ya salió no se cancela,
+porque ya está en el teléfono de alguien.
+
+### Recordar a quien no ha contestado
+
+Debajo del envío hay un desplegable: **cuántos días antes de la boda** se le
+recuerda a quien no ha contestado. Se elige una vez y ya está.
+
+Quien mira si toca es `citas-recordatorios.timer`, cada cuarto de hora, y lo que
+hace es **encolar** — sigue mandando el servicio, de uno en uno y con su freno.
+Un trabajo automático que mandara al momento es el que vacía el cupo de un número
+mientras nadie mira.
+
+Las reglas del recordatorio, que no se negocian:
+
+- Solo a quien **no ha contestado** y **tiene teléfono**. A quien ya dijo que sí
+  o que no no se le vuelve a escribir.
+- **Una sola vez.** Se marca `Guest.remindedAt` en la MISMA transacción en que se
+  encola: si se cayera entre las dos cosas, o se recordaría dos veces o no se
+  recordaría nunca.
+- **Nunca después de la boda.** Pedirle a alguien que confirme su asistencia a
+  una boda que ya pasó es peor que no escribirle.
+- En el idioma **del invitado**, como todo lo que sale de aquí.
+- Si en ese momento no hay ningún número conectado, **no se marca a nadie**: la
+  siguiente pasada lo vuelve a intentar.
+
 ## Cuando algo falla
 
 - **«WhatsApp no respondió»** en la fila: el servidor no puede salir a
