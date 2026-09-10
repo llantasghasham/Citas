@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth/session';
 import { getDictionary } from '@/lib/dictionary';
 import { getTenantById, getTenantByHost, type CurrentTenant } from '@/lib/tenancy/current';
 import { LOCALES, type Dictionary, type Direction, type Locale } from '@/lib/types';
+import { setting } from '@/lib/settings';
 
 export interface AdminContext {
   locale: Locale;
@@ -28,6 +29,34 @@ function asLocale(value: string | undefined): Locale {
  */
 export function requestHost(requestHeaders: Headers): string {
   return requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host') ?? '';
+}
+
+/**
+ * La dirección con la que se ESCRIBEN los enlaces que salen de aquí: el de pago
+ * de la pareja, el personal del invitado, el aviso que le damos al proveedor.
+ *
+ * Manda lo configurado en el panel, no la cabecera de la petición. La cabecera
+ * la escribe quien llama, y solo es de fiar si el origen está de verdad detrás
+ * del proxy — que es la condición que este proyecto se impone y que un despliegue
+ * mal atado rompe sin avisar. Un enlace de pago apuntando a un dominio ajeno es
+ * exactamente el correo que le roba el dinero a una pareja.
+ *
+ * Si no hay nada configurado se usa la cabecera, porque en una instalación
+ * recién levantada no hay otra cosa — y en esa situación tampoco hay dinero que
+ * perder todavía. En cuanto se guarda «la dirección del sitio», manda esa.
+ */
+export async function canonicalOrigin(requestHeaders: Headers): Promise<string> {
+  const configured = (await setting('NEXT_PUBLIC_SITE_URL'))?.trim();
+  if (configured !== undefined && configured.length > 0) {
+    try {
+      return new URL(configured).origin;
+    } catch {
+      // Una dirección mal escrita en el panel no puede dejar sin enlaces al
+      // sistema entero: se sigue con la cabecera y se anota.
+      console.warn(`[config] NEXT_PUBLIC_SITE_URL no es una dirección válida: ${configured}`);
+    }
+  }
+  return `https://${requestHost(requestHeaders)}`;
 }
 
 /** First hop in the forwarding chain, which is the client we can name. */

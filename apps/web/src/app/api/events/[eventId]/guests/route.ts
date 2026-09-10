@@ -1,8 +1,7 @@
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { recordAudit } from '@/lib/audit';
-import { clientIp } from '@/lib/admin/context';
+import { canonicalOrigin, clientIp } from '@/lib/admin/context';
 import { buildCsv } from '@/lib/export/csv';
-import { requestHost } from '@/lib/admin/context';
 import { listGuestsWithLinks } from '@/lib/repositories/guests';
 
 export const runtime = 'nodejs';
@@ -31,7 +30,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
   // one office which event ids exist in another.
   if (event === null) return Response.json({ error: 'event_not_found' }, { status: 404 });
   const { guests } = event;
-  const origin = `https://${requestHost(request.headers)}`;
+  const origin = await canonicalOrigin(request.headers);
 
   await recordAudit({
     tenantId: session.tenantId,

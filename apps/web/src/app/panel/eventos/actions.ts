@@ -3,7 +3,7 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { requestHost } from '@/lib/admin/context';
+import { canonicalOrigin } from '@/lib/admin/context';
 
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { recordAudit } from '@/lib/audit';
@@ -203,7 +203,7 @@ export async function queueWhatsappAction(formData: FormData): Promise<void> {
     if (scheduledAt.getTime() <= Date.now()) scheduledAt = null;
   }
 
-  const origin = `https://${requestHost(await headers())}`;
+  const origin = await canonicalOrigin(await headers());
   const result = await queueEventInvitations(
     scopeOf(session),
     eventId,

@@ -335,10 +335,15 @@ cat > "$TIMER_REC" <<UNIT
 Description=Citas — repaso de cobros pendientes, cada cinco minutos
 
 [Timer]
-OnBootSec=5min
-OnUnitActiveSec=5min
+# `OnCalendar` y no `OnUnitActiveSec`, porque `Persistent=true` SOLO tiene
+# efecto con el primero: con el segundo, el comentario prometía recuperar las
+# ejecuciones perdidas y systemd no hacía tal cosa.
+OnCalendar=*:0/5
 # Si la máquina estuvo apagada, se ejecuta al volver en vez de saltarse el turno.
 Persistent=true
+# Un minuto de dispersión: cinco temporizadores despertando a la vez en el
+# mismo segundo es una punta de carga que no hace falta.
+RandomizedDelaySec=60
 
 [Install]
 WantedBy=timers.target
@@ -386,9 +391,10 @@ cat > "$TIMER_REM" <<UNIT
 Description=Citas — recordatorios, cada cuarto de hora
 
 [Timer]
-OnBootSec=10min
-OnUnitActiveSec=15min
+# Ver arriba: `Persistent` solo cuenta con `OnCalendar`.
+OnCalendar=*:0/15
 Persistent=true
+RandomizedDelaySec=120
 
 [Install]
 WantedBy=timers.target

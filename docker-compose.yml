@@ -30,7 +30,11 @@ services:
       WHISH_SECRET: ${WHISH_SECRET:-}
       WHISH_WEBSITE_URL: ${WHISH_WEBSITE_URL:-}
     ports:
-      - '3000:3000'
+      # SOLO el bucle local. Con `3000:3000` el contenedor quedaba publicado en
+      # todas las interfaces, así que se podía llegar a la aplicación SIN pasar
+      # por el proxy — y entonces `x-forwarded-host`, que este proyecto se cree,
+      # lo escribe cualquiera. Se entra por nginx, que es quien fija esa cabecera.
+      - '127.0.0.1:3000:3000'
 
 volumes:
   db:

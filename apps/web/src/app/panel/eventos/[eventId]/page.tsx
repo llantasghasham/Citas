@@ -6,7 +6,7 @@ import { PackagesSection } from '@/components/panel/PackagesSection';
 import { WhatsappSendSection } from '@/components/panel/WhatsappSendSection';
 import { VersionsSection } from '@/components/panel/VersionsSection';
 import { Field, FIELD_CLASS } from '@/components/create/Field';
-import { getAdminContext, requestHost } from '@/lib/admin/context';
+import { getAdminContext, canonicalOrigin } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { enabledMethods, listPackageOrders } from '@/lib/billing/checkout';
 import { actorTimezone } from '@/lib/time/actor';
@@ -90,7 +90,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
     ]);
   const actorZone = actor;
 
-  const origin = `https://${requestHost(await headers())}`;
+  const origin = await canonicalOrigin(await headers());
   const defaultDial =
     COUNTRY_CODES.find((code) => code === findCountry(session.country)?.dial) ?? '+961';
   const opened = event.guests.filter((guest) => guest.openedAt !== null).length;

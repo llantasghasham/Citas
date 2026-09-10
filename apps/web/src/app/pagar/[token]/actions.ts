@@ -3,7 +3,7 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { requestHost } from '@/lib/admin/context';
+import { canonicalOrigin } from '@/lib/admin/context';
 import { beginPublicPayment } from '@/lib/billing/checkout';
 
 /**
@@ -20,7 +20,7 @@ export async function payAction(formData: FormData): Promise<void> {
   const token = String(formData.get('token') ?? '');
   if (token.length === 0) redirect('/');
 
-  const origin = `https://${requestHost(await headers())}`;
+  const origin = await canonicalOrigin(await headers());
   const result = await beginPublicPayment(token, origin);
 
   if ('error' in result) {

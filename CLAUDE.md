@@ -84,7 +84,15 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Nunca se revela si una dirección tiene cuenta. La respuesta es la misma.
 - La oficina se resuelve por `x-forwarded-host`, no por `host`: en las peticiones
   de una Server Action, Next reescribe `host`. El origen debe estar detrás del
-  proxy que fija esa cabecera.
+  proxy que fija esa cabecera — y por eso Docker publica en `127.0.0.1:3000`, no
+  en todas las interfaces: si se puede llegar sin pasar por el proxy, esa cabecera
+  la escribe cualquiera.
+- Los enlaces que SALEN de aquí —el de pago de la pareja, el personal del
+  invitado, el aviso al proveedor— se escriben con `canonicalOrigin()`, que manda
+  lo guardado en «la dirección del sitio» y no la cabecera de la petición. Un
+  enlace de pago apuntando a un dominio ajeno es exactamente el correo que le roba
+  el dinero a una pareja. Resolver la OFICINA sí sigue mirando el host, porque
+  hace falta; y una vez dentro manda la sesión, no el host.
 - Una vez dentro, la oficina la manda la SESIÓN, no el host.
 - El envío de correo entra por el puerto `Mailer`. El emisor de consola está
   prohibido en producción y el código lo impide.

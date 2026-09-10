@@ -3,7 +3,7 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { requestHost } from '@/lib/admin/context';
+import { canonicalOrigin } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { startPlanOrder, settleOrder } from '@/lib/billing/orders';
 import { addMember, createOffice, normalizeSubdomain } from '@/lib/repositories/tenants';
@@ -50,7 +50,7 @@ export async function startPlanOrderAction(formData: FormData): Promise<void> {
   if (session === null || !sessionCan(session, 'billing:manage')) redirect('/panel');
 
   const requestHeaders = await headers();
-  const origin = `http://${requestHost(requestHeaders)}`;
+  const origin = await canonicalOrigin(requestHeaders);
 
   const { payUrl } = await startPlanOrder(
     scopeOf(session),
