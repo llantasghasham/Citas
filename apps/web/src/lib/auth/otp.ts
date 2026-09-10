@@ -130,6 +130,8 @@ export async function verifyLoginCode(
   const user = await prisma.user.findUnique({
     where: { email },
     include: { memberships: true },
+    // Sin los bytes de la foto: aquí solo se comprueba un código.
+    omit: { avatarData: true },
   });
   if (user === null) return failure;
 

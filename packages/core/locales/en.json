@@ -144,9 +144,13 @@
         "profile": {
           "title": "My profile",
           "steps": [
-            "“My profile” is yours and yours alone: your name, photo, phone, the language you read the panel in, and the country you handle.",
+            "“My profile” is yours and yours alone: your name, photo, phone, the language you read the panel in, the country you handle and your timezone. The email is not changed here: it is what you sign in with.",
             "Changing it changes nothing for the rest of the office. Two people at the same counter can work in different languages.",
-            "The country is not decoration: it decides the dialling code a pasted guest list without one is normalised to, and a new event's timezone. Working from Costa Rica? Set it and stop typing +506 every time.",
+            "The photo is UPLOADED from your phone or computer; there is no address to paste. The server crops it to a square, shrinks it and strips what phone photos carry inside — the place it was taken among it. To remove it, tick “Remove the photo on save”.",
+            "The country is not decoration: it decides the dialling code a pasted guest list without one is normalised to, and a new event’s timezone. Working from Costa Rica? Set it and stop typing +506 every time.",
+            "The timezone decides which clock YOU read the panel’s times by. Leaving it empty means the one of the country you handle.",
+            "Only the platform account and office administrators have a password; everyone else signs in with the emailed code. Changing it closes every other session, which is exactly what it is changed for.",
+            "At the bottom is “Where you are signed in”: every device the account was opened from, with the last time and the address. A session lasts thirty days, so if you left one open on somebody else’s computer, close it there.",
             "The role is NOT here, deliberately: nobody promotes themselves. That is changed by whoever administers, under “Team”."
           ]
         },
@@ -609,16 +613,56 @@
     },
     "profile": {
       "title": "My profile",
-      "intro": "Your name, your photo, and which language and country you work in. Yours alone: changing it changes nothing for the rest of the office.",
+      "intro": "Your name, your photo, which language and country you work in, your password, and where your account is signed in. Yours alone: changing it changes nothing for the rest of the office.",
       "name": "Name",
       "phone": "Phone",
-      "avatar": "Photo (image address)",
       "locale": "Language",
       "country": "Country you handle",
       "countryHint": "Decides the dialling code a pasted guest list without one is normalised to, and the timezone of a new event.",
       "save": "Save",
       "saved": "Saved.",
-      "noCountry": "Not chosen"
+      "noCountry": "Not chosen",
+      "email": "Email",
+      "emailHint": "This is what you sign in with. It is not changed from here.",
+      "timezone": "Timezone",
+      "timezoneHint": "The panel reads its times in it. Empty means the one of the country you handle.",
+      "timezoneAuto": "The one of the country you handle",
+      "photo": {
+        "label": "Photo",
+        "hint": "JPG, PNG or WEBP. The server crops it to a square and shrinks it.",
+        "remove": "Remove the photo on save",
+        "tooBig": "The image is over {mb} MB. Pick a smaller one.",
+        "notAnImage": "That file is not an image that can be opened."
+      },
+      "password": {
+        "title": "Password",
+        "intro": "Changing it closes your other sessions: it is changed exactly when you fear somebody has it.",
+        "introNone": "You have no password yet: you sign in with the code sent to your email. Setting one does not take the code away.",
+        "current": "Current password",
+        "next": "New password",
+        "repeat": "Repeat it",
+        "rule": "{n} characters minimum",
+        "change": "Change the password",
+        "set": "Set a password",
+        "saved": "Password saved. Your other sessions have been closed.",
+        "errors": {
+          "notAllowed": "Your role signs in with the emailed code, not with a password.",
+          "mismatch": "The two new passwords do not match.",
+          "wrongCurrent": "That is not the current password.",
+          "tooShort": "Too short.",
+          "padded": "It cannot start or end with a space.",
+          "generic": "The password could not be changed."
+        }
+      },
+      "sessions": {
+        "title": "Where you are signed in",
+        "intro": "A session lasts thirty days. If you left one open on a phone you no longer have, or on somebody else’s computer, close it here.",
+        "current": "this one",
+        "lastSeen": "Last seen",
+        "close": "Close",
+        "closeOthers": "Close the others",
+        "closed": "Closed."
+      }
     }
   },
   "rsvpForm": {

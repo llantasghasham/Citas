@@ -155,10 +155,33 @@ model User {
   /// «el del sistema».
   country String?
 
-  /// Su foto. Una dirección, no un archivo: subir archivos es otra cosa —
-  /// permisos, tamaño, tipo, almacenamiento— y colarla de refilón en un
-  /// formulario de perfil es como se cuela una subida sin límite de tamaño.
+  /// Su foto, si la trajo de fuera como dirección.
+  ///
+  /// Se conserva porque hay perfiles que ya la tienen puesta así, pero el
+  /// formulario ya no la pide: pedirle una URL de imagen a una persona normal
+  /// es pedirle algo que no tiene. Lo que se usa hoy es `avatarData`.
   avatarUrl String?
+
+  /// Su foto SUBIDA, ya recortada y reducida por el servidor.
+  ///
+  /// Los bytes van a PostgreSQL y no al disco por la misma razón que la tabla
+  /// `Render`: un despliegue copia el código, así que un archivo dejado en el
+  /// disco de la máquina desaparece con la siguiente versión. Y lo que se
+  /// guarda NO es lo que se subió: se descodifica, se recorta a un cuadrado
+  /// pequeño y se vuelve a codificar, de modo que los metadatos del teléfono
+  /// —entre ellos las coordenadas de la casa donde se hizo la foto— no llegan
+  /// nunca a la base.
+  avatarData    Bytes?
+  avatarType    String?
+  /// La huella de la foto de hoy. Va en la dirección (`?v=`) para que el
+  /// navegador pueda quedársela para siempre y aun así ver el cambio.
+  avatarVersion String?
+
+  /// Su zona horaria. Nula significa «la del país que maneja».
+  ///
+  /// El país da una por defecto, pero no siempre acierta: quien maneja Costa
+  /// Rica desde Beirut quiere leer las horas en la suya.
+  timezone String?
   lastLoginAt  DateTime?
   createdAt    DateTime @default(now())
 

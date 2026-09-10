@@ -144,9 +144,13 @@
         "profile": {
           "title": "O meu perfil",
           "steps": [
-            "«O meu perfil» é seu e só seu: o nome, a foto, o telefone, o idioma em que lê o painel e o país que gere.",
+            "«O meu perfil» é seu e só seu: o nome, a foto, o telefone, o idioma em que lê o painel, o país que gere e o seu fuso horário. O correio não se muda aqui: é com ele que entra.",
             "Mudá-lo não muda nada para o resto do escritório. Duas pessoas do mesmo balcão podem trabalhar em idiomas diferentes.",
+            "A foto ENVIA-SE do telemóvel ou do computador; não há nenhum endereço para colar. O servidor corta-a num quadrado, reduz-la e retira-lhe os dados que as fotos de telemóvel levam dentro — entre eles o sítio onde foi tirada. Para a retirar, marque «Retirar a foto ao guardar».",
             "O país não é enfeite: decide o indicativo com que se normaliza uma lista de convidados colada sem indicativo, e o fuso de um evento novo. Se trabalha da Costa Rica, ponha-o e deixa de escrever +506 sempre.",
+            "O fuso horário decide com que relógio LÊ as horas do painel. Deixá-lo vazio significa o do país que gere.",
+            "A palavra-passe só a têm o superadministrador e os administradores de escritório; os restantes entram com o código do correio. Mudá-la fecha todas as outras sessões, que é precisamente para o que se muda.",
+            "Em baixo está «Onde tem a sessão aberta»: cada aparelho a partir do qual se entrou, com a última vez e o endereço. Uma sessão dura trinta dias, por isso se deixou uma aberta num computador alheio, feche-a aí.",
             "A função NÃO está aqui, de propósito: ninguém se promove a si próprio. Isso muda-se em «Equipa»."
           ]
         },
@@ -609,16 +613,56 @@
     },
     "profile": {
       "title": "O meu perfil",
-      "intro": "O seu nome, a sua foto e em que idioma e país trabalha. Só seu: mudá-lo não muda nada para o resto do escritório.",
+      "intro": "O seu nome, a sua foto, em que idioma e país trabalha, a sua palavra-passe e onde tem a sessão aberta. Só seu: mudá-lo não muda nada para o resto do escritório.",
       "name": "Nome",
       "phone": "Telefone",
-      "avatar": "Foto (endereço da imagem)",
       "locale": "Idioma",
       "country": "País que gere",
       "countryHint": "Decide o indicativo com que se normaliza uma lista de convidados colada sem indicativo, e o fuso horário de um evento novo.",
       "save": "Guardar",
       "saved": "Guardado.",
-      "noCountry": "Por escolher"
+      "noCountry": "Por escolher",
+      "email": "Correio",
+      "emailHint": "É com isto que entra. Não se muda aqui.",
+      "timezone": "Fuso horário",
+      "timezoneHint": "É com ele que se leem as horas do painel. Vazio significa o do país que gere.",
+      "timezoneAuto": "O do país que gere",
+      "photo": {
+        "label": "Foto",
+        "hint": "JPG, PNG ou WEBP. O servidor corta-a num quadrado e reduz-la.",
+        "remove": "Retirar a foto ao guardar",
+        "tooBig": "A imagem pesa mais de {mb} MB. Escolha uma mais pequena.",
+        "notAnImage": "Esse ficheiro não é uma imagem que se possa abrir."
+      },
+      "password": {
+        "title": "Palavra-passe",
+        "intro": "Mudá-la fecha as outras sessões: muda-se justamente quando se teme que alguém a tenha.",
+        "introNone": "Ainda não tem palavra-passe: entra com o código que lhe chega ao correio. Pôr uma não lhe tira o código.",
+        "current": "Palavra-passe de agora",
+        "next": "Palavra-passe nova",
+        "repeat": "Repita-a",
+        "rule": "mínimo {n} caracteres",
+        "change": "Mudar a palavra-passe",
+        "set": "Pôr palavra-passe",
+        "saved": "Palavra-passe guardada. As outras sessões foram fechadas.",
+        "errors": {
+          "notAllowed": "O seu papel entra com o código do correio, não com palavra-passe.",
+          "mismatch": "As duas palavras-passe novas não coincidem.",
+          "wrongCurrent": "A palavra-passe de agora não é essa.",
+          "tooShort": "Demasiado curta.",
+          "padded": "Não pode começar nem acabar com um espaço.",
+          "generic": "Não foi possível mudar a palavra-passe."
+        }
+      },
+      "sessions": {
+        "title": "Onde tem a sessão aberta",
+        "intro": "Uma sessão dura trinta dias. Se deixou uma aberta num telemóvel que já não tem ou num computador alheio, feche-a aqui.",
+        "current": "esta",
+        "lastSeen": "Última vez",
+        "close": "Fechar",
+        "closeOthers": "Fechar as outras",
+        "closed": "Fechada."
+      }
     }
   },
   "rsvpForm": {

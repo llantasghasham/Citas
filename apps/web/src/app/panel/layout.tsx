@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 
 import { signOutAction } from '@/app/entrar/actions';
 import { LanguageMenu } from '@/components/panel/LanguageMenu';
+import { Avatar } from '@/components/panel/profile/Avatar';
 import { getAdminContext } from '@/lib/admin/context';
 import { loadSite } from '@/lib/home/site';
 import { getSession, sessionCan } from '@/lib/auth/session';
@@ -70,6 +71,14 @@ export default async function PanelLayout({ children }: { children: ReactNode })
             ))}
           </nav>
           <LanguageMenu locale={locale} dictionary={dictionary} />
+
+          {/* Con qué cuenta se está trabajando. En un sistema donde una misma
+              persona entra como la oficina y como la plataforma, verlo en todo
+              momento evita configurar la agencia equivocada. */}
+          <Link href="/panel/perfil" className="flex items-center gap-2 hover:opacity-80">
+            <Avatar src={session.avatarUrl} name={session.email} size={28} />
+            <span className="sr-only">{dictionary.admin.nav.profile}</span>
+          </Link>
 
           <form action={signOutAction}>
             <button type="submit" className="text-sm underline opacity-70 hover:opacity-100">

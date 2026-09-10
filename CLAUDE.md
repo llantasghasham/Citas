@@ -285,10 +285,26 @@ de los versículos.
     Un campo vacío es «el texto original», y no se guarda fila.
   - Los cuatro botones de idioma son ahora un icono de mundo (`<details>`, sin
     JavaScript de cliente).
-- `/panel/perfil` — cada persona edita LO SUYO: nombre, foto, teléfono, idioma
-  y el país que maneja. El id sale de la sesión, nunca del formulario: un campo
-  oculto con el id del usuario en una pantalla de perfil es cómo se edita el
-  perfil de otro. El rol NO está aquí, para que nadie se ascienda a sí mismo.
+- `/panel/perfil` — cada persona edita LO SUYO: nombre, foto, teléfono, idioma,
+  país y zona horaria; su contraseña; y dónde tiene la sesión abierta. El id sale
+  de la sesión, nunca del formulario: un campo oculto con el id del usuario en
+  una pantalla de perfil es cómo se edita el perfil de otro. El rol NO está aquí,
+  para que nadie se ascienda a sí mismo, y el CORREO tampoco: es con lo que se
+  entra, y cambiarlo desde dentro sin confirmar el nuevo regala la cuenta a quien
+  se cuele una vez.
+  - La foto se SUBE, no se pega una dirección. Se recodifica siempre —recorte
+    cuadrado de 256 y WEBP— y por eso los metadatos del móvil, con las
+    coordenadas de la casa dentro, no llegan nunca a la base. Los bytes van a
+    PostgreSQL, no al disco: un despliegue copia el código y se lleva por delante
+    lo que se hubiera dejado al lado, que es la misma razón de la tabla `Render`.
+    Se sirven por `/api/avatar/<id>`, con sesión y solo a esa persona, a su
+    oficina y al superadministrador; la huella va en `?v=` para poder cachear
+    para siempre sin servir la foto vieja.
+  - La contraseña solo la tienen el superadministrador y los administradores de
+    oficina —la MISMA regla que aplica `npm run auth:password`, comprobada otra
+    vez en el servidor— y cambiarla cierra las demás sesiones.
+  - La lista de sesiones existe porque una sesión dura treinta días: sin ella,
+    una dejada abierta en un ordenador ajeno se arreglaba esperando un mes.
 - `/panel/equipo` — quién trabaja en la oficina, con qué rol, en qué idioma y
   con qué país. Cada fila se guarda por su cuenta.
 - Un icono de mundo en la cabecera cambia el idioma del panel. Se guarda en

@@ -1,6 +1,7 @@
 import type { Locale, PlanTier, Role, TenantStatus } from '@/generated/prisma/enums';
 import { getPrisma } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
+import { avatarSrc } from '@/lib/profile/avatar';
 
 export interface OfficeRow {
   id: string;
@@ -85,6 +86,7 @@ export interface MemberRow {
   locale: Locale;
   /** El país que maneja: ISO alfa-2, o nulo si no ha elegido. */
   country: string | null;
+  /** La dirección de su foto, subida o de fuera, ya resuelta. */
   avatarUrl: string | null;
 }
 
@@ -94,7 +96,14 @@ export async function listMembers(scope: TenantScope): Promise<MemberRow[]> {
     orderBy: { createdAt: 'asc' },
     include: {
       user: {
-        select: { email: true, name: true, locale: true, country: true, avatarUrl: true },
+        select: {
+          email: true,
+          name: true,
+          locale: true,
+          country: true,
+          avatarUrl: true,
+          avatarVersion: true,
+        },
       },
     },
   });
@@ -106,7 +115,7 @@ export async function listMembers(scope: TenantScope): Promise<MemberRow[]> {
     name: membership.user.name,
     locale: membership.user.locale,
     country: membership.user.country,
-    avatarUrl: membership.user.avatarUrl,
+    avatarUrl: avatarSrc(membership.userId, membership.user),
   }));
 }
 

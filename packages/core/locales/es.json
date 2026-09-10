@@ -144,9 +144,13 @@
         "profile": {
           "title": "Mi perfil",
           "steps": [
-            "«Mi perfil» es lo suyo y solo lo suyo: su nombre, su foto, su teléfono, el idioma en que lee el panel y el país que maneja.",
+            "«Mi perfil» es lo suyo y solo lo suyo: su nombre, su foto, su teléfono, el idioma en que lee el panel, el país que maneja y su zona horaria. El correo no se cambia aquí: es con lo que entra.",
             "Cambiarlo no cambia nada para el resto de la oficina. Dos personas del mismo mostrador pueden trabajar en idiomas distintos.",
+            "La foto se SUBE desde el teléfono o el ordenador; no hay que pegar ninguna dirección. El servidor la recorta a un cuadrado, la reduce y le quita los datos que las fotos de móvil llevan dentro —entre ellos el lugar donde se hizo—. Para quitarla, marque «Quitar la foto al guardar».",
             "El país no es un adorno: decide el prefijo con el que se normaliza una lista de invitados pegada sin prefijo, y la zona horaria de un evento nuevo. Si trabaja desde Costa Rica, póngalo y dejará de escribir +506 cada vez.",
+            "La zona horaria decide con qué reloj lee USTED las horas del panel. Dejarla vacía significa la del país que maneja.",
+            "La contraseña solo la tienen el superadministrador y los administradores de oficina; el resto entra con el código del correo. Cambiarla cierra todas las demás sesiones, que es justo para lo que se cambia.",
+            "Abajo está «Dónde tiene la sesión abierta»: cada aparato desde el que se ha entrado, con la última vez y desde qué dirección. Una sesión dura treinta días, así que si dejó una abierta en un ordenador ajeno, ciérrela ahí.",
             "El rol NO está aquí, a propósito: nadie se asciende a sí mismo. Eso lo cambia quien administra, en «Equipo»."
           ]
         },
@@ -609,16 +613,56 @@
     },
     "profile": {
       "title": "Mi perfil",
-      "intro": "Su nombre, su foto y en qué idioma y país trabaja. Solo suyo: cambiarlo no cambia nada para el resto de la oficina.",
+      "intro": "Su nombre, su foto, en qué idioma y país trabaja, su contraseña y dónde tiene la sesión abierta. Solo suyo: cambiarlo no cambia nada para el resto de la oficina.",
       "name": "Nombre",
       "phone": "Teléfono",
-      "avatar": "Foto (dirección de la imagen)",
       "locale": "Idioma",
       "country": "País que maneja",
       "countryHint": "Decide el prefijo con el que se normaliza una lista de invitados pegada sin prefijo, y la zona horaria de un evento nuevo.",
       "save": "Guardar",
       "saved": "Guardado.",
-      "noCountry": "Sin elegir"
+      "noCountry": "Sin elegir",
+      "email": "Correo",
+      "emailHint": "Es con lo que entra. No se cambia desde aquí.",
+      "timezone": "Zona horaria",
+      "timezoneHint": "Con ella se leen las horas del panel. Vacío significa la del país que maneja.",
+      "timezoneAuto": "La del país que maneja",
+      "photo": {
+        "label": "Foto",
+        "hint": "JPG, PNG o WEBP. El servidor la recorta a un cuadrado y la reduce.",
+        "remove": "Quitar la foto al guardar",
+        "tooBig": "La imagen pesa más de {mb} MB. Elija una más pequeña.",
+        "notAnImage": "Ese archivo no es una imagen que se pueda abrir."
+      },
+      "password": {
+        "title": "Contraseña",
+        "intro": "Cambiarla cierra las demás sesiones: se cambia justo cuando se teme que alguien la tenga.",
+        "introNone": "Todavía no tiene contraseña: entra con el código que le llega al correo. Ponerle una no le quita el código.",
+        "current": "Contraseña de ahora",
+        "next": "Contraseña nueva",
+        "repeat": "Repítala",
+        "rule": "mínimo {n} caracteres",
+        "change": "Cambiar la contraseña",
+        "set": "Poner contraseña",
+        "saved": "Contraseña guardada. Las demás sesiones se han cerrado.",
+        "errors": {
+          "notAllowed": "Su rol entra con el código del correo, no con contraseña.",
+          "mismatch": "Las dos contraseñas nuevas no coinciden.",
+          "wrongCurrent": "La contraseña de ahora no es esa.",
+          "tooShort": "Demasiado corta.",
+          "padded": "No puede empezar ni acabar con un espacio.",
+          "generic": "No se pudo cambiar la contraseña."
+        }
+      },
+      "sessions": {
+        "title": "Dónde tiene la sesión abierta",
+        "intro": "Una sesión dura treinta días. Si dejó una abierta en un teléfono que ya no tiene o en un ordenador ajeno, ciérrela aquí.",
+        "current": "esta",
+        "lastSeen": "Última vez",
+        "close": "Cerrar",
+        "closeOthers": "Cerrar las demás",
+        "closed": "Cerrada."
+      }
     }
   },
   "rsvpForm": {

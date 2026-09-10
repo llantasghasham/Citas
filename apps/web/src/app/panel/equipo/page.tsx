@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { addMemberAction } from '@/app/panel/actions';
 import { updateMemberAction } from '@/app/panel/equipo/actions';
 import { Field, FIELD_CLASS } from '@/components/create/Field';
+import { Avatar } from '@/components/panel/profile/Avatar';
 import { getAdminContext } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { LOCALE_NAMES } from '@/lib/create/options';
@@ -59,15 +60,7 @@ export default async function TeamPage({ searchParams }: PageProps) {
                 <input type="hidden" name="userId" value={member.userId} />
 
                 <div className="flex items-center gap-3">
-                  {member.avatarUrl === null ? (
-                    <span className="grid size-9 place-items-center rounded-full bg-[#ddd6c6] text-sm text-[#6a6456]">
-                      {(member.name ?? member.email).slice(0, 1).toUpperCase()}
-                    </span>
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element -- una
-                    // dirección que escribió esa persona en su perfil.
-                    <img src={member.avatarUrl} alt="" className="size-9 rounded-full object-cover" />
-                  )}
+                  <Avatar src={member.avatarUrl} name={member.name ?? member.email} size={36} />
                   <span className="flex flex-col">
                     {member.name === null ? null : <span className="text-sm">{member.name}</span>}
                     <span className="font-mono text-xs text-[#6a6456]" dir="ltr">

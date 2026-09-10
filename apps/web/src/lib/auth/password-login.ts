@@ -50,6 +50,8 @@ export async function signInWithPassword(
   const user = await prisma.user.findUnique({
     where: { email },
     include: { memberships: true },
+    // Sin los bytes de la foto: aquí solo se comprueba una contraseña.
+    omit: { avatarData: true },
   });
   if (user === null || user.passwordHash === null) return failure;
   if (!(await passwordMatches(password, user.passwordHash))) return failure;

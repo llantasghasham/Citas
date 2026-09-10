@@ -262,6 +262,41 @@ Se escribe su correo y se elige el rol. No se envía invitación ni se crea
 contraseña: la cuenta queda creada y esa persona entra con un código de un solo
 uso cuando quiera.
 
+### Mi perfil
+
+Cada persona edita **lo suyo** en `/panel/perfil`, y solo lo suyo. Está aparte
+del equipo a propósito: el equipo es «quién trabaja aquí y con qué permiso», y
+lo decide quien administra; el perfil es «cómo me llamo y cómo trabajo».
+
+| Campo | Qué decide |
+| --- | --- |
+| Foto | Se **sube** un archivo; no se pega ninguna dirección |
+| Nombre y teléfono | Cómo sale en la lista del equipo |
+| Idioma | En qué idioma lee ESA persona el panel |
+| País | Prefijo por defecto al pegar una lista, y zona de un evento nuevo |
+| Zona horaria | Con qué reloj lee esa persona las horas del panel |
+
+El **correo no se edita**: es con lo que se entra, y cambiarlo desde dentro sin
+confirmar el nuevo es cómo alguien que se cuela una vez se queda con la cuenta.
+El **rol tampoco está aquí**: nadie se asciende a sí mismo.
+
+La foto no se guarda como llegó. El servidor la descodifica, la recorta a un
+cuadrado de 256 píxeles, la vuelve a codificar en WEBP y guarda esos bytes en
+PostgreSQL —no en el disco, que un despliegue se lleva por delante—. Recodificar
+tira de paso los metadatos que traen las fotos de móvil, **incluidas las
+coordenadas del sitio donde se hizo**. Se sirve por `/api/avatar/<id>`, que pide
+sesión y solo la enseña a esa misma persona, a quien esté en su oficina y al
+superadministrador.
+
+Debajo hay dos bloques más:
+
+- **Contraseña** — solo aparece para el superadministrador y los administradores
+  de oficina, que son los únicos que pueden tener una; la acción lo vuelve a
+  comprobar en el servidor. Cambiarla **cierra todas las demás sesiones**.
+- **Dónde tiene la sesión abierta** — cada aparato desde el que se ha entrado,
+  con la última vez y la dirección. Una sesión dura treinta días: sin esta lista,
+  una dejada abierta en un ordenador ajeno se arreglaba esperando un mes.
+
 ## 4 septies. La app móvil
 
 ```bash

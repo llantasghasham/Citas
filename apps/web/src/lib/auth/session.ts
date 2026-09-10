@@ -5,6 +5,7 @@ import type { Role } from '@/generated/prisma/enums';
 import type { Locale } from '@/lib/types';
 import { getPrisma } from '@/lib/db/client';
 import { tenantScope, type TenantScope } from '@/lib/db/tenant';
+import { avatarSrc } from '@/lib/profile/avatar';
 
 import { hashSecret, newSessionToken } from './tokens';
 import type { Capability } from './permissions';
@@ -26,6 +27,7 @@ export interface AuthenticatedSession {
   locale: Locale;
   /** El país que maneja. Decide prefijo telefónico y zona horaria por defecto. */
   country: string | null;
+  /** La dirección de su foto, ya resuelta: la subida si la hay, si no la de fuera. */
   avatarUrl: string | null;
   /**
    * Lo que esta persona puede hacer, YA resuelto.
@@ -107,7 +109,10 @@ export async function resolveSession(token: string): Promise<AuthenticatedSessio
   const prisma = getPrisma();
   const row = await prisma.session.findUnique({
     where: { tokenHash: hashSecret(token) },
-    include: { user: { include: { memberships: true } } },
+    // `omit` de la foto, y no es cosmético: esta consulta corre en CADA
+    // petición del panel. Traerse los bytes de la imagen para acabar usando
+    // solo su huella sería pagar la foto entera en cada carga de pantalla.
+    include: { user: { include: { memberships: true }, omit: { avatarData: true } } },
   });
 
   if (row === null) return null;
@@ -140,7 +145,7 @@ export async function resolveSession(token: string): Promise<AuthenticatedSessio
     role,
     locale: row.user.locale,
     country: row.user.country,
-    avatarUrl: row.user.avatarUrl,
+    avatarUrl: avatarSrc(row.userId, row.user),
     capabilities: role === null ? [] : await capabilitiesOf(role),
   };
 }

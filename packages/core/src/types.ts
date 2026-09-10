@@ -590,13 +590,56 @@ export interface Dictionary {
       intro: string;
       name: string;
       phone: string;
-      avatar: string;
       locale: string;
       country: string;
       countryHint: string;
       save: string;
       saved: string;
       noCountry: string;
+      email: string;
+      emailHint: string;
+      timezone: string;
+      timezoneHint: string;
+      timezoneAuto: string;
+      photo: {
+        label: string;
+        hint: string;
+        remove: string;
+        /** Lleva `{mb}`. */
+        tooBig: string;
+        notAnImage: string;
+      };
+      password: {
+        title: string;
+        intro: string;
+        introNone: string;
+        current: string;
+        next: string;
+        repeat: string;
+        /** Lleva `{n}`. */
+        rule: string;
+        change: string;
+        set: string;
+        saved: string;
+        /** Por qué no se pudo, con la clave que devuelve la acción. */
+        errors: {
+          notAllowed: string;
+          mismatch: string;
+          wrongCurrent: string;
+          tooShort: string;
+          padded: string;
+          generic: string;
+        };
+      };
+      sessions: {
+        title: string;
+        intro: string;
+        current: string;
+        lastSeen: string;
+        close: string;
+        closeOthers: string;
+        closed: string;
+      };
     };
     billing: {
       heading: string;
