@@ -10,7 +10,7 @@ import { getAdminContext, requestHost } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { enabledMethods, listPackageOrders } from '@/lib/billing/checkout';
 import { getPrisma } from '@/lib/db/client';
-import { listConnections, queueStats, scheduledBatch } from '@/lib/whatsapp/connections';
+import { listConnections, listFailed, queueStats, scheduledBatch } from '@/lib/whatsapp/connections';
 import { guestAllowanceFor } from '@/lib/billing/packages';
 import { LOCALE_NAMES } from '@/lib/create/options';
 import { COUNTRY_CODES } from '@/lib/guests/phone';
@@ -76,7 +76,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
   // Cuánto tiene pagado esta boda y qué se le ha vendido. Va aquí, junto a la
   // lista que no cabe, y no en la facturación de la oficina.
   const canSell = sessionCan(session, 'billing:manage');
-  const [allowance, sold, methods, connections, whatsappStats, scheduled, actor] =
+  const [allowance, sold, methods, connections, whatsappStats, scheduled, failed, actor] =
     await Promise.all([
       guestAllowanceFor(session.tenantId, eventId),
       listPackageOrders(scopeOf(session), eventId),
@@ -84,6 +84,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
       listConnections(scopeOf(session)),
       queueStats(scopeOf(session), eventId),
       scheduledBatch(scopeOf(session), eventId),
+      listFailed(scopeOf(session), eventId),
       getPrisma().user.findUnique({
         where: { id: session.userId },
         select: { timezone: true },
@@ -285,6 +286,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           stats={whatsappStats}
           scheduled={scheduled}
           reminderDays={event.reminderDaysBefore}
+          failed={failed}
           timezone={actorZone}
           dictionary={dictionary}
           locale={locale}

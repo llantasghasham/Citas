@@ -1,10 +1,11 @@
 import {
   cancelScheduledAction,
   queueWhatsappAction,
+  retryFailedAction,
   setReminderAction,
 } from '@/app/panel/eventos/actions';
 import { FIELD_CLASS } from '@/components/create/Field';
-import type { ConnectionRow, QueueStats } from '@/lib/whatsapp/connections';
+import type { ConnectionRow, FailedMessage, QueueStats } from '@/lib/whatsapp/connections';
 import { REMINDER_DAYS } from '@/lib/whatsapp/reminders';
 import { utcToZoned } from '@/lib/time/zoned';
 import { displayFont } from '@/lib/typography';
@@ -26,6 +27,7 @@ export function WhatsappSendSection({
   stats,
   scheduled,
   reminderDays,
+  failed,
   timezone,
   dictionary,
   locale,
@@ -37,6 +39,8 @@ export function WhatsappSendSection({
   scheduled: { count: number; at: Date } | null;
   /** Cuántos días antes se recuerda a quien no ha contestado. Nulo = nunca. */
   reminderDays: number | null;
+  /** Los que se rindieron, con nombre y motivo. */
+  failed: FailedMessage[];
   /** El reloj de quien mira: con él se escribe y con él se lee la hora. */
   timezone: string;
   dictionary: Dictionary;
@@ -78,6 +82,54 @@ export function WhatsappSendSection({
             </button>
           </form>
         </div>
+      )}
+
+      {/* Las que se rindieron. Plegadas, porque lo normal es que no haya
+          ninguna; pero abiertas dicen A QUIÉN no le llegó y por qué, que es lo
+          único que sirve. Antes solo salía el número, y «12 fallidas» sobre
+          doscientas es una frase que preocupa y no deja hacer nada. */}
+      {failed.length === 0 ? null : (
+        <details className="border border-[#e0c9c3] bg-[#fdf4f2]">
+          <summary className="cursor-pointer px-4 py-3 text-sm text-[#8c2f1e]">
+            {plural(locale, copy.failedTitle, failed.length)}
+          </summary>
+
+          <div className="flex flex-col gap-3 px-4 pb-4">
+            <ul className="flex flex-col gap-2">
+              {failed.map((message) => (
+                <li
+                  key={message.id}
+                  className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-[#e0c9c3] pt-2 text-sm"
+                >
+                  <span>{message.name ?? '—'}</span>
+                  <span className="font-mono text-xs text-[#6a6456]" dir="ltr">
+                    {message.phone}
+                  </span>
+                  <span className="text-xs text-[#8c2f1e]">{message.reason ?? ''}</span>
+                  <form action={retryFailedAction} className="ms-auto">
+                    <input type="hidden" name="eventId" value={eventId} />
+                    <input type="hidden" name="messageId" value={message.id} />
+                    <button type="submit" className="text-xs underline text-[#8a6c22]">
+                      {copy.retry}
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+
+            <p className="text-xs text-[#6a6456]">{copy.failedHint}</p>
+
+            <form action={retryFailedAction}>
+              <input type="hidden" name="eventId" value={eventId} />
+              <button
+                type="submit"
+                className="border border-[#23201a] px-4 py-2 text-sm hover:opacity-70"
+              >
+                {copy.retryAll}
+              </button>
+            </form>
+          </div>
+        </details>
       )}
 
       {connected.length === 0 ? (

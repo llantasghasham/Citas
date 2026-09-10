@@ -633,7 +633,14 @@
         "one": "1 día antes",
         "other": "{count} días antes"
       },
-      "reminderHint": "Se manda una sola vez, por el número conectado, y solo a quien no ha contestado y tiene teléfono. A quien ya contestó no se le escribe."
+      "reminderHint": "Se manda una sola vez, por el número conectado, y solo a quien no ha contestado y tiene teléfono. A quien ya contestó no se le escribe.",
+      "failedTitle": {
+        "one": "1 no pudo entregarse",
+        "other": "{count} no pudieron entregarse"
+      },
+      "retry": "Reintentar",
+      "retryAll": "Reintentar todas",
+      "failedHint": "Reintentar las vuelve a poner en la cola. Si dice que el número no tiene WhatsApp, corrija el teléfono en la lista de invitados antes de reintentar, o escríbale a mano."
     },
     "profile": {
       "title": "Mi perfil",

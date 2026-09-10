@@ -345,6 +345,91 @@ export async function cancelScheduled(
   return count;
 }
 
+export interface FailedMessage {
+  id: string;
+  /** El nombre del invitado, cuando el mensaje salía de una ficha. */
+  name: string | null;
+  phone: string;
+  /** Lo que dijo WhatsApp, recortado por el servicio a algo legible. */
+  reason: string | null;
+}
+
+/**
+ * Los mensajes de un evento que se rindieron.
+ *
+ * Existe porque el número de fallidas ya se enseñaba y no se podía hacer nada
+ * con él. «12 fallidas» sobre doscientas es una frase que preocupa y no ayuda:
+ * no dice a quién no le llegó, ni por qué, ni deja arreglarlo. Y a esos doce hay
+ * que escribirles a mano, así que hay que saber quiénes son.
+ */
+export async function listFailed(
+  scope: TenantScope,
+  eventId: string,
+): Promise<FailedMessage[]> {
+  const rows = await getPrisma().whatsappMessage.findMany({
+    where: { ...scopedWhere(scope), eventId, status: 'failed' },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true, toPhone: true, error: true, guestId: true },
+  });
+  if (rows.length === 0) return [];
+
+  // Los nombres en una sola consulta: una por fila serían doce consultas para
+  // pintar una tabla de doce líneas.
+  const guests = await getPrisma().guest.findMany({
+    where: { id: { in: rows.flatMap((row) => (row.guestId === null ? [] : [row.guestId])) } },
+    select: { id: true, name: true },
+  });
+  const nameOf = new Map(guests.map((guest) => [guest.id, guest.name]));
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.guestId === null ? null : (nameOf.get(row.guestId) ?? null),
+    phone: row.toPhone,
+    reason: row.error,
+  }));
+}
+
+/**
+ * Devuelve a la cola lo que falló, para que el servicio lo vuelva a intentar.
+ *
+ * Se reinicia el contador de intentos: lo que se rindió a los tres se rinde
+ * otra vez enseguida si no, y reintentar sin darle intentos no es reintentar.
+ *
+ * NO se reintenta solo. Un mensaje falla por algo —el número no tiene WhatsApp,
+ * la sesión se cayó, el cupo del día— y volver a intentarlo en bucle sin que
+ * nadie mire es como se quema un número. Lo pulsa una persona que ya ha visto
+ * el motivo.
+ */
+export async function retryFailed(
+  scope: TenantScope,
+  eventId: string,
+  actorId: string,
+  /** Uno solo, o toda la tanda si no se dice cuál. */
+  messageId?: string,
+): Promise<number> {
+  const { count } = await getPrisma().whatsappMessage.updateMany({
+    where: {
+      ...scopedWhere(scope),
+      eventId,
+      status: 'failed',
+      ...(messageId === undefined ? {} : { id: messageId }),
+    },
+    data: { status: 'queued', tries: 0, error: null, scheduledAt: null },
+  });
+
+  if (count > 0) {
+    await recordAudit({
+      tenantId: scope.tenantId,
+      actorId,
+      action: 'whatsapp.queue.retry',
+      entity: 'Event',
+      entityId: eventId,
+      metadata: { retried: count },
+    });
+  }
+  return count;
+}
+
 export interface QueueStats {
   queued: number;
   sent: number;

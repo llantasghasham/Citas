@@ -633,7 +633,14 @@
         "one": "1 day before",
         "other": "{count} days before"
       },
-      "reminderHint": "Sent once, from the connected number, and only to those who have not replied and have a phone. Whoever already replied is not written to."
+      "reminderHint": "Sent once, from the connected number, and only to those who have not replied and have a phone. Whoever already replied is not written to.",
+      "failedTitle": {
+        "one": "1 could not be delivered",
+        "other": "{count} could not be delivered"
+      },
+      "retry": "Try again",
+      "retryAll": "Try all again",
+      "failedHint": "Trying again puts them back in the queue. If it says the number has no WhatsApp, fix the phone in the guest list before trying again, or write to them by hand."
     },
     "profile": {
       "title": "My profile",

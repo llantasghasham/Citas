@@ -715,6 +715,11 @@ export interface Dictionary {
        */
       reminderDays: PluralForms;
       reminderHint: string;
+      /** Las que se rindieron. El número, en formas de plural. */
+      failedTitle: PluralForms;
+      retry: string;
+      retryAll: string;
+      failedHint: string;
       /** Los tres pasos hasta el código. Sin esto, la pantalla no dice cómo. */
       stepsTitle: string;
       step1: string;

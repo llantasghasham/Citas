@@ -157,6 +157,25 @@ Lo programado **se ve y se cancela** mientras no haya salido: la pantalla dice
 fecha la pareja, o alguien se equivocó de mes. Lo que ya salió no se cancela,
 porque ya está en el teléfono de alguien.
 
+### Las que no llegaron
+
+A los tres intentos, un mensaje se rinde y queda en `failed`. El resumen ya
+decía cuántas, pero solo el número: «12 fallidas» sobre doscientas preocupa y no
+deja hacer nada — y a esos doce hay que escribirles a mano, así que hay que
+saber quiénes son.
+
+Ahora hay un bloque plegado con **el nombre, el teléfono y el motivo** de cada
+una, y un botón para volver a encolarla —una, o todas.
+
+- Reintentar **reinicia el contador de intentos**. Lo que se rindió a los tres se
+  rendiría otra vez enseguida, y reintentar sin darle intentos no es reintentar.
+- Lo pulsa **una persona**, nunca solo. Un mensaje falla por algo —el número no
+  tiene WhatsApp, la sesión se cayó, el cupo del día— y reintentarlo en bucle sin
+  que nadie mire es como se quema un número.
+- Si el motivo es que **el número no tiene WhatsApp**, reintentar no arregla
+  nada: hay que corregir el teléfono en la lista de invitados, o escribirle a
+  mano con `wa.me`.
+
 ### Recordar a quien no ha contestado
 
 Debajo del envío hay un desplegable: **cuántos días antes de la boda** se le

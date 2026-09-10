@@ -182,6 +182,12 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   automático que mandara al momento es el que vacía el cupo de un número mientras
   nadie mira. Se marca `Guest.remindedAt` en la misma transacción que se encola.
   Sin número conectado no se marca a nadie: se reintenta cuando lo haya.
+- Lo que se rindió a los tres intentos SE VE, con nombre, teléfono y motivo, y
+  se puede volver a encolar. Antes solo salía el número: «12 fallidas» sobre
+  doscientas preocupa y no deja hacer nada, y a esos doce hay que escribirles a
+  mano. Reintentar reinicia el contador —reintentar sin darle intentos no es
+  reintentar— y lo pulsa una PERSONA que ya ha visto el motivo: un reintento
+  automático en bucle es como se quema el número de un cliente.
 - Reimportar la misma lista no duplica: se reconoce por teléfono, y por nombre
   cuando no hay teléfono.
 - Los teléfonos se guardan normalizados a E.164. Una línea sin nombre se

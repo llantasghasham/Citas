@@ -14,7 +14,7 @@ import { importGuests } from '@/lib/repositories/guests';
 import { addEventVersion } from '@/lib/repositories/versions';
 import { getPrisma } from '@/lib/db/client';
 import { zonedToUtc } from '@/lib/time/zoned';
-import { cancelScheduled, queueEventInvitations } from '@/lib/whatsapp/connections';
+import { cancelScheduled, queueEventInvitations, retryFailed } from '@/lib/whatsapp/connections';
 import { setReminder } from '@/lib/whatsapp/reminders';
 import { COUNTRIES, getDictionary, interpolate, LOCALES, type Locale } from '@citas/core';
 
@@ -249,6 +249,30 @@ export async function setReminderAction(formData: FormData): Promise<void> {
     session.userId,
   );
   redirect(`/panel/eventos/${eventId}?recordatorio=1#whatsapp`);
+}
+
+/**
+ * Vuelve a poner en la cola lo que falló.
+ *
+ * Sin id, la tanda entera. Es una persona quien lo pulsa, y a propósito: un
+ * reintento automático en bucle es como se quema el número de un cliente.
+ */
+export async function retryFailedAction(formData: FormData): Promise<void> {
+  const session = await getSession();
+  if (session === null || !sessionCan(session, 'event:write') || session.tenantId === null) {
+    redirect('/panel');
+  }
+
+  const eventId = String(formData.get('eventId') ?? '');
+  const messageId = String(formData.get('messageId') ?? '');
+
+  const retried = await retryFailed(
+    scopeOf(session),
+    eventId,
+    session.userId,
+    messageId.length === 0 ? undefined : messageId,
+  );
+  redirect(`/panel/eventos/${eventId}?reintentados=${retried}#whatsapp`);
 }
 
 /** Cancela una tanda programada que todavía no ha salido. */
