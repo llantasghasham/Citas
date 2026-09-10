@@ -1,10 +1,12 @@
+import { randomBytes } from 'node:crypto';
+
 import {
+  claimNext,
   listConnections,
   markFailed,
   markSent,
-  nextQueued,
+  reclaimExpired,
   readTunables,
-  usedToday,
   type ConnectionRow,
 } from './db.js';
 import { isUp, socketFor, toJid } from './sessions.js';
@@ -32,7 +34,20 @@ import { isUp, socketFor, toJid } from './sessions.js';
  */
 const HALF_MINUTE = 30_000;
 
-/** La fecha de hoy, en texto, para el contador diario. */
+/**
+ * Quién es este proceso. Se genera al arrancar y viaja en cada reclamo: es lo
+ * que permite decir «esta fila es mía» y, sobre todo, «ya no lo es».
+ */
+const WORKER = `${process.pid}-${randomBytes(4).toString('hex')}`;
+
+/**
+ * La fecha de hoy para el contador diario, en UTC y a propósito.
+ *
+ * No es la zona de la oficina, y conviene que se sepa: una oficina en Beirut ve
+ * el contador reiniciarse a las tres de la madrugada. La alternativa —un día
+ * por oficina— haría que el mismo número compartido entre dos zonas tuviera dos
+ * medianoches, que es peor. Un solo reloj, dicho.
+ */
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -56,14 +71,19 @@ async function drainOne(connection: ConnectionRow): Promise<boolean> {
   const tunables = await readTunables();
   const day = today();
 
-  if (usedToday(connection, day) >= capFor(connection, tunables.warmupCap)) return false;
   if (!isUp(connection.id)) return false;
 
-  const message = await nextQueued(connection.id);
+  // Reclamar la fila y reservar el cupo, juntos y en una transacción. Antes se
+  // miraba el contador aquí, en memoria, y se incrementaba después del envío:
+  // dos repartidores leían «van 199 de 200» y los dos mandaban.
+  const message = await claimNext(connection.id, WORKER, day, capFor(connection, tunables.warmupCap));
   if (message === undefined) return false;
 
   const socket = socketFor(connection.id);
-  if (socket === undefined) return false;
+  if (socket === undefined) {
+    await markFailed(message.id, WORKER, connection.id, day, 'La sesión se cerró antes de enviar.');
+    return false;
+  }
 
   try {
     // Comprobar que el número existe en WhatsApp antes de escribirle: mandar a
@@ -72,15 +92,28 @@ async function drainOne(connection: ConnectionRow): Promise<boolean> {
     const found = (await socket.onWhatsApp(toJid(message.toPhone))) ?? [];
     const exists = found[0];
     if (exists?.exists !== true) {
-      await markFailed(message.id, 'Ese número no tiene WhatsApp.');
+      await markFailed(message.id, WORKER, connection.id, day, 'Ese número no tiene WhatsApp.');
       return true;
     }
 
-    await socket.sendMessage(exists.jid, { text: message.body });
-    await markSent(message.id, connection.id, day);
+    const sent = await socket.sendMessage(exists.jid, { text: message.body });
+    // El identificador de WhatsApp, cuando lo da: es el único asa para
+    // averiguar después si un mensaje dudoso llegó de verdad.
+    const wrote = await markSent(message.id, WORKER, sent?.key?.id ?? null);
+    if (!wrote) {
+      // El arriendo venció mientras se enviaba y otro proceso ya dio la fila
+      // por dudosa. No se pisa: esa duda es información.
+      console.warn(`[wa] ${connection.name}: se envió con el arriendo vencido (${message.id})`);
+    }
     console.log(`[wa] ${connection.name}: enviado a ${message.toPhone}`);
   } catch (error) {
-    await markFailed(message.id, error instanceof Error ? error.message : String(error));
+    await markFailed(
+      message.id,
+      WORKER,
+      connection.id,
+      day,
+      error instanceof Error ? error.message : String(error),
+    );
     console.error(`[wa] ${connection.name}: falló un envío: ${String(error)}`);
   }
 
@@ -101,6 +134,11 @@ export async function runSender(): Promise<never> {
     let sentAnything = false;
 
     try {
+      // Las filas que alguien cogió y nunca soltó, antes de nada: son de un
+      // proceso muerto, y hasta que se recuperan nadie sabe qué pasó con ellas.
+      const rescued = await reclaimExpired();
+      if (rescued > 0) console.warn(`[wa] ${rescued} envío(s) quedaron en duda tras un corte`);
+
       for (const connection of await listConnections()) {
         if (connection.status !== 'connected') continue;
         sentAnything = (await drainOne(connection)) || sentAnything;

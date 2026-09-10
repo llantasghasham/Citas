@@ -730,6 +730,8 @@ export interface Dictionary {
       retry: string;
       retryAll: string;
       failedHint: string;
+      /** WhatsApp lo aceptó y el repartidor se cayó: ni salió ni no salió. */
+      unsure: string;
       /** Los tres pasos hasta el código. Sin esto, la pantalla no dice cómo. */
       stepsTitle: string;
       step1: string;

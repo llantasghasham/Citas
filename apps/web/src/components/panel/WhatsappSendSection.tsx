@@ -105,7 +105,19 @@ export function WhatsappSendSection({
                   <span className="font-mono text-xs text-[#6a6456]" dir="ltr">
                     {message.phone}
                   </span>
-                  <span className="text-xs text-[#8c2f1e]">{message.reason ?? ''}</span>
+                  {/* «No salió» y «no consta si llegó» son cosas distintas, y
+                      tratarlas igual llevaría a reenviar un mensaje que ya
+                      está en el teléfono de alguien. */}
+                  <span
+                    className={
+                      message.status === 'sent_unknown'
+                        ? 'text-xs text-[#8a6c22]'
+                        : 'text-xs text-[#8c2f1e]'
+                    }
+                  >
+                    {message.status === 'sent_unknown' ? `${copy.unsure} · ` : ''}
+                    {message.reason ?? ''}
+                  </span>
                   <form action={retryFailedAction} className="ms-auto">
                     <input type="hidden" name="eventId" value={eventId} />
                     <input type="hidden" name="messageId" value={message.id} />

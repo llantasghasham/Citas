@@ -49,7 +49,9 @@ export async function listConnections(scope: TenantScope): Promise<ConnectionRow
       lastSeenAt: true,
       lastError: true,
       updatedAt: true,
-      _count: { select: { messages: { where: { status: 'queued' } } } },
+      _count: {
+        select: { messages: { where: { status: { in: ['queued', 'processing'] } } } },
+      },
     },
   });
 
@@ -233,7 +235,7 @@ export async function queueEventInvitations(
   const already = new Set(
     (
       await prisma.whatsappMessage.findMany({
-        where: { eventId, status: { in: ['queued', 'sent'] } },
+        where: { eventId, status: { in: ['queued', 'processing', 'sent', 'sent_unknown'] } },
         select: { guestId: true },
       })
     ).flatMap((row) => (row.guestId === null ? [] : [row.guestId])),
@@ -323,13 +325,21 @@ export async function cancelScheduled(
   eventId: string,
   actorId: string,
 ): Promise<number> {
-  const { count } = await getPrisma().whatsappMessage.deleteMany({
+  // Solo lo que sigue en `queued`. Una fila en `processing` ya la tiene cogida
+  // el repartidor: borrarla no impide que salga —el mensaje puede estar ya en
+  // el aire— y encima borraría el rastro de que salió.
+  //
+  // Y se MARCA, no se borra: «se canceló» es información, y una fila que
+  // desaparece no la da. Además deja volver a encolar a esa persona, porque lo
+  // ya escrito se reconoce por `queued` y `sent`.
+  const { count } = await getPrisma().whatsappMessage.updateMany({
     where: {
       ...scopedWhere(scope),
       eventId,
       status: 'queued',
       scheduledAt: { gt: new Date() },
     },
+    data: { status: 'canceled', error: null },
   });
 
   if (count > 0) {
@@ -352,6 +362,8 @@ export interface FailedMessage {
   phone: string;
   /** Lo que dijo WhatsApp, recortado por el servicio a algo legible. */
   reason: string | null;
+  /** `failed` es «no salió»; `sent_unknown` es «no consta si llegó». */
+  status: string;
 }
 
 /**
@@ -367,9 +379,12 @@ export async function listFailed(
   eventId: string,
 ): Promise<FailedMessage[]> {
   const rows = await getPrisma().whatsappMessage.findMany({
-    where: { ...scopedWhere(scope), eventId, status: 'failed' },
+    // También las dudosas: un mensaje que WhatsApp aceptó justo cuando se cayó
+    // el repartidor no es un fallo, pero tampoco consta que llegara. Callárselo
+    // sería peor que decirlo.
+    where: { ...scopedWhere(scope), eventId, status: { in: ['failed', 'sent_unknown'] } },
     orderBy: { createdAt: 'asc' },
-    select: { id: true, toPhone: true, error: true, guestId: true },
+    select: { id: true, toPhone: true, error: true, guestId: true, status: true },
   });
   if (rows.length === 0) return [];
 
@@ -386,6 +401,7 @@ export async function listFailed(
     name: row.guestId === null ? null : (nameOf.get(row.guestId) ?? null),
     phone: row.toPhone,
     reason: row.error,
+    status: row.status,
   }));
 }
 
@@ -411,10 +427,17 @@ export async function retryFailed(
     where: {
       ...scopedWhere(scope),
       eventId,
-      status: 'failed',
+      status: { in: ['failed', 'sent_unknown'] },
       ...(messageId === undefined ? {} : { id: messageId }),
     },
-    data: { status: 'queued', tries: 0, error: null, scheduledAt: null },
+    data: {
+      status: 'queued',
+      tries: 0,
+      error: null,
+      scheduledAt: null,
+      claimedBy: null,
+      leaseUntil: null,
+    },
   });
 
   if (count > 0) {
@@ -447,5 +470,11 @@ export async function queueStats(scope: TenantScope, eventId: string): Promise<Q
   const count = (status: string): number =>
     rows.find((row) => row.status === status)?._count._all ?? 0;
 
-  return { queued: count('queued'), sent: count('sent'), failed: count('failed') };
+  return {
+    // `processing` cuenta como en cola: está saliendo ahora mismo.
+    queued: count('queued') + count('processing'),
+    sent: count('sent'),
+    // Lo dudoso se cuenta con lo fallido: las dos cosas piden que alguien mire.
+    failed: count('failed') + count('sent_unknown'),
+  };
 }

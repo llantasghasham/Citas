@@ -257,6 +257,8 @@ model Event {
 
   @@index([tenantId, status])
   @@index([tenantId, date])
+  // El repaso de recordatorios recorre solo los eventos que tienen uno puesto.
+  @@index([reminderDaysBefore])
 }
 
 model EventHost {
@@ -586,11 +588,27 @@ model WhatsappMessage {
   guestId String?
   eventId String?
 
-  /// queued · sent · failed
+  /// `queued` · `processing` · `sent` · `sent_unknown` · `failed` · `canceled`
+  ///
+  /// `processing` y `sent_unknown` no estaban, y su ausencia era el fallo. Sin
+  /// `processing`, dos repartidores leían la MISMA fila antes de que ninguno la
+  /// marcara, y el invitado recibía dos mensajes. Y sin `sent_unknown` no había
+  /// forma de decir la verdad cuando WhatsApp acepta el mensaje y el proceso se
+  /// muere antes de anotarlo: reenviar es duplicar y no reenviar es perderlo,
+  /// así que lo que corresponde es DECIRLO y que una persona decida.
   status String  @default("queued")
   error  String?
   /// Cuántas veces se intentó. A la tercera se deja quieto.
   tries  Int     @default(0)
+
+  /// Quién lo tiene cogido y hasta cuándo. Un repartidor que se muere deja el
+  /// arriendo vencido, y eso es lo que permite recuperar la fila sin adivinar.
+  claimedBy  String?
+  leaseUntil DateTime?
+
+  /// Lo que WhatsApp devolvió, cuando devuelve algo. Es el único asa para
+  /// averiguar después si un mensaje dudoso llegó de verdad.
+  providerMessageId String?
 
   /// Antes de esta hora no sale. Nulo significa «en cuanto le toque».
   ///
@@ -608,7 +626,10 @@ model WhatsappMessage {
 
   connection WhatsappConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
-  @@index([status, scheduledAt, createdAt])
+  // Por `connectionId` primero: es por donde filtra el repartidor. El índice
+  // anterior empezaba por `status` y no le servía para nada.
+  @@index([connectionId, status, scheduledAt, createdAt])
+  @@index([status, leaseUntil])
   @@index([tenantId, eventId])
 }
 

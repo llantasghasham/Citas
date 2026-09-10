@@ -648,7 +648,8 @@
       },
       "retry": "Try again",
       "retryAll": "Try all again",
-      "failedHint": "Trying again puts them back in the queue. If it says the number has no WhatsApp, fix the phone in the guest list before trying again, or write to them by hand."
+      "failedHint": "Trying again puts them back in the queue. If it says the number has no WhatsApp, fix the phone in the guest list before trying again, or write to them by hand.",
+      "unsure": "No record that it arrived"
     },
     "profile": {
       "title": "My profile",

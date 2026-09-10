@@ -648,7 +648,8 @@
       },
       "retry": "Reintentar",
       "retryAll": "Reintentar todas",
-      "failedHint": "Reintentar las vuelve a poner en la cola. Si dice que el número no tiene WhatsApp, corrija el teléfono en la lista de invitados antes de reintentar, o escríbale a mano."
+      "failedHint": "Reintentar las vuelve a poner en la cola. Si dice que el número no tiene WhatsApp, corrija el teléfono en la lista de invitados antes de reintentar, o escríbale a mano.",
+      "unsure": "No consta si llegó"
     },
     "profile": {
       "title": "Mi perfil",

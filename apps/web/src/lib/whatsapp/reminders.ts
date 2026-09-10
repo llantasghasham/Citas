@@ -138,24 +138,54 @@ export async function queueDueReminders(now = new Date()): Promise<ReminderOutco
     // Se marca y se encola a la vez: si se cayera entre las dos cosas, o se
     // recordaría dos veces o no se recordaría nunca, y las dos son peores que
     // fallar entera y volver a intentarlo en la siguiente pasada.
-    await prisma.$transaction([
-      prisma.whatsappMessage.createMany({ data: rows }),
-      prisma.guest.updateMany({
-        where: { id: { in: rows.map((row) => row.guestId) } },
+    // Se RECLAMAN los invitados antes de escribirles, y solo se escribe a los
+    // que se hayan podido reclamar.
+    //
+    // El orden importa y antes estaba al revés: se creaban los mensajes y luego
+    // se marcaba. Dos repasos a la vez seleccionaban al mismo invitado y los dos
+    // le escribían. Y peor: entre la selección y la marca podía llegar su
+    // confirmación, así que se le recordaba que confirmara algo que ya había
+    // confirmado.
+    //
+    // `updateMany` con `remindedAt: null` en el WHERE es atómico: de dos
+    // procesos, uno cuenta la fila y el otro no. La condición del RSVP se
+    // vuelve a comprobar aquí por lo mismo.
+    const queued = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.guest.updateMany({
+        where: {
+          id: { in: rows.map((row) => row.guestId) },
+          remindedAt: null,
+          rsvp: null,
+        },
         data: { remindedAt: now },
-      }),
-    ]);
+      });
+      if (claimed.count === 0) return 0;
+
+      // Solo los que siguen sin marca ajena: se releen dentro de la misma
+      // transacción, ya marcados por nosotros.
+      const mine = await tx.guest.findMany({
+        where: { id: { in: rows.map((row) => row.guestId) }, remindedAt: now },
+        select: { id: true },
+      });
+      const ids = new Set(mine.map((guest) => guest.id));
+      const toWrite = rows.filter((row) => ids.has(row.guestId));
+      if (toWrite.length === 0) return 0;
+
+      await tx.whatsappMessage.createMany({ data: toWrite });
+      return toWrite.length;
+    });
+    if (queued === 0) continue;
 
     await recordAudit({
       tenantId: event.tenantId,
       action: 'whatsapp.reminder.queue',
       entity: 'Event',
       entityId: event.id,
-      metadata: { queued: rows.length, days: event.reminderDaysBefore },
+      metadata: { queued, days: event.reminderDaysBefore },
     });
 
     outcome.events += 1;
-    outcome.queued += rows.length;
+    outcome.queued += queued;
   }
 
   return outcome;

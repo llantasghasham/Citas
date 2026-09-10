@@ -648,7 +648,8 @@
       },
       "retry": "Tentar de novo",
       "retryAll": "Tentar todas de novo",
-      "failedHint": "Tentar de novo volta a pô-las na fila. Se disser que o número não tem WhatsApp, corrija o telefone na lista de convidados antes de tentar, ou escreva-lhe à mão."
+      "failedHint": "Tentar de novo volta a pô-las na fila. Se disser que o número não tem WhatsApp, corrija o telefone na lista de convidados antes de tentar, ou escreva-lhe à mão.",
+      "unsure": "Não consta que tenha chegado"
     },
     "profile": {
       "title": "O meu perfil",

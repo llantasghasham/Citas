@@ -105,54 +105,80 @@ export interface QueuedMessage {
 }
 
 /**
- * El siguiente mensaje de una conexión, y solo si le queda cupo hoy.
+ * Reclama el siguiente mensaje de una conexión, y de paso RESERVA su cupo.
  *
- * El cupo se comprueba EN LA CONSULTA y no en memoria: si el proceso se
- * reinicia a mitad de una tanda, el contador que manda es el de la base.
+ * Las dos cosas juntas y en una transacción, porque las dos tenían el mismo
+ * fallo: eran una lectura seguida de una escritura, con hueco en medio.
  *
- * `scheduledAt` es la hora antes de la cual no puede salir, y nulo significa
- * «ya». Quien decide que ha llegado el momento es la BASE, con su propio reloj
- * y no con el de este proceso: son dos máquinas que pueden ir descuadradas, y
- * la fila la escribió la web.
+ * - Sin reclamo, dos repartidores hacían el mismo `SELECT` y salían con la
+ *   misma fila. El invitado recibía dos mensajes, que es justo lo que el freno
+ *   existe para evitar.
+ * - Sin reserva, los dos leían «van 199 de 200» y los dos mandaban. El tope
+ *   diario no es un adorno: es lo que separa un número vivo de uno cerrado.
  *
- * El orden es por esa hora primero: si hay una tanda programada para el sábado
- * y alguien encola un mensaje suelto hoy, el suelto sale antes. Lo contrario
- * —que un envío programado hace un mes tapone la cola— es lo que haría que
- * nadie volviera a usar la programación.
+ * `FOR UPDATE SKIP LOCKED` es lo que hace que dos repartidores cojan filas
+ * DISTINTAS en vez de pelearse por la misma. Y el arriendo —dos minutos— es lo
+ * que permite recuperar la fila de un proceso que se murió, sin adivinar si
+ * llegó a mandarla.
  */
-export async function nextQueued(connectionId: string): Promise<QueuedMessage | undefined> {
-  const { rows } = await getPool().query<QueuedMessage>(
-    `SELECT m.id, m."connectionId", m."toPhone", m.body, m.tries
-       FROM "WhatsappMessage" m
-      WHERE m."connectionId" = $1
-        AND m.status = 'queued'
-        AND m.tries < 3
-        AND (m."scheduledAt" IS NULL OR m."scheduledAt" <= now())
-      ORDER BY COALESCE(m."scheduledAt", m."createdAt") ASC, m."createdAt" ASC
-      LIMIT 1`,
-    [connectionId],
-  );
-  return rows[0];
-}
+const LEASE_SECONDS = 120;
 
-export async function markSent(messageId: string, connectionId: string, day: string): Promise<void> {
+export async function claimNext(
+  connectionId: string,
+  worker: string,
+  day: string,
+  cap: number,
+): Promise<QueuedMessage | undefined> {
   const client = await getPool().connect();
   try {
     await client.query('BEGIN');
-    await client.query(
-      `UPDATE "WhatsappMessage" SET status = 'sent', "sentAt" = now(), error = NULL WHERE id = $1`,
-      [messageId],
-    );
-    // El contador se reinicia solo al cambiar el día, sin tarea programada.
-    await client.query(
+
+    // 1. El cupo, con la condición DENTRO del UPDATE: si otro repartidor se
+    //    llevó el último hueco, esto no afecta ninguna fila y se acabó.
+    const { rows: reserved } = await client.query<{ sentToday: number }>(
       `UPDATE "WhatsappConnection"
           SET "sentToday" = CASE WHEN "sentDay" = $2 THEN "sentToday" + 1 ELSE 1 END,
               "sentDay" = $2,
               "updatedAt" = now()
-        WHERE id = $1`,
-      [connectionId, day],
+        WHERE id = $1
+          AND ("sentDay" IS DISTINCT FROM $2 OR "sentToday" < $3)
+        RETURNING "sentToday"`,
+      [connectionId, day, cap],
     );
+    if (reserved.length === 0) {
+      await client.query('ROLLBACK');
+      return undefined;
+    }
+
+    // 2. La fila, reclamada de verdad.
+    const { rows } = await client.query<QueuedMessage>(
+      `UPDATE "WhatsappMessage" m
+          SET status = 'processing',
+              "claimedBy" = $2,
+              "leaseUntil" = now() + ($3 || ' seconds')::interval
+        WHERE m.id = (
+          SELECT id FROM "WhatsappMessage"
+           WHERE "connectionId" = $1
+             AND status = 'queued'
+             AND tries < 3
+             AND ("scheduledAt" IS NULL OR "scheduledAt" <= now())
+           ORDER BY COALESCE("scheduledAt", "createdAt") ASC, "createdAt" ASC
+           FOR UPDATE SKIP LOCKED
+           LIMIT 1
+        )
+        RETURNING m.id, m."connectionId", m."toPhone", m.body, m.tries`,
+      [connectionId, worker, String(LEASE_SECONDS)],
+    );
+
+    // Sin nada que mandar se devuelve el hueco reservado: si no, una cola vacía
+    // consumiría el cupo del día a base de mirarla.
+    if (rows.length === 0) {
+      await client.query('ROLLBACK');
+      return undefined;
+    }
+
     await client.query('COMMIT');
+    return rows[0];
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -161,24 +187,92 @@ export async function markSent(messageId: string, connectionId: string, day: str
   }
 }
 
-export async function markFailed(messageId: string, reason: string): Promise<void> {
-  await getPool().query(
+/**
+ * Los arriendos vencidos: filas que alguien cogió y nunca soltó.
+ *
+ * NO se vuelven a poner en la cola, y esa es la decisión importante. Un
+ * repartidor puede morir DESPUÉS de que WhatsApp aceptara el mensaje: reenviar
+ * sería duplicar y dejarlo sería perderlo, y no hay forma de saber cuál de las
+ * dos. Así que se dice —`sent_unknown`— y lo decide una persona, que es quien
+ * puede mirar el teléfono y ver si llegó.
+ */
+export async function reclaimExpired(): Promise<number> {
+  const { rowCount } = await getPool().query(
     `UPDATE "WhatsappMessage"
-        SET tries = tries + 1,
-            error = $2,
-            status = CASE WHEN tries + 1 >= 3 THEN 'failed' ELSE 'queued' END
-      WHERE id = $1`,
-    // El motivo se recorta: un error de la librería puede traer una traza
-    // entera, y esto lo lee una persona en una tabla.
-    [messageId, reason.slice(0, 300)],
+        SET status = 'sent_unknown',
+            "claimedBy" = NULL,
+            "leaseUntil" = NULL,
+            error = COALESCE(error, 'El repartidor se detuvo a mitad del envío. No consta si llegó.')
+      WHERE status = 'processing' AND "leaseUntil" < now()`,
   );
+  return rowCount ?? 0;
 }
 
-/** Cuánto lleva mandado hoy, ya contando el cambio de día. */
-export function usedToday(connection: ConnectionRow, day: string): number {
-  return connection.sentDay === day ? connection.sentToday : 0;
+/**
+ * Enviado. El contador NO se toca aquí: el hueco se reservó al reclamar.
+ *
+ * Solo escribe si la fila sigue siendo suya. Un arriendo vencido significa que
+ * otro proceso ya la dio por dudosa, y pisarlo sería borrar esa duda.
+ */
+export async function markSent(
+  messageId: string,
+  worker: string,
+  providerMessageId: string | null,
+): Promise<boolean> {
+  const { rowCount } = await getPool().query(
+    `UPDATE "WhatsappMessage"
+        SET status = 'sent', "sentAt" = now(), error = NULL,
+            "providerMessageId" = $3, "claimedBy" = NULL, "leaseUntil" = NULL
+      WHERE id = $1 AND status = 'processing' AND "claimedBy" = $2`,
+    [messageId, worker, providerMessageId],
+  );
+  return (rowCount ?? 0) > 0;
 }
 
+/**
+ * No se pudo. Devuelve el hueco del cupo, porque no se gastó ningún mensaje.
+ *
+ * Como `markSent`, solo escribe si la fila sigue siendo suya.
+ */
+export async function markFailed(
+  messageId: string,
+  worker: string,
+  connectionId: string,
+  day: string,
+  reason: string,
+): Promise<void> {
+  const client = await getPool().connect();
+  try {
+    await client.query('BEGIN');
+    const { rowCount } = await client.query(
+      `UPDATE "WhatsappMessage"
+          SET tries = tries + 1,
+              error = $3,
+              "claimedBy" = NULL,
+              "leaseUntil" = NULL,
+              status = CASE WHEN tries + 1 >= 3 THEN 'failed' ELSE 'queued' END
+        WHERE id = $1 AND status = 'processing' AND "claimedBy" = $2`,
+      // El motivo se recorta: un error de la librería puede traer una traza
+      // entera, y esto lo lee una persona en una tabla.
+      [messageId, worker, reason.slice(0, 300)],
+    );
+
+    if ((rowCount ?? 0) > 0) {
+      await client.query(
+        `UPDATE "WhatsappConnection"
+            SET "sentToday" = GREATEST(0, "sentToday" - 1), "updatedAt" = now()
+          WHERE id = $1 AND "sentDay" = $2`,
+        [connectionId, day],
+      );
+    }
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 /**
  * El freno, leído de la misma tabla `Setting` que edita el panel.
