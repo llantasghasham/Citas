@@ -14,6 +14,13 @@ respeta.
 - `src/lib/payments/mock.ts` — proveedor de desarrollo, para poder construir y
   probar el flujo entero antes de tener credenciales. Se niega a arrancar en
   producción.
+- `src/lib/billing/reconcile.ts` — el repaso de los cobros que se quedaron en
+  «pendiente», y el ÚNICO sitio donde un pedido pasa a pagado: las tres entradas
+  —el enlace de la pareja, el botón de la oficina y el trabajo periódico— pasan
+  por la misma función.
+- `scripts/reconcile-payments.ts` (`npm run payments:reconcile`) — ese repaso
+  desde fuera, que el instalador deja corriendo cada cinco minutos con un
+  temporizador del sistema (`citas-conciliar.timer`).
 - `prisma/schema.prisma` — `Order`, `Payment` y `PaymentEvent`.
 
 ## El contrato, ya confirmado
@@ -37,7 +44,11 @@ adaptador hasta ahora:
 1. Las rutas cuelgan de `payment/`, no de la raíz.
 2. La cabecera es `websiteUrl`, en camelCase. En minúsculas no autentica.
 3. El estado se consulta por el `externalId` **que enviamos nosotros**, junto
-   con la moneda — no por un identificador de Whish. Y ese `externalId` es
+   con la moneda — no por un identificador de Whish. **La moneda importa**: el
+   cobro se busca por `(externalId, currency)`, así que preguntar en la moneda
+   equivocada no devuelve un error, devuelve «no existe», y eso se leería como
+   pendiente. Por eso la moneda viaja con la referencia desde la fila del pago,
+   y no como una constante. Y ese `externalId` es
    NUMÉRICO, mientras que los identificadores de este proyecto son cuids. Por
    eso el adaptador genera uno propio y lo guarda como `providerRef`: es el
    único asa que Whish y esta aplicación comparten, y guardarlo mal dejaría un
@@ -64,8 +75,6 @@ Eso decide el diseño del producto entero:
 - Como el pagador es el cliente final, que NO tiene cuenta aquí, el enlace de
   pago tiene que poder abrirse sin sesión y viajar por WhatsApp, igual que las
   invitaciones.
-
-## Qué pedirle a Whish
 
 ## Cómo se abre la cuenta — confirmado por Whish
 
@@ -241,22 +250,75 @@ Estas ya están en el código y no se negocian:
 - **Idempotencia por pedido.** El `orderId` viaja como identificador externo, y
   `(provider, providerRef)` es único en la base de datos: la misma notificación
   dos veces no cobra dos veces.
-- **Conciliación.** Un proceso periódico revisa los pagos que llevan rato en
-  `pending` y le pregunta al proveedor. Los callbacks se pierden; el dinero no
-  puede perderse con ellos.
+- **Conciliación.** `citas-conciliar.timer` repasa cada cinco minutos los cobros
+  que llevan más de dos minutos en `pending` y le pregunta al proveedor. Los
+  callbacks se pierden; el dinero no puede perderse con ellos. Los recién
+  abiertos se dejan en paz —al pagador le acaban de abrir la pasarela—, los de
+  más de un mes también, y el efectivo no entra: no hay a quién preguntarle.
+  Cada cambio deja un `PaymentEvent` que dice si vino del enlace, del panel o
+  del repaso.
 - **Todo evento se guarda crudo** en `PaymentEvent`. Cuando un cobro se discute
   —y se discute—, es lo único que sirve.
 - **Importes en entero.** Céntimos en USD, unidades en LBP. Ningún decimal toca
   dinero.
 
-## Variables de entorno
+## El día que contesten: qué hacer, en orden
+
+Lo de arriba es lo que hay que PREGUNTAR. Esto es lo que hay que HACER cuando
+lleguen las credenciales, y en este orden, porque cada paso protege al
+siguiente.
+
+1. **Poner las credenciales en el panel**, no en el `.env`.
+   `/panel/configuracion?s=payments` → dirección del servicio, canal, dominio y
+   clave secreta. La clave se escribe y no se vuelve a leer: se guarda cifrada.
+   Empezar por la dirección de **sandbox** si la dan.
+2. **Pulsar «Probar el cobro»** en esa misma pantalla. Pregunta el saldo, que es
+   una operación de solo lectura: dice si las credenciales valen sin mover un
+   céntimo. Si contesta, el `channel`, el `secret` y el `websiteUrl` son
+   correctos y la cabecera va bien escrita.
+3. **Un cobro real de UN dólar**, y mirarlo en la aplicación de Whish. Esto es
+   lo único que resuelve la pregunta del importe: si en Whish aparece **1,00 $**,
+   `amount` va en unidades y el código está bien; si aparece **0,01 $**, Whish
+   quiere céntimos y hay que quitar la división de `toProviderAmount()`. Una
+   respuesta por WhatsApp no sustituye a esto.
+4. **Encender el medio de pago** en `/panel/configuracion?s=payments`
+   (`PAYMENT_METHODS`). Hasta aquí no hay nada que un cliente pueda pulsar.
+5. **Comprobar que el repaso corre**: `systemctl status citas-conciliar.timer`.
+   Es lo que recoge un pago cuyo aviso se perdió.
+6. **Vender uno de verdad** y mirar el pedido en el panel. No se anuncia el
+   cobro hasta que un pedido de verdad haya llegado a «pagado» solo.
+
+## Qué queda pendiente HOY
+
+| | |
+|---|---|
+| Formulario de Whish Pay | **enviado**, esperando a su equipo |
+| `channel`, `secret`, `websiteUrl` | **faltan** — es lo único que bloquea |
+| Formato del importe | **por confirmar** con el cobro de un dólar |
+| Callback firmado | **por confirmar**; mientras no lo esté, el callback solo avisa |
+| Código de acceso estando fuera del Líbano | **por resolver** con ellos |
+
+Nada de eso es código. El adaptador, el repaso, la pantalla de pago y el enlace
+para la pareja están construidos y probados contra un Whish de mentira que imita
+el sobre `{ status, code, dialog, data }`, el 200-con-`status:false` y la
+búsqueda por `(externalId, currency)`.
+
+## Dónde va la configuración
+
+En el **panel**, no en el `.env`: `/panel/configuracion?s=payments`. Es la regla
+del proyecto —quien monta esto no debería abrir un archivo por SSH para cambiar
+una pasarela— y la clave secreta se guarda cifrada con la llave fuera de la base
+de datos.
+
+El `.env` se sigue leyendo como RESPALDO, y solo como respaldo: si el valor está
+guardado en el panel, manda el panel.
 
 ```bash
 PAYMENTS_PROVIDER=whish        # 'mock' en desarrollo; prohibido en producción
 WHISH_BASE_URL=https://…       # sandbox o producción, según entorno
 WHISH_CHANNEL=…
-WHISH_SECRET=…
 WHISH_WEBSITE_URL=https://…
+WHISH_SECRET_ENC=v1.…          # cifrada: npm run secret:encrypt
 ```
 
 ## Lo que sigue faltando

@@ -5,6 +5,7 @@ import { PAYMENT_METHODS, type Locale, type PaymentMethod } from '@citas/core';
 
 import type { Currency } from '@/generated/prisma/enums';
 import { recordAudit } from '@/lib/audit';
+import { applySettlement } from '@/lib/billing/reconcile';
 import { getPrisma } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { getPaymentProvider, type PaymentStatus } from '@/lib/payments';
@@ -189,7 +190,7 @@ export async function beginPublicPayment(
     const back = `${origin}/pagar/${payToken}`;
     const handle = await provider.createCollection({
       orderId: order.id,
-      amount: { amount: order.amount, currency: 'USD' },
+      amount: { amount: order.amount, currency: order.currency },
       description: order.description,
       successUrl: `${back}?volvio=1`,
       failureUrl: `${back}?volvio=1&fallo=1`,
@@ -203,7 +204,7 @@ export async function beginPublicPayment(
         providerRef: handle.providerRef,
         status: 'pending',
         amount: order.amount,
-        currency: 'USD',
+        currency: order.currency,
       },
     });
 
@@ -229,6 +230,8 @@ export async function settlePublicOrder(payToken: string): Promise<PaymentStatus
       id: true,
       tenantId: true,
       amount: true,
+      description: true,
+      packageGuests: true,
       status: true,
       payments: { orderBy: { createdAt: 'desc' }, take: 1 },
     },
@@ -238,29 +241,14 @@ export async function settlePublicOrder(payToken: string): Promise<PaymentStatus
   if (order.status === 'paid') return 'paid';
   if (payment === undefined) return order.status;
 
-  const status = await (await getPaymentProvider()).getStatus(payment.providerRef);
+  const status = await (await getPaymentProvider()).getStatus(
+    payment.providerRef,
+    payment.currency,
+  );
 
-  await prisma.payment.update({
-    where: { id: payment.id },
-    data: {
-      status,
-      lastCheckedAt: new Date(),
-      paidAt: status === 'paid' ? new Date() : null,
-      events: { create: { kind: 'poll', payload: { status } } },
-    },
-  });
-  await prisma.order.update({ where: { id: order.id }, data: { status } });
-
-  if (status === 'paid') {
-    await recordAudit({
-      tenantId: order.tenantId,
-      action: 'order.paid',
-      entity: 'Order',
-      entityId: order.id,
-      metadata: { amount: order.amount, via: 'link' },
-    });
-  }
-
+  // Lo que significa ese estado lo decide UN solo sitio, el mismo que usan el
+  // botón de la oficina y el repaso periódico.
+  await applySettlement(order, payment.id, status, 'link');
   return status;
 }
 

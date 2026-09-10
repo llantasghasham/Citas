@@ -5,6 +5,7 @@ import {
   type CallbackResult,
   type CollectionHandle,
   type CollectionRequest,
+  type Currency,
   type PaymentProvider,
   type PaymentStatus,
 } from './types';
@@ -213,13 +214,17 @@ export const whishProvider: PaymentProvider = {
   /**
    * Asks Whish what really happened. `providerRef` is the externalId we sent.
    *
-   * The currency is required by the service and this product bills in USD; a
-   * second currency would have to travel with the reference.
+   * La moneda no se supone: llega con la referencia. El servicio busca el cobro
+   * por `(externalId, currency)`, así que preguntar en dólares por un cobro
+   * abierto en libras devuelve «no existe», que este adaptador leería como
+   * pendiente. Estaba fija en USD, y hoy todos los pedidos se abren en USD; el
+   * día que uno se abriera en libras, el dinero cobrado no se habría enterado
+   * nadie.
    */
-  async getStatus(providerRef: string): Promise<PaymentStatus> {
+  async getStatus(providerRef: string, currency: Currency): Promise<PaymentStatus> {
     const config = await readConfig();
     const data = await call(config, CONTRACT.status, {
-      currency: 'USD',
+      currency,
       externalId: Number(providerRef),
     });
     return toStatus(data['collectStatus'] ?? data['status']);

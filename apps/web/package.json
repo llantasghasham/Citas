@@ -16,7 +16,8 @@
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "secret:encrypt": "tsx scripts/encrypt-secret.mjs",
-    "auth:password": "tsx scripts/set-password.ts"
+    "auth:password": "tsx scripts/set-password.ts",
+    "payments:reconcile": "tsx scripts/reconcile-payments.ts"
   },
   "dependencies": {
     "@citas/core": "*",

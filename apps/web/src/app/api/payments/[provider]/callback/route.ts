@@ -29,7 +29,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     const prisma = getPrisma();
     const payment = await prisma.payment.findFirst({
       where: { providerRef: result.providerRef },
-      select: { id: true },
+      select: { id: true, currency: true },
     });
     if (payment === null) return Response.json({ error: 'unknown_payment' }, { status: 404 });
 
@@ -38,7 +38,9 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
       data: { paymentId: payment.id, kind: 'callback', payload: { rawBody } },
     });
 
-    const status = await provider.getStatus(result.providerRef);
+    // La moneda sale de la fila que ya tenemos, NUNCA del cuerpo del callback:
+    // ese cuerpo no va firmado, y con él se elige en qué cobro se mira.
+    const status = await provider.getStatus(result.providerRef, payment.currency);
     await prisma.payment.update({
       where: { id: payment.id },
       data: {

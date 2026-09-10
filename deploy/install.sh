@@ -23,6 +23,8 @@ DB_NAME="citas"
 DB_USER="citas_app"
 SERVICE="/etc/systemd/system/citas.service"
 SERVICE_WA="/etc/systemd/system/citas-whatsapp.service"
+SERVICE_REC="/etc/systemd/system/citas-conciliar.service"
+TIMER_REC="/etc/systemd/system/citas-conciliar.timer"
 APP_USER="www"
 
 paso() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
@@ -295,6 +297,59 @@ if systemctl is-active --quiet citas-whatsapp; then
 else
   aviso "el servicio de WhatsApp no arrancó — mira: journalctl -u citas-whatsapp -n 40"
   aviso "la web sigue funcionando; se envía a mano con wa.me hasta que arranque"
+fi
+
+paso "Repaso de cobros"
+
+# El aviso de pago de Whish no va firmado, así que en este proyecto solo vale
+# como aviso: quien decide es preguntarle al proveedor. Y un aviso se pierde —el
+# servidor reiniciando, la red caída, Whish rindiéndose tras tres reintentos—.
+# Sin este repaso, un cobro cuyo aviso se perdiera se quedaría «pendiente» hasta
+# que alguien abriera una pantalla. Alguien pagó su boda; que se entere el
+# sistema no puede depender de que alguien mire.
+cat > "$SERVICE_REC" <<UNIT
+[Unit]
+Description=Citas — repaso de cobros pendientes
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+User=$APP_USER
+Group=$APP_USER
+WorkingDirectory=$DIR/apps/web
+EnvironmentFile=$DIR/apps/web/.env
+ExecStart=$NODE_BIN $DIR/node_modules/tsx/dist/cli.mjs $DIR/apps/web/scripts/reconcile-payments.ts
+Environment=NODE_ENV=production
+Environment=HOME=/tmp
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+UNIT
+
+cat > "$TIMER_REC" <<UNIT
+[Unit]
+Description=Citas — repaso de cobros pendientes, cada cinco minutos
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+# Si la máquina estuvo apagada, se ejecuta al volver en vez de saltarse el turno.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now citas-conciliar.timer >/dev/null 2>&1
+# Tampoco detiene el despliegue: sin el repaso se sigue cobrando, solo que un
+# aviso perdido lo arregla una persona pulsando el botón de la factura.
+if systemctl is-active --quiet citas-conciliar.timer; then
+  ok "el repaso de cobros corre cada cinco minutos"
+else
+  aviso "el repaso de cobros no arrancó — mira: journalctl -u citas-conciliar -n 40"
 fi
 
 # SELinux impide que nginx hable con un puerto local. Es la causa del 502

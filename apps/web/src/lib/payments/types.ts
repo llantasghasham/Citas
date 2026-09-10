@@ -59,8 +59,15 @@ export interface PaymentProvider {
   probe?(): Promise<string>;
   /** Opens a collection and returns where to send the payer. */
   createCollection(request: CollectionRequest): Promise<CollectionHandle>;
-  /** Asks the provider for the truth. Used for reconciliation, never the browser. */
-  getStatus(providerRef: string): Promise<PaymentStatus>;
+  /**
+   * Asks the provider for the truth. Used for reconciliation, never the browser.
+   *
+   * La moneda viaja con la referencia porque Whish la EXIGE para encontrar el
+   * cobro: su estado se consulta por `(externalId, currency)`. Preguntar en la
+   * moneda equivocada no da un error, da un cobro que no aparece — y un pedido
+   * pagado que se queda en «pendiente» para siempre es peor que un fallo.
+   */
+  getStatus(providerRef: string, currency: Currency): Promise<PaymentStatus>;
   /** Validates an inbound callback and says what it means. Throws if not authentic. */
   verifyCallback(headers: Headers, rawBody: string): Promise<CallbackResult>;
 }

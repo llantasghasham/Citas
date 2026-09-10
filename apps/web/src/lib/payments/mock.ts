@@ -1,5 +1,6 @@
 import {
   type CallbackResult,
+  type Currency,
   type CollectionHandle,
   type CollectionRequest,
   type PaymentProvider,
@@ -34,7 +35,9 @@ export const mockProvider: PaymentProvider = {
     });
   },
 
-  getStatus(providerRef: string): Promise<PaymentStatus> {
+  // La moneda no le hace falta a un proveedor de mentira, pero el puerto la
+  // pide: quien la ignora tiene que decirlo, no omitirla.
+  getStatus(providerRef: string, _currency: Currency): Promise<PaymentStatus> {
     // First read is pending, every read after that is paid: enough to exercise
     // both branches of the polling code.
     const current = states.get(providerRef) ?? 'pending';

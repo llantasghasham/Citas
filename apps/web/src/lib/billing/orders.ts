@@ -1,5 +1,6 @@
 import type { PlanTier } from '@/generated/prisma/enums';
 import { recordAudit } from '@/lib/audit';
+import { applySettlement } from '@/lib/billing/reconcile';
 import { getPrisma } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { getPaymentProvider } from '@/lib/payments';
@@ -66,7 +67,7 @@ export async function startPlanOrder(
   const provider = await getPaymentProvider();
   const handle = await provider.createCollection({
     orderId: order.id,
-    amount: { amount: order.amount, currency: 'USD' },
+    amount: { amount: order.amount, currency: order.currency },
     description: order.description,
     successUrl: `${origin}/panel/facturacion?order=${order.id}`,
     failureUrl: `${origin}/panel/facturacion?order=${order.id}&failed=1`,
@@ -80,7 +81,7 @@ export async function startPlanOrder(
       providerRef: handle.providerRef,
       status: 'pending',
       amount: order.amount,
-      currency: 'USD',
+      currency: order.currency,
     },
   });
 
@@ -109,39 +110,14 @@ export async function settleOrder(scope: TenantScope, orderId: string): Promise<
   const payment = order?.payments[0];
   if (order === null || payment === undefined) return false;
 
-  const status = await (await getPaymentProvider()).getStatus(payment.providerRef);
+  const status = await (await getPaymentProvider()).getStatus(
+    payment.providerRef,
+    payment.currency,
+  );
 
-  await prisma.payment.update({
-    where: { id: payment.id },
-    data: {
-      status,
-      lastCheckedAt: new Date(),
-      paidAt: status === 'paid' ? new Date() : null,
-      events: { create: { kind: 'poll', payload: { status } } },
-    },
-  });
-  await prisma.order.update({ where: { id: order.id }, data: { status } });
-
-  if (status !== 'paid') return false;
-
-  // Paying for a plan is what actually moves the office onto it.
-  const tier = order.description.replace('Plan ', '');
-  const plan = await prisma.plan.findFirst({ where: { name: tier } });
-  if (plan !== null) {
-    await prisma.subscription.upsert({
-      where: { tenantId: scope.tenantId },
-      update: { planId: plan.id, cancelledAt: null },
-      create: { tenantId: scope.tenantId, planId: plan.id },
-    });
-  }
-
-  await recordAudit({
-    tenantId: scope.tenantId,
-    action: 'order.paid',
-    entity: 'Order',
-    entityId: order.id,
-    metadata: { amount: order.amount },
-  });
-
-  return true;
+  // Escribirlo y aplicar lo que significa: un solo sitio, compartido con el
+  // enlace de pago de la pareja y con el repaso periódico. Tres copias de esto
+  // son tres formas distintas de cobrar un plan y no activarlo.
+  await applySettlement(order, payment.id, status, 'panel');
+  return status === 'paid';
 }

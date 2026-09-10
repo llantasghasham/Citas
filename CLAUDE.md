@@ -121,7 +121,16 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   el plan gratis: ese error facturó a una oficina fuera de sus propios eventos.
 - El límite se comprueba al publicar, en el servidor.
 - Los precios se guardan en centavos enteros.
-- Solo la respuesta del proveedor marca una factura como pagada.
+- Solo la respuesta del proveedor marca una factura como pagada, y eso se decide
+  en UN solo sitio (`applySettlement`): el enlace de la pareja, el botón de la
+  oficina y el repaso periódico pasan por la misma función. Tres copias serían
+  tres formas de cobrar un plan y no activarlo.
+- `citas-conciliar.timer` repasa cada cinco minutos los cobros que llevan rato
+  en `pending`. El callback no va firmado y se pierde; que una boda pagada se
+  entere no puede depender de que alguien abra una pantalla.
+- La moneda viaja CON la referencia al preguntar por un cobro. Whish lo busca
+  por `(externalId, currency)` y preguntar en la moneda equivocada no da error,
+  da «no existe» — que se leería como pendiente.
 
 ### Invitados y envío
 - El enlace personal es `/g/<token>`: corto y sin el slug, para que reenviarlo no
