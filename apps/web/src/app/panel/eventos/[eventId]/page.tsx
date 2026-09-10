@@ -9,7 +9,8 @@ import { Field, FIELD_CLASS } from '@/components/create/Field';
 import { getAdminContext, requestHost } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { enabledMethods, listPackageOrders } from '@/lib/billing/checkout';
-import { getPrisma } from '@/lib/db/client';
+import { actorTimezone } from '@/lib/time/actor';
+import { formatDate } from '@/lib/time/display';
 import { listConnections, listFailed, queueStats, scheduledBatch } from '@/lib/whatsapp/connections';
 import { guestAllowanceFor } from '@/lib/billing/packages';
 import { LOCALE_NAMES } from '@/lib/create/options';
@@ -85,18 +86,9 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
       queueStats(scopeOf(session), eventId),
       scheduledBatch(scopeOf(session), eventId),
       listFailed(scopeOf(session), eventId),
-      getPrisma().user.findUnique({
-        where: { id: session.userId },
-        select: { timezone: true },
-      }),
+      actorTimezone(session),
     ]);
-
-  // Con qué reloj se escribe y se lee una hora de envío: el de esta persona, el
-  // del país que maneja, o el del servidor. El mismo orden que su perfil.
-  const actorZone =
-    actor?.timezone ??
-    findCountry(session.country)?.timezone ??
-    Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const actorZone = actor;
 
   const origin = `https://${requestHost(await headers())}`;
   const defaultDial =
@@ -238,7 +230,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
                       <td className="py-3 text-[#6a6456]">
                         {guest.openedAt === null
                           ? copy.notOpened
-                          : guest.openedAt.toISOString().slice(0, 10)}
+                          : formatDate(guest.openedAt, locale, actorZone)}
                       </td>
                       <td className="py-3">{replyLabel}</td>
                       <td className="py-3 text-end">
@@ -276,6 +268,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
         dictionary={dictionary}
         locale={locale}
         canSell={canSell}
+        timezone={actorZone}
         cashEnabled={methods.includes('cash')}
       />
 

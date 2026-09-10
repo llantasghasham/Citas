@@ -12,11 +12,11 @@ import { markPaidInCash, openPackageOrder } from '@/lib/billing/checkout';
 import { COUNTRY_CODES, toE164 } from '@/lib/guests/phone';
 import { importGuests } from '@/lib/repositories/guests';
 import { addEventVersion } from '@/lib/repositories/versions';
-import { getPrisma } from '@/lib/db/client';
+import { actorTimezone } from '@/lib/time/actor';
 import { zonedToUtc } from '@/lib/time/zoned';
 import { cancelScheduled, queueEventInvitations, retryFailed } from '@/lib/whatsapp/connections';
 import { setReminder } from '@/lib/whatsapp/reminders';
-import { COUNTRIES, getDictionary, interpolate, LOCALES, type Locale } from '@citas/core';
+import { getDictionary, interpolate, LOCALES, type Locale } from '@citas/core';
 
 /** A client's list is not small: a wedding is two hundred lines, not five. */
 const MAX_INPUT_BYTES = 512 * 1024;
@@ -285,21 +285,4 @@ export async function cancelScheduledAction(formData: FormData): Promise<void> {
   const eventId = String(formData.get('eventId') ?? '');
   const cancelled = await cancelScheduled(scopeOf(session), eventId, session.userId);
   redirect(`/panel/eventos/${eventId}?cancelados=${cancelled}#whatsapp`);
-}
-
-/**
- * La zona con la que se lee lo que esta persona escribe.
- *
- * La suya si la eligió, si no la del país que maneja, y si tampoco la del
- * servidor. El mismo orden que usa su propio perfil.
- */
-async function actorTimezone(session: { userId: string; country: string | null }): Promise<string> {
-  const user = await getPrisma().user.findUnique({
-    where: { id: session.userId },
-    select: { timezone: true },
-  });
-  if (user?.timezone != null && user.timezone.length > 0) return user.timezone;
-
-  const country = COUNTRIES.find((entry) => entry.code === session.country);
-  return country?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 }

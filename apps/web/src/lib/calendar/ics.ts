@@ -7,7 +7,10 @@
 function offsetMinutes(instant: Date, timeZone: string): number {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone,
-    hour12: false,
+    // `h23` y no `hour12: false`: con este último, algunos runtimes escriben la
+    // medianoche como «24», y `Date.UTC` la normaliza al día siguiente — el
+    // desfase saldría veinticuatro horas desplazado.
+    hourCycle: 'h23',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -19,7 +22,6 @@ function offsetMinutes(instant: Date, timeZone: string): number {
   const read = (type: Intl.DateTimeFormatPartTypes): number =>
     Number(parts.find((part) => part.type === type)?.value ?? '0');
 
-  // `read('hour')` can be 24 for midnight in some locales; Date.UTC normalizes it.
   const asUtc = Date.UTC(
     read('year'),
     read('month') - 1,
@@ -46,8 +48,22 @@ function stamp(date: Date): string {
   return `${date.toISOString().replace(/[-:]/g, '').split('.')[0] ?? ''}Z`;
 }
 
+/**
+ * Lo que iCalendar exige escapar dentro de un valor de texto.
+ *
+ * El punto y coma NO se escapaba: `'\;'` en una cadena de JavaScript es un
+ * punto y coma a secas, porque `\;` no es una secuencia de escape y el
+ * lenguaje se queda con el carácter. Un salón que se llame «Le Royal; piso 2»
+ * partía la línea en dos y el archivo dejaba de ser válido.
+ *
+ * La barra invertida va PRIMERA, o se escaparían las que añaden las demás.
+ */
 function escapeText(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
 }
 
 /** iCalendar limits a line to 75 octets; continuations start with a space. */

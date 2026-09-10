@@ -266,6 +266,17 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - El formulario vive DEBAJO de la tarjeta, nunca dentro: la tarjeta también es
   la imagen que se exporta.
 - El CSV lleva marca de orden de bytes o Excel destroza el árabe.
+- Una hora de reloj se RECHAZA si el día no existe. `Date.parse` no protesta ante
+  un 30 de febrero: lo corre al 2 de marzo y devuelve un número tan válido como
+  cualquier otro, así que un envío programado saldría otro día sin un aviso.
+  `zonedToUtc` comprueba el camino de vuelta.
+- El `.ics` escapa `\`, `;`, `,` y los saltos de línea, en ese orden. El punto y
+  coma NO se escapaba —`'\;'` en JavaScript es un punto y coma a secas— y un
+  salón llamado «Le Royal; piso 2» partía la línea y rompía el archivo.
+- Las fechas que ve una persona pasan por `lib/time/display.ts`: en SU zona y en
+  SU idioma. `toISOString().slice(0,10)` es UTC y es `2026-03-14` en los cuatro
+  idiomas — una oficina de Costa Rica veía sus ventas de la tarde fechadas al día
+  siguiente.
 
 ### Cobro
 - Líbano cobra con **Whish**. Costa Rica, si se abre, con Tilopay (SINPE Móvil).

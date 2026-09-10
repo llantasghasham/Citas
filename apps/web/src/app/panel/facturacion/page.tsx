@@ -5,6 +5,8 @@ import { getAdminContext } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { listOrders } from '@/lib/billing/orders';
 import { formatMoney, limitsFor, PLAN_CATALOGUE, planLabel } from '@/lib/billing/plans';
+import { actorTimezone } from '@/lib/time/actor';
+import { formatDate } from '@/lib/time/display';
 import { displayFont, latinOnly } from '@/lib/typography';
 
 /** The office's plan, what it has used, and what it has been billed. */
@@ -15,6 +17,7 @@ export default async function BillingPage() {
   }
 
   const { dictionary, locale } = await getAdminContext(session.tenantId);
+  const zone = await actorTimezone(session);
   const copy = dictionary.admin.billing;
   const scope = scopeOf(session);
   const [limits, orders] = await Promise.all([limitsFor(session.tenantId), listOrders(scope)]);
@@ -84,7 +87,7 @@ export default async function BillingPage() {
                 {orders.map((order) => (
                   <tr key={order.id} className="border-b border-[#ddd6c6]">
                     <td className="py-3 tabular-nums text-[#6a6456]">
-                      {order.createdAt.toISOString().slice(0, 10)}
+                      {formatDate(order.createdAt, locale, zone)}
                     </td>
                     <td className="py-3">{order.description}</td>
                     <td className="py-3 text-end tabular-nums">

@@ -5,6 +5,7 @@ import { formatMoney } from '@/lib/billing/plans';
 import { PACKAGE_CATALOGUE, priceFor } from '@/lib/billing/packages';
 import type { GuestAllowance } from '@/lib/billing/packages';
 import { COUNTRY_CODES, toWaMe } from '@/lib/guests/phone';
+import { formatDate } from '@/lib/time/display';
 import { displayFont, latinOnly } from '@/lib/typography';
 import type { AcquisitionChannel } from '@/generated/prisma/enums';
 import { interpolate, type Dictionary, type Locale } from '@citas/core';
@@ -19,6 +20,8 @@ interface Props {
   origin: string;
   dictionary: Dictionary;
   locale: Locale;
+  /** El reloj de quien mira: una fecha en UTC discute mal una factura. */
+  timezone: string;
   canSell: boolean;
   /** True cuando el efectivo está encendido en la configuración. */
   cashEnabled: boolean;
@@ -44,6 +47,7 @@ export function PackagesSection({
   origin,
   dictionary,
   locale,
+  timezone,
   canSell,
   cashEnabled,
 }: Props) {
@@ -144,7 +148,7 @@ export function PackagesSection({
                     }`}
                   >
                     <td className="py-3 tabular-nums text-[#6a6456]">
-                      {order.createdAt.toISOString().slice(0, 10)}
+                      {formatDate(order.createdAt, locale, timezone)}
                     </td>
                     <td className="py-3">{order.clientName ?? '—'}</td>
                     <td className="py-3 text-end tabular-nums">{order.guests}</td>

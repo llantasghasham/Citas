@@ -23,7 +23,10 @@
 function offsetMs(instant: number, timeZone: string): number {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone,
-    hour12: false,
+    // `h23` y no `hour12: false`: con este último, algunos runtimes escriben la
+    // medianoche como «24», y sumar 24 horas al calcular el desfase lo dejaría
+    // un día entero desplazado.
+    hourCycle: 'h23',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -38,8 +41,7 @@ function offsetMs(instant: number, timeZone: string): number {
     read('year'),
     read('month') - 1,
     read('day'),
-    // A medianoche, `hour12: false` puede dar 24 en algunos runtimes.
-    read('hour') % 24,
+    read('hour'),
     read('minute'),
     read('second'),
   );
@@ -64,6 +66,18 @@ export function zonedToUtc(wallClock: string, timeZone: string): Date | null {
   const withSeconds = normalised.length === 16 ? `${normalised}:00` : normalised;
   const asUtc = Date.parse(`${withSeconds}Z`);
   if (Number.isNaN(asUtc)) return null;
+
+  // Que la fecha EXISTA. `Date.parse` no rechaza un 30 de febrero: lo corre al
+  // 2 de marzo y devuelve un número tan válido como cualquier otro. Un envío
+  // programado saldría otro día distinto del que se escribió, sin un aviso.
+  //
+  // Se comprueba haciendo el camino de vuelta: si el día que sale no es el que
+  // se pidió, es que no existía.
+  const back = new Date(asUtc);
+  const [datePart = '', timePart = ''] = withSeconds.split('T');
+  const sameDay = back.toISOString().slice(0, 10) === datePart;
+  const sameTime = back.toISOString().slice(11, 19) === timePart;
+  if (!sameDay || !sameTime) return null;
 
   let offset: number;
   try {
