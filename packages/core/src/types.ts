@@ -642,6 +642,8 @@ export interface Dictionary {
       /** La cuenta no pertenece a ninguna oficina: no hay dónde guardar nada. */
       noOffice: string;
       duplicate: string;
+      /** Se pulsó conectar y el código todavía no ha llegado de WhatsApp. */
+      waiting: string;
     };
     /** Vender un paquete de invitaciones para UNA boda. */
     packages: {

@@ -541,7 +541,8 @@
       "queuedDone": "Queued {queued}. No phone number: {skipped}.",
       "noConnection": "Connect a number first.",
       "noOffice": "This account belongs to no office, so there is nowhere to keep the number. Create one under “Offices” and come back.",
-      "duplicate": "There is already a number with that name."
+      "duplicate": "There is already a number with that name.",
+      "waiting": "Asking WhatsApp for the code… this screen refreshes by itself."
     },
     "profile": {
       "title": "My profile",

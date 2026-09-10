@@ -30,6 +30,7 @@ export function WhatsappSection({
   brake,
   gatewayError,
   error,
+  esperando,
   canEditGateway,
   dictionary,
   locale,
@@ -41,6 +42,8 @@ export function WhatsappSection({
   gatewayError?: string;
   /** Lo que salió mal al añadir: `sinOficina`, `duplicate`… */
   error?: string;
+  /** El número al que se le acaba de dar a Conectar, si es que hay uno. */
+  esperando?: string;
   /** La dirección del servicio es de la plataforma, no de la oficina. */
   canEditGateway: boolean;
   dictionary: Dictionary;
@@ -48,8 +51,30 @@ export function WhatsappSection({
 }) {
   const copy = dictionary.admin.whatsapp;
 
+  /**
+   * Este número está pidiendo el código AHORA.
+   *
+   * Se ata al botón —`?esperando=<id>`— y no al estado `pending`, porque un
+   * número recién añadido también está `pending` y ahí nadie ha pedido nada
+   * todavía: decirle «pidiendo el código» sería mentirle.
+   */
+  const pidiendo = (id: string, status: string): boolean =>
+    (esperando === id && status === 'pending') || status === 'qr';
+
+  const refrescar = connections.some((connection) => pidiendo(connection.id, connection.status));
+
   return (
     <div className="flex max-w-3xl flex-col gap-8">
+      {/* El código tarda unos segundos en llegar de WhatsApp, y esta pantalla no
+          lleva JavaScript de cliente, así que sin esto hay que recargar a mano
+          — y «pulsé Conectar y no veo nada» se parece demasiado a que está
+          roto. `meta refresh` es HTML del navegador, no un script: la regla del
+          proyecto sigue intacta.
+
+          Solo mientras se espera. Una pantalla que se recarga cada cinco
+          segundos para siempre tira lo que estés escribiendo en otro campo. */}
+      {refrescar ? <meta httpEquiv="refresh" content="5" /> : null}
+
       <p className="border border-[#8c2f1e] bg-[#fdf4f2] p-4 text-sm text-[#8c2f1e]">
         {copy.warning}
       </p>
@@ -109,6 +134,12 @@ export function WhatsappSection({
                   {copy.queued}: <span className="tabular-nums">{connection.queued}</span>
                 </span>
               </p>
+
+              {/* Se pulsó conectar y el código todavía no ha llegado. Decirlo
+                  es la diferencia entre «está tardando» y «no funciona». */}
+              {esperando === connection.id && connection.status === 'pending' ? (
+                <p className="text-sm text-[#8a6c22]">{copy.waiting}</p>
+              ) : null}
 
               {/* El código. Solo mientras WhatsApp lo está pidiendo. */}
               {connection.status === 'qr' && connection.qrCode !== null ? (

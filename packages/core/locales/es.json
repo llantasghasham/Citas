@@ -541,7 +541,8 @@
       "queuedDone": "Encoladas {queued}. Sin teléfono: {skipped}.",
       "noConnection": "Conecte un número primero.",
       "noOffice": "Esta cuenta no está asignada a ninguna oficina, así que no hay dónde guardar el número. Créela en «Oficinas» y vuelva.",
-      "duplicate": "Ya hay un número con ese nombre."
+      "duplicate": "Ya hay un número con ese nombre.",
+      "waiting": "Pidiendo el código a WhatsApp… esta pantalla se actualiza sola."
     },
     "profile": {
       "title": "Mi perfil",

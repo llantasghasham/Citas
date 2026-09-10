@@ -30,6 +30,7 @@ interface PageProps {
     guardado?: string;
     servicio?: string;
     error?: string;
+    esperando?: string;
     pago?: string;
     motivo?: string;
     mail?: string;
@@ -168,6 +169,7 @@ export default async function ConfigPage({ searchParams }: PageProps) {
           canEditGateway={platform}
           {...(params.servicio === undefined ? {} : { gatewayError: params.servicio })}
           {...(params.error === undefined ? {} : { error: params.error })}
+          {...(params.esperando === undefined ? {} : { esperando: params.esperando })}
           dictionary={dictionary}
           locale={locale}
         />
