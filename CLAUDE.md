@@ -312,6 +312,16 @@ de los versículos.
     cobra en línea; el efectivo NO tiene pasarela y lo marca una persona con su
     nombre desde el panel; Tilopay (SINPE Móvil) aparece bloqueado hasta que
     haya credenciales, para que nadie crea que cobra.
+  - **Marca**: el logo y el icono de la pestaña se SUBEN, no se pega una
+    dirección: nadie que monta su negocio tiene una URL de su logo, tiene un
+    archivo. Se recodifican y van a la tabla `BrandAsset` en PostgreSQL —misma
+    razón que `Render` y que la foto de perfil—, y se sirven por
+    `/api/brand/<logo|icon>`, que SÍ es pública: es la marca, y sale en la
+    portada y en la pestaña de cualquiera que abra una invitación. El logo se
+    ajusta DENTRO de una caja y conserva su forma —recortar un logo apaisado a
+    cuadrado es destrozarlo—; el icono sí es cuadrado. La dirección de imagen
+    sigue existiendo, plegada, porque hay instalaciones que ya tienen una puesta
+    y sin el campo no habría cómo quitarla.
   - **Portada**: cada texto del bloque `home`, en los cuatro idiomas. La lista
     se genera recorriendo el diccionario, así que una frase nueva aparece sola.
     Un campo vacío es «el texto original», y no se guarda fila.

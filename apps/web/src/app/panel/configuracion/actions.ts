@@ -5,6 +5,13 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { clientIp } from '@/lib/admin/context';
+import {
+  BRAND_KINDS,
+  deleteBrandAsset,
+  isBrandProblem,
+  processBrandImage,
+  saveBrandAsset,
+} from '@/lib/brand/assets';
 import { recordAudit } from '@/lib/audit';
 import { getSession, sessionCan } from '@/lib/auth/session';
 import { resetTransporter } from '@/lib/mail/smtp';
@@ -45,6 +52,29 @@ export async function saveConfigAction(formData: FormData): Promise<void> {
       .filter((method) => PAYMENT_METHODS.some((candidate) => candidate === method));
     await saveSetting('PAYMENT_METHODS', marcados.join(','), session.userId);
     cambiados.push('PAYMENT_METHODS');
+  }
+
+  // El logo y el icono llegan como ARCHIVO. Van antes que las claves de texto
+  // porque si el archivo no se puede abrir hay que rebotar sin haber guardado
+  // nada: guardar la mitad de un formulario es peor que no guardar.
+  if (sector === 'brand') {
+    for (const kind of BRAND_KINDS) {
+      if (formData.get(`remove-${kind}`) !== null) {
+        await deleteBrandAsset(kind, session.userId);
+        cambiados.push(`${kind} (quitado)`);
+        continue;
+      }
+
+      const file = formData.get(kind);
+      if (!(file instanceof File) || file.size === 0) continue;
+
+      const result = await processBrandImage(file, kind);
+      if (isBrandProblem(result)) {
+        redirect(`/panel/configuracion?s=brand&imagen=${result.error}`);
+      }
+      await saveBrandAsset(kind, result, session.userId);
+      cambiados.push(`${kind} (nuevo)`);
+    }
   }
 
   for (const key of SETTING_KEYS) {

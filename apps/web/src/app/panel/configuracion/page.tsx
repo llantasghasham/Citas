@@ -11,6 +11,7 @@ import { RolesSection, type RoleRow } from '@/components/panel/config/RolesSecti
 import { SiteSection } from '@/components/panel/config/SiteSection';
 import { WhatsappSection } from '@/components/panel/config/WhatsappSection';
 import { getAdminContext } from '@/lib/admin/context';
+import { MAX_BRAND_BYTES } from '@/lib/brand/assets';
 import { getSession, sessionCan } from '@/lib/auth/session';
 import { loadSite } from '@/lib/home/site';
 import { origin, secret, setting, type SecretKey, type SettingKey } from '@/lib/settings';
@@ -31,6 +32,7 @@ interface PageProps {
     servicio?: string;
     error?: string;
     esperando?: string;
+    imagen?: string;
     pago?: string;
     motivo?: string;
     mail?: string;
@@ -182,12 +184,11 @@ export default async function ConfigPage({ searchParams }: PageProps) {
       {section === 'brand' ? (
         <BrandSection
           action={saveConfigAction}
-          fields={await Promise.all([
-            campo('BRAND_NAME'),
-            campo('BRAND_LOGO_URL'),
-            campo('BRAND_ICON_URL'),
-          ])}
+          fields={await Promise.all([campo('BRAND_NAME')])}
+          urlFields={await Promise.all([campo('BRAND_LOGO_URL'), campo('BRAND_ICON_URL')])}
           site={await loadSite()}
+          {...(params.imagen === undefined ? {} : { problem: params.imagen })}
+          maxMb={Math.round(MAX_BRAND_BYTES / 1024 / 1024)}
           dictionary={dictionary}
           locale={locale}
         />

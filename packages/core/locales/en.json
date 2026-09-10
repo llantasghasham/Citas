@@ -276,7 +276,7 @@
             "Saving one section does not touch the others.",
             "Mail: without this, nobody can sign in with a code. There is a button that sends a test email and shows the provider's answer.",
             "Payments: Whish, cash and — once there are credentials — SINPE Móvil are switched on separately. The test button reads the balance, so it checks the credentials without moving money.",
-            "Brand: the system's name, the logo and the tab icon, with a preview.",
+            "Brand: the system’s name, and the logo and tab icon, which are UPLOADED from your computer — no address to paste. There is a preview on a dark background, which is where the logo will live. The logo keeps its shape; the icon is cropped to a square, because a tab is one.",
             "Home page: every text on the front page, in all four languages. An empty field uses the original text.",
             "Passwords are stored encrypted and the screen never gives them back: they are replaced, not read. An empty field means “leave it alone”."
           ]
@@ -464,7 +464,15 @@
         "WHATSAPP_DELAY_MIN": "Between 3 and 300. The real delay is random between minimum and maximum: an exact interval is a machine's signature. It cannot be zero — the brake can be shortened, not removed.",
         "WHATSAPP_DELAY_MAX": "Between 3 and 600. If it falls below the minimum, the minimum is used.",
         "WHATSAPP_WARMUP_CAP": "Between 1 and 100. A newly connected number sends this on its first day, even if its daily cap is higher. Raise it slowly: over weeks, not hours."
-      }
+      },
+      "brandLogo": "Logo",
+      "brandLogoHint": "Uploaded from your computer. It appears on the home page and in the panel header, on a dark background.",
+      "brandIcon": "Tab icon",
+      "brandIconHint": "The little square on the browser tab. It is cropped to a square.",
+      "brandRemove": "Remove on save",
+      "brandByUrl": "Or point at an image address instead of uploading one",
+      "brandTooBig": "The image is over {mb} MB. Pick a smaller one.",
+      "brandNotAnImage": "That file is not an image that can be opened."
     },
     "offices": {
       "heading": "Offices",

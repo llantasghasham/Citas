@@ -451,6 +451,16 @@ export interface Dictionary {
       homeOriginal: string;
       homeSections: string;
       brandPreview: string;
+      /** El logo y el icono, que se SUBEN. */
+      brandLogo: string;
+      brandLogoHint: string;
+      brandIcon: string;
+      brandIconHint: string;
+      brandRemove: string;
+      brandByUrl: string;
+      /** Lleva `{mb}`. */
+      brandTooBig: string;
+      brandNotAnImage: string;
       /** El reparto de permisos por rol. */
       roles: {
         capability: Record<

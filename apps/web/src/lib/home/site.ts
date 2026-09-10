@@ -1,6 +1,7 @@
 import { cache } from 'react';
 
 import { SITE, SECTION_KEYS, type SectionKey, type SiteConfig } from '@/config/site';
+import { brandAssetSrc, brandVersions } from '@/lib/brand/assets';
 import { setting } from '@/lib/settings';
 import { FAQ_KEYS, FEATURE_KEYS, PLAN_KEYS, LOCALES, type Locale } from '@/lib/types';
 
@@ -35,24 +36,29 @@ function list<T extends string>(raw: string | undefined, allowed: readonly T[]):
 }
 
 export const loadSite = cache(async (): Promise<ResolvedSite> => {
-  const [name, logo, icon, whatsapp, email, sections, showcase, defaultLocale] = await Promise.all([
-    setting('BRAND_NAME'),
-    setting('BRAND_LOGO_URL'),
-    setting('BRAND_ICON_URL'),
-    setting('CONTACT_WHATSAPP'),
-    setting('CONTACT_EMAIL'),
-    setting('HOME_SECTIONS'),
-    setting('HOME_SHOWCASE'),
-    setting('HOME_DEFAULT_LOCALE'),
-  ]);
+  const [name, logo, icon, whatsapp, email, sections, showcase, defaultLocale, uploaded] =
+    await Promise.all([
+      setting('BRAND_NAME'),
+      setting('BRAND_LOGO_URL'),
+      setting('BRAND_ICON_URL'),
+      setting('CONTACT_WHATSAPP'),
+      setting('CONTACT_EMAIL'),
+      setting('HOME_SECTIONS'),
+      setting('HOME_SHOWCASE'),
+      setting('HOME_DEFAULT_LOCALE'),
+      brandVersions(),
+    ]);
 
   const chosenLocale = LOCALES.find((candidate) => candidate === defaultLocale);
 
   return {
     ...SITE,
     brand: name ?? SITE.brand,
-    logoUrl: logo ?? null,
-    iconUrl: icon ?? null,
+    // Manda lo SUBIDO. La dirección se sigue leyendo porque hay instalaciones
+    // que ya la tienen puesta, y quitarles el logo por cambiar de forma de
+    // guardarlo sería cobrárselo a quien no pidió nada.
+    logoUrl: brandAssetSrc('logo', uploaded.logo) ?? logo ?? null,
+    iconUrl: brandAssetSrc('icon', uploaded.icon) ?? icon ?? null,
     defaultLocale: chosenLocale ?? SITE.defaultLocale,
     contact: {
       // Sin número inventado: lo que no está puesto no sale.

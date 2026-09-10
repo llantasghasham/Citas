@@ -437,6 +437,28 @@ model Subscription {
 
 /// Quién tocó qué. Sin esto, el acceso de soporte del superadmin a un evento
 /// ajeno es una puerta trasera.
+/// El logo y el icono de la pestaña, SUBIDOS.
+///
+/// Los bytes van a PostgreSQL y no al disco por la misma razón que `Render` y
+/// que la foto de perfil: un despliegue copia el código y se lleva por delante
+/// cualquier archivo que se hubiera dejado al lado.
+///
+/// Una fila por clase —`logo` e `icon`— porque la marca es de la PLATAFORMA,
+/// no de cada oficina: es el nombre y el logo de quien monta el sistema.
+model BrandAsset {
+  /// `logo` o `icon`.
+  kind String @id
+
+  data Bytes
+  type String
+  /// La huella de la imagen de hoy. Va en la dirección (`?v=`) para que el
+  /// navegador pueda quedársela para siempre y aun así ver el cambio.
+  version String
+
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
 model AuditLog {
   id       String  @id @default(cuid())
   tenantId String?

@@ -399,6 +399,33 @@ npm run whatsapp
 Los enlaces `wa.me` uno a uno NO se van: siguen en la tabla de invitados y son
 lo que funciona siempre.
 
+## 4 undecies bis. El logo y el icono de la pestaña
+
+En `/panel/configuracion?s=brand`, los dos **se suben desde el ordenador**. No
+hay ninguna dirección que pegar: quien monta su negocio no tiene una URL de su
+logo, tiene un archivo.
+
+| | Qué le pasa al subirlo |
+| --- | --- |
+| Logo | Se ajusta DENTRO de 640×200 y **conserva su forma**. WEBP con transparencia |
+| Icono | Se recorta a **cuadrado** de 256×256. PNG, que es lo que todo navegador acepta en una pestaña |
+
+Recortar un logo apaisado a cuadrado es destrozarlo, y por eso no se hace. El
+icono sí es cuadrado, porque una pestaña lo es.
+
+La vista previa está **sobre fondo oscuro**, que es donde el logo va a vivir: un
+logo con fondo blanco se ve mal aquí, que es donde todavía tiene arreglo.
+
+Los bytes van a PostgreSQL y no al disco, por la misma razón que la foto de
+perfil: un despliegue copia el código y se lleva por delante lo que se hubiera
+dejado al lado. Se sirven por `/api/brand/logo` y `/api/brand/icon`, que **sí son
+públicas** —a diferencia de la foto de perfil—: es la marca del negocio, y sale
+en la portada y en la pestaña de cualquiera que abra una invitación.
+
+Marcando «Quitar al guardar» se borra. Y debajo, plegado, sigue el campo de
+dirección de imagen: no es la forma de poner un logo, pero quien ya tenía una
+puesta necesita poder quitarla.
+
 ## 4 duodecies. Enviar otro día, y recordar a quien no contesta
 
 Las dos cosas viven en la ficha del evento, debajo de «Enviar por WhatsApp», y

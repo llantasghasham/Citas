@@ -276,7 +276,7 @@
             "Guardar uma secção não toca nas outras.",
             "Correio: sem isto configurado, ninguém entra com código. Há um botão que envia um e-mail de teste e mostra a resposta do fornecedor.",
             "Cobrança: ligam-se em separado a Whish, o dinheiro e — quando houver credenciais — o SINPE Móvil. O botão de teste consulta o saldo, por isso verifica as credenciais sem mexer dinheiro.",
-            "Marca: o nome do sistema, o logótipo e o ícone do separador, com pré-visualização.",
+            "Marca: o nome do sistema, e o logótipo e o ícone do separador, que se ENVIAM do seu computador — não se cola nenhum endereço. Há uma pré-visualização sobre fundo escuro, que é onde o logótipo vai viver. O logótipo mantém a sua forma; o ícone é cortado em quadrado, porque um separador é assim.",
             "Página inicial: cada texto da página de entrada, nos quatro idiomas. Um campo vazio usa o texto original.",
             "As palavras-passe são guardadas cifradas e o ecrã nunca as devolve: substituem-se, não se leem. Um campo vazio significa «não lhe toques»."
           ]
@@ -464,7 +464,15 @@
         "WHATSAPP_DELAY_MIN": "Entre 3 e 300. O atraso real é aleatório entre o mínimo e o máximo: um intervalo exato é uma assinatura de máquina. Não pode ser zero — o travão encurta-se, não se retira.",
         "WHATSAPP_DELAY_MAX": "Entre 3 e 600. Se ficar abaixo do mínimo, usa-se o mínimo.",
         "WHATSAPP_WARMUP_CAP": "Entre 1 e 100. Um número recém-ligado envia isto no primeiro dia, mesmo que o limite diário seja maior. Suba devagar: em semanas, não em horas."
-      }
+      },
+      "brandLogo": "Logótipo",
+      "brandLogoHint": "Envia-se do seu computador. Sai na página inicial e no cabeçalho do painel, sobre fundo escuro.",
+      "brandIcon": "Ícone do separador",
+      "brandIconHint": "O quadradinho do separador do navegador. É cortado em quadrado.",
+      "brandRemove": "Retirar ao guardar",
+      "brandByUrl": "Ou pôr um endereço de imagem em vez de a enviar",
+      "brandTooBig": "A imagem pesa mais de {mb} MB. Escolha uma mais pequena.",
+      "brandNotAnImage": "Esse ficheiro não é uma imagem que se possa abrir."
     },
     "offices": {
       "heading": "Escritórios",

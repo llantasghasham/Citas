@@ -21,7 +21,16 @@ export function SiteHeader({ dictionary, locale, site }: { dictionary: Dictionar
   return (
     <header className="sticky top-0 z-20 border-b border-[#2A2419] bg-[#14120E]/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-4 px-6 py-4 sm:px-10">
-        <a href="#top" className={`${displayFont(locale)} text-xl text-[#F4EFE6]`}>
+        {/* El logo, cuando lo hay. Lo pedía la propia pantalla de configuración
+            —«sale en la portada»— y era mentira: solo salía en el panel. Quien
+            sube su logo lo primero que hace es abrir su propia portada. */}
+        <a href="#top" className={`${displayFont(locale)} flex items-center gap-3 text-xl text-[#F4EFE6]`}>
+          {site.logoUrl === null ? null : (
+            // eslint-disable-next-line @next/next/no-img-element -- o son bytes
+            // que sirve este mismo proceso, o una dirección de fuera: ninguna
+            // pasa por el optimizador de Next.
+            <img src={site.logoUrl} alt="" className="max-h-8 w-auto" />
+          )}
           {site.brand}
         </a>
 

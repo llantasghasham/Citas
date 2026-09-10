@@ -276,7 +276,7 @@
             "Guardar un apartado no toca los demás.",
             "Correo: sin esto configurado, nadie puede entrar con código. Hay un botón que manda un correo de prueba y enseña la respuesta del proveedor.",
             "Cobro: se encienden por separado Whish, el efectivo y —cuando haya credenciales— SINPE Móvil. El botón de probar consulta el saldo, así que comprueba las credenciales sin mover dinero.",
-            "Marca: el nombre del sistema, el logo y el icono de la pestaña, con una vista previa.",
+            "Marca: el nombre del sistema, y el logo y el icono de la pestaña, que se SUBEN desde su ordenador —no se pega ninguna dirección—. Hay una vista previa sobre fondo oscuro, que es donde va a vivir el logo. El logo conserva su forma; el icono se recorta a cuadrado, porque una pestaña lo es.",
             "Portada: cada texto de la página de inicio, en los cuatro idiomas. Un campo vacío usa el texto original.",
             "Las contraseñas se guardan cifradas y la pantalla no las devuelve nunca: se reemplazan, no se leen. Dejar el campo vacío significa «no la toques»."
           ]
@@ -464,7 +464,15 @@
         "WHATSAPP_DELAY_MIN": "Entre 3 y 300. El retardo real es al azar entre el mínimo y el máximo: un intervalo exacto es una firma de máquina. No se puede poner a cero — se puede acortar el freno, no quitarlo.",
         "WHATSAPP_DELAY_MAX": "Entre 3 y 600. Si queda por debajo del mínimo, se usa el mínimo.",
         "WHATSAPP_WARMUP_CAP": "Entre 1 y 100. Un número recién conectado manda esto el primer día, aunque su tope diario sea mayor. Suba despacio: en semanas, no en horas."
-      }
+      },
+      "brandLogo": "Logo",
+      "brandLogoHint": "Se sube desde su ordenador. Sale en la portada y en la cabecera del panel, sobre fondo oscuro.",
+      "brandIcon": "Icono de la pestaña",
+      "brandIconHint": "El cuadradito de la pestaña del navegador. Se recorta a cuadrado.",
+      "brandRemove": "Quitar al guardar",
+      "brandByUrl": "O poner una dirección de imagen en vez de subirla",
+      "brandTooBig": "La imagen pesa más de {mb} MB. Elija una más pequeña.",
+      "brandNotAnImage": "Ese archivo no es una imagen que se pueda abrir."
     },
     "offices": {
       "heading": "Oficinas",
