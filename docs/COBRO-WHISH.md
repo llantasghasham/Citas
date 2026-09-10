@@ -67,6 +67,32 @@ Eso decide el diseño del producto entero:
 
 ## Qué pedirle a Whish
 
+## Cómo se abre la cuenta — confirmado por Whish
+
+No es por correo ni por WhatsApp: **se activa desde la propia aplicación**. Esto
+lo confirmó su equipo, así que no hay que adivinarlo.
+
+1. Abrir la aplicación de Whish
+2. **Business**, en la barra de abajo
+3. **Activate Whish Pay**
+4. Rellenar el formulario: nombre, datos de la empresa, contacto y datos del
+   sitio web
+
+Después les contacta su equipo para montar la pasarela, y ES ENTONCES cuando se
+piden `channel`, `secret` y `websiteUrl` y se hacen las preguntas técnicas de
+más abajo. El formulario no las contesta.
+
+### Qué poner en «datos del sitio web»
+
+`websiteUrl` viaja como cabecera en CADA petición, así que el dominio que se
+declare aquí es el que tiene que coincidir con el de la configuración. Con dos
+plataformas —`citas.posxml.com` y `posxml.com`— la pregunta de si vale una sola
+cuenta o hacen falta dos se le hace al equipo cuando contacte; en el formulario
+se declara el dominio con el que se va a cobrar primero.
+
+Sea cual sea la respuesta, **el código no cambia**: cada instalación guarda su
+`channel`, su `secret` y su `websiteUrl` en su propio `/panel/configuracion`.
+
 ## El mensaje para Whish, listo para pegar
 
 Se manda por el canal OFICIAL de Whish —el botón «Business» de su propia
@@ -82,6 +108,11 @@ ti, no al revés. Si alguna vez alguien te la pide, no es soporte.
 Va todo de una vez: quién eres, las DOS plataformas, y lo de recibir el código
 estando fuera del Líbano. Preguntarlo por partes son tres conversaciones que
 empiezan de cero cada una.
+
+Si ya contestaron mandando a **Business → Activate Whish Pay**, este mensaje
+sigue valiendo como respuesta: deja por escrito lo que el formulario NO pregunta
+—los dos dominios, el Individual/Corporate y el código estando fuera del
+Líbano— para que el equipo llegue con las respuestas preparadas.
 
 Ojo con una cosa que decide la configuración: `websiteUrl` viaja como cabecera
 en CADA petición, así que si los dos dominios comparten cuenta de comercio o
