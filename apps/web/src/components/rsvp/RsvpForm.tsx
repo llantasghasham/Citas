@@ -2,7 +2,7 @@ import { submitRsvpAction } from '@/app/i/[slug]/actions';
 import type { RsvpStatus } from '@/generated/prisma/enums';
 import { RSVP_STATUSES, type GuestContext } from '@/lib/rsvp/service';
 import { bodyFont, displayFont } from '@/lib/typography';
-import type { Dictionary, Invitation } from '@/lib/types';
+import type { Dictionary, Invitation, Locale } from '@/lib/types';
 
 interface RsvpFormProps {
   invitation: Invitation;
@@ -37,6 +37,7 @@ export function RsvpForm({ invitation, dictionary, guest, outcome }: RsvpFormPro
         className={`${bodyFont(locale)} flex flex-col items-center gap-4 text-center text-[color:var(--inv-primary)]`}
       >
         <p className="text-lg">{thanks[guest.reply.status]}</p>
+        <TableBadge table={guest.table} label={copy.yourTable} locale={locale} />
         <a href="?" className="text-sm underline opacity-70 hover:opacity-100">
           {copy.change}
         </a>
@@ -54,6 +55,7 @@ export function RsvpForm({ invitation, dictionary, guest, outcome }: RsvpFormPro
 
   return (
     <section className={`${bodyFont(locale)} flex flex-col gap-5`}>
+      <TableBadge table={guest?.table ?? null} label={copy.yourTable} locale={locale} />
       <h2 className={`${displayFont(locale)} text-center text-2xl text-[color:var(--inv-primary)]`}>
         {copy.heading}
       </h2>
@@ -130,5 +132,35 @@ export function RsvpForm({ invitation, dictionary, guest, outcome }: RsvpFormPro
         </button>
       </form>
     </section>
+  );
+}
+
+/**
+ * En qué mesa se sienta, para quien abre su enlace personal.
+ *
+ * Es la razón de que las mesas valgan la pena: el invitado ya lleva este enlace
+ * en el móvil, así que lee su mesa antes de llegar y nadie pregunta en la
+ * puerta. Solo aparece cuando la oficina ya ha repartido el salón y esta
+ * persona ha confirmado; el resto del tiempo no hay nada que decir y no se
+ * dibuja nada.
+ */
+function TableBadge({
+  table,
+  label,
+  locale,
+}: {
+  table: string | null;
+  label: string;
+  locale: Locale;
+}) {
+  if (table === null) return null;
+
+  return (
+    <p
+      className={`${bodyFont(locale)} flex flex-col items-center gap-1 border border-[color:var(--inv-accent)] px-5 py-3 text-center text-[color:var(--inv-primary)]`}
+    >
+      <span className="text-xs opacity-70">{label}</span>
+      <span className={`${displayFont(locale)} text-2xl`}>{table}</span>
+    </p>
   );
 }

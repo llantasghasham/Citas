@@ -36,6 +36,7 @@ export const FEATURE_KEYS = [
   'languages',
   'whatsapp',
   'rsvp',
+  'tables',
   'image',
   'verses',
   'offices',
@@ -62,6 +63,7 @@ export const MANUAL_CHAPTERS = [
   'whatsappQr',
   'packages',
   'rsvp',
+  'tables',
   'image',
   'team',
   'roles',
@@ -237,6 +239,8 @@ export interface Dictionary {
     change: string;
     closed: string;
     error: string;
+    /** En qué mesa se sienta, cuando la oficina ya ha repartido el salón. */
+    yourTable: string;
   };
   aria: {
     invitationCard: string;
@@ -789,6 +793,40 @@ export interface Dictionary {
       limitTitle: string;
       limitDetail: string;
       limitHint: string;
+    };
+    /** El reparto del salón: qué mesas hay y quién se sienta en cada una. */
+    tables: {
+      heading: string;
+      intro: string;
+      link: string;
+      back: string;
+      add: string;
+      namePlaceholder: string;
+      seatsLabel: string;
+      /** Con qué se nombra sola una mesa nueva: «Mesa 1», «Mesa 2»… */
+      prefix: string;
+      empty: string;
+      occupancy: string;
+      overflow: string;
+      /** Sentado y que ya no viene: se avisa, no se le quita el sitio. */
+      ghost: string;
+      unseated: string;
+      unseatedEmpty: string;
+      noTable: string;
+      seatedNobody: string;
+      autoSeat: string;
+      autoSeatHint: string;
+      clear: string;
+      print: string;
+      printByTable: string;
+      printByGuest: string;
+      printHint: string;
+      balance: string;
+      duplicate: string;
+      notFound: string;
+      seatedCount: PluralForms;
+      movedCount: PluralForms;
+      clearedCount: PluralForms;
     };
     /** One invitation, written out in each language its guests read. */
     versions: {

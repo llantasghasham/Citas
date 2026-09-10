@@ -310,6 +310,38 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   idiomas — una oficina de Costa Rica veía sus ventas de la tarde fechadas al día
   siguiente.
 
+### Mesas
+- Solo se sienta a quien CONFIRMÓ. Un invitado sin respuesta no ocupa silla:
+  repartir doscientas sillas entre gente que a lo mejor no viene es la hoja de
+  cálculo que esto viene a sustituir.
+- Las sillas las cuenta `Rsvp.party`, que YA se cuenta a sí mismo. Quien
+  confirmó por cuatro ocupa cuatro, no una.
+- La clave foránea de `Guest` a `Table` es COMPUESTA y lleva el evento dentro
+  (`(tableId, eventId)`): la BASE impide sentar a un invitado en la mesa de otra
+  boda, no el cuidado de quien escribe la consulta.
+- Es `ON DELETE NO ACTION`, y las dos razones importan. `SET NULL` sobre una
+  clave compuesta pone a nulo TODAS sus columnas, y `eventId` no lo admite —
+  quitar una mesa reventaba. Y `NO ACTION` en vez de `RESTRICT` porque se
+  comprueba al final de la orden: borrar una boda entera se lleva sus mesas y
+  sus invitados en la misma orden y no tropieza. Quitar UNA mesa levanta primero
+  a quien esté en ella, en la misma transacción (`lib/tables/service.ts`).
+- El tope de plazas es un AVISO, no una barrera: quien monta el salón sabe
+  cuándo cabe una silla más y el programa no.
+- Quien se sentó y luego dijo que no viene NO se levanta solo. Sigue en su mesa,
+  señalado, contando cero sillas, hasta que lo decida una persona: la mesa la
+  montó alguien y puede querer dejar el hueco donde está.
+- El reparto automático no parte un grupo y va de mayor a menor: colocados los
+  pequeños primero, el grupo de cuatro no cabría en ningún hueco. Es para el
+  primer reparto de doscientas personas; a quién se pone al lado de quién lo
+  decide la familia.
+- Dos listas para imprimir, porque se usan en sitios distintos: por mesa, para
+  el salón y el catering; por invitado en orden alfabético, para quien está en
+  la puerta y tiene que responder «¿dónde me siento?» en dos segundos. La
+  cabecera del panel no se imprime.
+- El invitado ve su mesa en `/g/<token>`, el enlace que ya tiene en el móvil, y
+  SOLO si ha confirmado: enseñarle mesa a quien dijo que no es prometerle un
+  sitio que nadie le ha guardado.
+
 ### Cobro
 - Líbano cobra con **Whish**. Costa Rica, si se abre, con Tilopay (SINPE Móvil).
 - El navegador NUNCA decide un pago. Un regreso a la URL de éxito no es una
@@ -361,9 +393,9 @@ npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
   compuestas— lo hace la base, no el código: un doble que no las implemente daría
   verde a los mismos fallos que estas pruebas existen para atrapar.
 - **En serie** (`--test-concurrency=1`): comparten una sola base.
-- Cuatro frentes, los que costaron dinero o confianza: el cobro y su liquidación,
-  la concurrencia de la cola de WhatsApp, el aislamiento entre oficinas, y las
-  fechas con el calendario.
+- Cinco frentes, los que costaron dinero o confianza: el cobro y su liquidación,
+  la concurrencia de la cola de WhatsApp, el aislamiento entre oficinas, las
+  fechas con el calendario, y el reparto de las mesas.
 
 ## Documentos
 - `MANUAL.md` — manual de uso: arrancar, crear invitaciones, idiomas, PNG,
@@ -417,6 +449,8 @@ de los versículos.
 - `/panel` (eventos), `/panel/oficinas` (superadmin), `/panel/equipo`,
   `/panel/facturacion`, `/panel/eventos/[eventId]` (invitados, idiomas que
   faltan, importar y enviar por WhatsApp).
+- `/panel/eventos/[eventId]/mesas` — el reparto del salón, y
+  `/mesas/imprimir?vista=mesa|invitado` las dos listas de papel.
 - `/panel/manual` — el manual de uso, en los cuatro idiomas.
 - `/panel/sistema` — SOLO superadministrador: once comprobaciones de salud,
   las versiones leídas en vivo y un botón que envía un correo de prueba y

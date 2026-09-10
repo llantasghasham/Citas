@@ -56,6 +56,8 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
       'opened_at',
       'status',
       'party',
+      // La mesa va en la exportación: es lo que el salón pide en un archivo.
+      'table',
     ],
     guests.map((guest) => [
       guest.name,
@@ -66,6 +68,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
       guest.openedAt === null ? null : guest.openedAt.toISOString(),
       guest.status,
       guest.party,
+      guest.table,
     ]),
   );
 

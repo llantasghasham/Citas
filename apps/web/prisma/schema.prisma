@@ -254,6 +254,7 @@ model Event {
   hosts    EventHost[]
   honorees EventHonoree[]
   guests   Guest[]
+  tables   Table[]
   messages WhatsappMessage[]
 
   @@index([tenantId, status])
@@ -381,14 +382,58 @@ model Guest {
   /// Verdadero cuando el propio invitado se dio de alta al confirmar.
   selfAdded Boolean @default(false)
 
+  /// En qué mesa se sienta. Nulo mientras no se le haya asignado una.
+  tableId String?
+
   createdAt DateTime @default(now())
 
   event    Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  /// Clave foránea COMPUESTA, con el evento dentro: así la base impide sentar
+  /// a un invitado en la mesa de OTRA boda. Con `tableId` a secas dependería de
+  /// que el código no se equivoque nunca, y una consulta a mano no depende de
+  /// eso.
+  ///
+  /// `NoAction` al borrar: `SetNull` sobre una clave compuesta pondría a nulo
+  /// también `eventId`, que no lo admite. Quitar una mesa levanta primero a
+  /// quien esté en ella —en la misma transacción, ver `lib/tables/service.ts`—
+  /// y esta clave es la red que avisa si alguien se lo salta.
+  table    Table?            @relation(fields: [tableId, eventId], references: [id, eventId], onDelete: NoAction)
   rsvp     Rsvp?
   messages WhatsappMessage[]
 
   @@index([eventId])
   @@index([eventId, locale])
+  @@index([tableId])
+}
+
+/// Una mesa del salón.
+///
+/// Cuelga del evento, como los invitados: la oficina se resuelve por el evento
+/// antes de tocar nada, que es como funciona todo lo demás de esta boda.
+model Table {
+  id      String @id @default(cuid())
+  eventId String
+
+  /// Como la llama el salón: «Mesa 1», «Familia del novio», «Novios».
+  name  String
+  /// Cuántas personas caben. Es un aviso, no una barrera: quien monta el salón
+  /// sabe cuándo puede meter una silla más, y el programa no.
+  seats Int    @default(10)
+  /// El orden en que se enseña y se imprime. Ordenar por nombre pondría la
+  /// «Mesa 10» delante de la «Mesa 2».
+  position Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event  Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guests Guest[]
+
+  @@unique([id, eventId])
+  /// Dos «Mesa 1» en la misma boda es un error de dedo, y confunde a quien
+  /// reparte a doscientas personas.
+  @@unique([eventId, name])
+  @@index([eventId, position])
 }
 
 model Rsvp {

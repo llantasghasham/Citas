@@ -35,6 +35,10 @@ export async function clean(): Promise<void> {
   await prisma.payment.deleteMany({});
   await prisma.order.deleteMany({});
   await prisma.rsvp.deleteMany({});
+  // Levantar antes de quitar las mesas: la clave foránea de `Guest` lleva el
+  // evento dentro y no admite que quede alguien apuntando a una mesa borrada.
+  await prisma.guest.updateMany({ where: { tableId: { not: null } }, data: { tableId: null } });
+  await prisma.table.deleteMany({});
   await prisma.guest.deleteMany({ where: { token: { startsWith: 'test-' } } });
   await prisma.event.deleteMany({ where: { venueName: { startsWith: 'Prueba' } } });
   await prisma.auditLog.deleteMany({ where: { action: { startsWith: 'order.' } } });

@@ -239,6 +239,18 @@
             "Hay un archivo de calendario por invitación, para que el invitado se la guarde en el teléfono."
           ]
         },
+        "tables": {
+          "title": "Las mesas del salón",
+          "steps": [
+            "Se entra desde el evento, en «Mesas del salón», al lado de la lista de invitados.",
+            "Se crean las mesas con su nombre y sus plazas. Dejando el nombre vacío salen «Mesa 1», «Mesa 2»…",
+            "Solo se reparte a quien ha CONFIRMADO. Quien no ha contestado no ocupa silla, y quien confirmó por cuatro ocupa cuatro.",
+            "«Repartir a los que faltan» llena las mesas por orden sin partir ningún grupo. Después se mueve a quien haga falta con el desplegable de cada persona.",
+            "Si alguien se sienta y luego dice que no viene, no se le levanta solo: queda señalado en su mesa y lo decide una persona.",
+            "Hay dos listas para imprimir: por mesa, para el salón y el catering; y por invitado en orden alfabético, para quien está en la puerta.",
+            "El invitado ve su mesa en su enlace personal, el mismo que ya tiene en el móvil."
+          ]
+        },
         "image": {
           "title": "La imagen",
           "steps": [
@@ -550,6 +562,48 @@
       "limitDetail": "Este evento admite {cabe} invitados, ya tiene {hay} y se intentaron añadir {pedidos}.",
       "limitHint": "Amplíelo con un paquete y vuelva a pegar la lista. No se ha guardado nada."
     },
+    "tables": {
+      "heading": "Mesas",
+      "intro": "Quién se sienta dónde. Solo se reparte a quien ha confirmado: un invitado que no ha contestado no ocupa silla.",
+      "link": "Mesas del salón",
+      "back": "Volver al evento",
+      "add": "Añadir una mesa",
+      "namePlaceholder": "Vacío = «Mesa 1», «Mesa 2»…",
+      "seatsLabel": "Plazas",
+      "prefix": "Mesa",
+      "empty": "Todavía no hay mesas. Añada la primera.",
+      "occupancy": "{taken} de {seats}",
+      "overflow": "Se pasa de plazas",
+      "ghost": "ya no viene",
+      "unseated": "Sin mesa",
+      "unseatedEmpty": "Todos los confirmados tienen sitio.",
+      "noTable": "— sin mesa —",
+      "seatedNobody": "Nadie sentado todavía.",
+      "autoSeat": "Repartir a los que faltan",
+      "autoSeatHint": "Llena las mesas por orden sin partir a ningún grupo. Después se mueve a quien haga falta.",
+      "clear": "Levantar a todos",
+      "print": "Imprimir",
+      "printByTable": "Por mesa",
+      "printByGuest": "Por invitado",
+      "printHint": "Una para el salón, otra para la puerta.",
+      "balance": "Hacen falta {needed} plazas y hay {available}.",
+      "duplicate": "Ya hay una mesa con ese nombre.",
+      "notFound": "Esa mesa ya no existe.",
+      "seatedCount": {
+        "one": "1 sentado",
+        "other": "{count} sentados"
+      },
+      "movedCount": {
+        "zero": "No cabía nadie más.",
+        "one": "Sentado 1 invitado.",
+        "other": "Sentados {count} invitados."
+      },
+      "clearedCount": {
+        "zero": "No había nadie sentado.",
+        "one": "Levantado 1 invitado.",
+        "other": "Levantados {count} invitados."
+      }
+    },
     "versions": {
       "heading": "Idiomas de la invitación",
       "hint": "Cada invitado abre la versión en su idioma. Quien no tenga la suya verá la primera.",
@@ -720,7 +774,8 @@
     "thanksTentative": "Gracias. Quedamos a la espera de su confirmación.",
     "change": "Cambiar la respuesta",
     "closed": "El plazo para confirmar ha terminado.",
-    "error": "No se pudo guardar su respuesta. Inténtelo de nuevo."
+    "error": "No se pudo guardar su respuesta. Inténtelo de nuevo.",
+    "yourTable": "Su mesa"
   },
   "create": {
     "title": "Crear invitación",
@@ -807,6 +862,10 @@
         "rsvp": {
           "title": "Confirmaciones que se cuentan solas",
           "body": "El invitado responde en la misma página, sin cuenta ni contraseña. Usted ve quién la abrió, quién viene y con cuántos acompañantes."
+        },
+        "tables": {
+          "title": "El salón repartido",
+          "body": "Quién se sienta en qué mesa, contando a los acompañantes de cada confirmación. Se imprime por mesa para el salón y por invitado para la puerta, y cada invitado ve su mesa en el enlace que ya tiene en el móvil."
         },
         "image": {
           "title": "Una imagen lista para compartir",

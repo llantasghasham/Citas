@@ -149,6 +149,13 @@ export interface GuestContext {
   name: string;
   /** Their answer so far, when they have already given one. */
   reply: ExistingReply | null;
+  /**
+   * En qué mesa se sienta, cuando la oficina ya ha repartido el salón.
+   *
+   * Solo a quien confirmó: enseñarle mesa a alguien que dijo que no viene —o
+   * que no ha contestado— es prometerle un sitio que nadie le ha guardado.
+   */
+  table: string | null;
 }
 
 /**
@@ -162,12 +169,13 @@ export async function findGuestByToken(
 ): Promise<GuestContext | null> {
   const guest = await getPrisma().guest.findFirst({
     where: { token, event: { versions: { some: { slug } } } },
-    include: { rsvp: true },
+    include: { rsvp: true, table: { select: { name: true } } },
   });
   if (guest === null) return null;
 
   return {
     name: guest.name,
+    table: guest.rsvp?.status === 'attending' ? (guest.table?.name ?? null) : null,
     reply:
       guest.rsvp === null
         ? null

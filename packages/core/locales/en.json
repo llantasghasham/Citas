@@ -239,6 +239,18 @@
             "Every invitation has a calendar file, so the guest can save it to their phone."
           ]
         },
+        "tables": {
+          "title": "The seating plan",
+          "steps": [
+            "Reached from the event, under “Seating plan”, next to the guest list.",
+            "Create the tables with a name and how many seats. Leave the name empty and they come out as “Table 1”, “Table 2”…",
+            "Only guests who said YES are seated. Someone who never replied takes no chair, and someone who replied for four takes four.",
+            "“Seat the ones left” fills the tables in order without splitting a group. Move anybody afterwards with their own dropdown.",
+            "If somebody is seated and later says they are not coming, nobody clears them automatically: they stay flagged at their table and a person decides.",
+            "Two lists print: by table, for the venue and the caterer; and by guest in alphabetical order, for whoever is at the door.",
+            "The guest sees their table on their own personal link — the one already on their phone."
+          ]
+        },
         "image": {
           "title": "The image",
           "steps": [
@@ -550,6 +562,48 @@
       "limitDetail": "This event allows {cabe} guests, already has {hay}, and {pedidos} more were offered.",
       "limitHint": "Add a package and paste the list again. Nothing was saved."
     },
+    "tables": {
+      "heading": "Tables",
+      "intro": "Who sits where. Only guests who replied yes are seated: someone who never answered takes no chair.",
+      "link": "Seating plan",
+      "back": "Back to the event",
+      "add": "Add a table",
+      "namePlaceholder": "Empty = “Table 1”, “Table 2”…",
+      "seatsLabel": "Seats",
+      "prefix": "Table",
+      "empty": "No tables yet. Add the first one.",
+      "occupancy": "{taken} of {seats}",
+      "overflow": "Over capacity",
+      "ghost": "not coming any more",
+      "unseated": "No table yet",
+      "unseatedEmpty": "Everyone who is coming has a seat.",
+      "noTable": "— no table —",
+      "seatedNobody": "Nobody seated yet.",
+      "autoSeat": "Seat the ones left",
+      "autoSeatHint": "Fills the tables in order without splitting a group. Move anyone afterwards.",
+      "clear": "Clear every seat",
+      "print": "Print",
+      "printByTable": "By table",
+      "printByGuest": "By guest",
+      "printHint": "One for the venue, one for the door.",
+      "balance": "{needed} seats are needed and there are {available}.",
+      "duplicate": "There is already a table with that name.",
+      "notFound": "That table is gone.",
+      "seatedCount": {
+        "one": "1 seated",
+        "other": "{count} seated"
+      },
+      "movedCount": {
+        "zero": "No room left for anybody.",
+        "one": "1 guest seated.",
+        "other": "{count} guests seated."
+      },
+      "clearedCount": {
+        "zero": "Nobody was seated.",
+        "one": "1 guest cleared.",
+        "other": "{count} guests cleared."
+      }
+    },
     "versions": {
       "heading": "Invitation languages",
       "hint": "Each guest opens the version in their own language. Anyone without one sees the first.",
@@ -720,7 +774,8 @@
     "thanksTentative": "Thank you. We will wait for your confirmation.",
     "change": "Change your reply",
     "closed": "The deadline to confirm has passed.",
-    "error": "Your reply could not be saved. Please try again."
+    "error": "Your reply could not be saved. Please try again.",
+    "yourTable": "Your table"
   },
   "create": {
     "title": "Create an invitation",
@@ -807,6 +862,10 @@
         "rsvp": {
           "title": "Replies that count themselves",
           "body": "Guests answer on the same page, with no account and no password. You see who opened it, who is coming and how many they bring."
+        },
+        "tables": {
+          "title": "The room laid out",
+          "body": "Who sits at which table, counting the companions on every reply. Prints by table for the venue and by guest for the door, and each guest sees their table on the link already on their phone."
         },
         "image": {
           "title": "An image ready to share",

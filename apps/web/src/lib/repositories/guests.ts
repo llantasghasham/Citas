@@ -18,6 +18,8 @@ export interface GuestWithLink {
   openedAt: Date | null;
   status: RsvpStatus | null;
   party: number | null;
+  /** La mesa en la que se sienta, cuando ya se ha repartido el salón. */
+  table: string | null;
   /**
    * The invitation this guest actually opens. `locale` is the version's, not
    * the guest's: when it differs, nobody wrote their language and they are
@@ -123,7 +125,10 @@ export async function listGuestsWithLinks(
     include: {
       honorees: { orderBy: { order: 'asc' }, select: { name: true } },
       versions: { orderBy: { createdAt: 'asc' }, select: { slug: true, locale: true } },
-      guests: { orderBy: { createdAt: 'asc' }, include: { rsvp: true } },
+      guests: {
+        orderBy: { createdAt: 'asc' },
+        include: { rsvp: true, table: { select: { name: true } } },
+      },
     },
   });
   if (event === null) return null;
@@ -143,6 +148,7 @@ export async function listGuestsWithLinks(
       openedAt: guest.openedAt,
       status: guest.rsvp?.status ?? null,
       party: guest.rsvp?.party ?? null,
+      table: guest.table?.name ?? null,
       // Resolved with the same rule /g/[token] applies, so what the office is
       // shown here is what the guest will really open.
       version: versionForLocale(event.versions, guest.locale) ?? null,

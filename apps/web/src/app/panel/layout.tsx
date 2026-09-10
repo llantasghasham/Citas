@@ -48,7 +48,10 @@ export default async function PanelLayout({ children }: { children: ReactNode })
       lang={locale}
       className={`${bodyFont(locale)} min-h-[100dvh] bg-[#f4efe6] text-[#23201a]`}
     >
-      <header className="border-b border-[#ddd6c6]">
+      {/* La cabecera no se imprime. Hay pantallas que se llevan al papel —el
+          reparto de las mesas— y el nombre de la oficina con siete enlaces de
+          menú ocupa el tercio de arriba de la primera hoja. */}
+      <header className="border-b border-[#ddd6c6] print:hidden">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-6 gap-y-3 p-6">
           {/* La oficina manda sobre la marca: quien trabaja para una agencia
               quiere ver el nombre de SU agencia, no el de la plataforma. */}
@@ -83,7 +86,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-4xl flex-col gap-8 p-6 sm:p-8">{children}</main>
+      <main className="mx-auto flex max-w-4xl flex-col gap-8 p-6 sm:p-8 print:max-w-none print:p-0">{children}</main>
     </div>
   );
 }

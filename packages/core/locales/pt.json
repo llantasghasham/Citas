@@ -239,6 +239,18 @@
             "Há um ficheiro de calendário por convite, para o convidado o guardar no telemóvel."
           ]
         },
+        "tables": {
+          "title": "As mesas do salão",
+          "steps": [
+            "Entra-se pelo evento, em «Mesas do salão», ao lado da lista de convidados.",
+            "Criam-se as mesas com o nome e os lugares. Deixando o nome vazio saem «Mesa 1», «Mesa 2»…",
+            "Só se distribui quem CONFIRMOU. Quem não respondeu não ocupa cadeira, e quem confirmou por quatro ocupa quatro.",
+            "«Distribuir os que faltam» enche as mesas por ordem sem dividir nenhum grupo. Depois muda-se quem for preciso na lista de cada pessoa.",
+            "Se alguém se senta e depois diz que não vem, não se levanta sozinho: fica assinalado na sua mesa e decide uma pessoa.",
+            "Há duas listas para imprimir: por mesa, para o salão e o catering; e por convidado em ordem alfabética, para quem está à porta.",
+            "O convidado vê a sua mesa no seu link pessoal, o mesmo que já tem no telemóvel."
+          ]
+        },
         "image": {
           "title": "A imagem",
           "steps": [
@@ -550,6 +562,48 @@
       "limitDetail": "Este evento admite {cabe} convidados, já tem {hay} e tentaram acrescentar-se {pedidos}.",
       "limitHint": "Amplie-o com um pacote e volte a colar a lista. Não se guardou nada."
     },
+    "tables": {
+      "heading": "Mesas",
+      "intro": "Quem se senta onde. Só se distribui quem confirmou: um convidado que não respondeu não ocupa cadeira.",
+      "link": "Mesas do salão",
+      "back": "Voltar ao evento",
+      "add": "Adicionar uma mesa",
+      "namePlaceholder": "Vazio = «Mesa 1», «Mesa 2»…",
+      "seatsLabel": "Lugares",
+      "prefix": "Mesa",
+      "empty": "Ainda não há mesas. Adicione a primeira.",
+      "occupancy": "{taken} de {seats}",
+      "overflow": "Passa dos lugares",
+      "ghost": "já não vem",
+      "unseated": "Sem mesa",
+      "unseatedEmpty": "Todos os confirmados têm lugar.",
+      "noTable": "— sem mesa —",
+      "seatedNobody": "Ainda não há ninguém sentado.",
+      "autoSeat": "Distribuir os que faltam",
+      "autoSeatHint": "Enche as mesas por ordem sem dividir nenhum grupo. Depois muda-se quem for preciso.",
+      "clear": "Levantar todos",
+      "print": "Imprimir",
+      "printByTable": "Por mesa",
+      "printByGuest": "Por convidado",
+      "printHint": "Uma para o salão, outra para a porta.",
+      "balance": "São precisos {needed} lugares e há {available}.",
+      "duplicate": "Já existe uma mesa com esse nome.",
+      "notFound": "Essa mesa já não existe.",
+      "seatedCount": {
+        "one": "1 sentado",
+        "other": "{count} sentados"
+      },
+      "movedCount": {
+        "zero": "Não cabia mais ninguém.",
+        "one": "1 convidado sentado.",
+        "other": "{count} convidados sentados."
+      },
+      "clearedCount": {
+        "zero": "Não havia ninguém sentado.",
+        "one": "1 convidado levantado.",
+        "other": "{count} convidados levantados."
+      }
+    },
     "versions": {
       "heading": "Idiomas do convite",
       "hint": "Cada convidado abre a versão no seu idioma. Quem não tiver a sua vê a primeira.",
@@ -720,7 +774,8 @@
     "thanksTentative": "Obrigado. Ficamos à espera da sua confirmação.",
     "change": "Alterar a resposta",
     "closed": "O prazo para confirmar terminou.",
-    "error": "Não foi possível guardar a sua resposta. Tente de novo."
+    "error": "Não foi possível guardar a sua resposta. Tente de novo.",
+    "yourTable": "A sua mesa"
   },
   "create": {
     "title": "Criar convite",
@@ -807,6 +862,10 @@
         "rsvp": {
           "title": "Confirmações que se contam sozinhas",
           "body": "O convidado responde na mesma página, sem conta e sem palavra-passe. Vê quem abriu, quem vem e com quantos acompanhantes."
+        },
+        "tables": {
+          "title": "O salão distribuído",
+          "body": "Quem se senta em que mesa, contando os acompanhantes de cada confirmação. Imprime-se por mesa para o salão e por convidado para a porta, e cada convidado vê a sua mesa no link que já tem no telemóvel."
         },
         "image": {
           "title": "Uma imagem pronta a partilhar",

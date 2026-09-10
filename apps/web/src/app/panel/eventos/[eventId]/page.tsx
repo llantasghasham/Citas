@@ -167,6 +167,14 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           <a className="text-sm underline text-[#8a6c22]" href={`/api/events/${eventId}/guests`}>
             {copy.exportCsv}
           </a>
+          {/* El reparto del salón. Va junto a la lista de invitados porque es
+              lo mismo mirado de otra manera: quién viene y dónde se sienta. */}
+          <a
+            className="text-sm underline text-[#8a6c22]"
+            href={`/panel/eventos/${eventId}/mesas`}
+          >
+            {dictionary.admin.tables.link}
+          </a>
         </div>
 
         {event.guests.length === 0 ? (
