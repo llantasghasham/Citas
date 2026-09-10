@@ -492,7 +492,12 @@ enum Currency {
 enum PaymentProviderId {
   whish
   tilopay
+  /// Sin pasarela: el efectivo, que marca una persona con su nombre.
   manual
+  /// Solo desarrollo. Se guardaba como `manual`, y esa mentira tenía coste: un
+  /// cobro de prueba quedaba indistinguible de uno en efectivo, y al resolverlo
+  /// por el proveedor GUARDADO se habría tratado como dinero ya cobrado en mano.
+  mock
 }
 
 enum PaymentStatus {
@@ -675,6 +680,13 @@ model Payment {
   amount   Int
   currency Currency
 
+  /// La página del proveedor a la que se manda al pagador.
+  ///
+  /// Se guarda para poder REUTILIZARLA. Sin esto, un doble clic en «Pagar»
+  /// abría dos cobranzas en Whish para el mismo pedido: dos referencias, dos
+  /// filas, y la posibilidad real de que alguien pague dos veces su boda.
+  payUrl String?
+
   /// Última vez que se le preguntó al proveedor cuál es la verdad.
   lastCheckedAt DateTime?
   paidAt        DateTime?
@@ -688,6 +700,11 @@ model Payment {
   @@unique([provider, providerRef])
   @@index([orderId])
   @@index([status, lastCheckedAt])
+  // Además, en la migración: un índice único PARCIAL sobre (orderId, provider)
+  // limitado a `status = 'pending'`. Prisma no sabe declarar índices parciales,
+  // así que vive solo en el SQL — y ahí es donde tiene que estar, porque es la
+  // base la que impide que existan dos cobros abiertos para el mismo pedido
+  // aunque dos peticiones lleguen a la vez.
 }
 
 /// Todo lo que llega del proveedor se guarda crudo. Cuando un cobro se discute

@@ -247,9 +247,16 @@ Estas ya están en el código y no se negocian:
 - **El callback es un aviso, no una prueba.** Mientras no haya una firma que
   podamos verificar, el callback solo dice *qué pedido mirar*; quien decide es
   `getStatus()`, servidor contra servidor.
-- **Idempotencia por pedido.** El `orderId` viaja como identificador externo, y
-  `(provider, providerRef)` es único en la base de datos: la misma notificación
-  dos veces no cobra dos veces.
+- **Idempotencia por pedido.** `(provider, providerRef)` es único, y además hay
+  un índice único PARCIAL que solo permite UN cobro `pending` por `(orderId,
+  provider)`. Está en la base y no solo en el código a propósito: dos peticiones
+  simultáneas comprueban las dos que no hay ninguno abierto y las dos lo crean.
+  Un doble clic reutiliza el enlace guardado en `Payment.payUrl` en vez de abrir
+  una segunda cobranza.
+- **El aviso pasa por el mismo sitio que todo lo demás.** `applySettlement` es la
+  única puerta por la que un pedido pasa a pagado, y es atómica, monótona e
+  idempotente: una transacción con la fila bloqueada, `paid` terminal salvo
+  reembolso, y el mismo aviso dos veces no activa nada dos veces.
 - **Conciliación.** `citas-conciliar.timer` repasa cada cinco minutos los cobros
   que llevan más de dos minutos en `pending` y le pregunta al proveedor. Los
   callbacks se pierden; el dinero no puede perderse con ellos. Los recién

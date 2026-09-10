@@ -123,8 +123,25 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Los precios se guardan en centavos enteros.
 - Solo la respuesta del proveedor marca una factura como pagada, y eso se decide
   en UN solo sitio (`applySettlement`): el enlace de la pareja, el botón de la
-  oficina y el repaso periódico pasan por la misma función. Tres copias serían
-  tres formas de cobrar un plan y no activarlo.
+  oficina, EL AVISO DEL PROVEEDOR y el repaso periódico pasan por la misma
+  función. El aviso no pasaba, y el agujero era grave: escribía el pago como
+  pagado sin tocar el pedido, y como el repaso solo mira los pagos PENDIENTES,
+  ese mismo aviso apagaba la red que lo habría arreglado después.
+- `applySettlement` es ATÓMICO, MONÓTONO e IDEMPOTENTE, y las tres hacen falta.
+  Todo en una transacción con la fila del pago bloqueada: morir entre dos
+  escrituras dejaba un pedido cobrado sin plan activo. `paid` es terminal salvo
+  reembolso: una respuesta atrasada no devuelve a pendiente lo que ya entró. Y el
+  mismo aviso dos veces no activa el plan dos veces ni escribe dos líneas en el
+  historial —que va DENTRO de la transacción, porque un historial que se pierde
+  al morir el proceso no es un historial.
+- El adaptador se resuelve por el proveedor GUARDADO en el pago (`providerFor`),
+  no por el configurado hoy: preguntarle a la pasarela nueva por una referencia
+  de la vieja devuelve «no existe», que se leería como pendiente.
+- UN solo cobro abierto por pedido, y lo impide la BASE con un índice único
+  parcial, no solo el código: dos peticiones simultáneas comprueban las dos que
+  no hay ninguno. Un doble clic reutiliza el enlace en vez de abrir una segunda
+  cobranza — dos enlaces vivos es la forma más tonta de que una pareja pague dos
+  veces.
 - `citas-conciliar.timer` repasa cada cinco minutos los cobros que llevan rato
   en `pending`. El callback no va firmado y se pierde; que una boda pagada se
   entere no puede depender de que alguien abra una pantalla.

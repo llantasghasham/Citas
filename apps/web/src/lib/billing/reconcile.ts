@@ -1,6 +1,5 @@
-import { recordAudit } from '@/lib/audit';
 import { getPrisma } from '@/lib/db/client';
-import { getPaymentProvider } from '@/lib/payments';
+import { providerFor } from '@/lib/payments';
 import type { PaymentStatus } from '@/lib/payments/types';
 
 /**
@@ -39,53 +38,93 @@ export interface ReconcileSummary {
 /**
  * Escribe lo que dijo el proveedor, y hace lo que ese estado significa.
  *
- * Es el único sitio donde un pedido pasa a pagado. Las tres entradas
- * —el enlace de la pareja, el botón de la oficina y este trabajo periódico—
- * pasan por aquí, porque tres copias de esta lógica son tres formas distintas
- * de que un plan no se active después de cobrarlo.
+ * Es el único sitio donde un pedido pasa a pagado. Las cuatro entradas —el
+ * enlace de la pareja, el botón de la oficina, el aviso del proveedor y este
+ * repaso periódico— pasan por aquí, porque cuatro copias de esta lógica son
+ * cuatro formas distintas de cobrar un plan y no activarlo.
+ *
+ * Tres propiedades, y las tres hacen falta:
+ *
+ *  1. **Atómico.** Pago, pedido, suscripción y registro se escriben en UNA
+ *     transacción. Antes eran cuatro escrituras sueltas: morir entre la
+ *     segunda y la tercera dejaba un pedido cobrado sin plan activo.
+ *  2. **Monótono.** `paid` es terminal salvo reembolso. Un aviso atrasado, o la
+ *     respuesta lenta de una consulta anterior, no puede devolver a pendiente
+ *     un cobro que ya entró.
+ *  3. **Idempotente.** El mismo aviso dos veces no activa el plan dos veces ni
+ *     escribe dos líneas en el historial. Se sabe porque la fila del pago se
+ *     bloquea y se comprueba DENTRO de la transacción.
+ *
+ * Devuelve si de verdad cambió algo, para que quien llama no cuente como
+ * novedad lo que ya estaba escrito.
  */
 export async function applySettlement(
   order: { id: string; tenantId: string; amount: number; description: string; packageGuests: number | null },
   paymentId: string,
   status: PaymentStatus,
-  via: 'link' | 'panel' | 'job',
-): Promise<void> {
-  const prisma = getPrisma();
+  via: 'link' | 'panel' | 'job' | 'callback',
+): Promise<boolean> {
+  return getPrisma().$transaction(async (tx) => {
+    // Se relee DENTRO de la transacción y con bloqueo de fila: dos avisos
+    // simultáneos del mismo cobro llegan aquí a la vez, y sin esto los dos
+    // verían «pendiente» y los dos activarían el plan.
+    const [locked] = await tx.$queryRaw<{ id: string; status: PaymentStatus }[]>`
+      SELECT id, status FROM "Payment" WHERE id = ${paymentId} FOR UPDATE
+    `;
+    if (locked === undefined) return false;
 
-  await prisma.payment.update({
-    where: { id: paymentId },
-    data: {
-      status,
-      lastCheckedAt: new Date(),
-      paidAt: status === 'paid' ? new Date() : null,
-      events: { create: { kind: 'poll', payload: { status, via } } },
-    },
-  });
-  await prisma.order.update({ where: { id: order.id }, data: { status } });
+    // Ya cobrado. Solo un reembolso puede mover esto, y eso no llega por aquí.
+    if (locked.status === 'paid' && status !== 'refunded') return false;
+    if (locked.status === status) return false;
 
-  if (status !== 'paid') return;
-
-  // Pagar un PLAN es lo que mueve de plan a la oficina. Un paquete de
-  // invitaciones no toca la suscripción: es una venta suelta para una boda.
-  if (order.packageGuests === null) {
-    const plan = await prisma.plan.findFirst({
-      where: { name: order.description.replace('Plan ', '') },
+    const paidNow = status === 'paid';
+    await tx.payment.update({
+      where: { id: paymentId },
+      data: {
+        status,
+        lastCheckedAt: new Date(),
+        paidAt: paidNow ? new Date() : null,
+        events: { create: { kind: 'poll', payload: { status, via } } },
+      },
     });
-    if (plan !== null) {
-      await prisma.subscription.upsert({
-        where: { tenantId: order.tenantId },
-        update: { planId: plan.id, cancelledAt: null },
-        create: { tenantId: order.tenantId, planId: plan.id },
+
+    // `updateMany` con la condición dentro: si otra vía marcó el pedido pagado
+    // entre medias, esto no lo pisa.
+    await tx.order.updateMany({
+      where: { id: order.id, NOT: { status: 'paid' } },
+      data: { status },
+    });
+
+    if (paidNow) {
+      // Pagar un PLAN es lo que mueve de plan a la oficina. Un paquete de
+      // invitaciones no toca la suscripción: es una venta suelta para una boda.
+      if (order.packageGuests === null) {
+        const plan = await tx.plan.findFirst({
+          where: { name: order.description.replace('Plan ', '') },
+        });
+        if (plan !== null) {
+          await tx.subscription.upsert({
+            where: { tenantId: order.tenantId },
+            update: { planId: plan.id, cancelledAt: null },
+            create: { tenantId: order.tenantId, planId: plan.id },
+          });
+        }
+      }
+
+      // El registro va DENTRO de la transacción. Un historial que puede
+      // perderse porque el proceso murió después de cobrar no es un historial.
+      await tx.auditLog.create({
+        data: {
+          tenantId: order.tenantId,
+          action: 'order.paid',
+          entity: 'Order',
+          entityId: order.id,
+          metadata: { amount: order.amount, via },
+        },
       });
     }
-  }
 
-  await recordAudit({
-    tenantId: order.tenantId,
-    action: 'order.paid',
-    entity: 'Order',
-    entityId: order.id,
-    metadata: { amount: order.amount, via },
+    return true;
   });
 }
 
@@ -111,6 +150,7 @@ export async function reconcilePending(): Promise<ReconcileSummary> {
     take: BATCH,
     select: {
       id: true,
+      provider: true,
       providerRef: true,
       currency: true,
       order: {
@@ -129,17 +169,22 @@ export async function reconcilePending(): Promise<ReconcileSummary> {
   const summary: ReconcileSummary = { checked: 0, changed: 0, paid: 0, errors: 0 };
   if (payments.length === 0) return summary;
 
-  const provider = await getPaymentProvider();
-
   for (const payment of payments) {
     summary.checked += 1;
     try {
+      // El adaptador del proveedor con el que se ABRIÓ este cobro, no el que
+      // esté configurado hoy: cambiar de pasarela no puede dejar huérfanos los
+      // cobros anteriores.
+      const provider = providerFor(payment.provider);
+      if (provider === null) continue;
+
       const status = await provider.getStatus(payment.providerRef, payment.currency);
       if (status === 'pending') continue;
 
-      await applySettlement(payment.order, payment.id, status, 'job');
-      summary.changed += 1;
-      if (status === 'paid') summary.paid += 1;
+      if (await applySettlement(payment.order, payment.id, status, 'job')) {
+        summary.changed += 1;
+        if (status === 'paid') summary.paid += 1;
+      }
     } catch (error) {
       // Se anota y se sigue. La próxima pasada lo vuelve a intentar, y mientras
       // tanto el pedido se queda pendiente, que es lo seguro.

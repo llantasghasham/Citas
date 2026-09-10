@@ -8,7 +8,7 @@ import { recordAudit } from '@/lib/audit';
 import { applySettlement } from '@/lib/billing/reconcile';
 import { getPrisma } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
-import { getPaymentProvider, type PaymentStatus } from '@/lib/payments';
+import { getPaymentProvider, providerFor, type PaymentStatus } from '@/lib/payments';
 import { setting } from '@/lib/settings';
 
 import { findPackage, priceFor, type InvitationPackage } from './packages';
@@ -187,6 +187,18 @@ export async function beginPublicPayment(
 
   try {
     const provider = await getPaymentProvider();
+
+    // Si ya hay una cobranza abierta para este pedido, se REUTILIZA. Sin esto,
+    // un doble clic —o volver atrás y pulsar otra vez, que es lo que hace
+    // cualquiera cuando una pasarela tarda— abría dos cobranzas en Whish para
+    // la misma boda. Dos enlaces vivos es la forma más tonta de que una pareja
+    // pague dos veces.
+    const open = await prisma.payment.findFirst({
+      where: { orderId: order.id, provider: provider.id, status: 'pending' },
+      select: { payUrl: true },
+    });
+    if (open?.payUrl != null && open.payUrl.length > 0) return { payUrl: open.payUrl };
+
     const back = `${origin}/pagar/${payToken}`;
     const handle = await provider.createCollection({
       orderId: order.id,
@@ -196,19 +208,35 @@ export async function beginPublicPayment(
       failureUrl: `${back}?volvio=1&fallo=1`,
       callbackUrl: `${origin}/api/payments/${provider.id}/callback`,
     });
-
-    await prisma.payment.create({
-      data: {
-        orderId: order.id,
-        provider: provider.id === 'whish' ? 'whish' : 'manual',
-        providerRef: handle.providerRef,
-        status: 'pending',
-        amount: order.amount,
-        currency: order.currency,
-      },
-    });
-
     if (handle.payUrl === undefined) return { error: 'provider' };
+
+    try {
+      await prisma.payment.create({
+        data: {
+          orderId: order.id,
+          // El proveedor DE VERDAD, no aplastado contra «manual». Es lo que
+          // luego decide a quién se le pregunta por este cobro.
+          provider: provider.id,
+          providerRef: handle.providerRef,
+          payUrl: handle.payUrl,
+          status: 'pending',
+          amount: order.amount,
+          currency: order.currency,
+        },
+      });
+    } catch {
+      // La base tiene un único parcial: UN cobro pendiente por pedido. Si dos
+      // peticiones llegaron a la vez, las dos pasaron la comprobación de arriba
+      // y solo una puede escribir. La que pierde usa el enlace de la que ganó,
+      // en vez de reventar en la cara de quien está pagando.
+      const winner = await prisma.payment.findFirst({
+        where: { orderId: order.id, provider: provider.id, status: 'pending' },
+        select: { payUrl: true },
+      });
+      if (winner?.payUrl == null) throw new Error('no se pudo abrir la cobranza');
+      return { payUrl: winner.payUrl };
+    }
+
     return { payUrl: handle.payUrl };
   } catch (error) {
     // Lo que falla aquí es la pasarela, y el detalle no es asunto de quien
@@ -241,10 +269,12 @@ export async function settlePublicOrder(payToken: string): Promise<PaymentStatus
   if (order.status === 'paid') return 'paid';
   if (payment === undefined) return order.status;
 
-  const status = await (await getPaymentProvider()).getStatus(
-    payment.providerRef,
-    payment.currency,
-  );
+  // El adaptador del proveedor con el que se abrió ESTE cobro. El efectivo no
+  // tiene a quién preguntarle: lo marcó una persona y ya está decidido.
+  const provider = providerFor(payment.provider);
+  if (provider === null) return payment.status === 'paid' ? 'paid' : order.status;
+
+  const status = await provider.getStatus(payment.providerRef, payment.currency);
 
   // Lo que significa ese estado lo decide UN solo sitio, el mismo que usan el
   // botón de la oficina y el repaso periódico.
