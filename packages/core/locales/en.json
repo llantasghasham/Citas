@@ -141,6 +141,15 @@
             "This does not touch the invitations’ language: that is decided per version, on the event’s page."
           ]
         },
+        "profile": {
+          "title": "My profile",
+          "steps": [
+            "“My profile” is yours and yours alone: your name, photo, phone, the language you read the panel in, and the country you handle.",
+            "Changing it changes nothing for the rest of the office. Two people at the same counter can work in different languages.",
+            "The country is not decoration: it decides the dialling code a pasted guest list without one is normalised to, and a new event's timezone. Working from Costa Rica? Set it and stop typing +506 every time.",
+            "The role is NOT here, deliberately: nobody promotes themselves. That is changed by whoever administers, under “Team”."
+          ]
+        },
         "create": {
           "title": "Creating an invitation",
           "steps": [
@@ -179,7 +188,33 @@
             "The button opens YOUR WhatsApp with the message already written. It goes out from your number, the one your clients know.",
             "The message is in the guest's language, not the office's.",
             "There is no per-message fee and no templates to get approved: this is not the WhatsApp API, it is your own WhatsApp.",
-            "A guest with no phone shows a link to copy and send however you like."
+            "A guest with no phone shows a link to copy and send however you like.",
+            "If pasting the links one by one gets long, you can connect your own number by QR code and let them go out gradually. That is the next chapter, and the warning there is worth reading first."
+          ]
+        },
+        "whatsappQr": {
+          "title": "Connecting a WhatsApp number",
+          "steps": [
+            "This is for not pasting two hundred links by hand. It does NOT replace sending one by one: that stays in the guest table and is what always works.",
+            "Before anything, read the red warning on the screen. Automating a personal number goes against WhatsApp's terms, and the number they can close is yours.",
+            "Under Settings › WhatsApp: give the number a name (“Hamra counter”) and press Add.",
+            "On the row that appears, press Connect. The code takes a few seconds and the screen refreshes by itself.",
+            "Scan it from the phone: WhatsApp › Settings › Linked devices › Link a device. Same gesture as WhatsApp Web.",
+            "The session is stored encrypted, so there is no rescanning every time the server restarts.",
+            "You can connect several numbers, one per counter. Mark the default one on its row.",
+            "Start with few messages and raise it slowly, over weeks not hours. The daily cap is on each number's row."
+          ]
+        },
+        "packages": {
+          "title": "Selling packages and getting paid",
+          "steps": [
+            "The wedding's screen has “Sell a package”: 100, 200 or 500 invitations. The price is not typed in; it comes from the event's channel.",
+            "Enter the couple's name and WhatsApp, pick the package, and create. A payment link comes out.",
+            "That link goes out on WhatsApp with a button. The couple opens it WITHOUT an account, sees it in their own language, and pays on Whish's page.",
+            "Invitations unlock when Whish confirms the payment, not before. A pending order unlocks nothing.",
+            "For cash, switch it on under Settings › Payments and mark it yourself from the package's row. It goes into the history with your name.",
+            "Packages add up: a wedding that grows buys another one without giving the first back.",
+            "Until the event has a paid package, the guest limit is the office's plan."
           ]
         },
         "rsvp": {
@@ -202,13 +237,36 @@
           ]
         },
         "team": {
-          "title": "Team and permissions",
+          "title": "The office's team",
           "steps": [
             "Each office sees only its own events. One office never reaches another's data.",
             "There are four roles: superadmin, office admin, operator and organiser.",
             "The operator creates and edits events and guests. The organiser only looks.",
             "Billing and the team are managed by the office admin.",
             "Permissions are always checked on the server: a button you cannot see is not a permission."
+          ]
+        },
+        "roles": {
+          "title": "Roles and permissions",
+          "steps": [
+            "Each role holds a list of permissions, and Settings › Roles and permissions spells out in full what each one grants.",
+            "The system's owner can adjust what each role may do, and go back to the defaults at any time.",
+            "Two things are never touched: the superadmin entirely, and the platform-administration permission. If that one could be handed out, anyone would grant it to their own role.",
+            "Changing a person's role happens under “Team”, row by row.",
+            "Permissions are checked on the server. A hidden button is not a permission: not seeing and not being able are different things, and here they are both."
+          ]
+        },
+        "config": {
+          "title": "The system's settings",
+          "steps": [
+            "The system's owner only. Seven sections: Mail, Payments, WhatsApp, Roles and permissions, Brand, Home page and The site.",
+            "Each field says where its value comes from: saved here, inherited from the server, or not set. And it carries what to write and where to get it.",
+            "Saving one section does not touch the others.",
+            "Mail: without this, nobody can sign in with a code. There is a button that sends a test email and shows the provider's answer.",
+            "Payments: Whish, cash and — once there are credentials — SINPE Móvil are switched on separately. The test button reads the balance, so it checks the credentials without moving money.",
+            "Brand: the system's name, the logo and the tab icon, with a preview.",
+            "Home page: every text on the front page, in all four languages. An empty field uses the original text.",
+            "Passwords are stored encrypted and the screen never gives them back: they are replaced, not read. An empty field means “leave it alone”."
           ]
         },
         "system": {

@@ -54,13 +54,18 @@ export type PlanKey = (typeof PLAN_KEYS)[number];
 export const MANUAL_CHAPTERS = [
   'signIn',
   'interface',
+  'profile',
   'create',
   'languages',
   'guests',
   'send',
+  'whatsappQr',
+  'packages',
   'rsvp',
   'image',
   'team',
+  'roles',
+  'config',
   'system',
 ] as const;
 export type ManualChapter = (typeof MANUAL_CHAPTERS)[number];

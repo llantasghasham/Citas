@@ -141,6 +141,15 @@
             "Esto no toca el idioma de las invitaciones: ese lo decide cada versión, en la ficha del evento."
           ]
         },
+        "profile": {
+          "title": "Mi perfil",
+          "steps": [
+            "«Mi perfil» es lo suyo y solo lo suyo: su nombre, su foto, su teléfono, el idioma en que lee el panel y el país que maneja.",
+            "Cambiarlo no cambia nada para el resto de la oficina. Dos personas del mismo mostrador pueden trabajar en idiomas distintos.",
+            "El país no es un adorno: decide el prefijo con el que se normaliza una lista de invitados pegada sin prefijo, y la zona horaria de un evento nuevo. Si trabaja desde Costa Rica, póngalo y dejará de escribir +506 cada vez.",
+            "El rol NO está aquí, a propósito: nadie se asciende a sí mismo. Eso lo cambia quien administra, en «Equipo»."
+          ]
+        },
         "create": {
           "title": "Crear una invitación",
           "steps": [
@@ -179,7 +188,33 @@
             "El botón abre SU WhatsApp con el mensaje ya escrito. Sale de su número, el que sus clientes ya conocen.",
             "El mensaje va en el idioma del invitado, no en el de la oficina.",
             "No hay coste por mensaje ni plantillas que aprobar: no es la API de WhatsApp, es su propio WhatsApp.",
-            "Un invitado sin teléfono muestra un enlace para copiar y mandarlo por donde quiera."
+            "Un invitado sin teléfono muestra un enlace para copiar y mandarlo por donde quiera.",
+            "Si pegar los enlaces uno a uno se le hace largo, puede conectar su propio número por código QR y que salgan solos, poco a poco. Está en el capítulo siguiente, y conviene leer el aviso antes."
+          ]
+        },
+        "whatsappQr": {
+          "title": "Conectar un número de WhatsApp",
+          "steps": [
+            "Sirve para no pegar doscientos enlaces a mano. NO sustituye al envío uno a uno: ese sigue en la tabla de invitados y es el que funciona siempre.",
+            "Antes de nada, lea el aviso rojo de la pantalla. Automatizar un número personal va contra los términos de WhatsApp, y el número que pueden cerrar es el suyo.",
+            "En Configuración › WhatsApp: escriba un nombre para el número («Mostrador Hamra») y pulse Añadir.",
+            "En la fila que aparece, pulse Conectar. El código tarda unos segundos y la pantalla se actualiza sola.",
+            "Escanéelo desde el teléfono: WhatsApp › Ajustes › Dispositivos vinculados › Vincular un dispositivo. Es el mismo gesto que WhatsApp Web.",
+            "La sesión se guarda cifrada, así que no hay que volver a escanear en cada reinicio del servidor.",
+            "Puede conectar varios números: uno por mostrador. El que quiera por defecto se marca en su fila.",
+            "Empiece con pocos envíos y suba despacio, en semanas y no en horas. El tope diario se ajusta en la fila de cada número."
+          ]
+        },
+        "packages": {
+          "title": "Vender paquetes y cobrar",
+          "steps": [
+            "En la pantalla de la boda hay «Vender un paquete»: 100, 200 o 500 invitaciones. El precio no se teclea, sale del canal del evento.",
+            "Escriba el nombre de la pareja y su WhatsApp, elija el paquete y pulse crear. Sale un enlace de pago.",
+            "Ese enlace se manda por WhatsApp con un botón. La pareja lo abre SIN cuenta, lo ve en su propio idioma, y paga en la página de Whish.",
+            "Las invitaciones se desbloquean cuando Whish confirma el cobro, no antes. Un pedido pendiente no abre nada.",
+            "Si cobra en efectivo, actívelo en Configuración › Cobro y márquelo usted desde la fila del paquete. Queda en el historial con su nombre.",
+            "Los paquetes se suman: una boda que crece se amplía comprando otro, sin devolver el primero.",
+            "Mientras el evento no tenga paquete pagado, el límite de invitados es el del plan de la oficina."
           ]
         },
         "rsvp": {
@@ -202,13 +237,36 @@
           ]
         },
         "team": {
-          "title": "Equipo y permisos",
+          "title": "El equipo de la oficina",
           "steps": [
             "Cada oficina ve solo sus eventos. Una oficina jamás alcanza los datos de otra.",
             "Hay cuatro papeles: superadministrador, administrador de oficina, operador y organizador.",
             "El operador crea y edita eventos e invitados. El organizador solo mira.",
             "La facturación y el equipo los gestiona el administrador de la oficina.",
             "Los permisos se comprueban siempre en el servidor: que un botón no se vea no es un permiso."
+          ]
+        },
+        "roles": {
+          "title": "Roles y permisos",
+          "steps": [
+            "Cada rol tiene una lista de permisos, y en Configuración › Roles y permisos se ve la frase entera de lo que concede cada uno.",
+            "El dueño del sistema puede ajustar qué puede hacer cada rol, y volver a lo de fábrica cuando quiera.",
+            "Dos cosas no se tocan nunca: el superadministrador entero, y el permiso de administrar la plataforma. Si ese se pudiera repartir, cualquiera se lo concedería a su propio rol.",
+            "Cambiar el rol de una persona se hace en «Equipo», fila por fila.",
+            "Los permisos se comprueban en el servidor. Que un botón no se vea no es un permiso: no verlo y no poder son cosas distintas, y aquí son las dos."
+          ]
+        },
+        "config": {
+          "title": "La configuración del sistema",
+          "steps": [
+            "Solo el dueño del sistema. Está en siete apartados: Correo, Cobro, WhatsApp, Roles y permisos, Marca, Portada y El sitio.",
+            "Cada campo dice de dónde sale su valor: guardado aquí, heredado del servidor, o sin poner. Y lleva debajo qué escribir y de dónde sacarlo.",
+            "Guardar un apartado no toca los demás.",
+            "Correo: sin esto configurado, nadie puede entrar con código. Hay un botón que manda un correo de prueba y enseña la respuesta del proveedor.",
+            "Cobro: se encienden por separado Whish, el efectivo y —cuando haya credenciales— SINPE Móvil. El botón de probar consulta el saldo, así que comprueba las credenciales sin mover dinero.",
+            "Marca: el nombre del sistema, el logo y el icono de la pestaña, con una vista previa.",
+            "Portada: cada texto de la página de inicio, en los cuatro idiomas. Un campo vacío usa el texto original.",
+            "Las contraseñas se guardan cifradas y la pantalla no las devuelve nunca: se reemplazan, no se leen. Dejar el campo vacío significa «no la toques»."
           ]
         },
         "system": {

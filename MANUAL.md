@@ -323,6 +323,47 @@ El caso real: llega un cliente con su lista de nombres y teléfonos.
 > modelo de datos ya soporta varias versiones por evento; falta ofrecerlo en el
 > formulario de creación.
 
+## 4 nonies. Lo que se configura desde el panel
+
+Desde `/panel/configuracion`, sin tocar el servidor. Siete apartados: **Correo**,
+**Cobro**, **WhatsApp**, **Roles y permisos**, **Marca**, **Portada** y **El
+sitio**. Cada campo dice de dónde sale su valor y lleva debajo qué escribir.
+
+El `.env` se sigue leyendo como respaldo, pero lo guardado en el panel manda. En
+el entorno solo tienen que quedar `DATABASE_URL`, `DATA_SOURCE`,
+`SUPERADMIN_EMAIL`, `CITAS_SECRET_KEY_FILE` y el token del servicio de WhatsApp.
+
+## 4 decies. Vender paquetes y cobrar
+
+En la pantalla de la boda, «Vender un paquete»: 100, 200 o 500 invitaciones. El
+precio sale del canal del evento —mayorista para una oficina con licencia,
+minorista en venta directa— y no se teclea.
+
+Sale un enlace `/pagar/<token>` que la pareja abre SIN cuenta, en su idioma, y
+paga en la página de Whish. Las invitaciones se desbloquean cuando Whish
+confirma, no cuando el navegador vuelve.
+
+El efectivo se enciende en Configuración › Cobro y lo marca una persona desde la
+fila del paquete: queda en el historial con su nombre.
+
+Detalles del cobro en `docs/COBRO-WHISH.md`.
+
+## 4 undecies. Enviar desde el número propio, por código QR
+
+Opcional, y con riesgo: automatizar un número personal va contra los términos de
+WhatsApp. **Antes de usarlo, lea `docs/WHATSAPP.md` entero**, que explica el
+freno —retardo al azar, tope diario, calentamiento— y por qué existe.
+
+Se conecta en Configuración › WhatsApp, escaneando un código igual que WhatsApp
+Web. Necesita el servicio `apps/whatsapp` levantado:
+
+```
+npm run whatsapp
+```
+
+Los enlaces `wa.me` uno a uno NO se van: siguen en la tabla de invitados y son
+lo que funciona siempre.
+
 ## 5. Cambiar textos e idiomas
 
 Ningún texto visible está en el código. Todo vive en `locales/ar.json`,

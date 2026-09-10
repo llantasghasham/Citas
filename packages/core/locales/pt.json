@@ -141,6 +141,15 @@
             "Isto não mexe no idioma dos convites: esse é decidido em cada versão, na página do evento."
           ]
         },
+        "profile": {
+          "title": "O meu perfil",
+          "steps": [
+            "«O meu perfil» é seu e só seu: o nome, a foto, o telefone, o idioma em que lê o painel e o país que gere.",
+            "Mudá-lo não muda nada para o resto do escritório. Duas pessoas do mesmo balcão podem trabalhar em idiomas diferentes.",
+            "O país não é enfeite: decide o indicativo com que se normaliza uma lista de convidados colada sem indicativo, e o fuso de um evento novo. Se trabalha da Costa Rica, ponha-o e deixa de escrever +506 sempre.",
+            "A função NÃO está aqui, de propósito: ninguém se promove a si próprio. Isso muda-se em «Equipa»."
+          ]
+        },
         "create": {
           "title": "Criar um convite",
           "steps": [
@@ -179,7 +188,33 @@
             "O botão abre O SEU WhatsApp com a mensagem já escrita. Sai do seu número, o que os seus clientes conhecem.",
             "A mensagem vai no idioma do convidado, não no da agência.",
             "Não há custo por mensagem nem modelos a aprovar: não é a API do WhatsApp, é o seu próprio WhatsApp.",
-            "Um convidado sem telefone mostra uma ligação para copiar e enviar por onde quiser."
+            "Um convidado sem telefone mostra uma ligação para copiar e enviar por onde quiser.",
+            "Se colar os links um a um se tornar demorado, pode ligar o seu próprio número por código QR e deixá-los sair aos poucos. É o capítulo seguinte, e convém ler o aviso antes."
+          ]
+        },
+        "whatsappQr": {
+          "title": "Ligar um número de WhatsApp",
+          "steps": [
+            "Serve para não colar duzentos links à mão. NÃO substitui o envio um a um: esse continua na tabela de convidados e é o que funciona sempre.",
+            "Antes de mais, leia o aviso vermelho do ecrã. Automatizar um número pessoal vai contra os termos do WhatsApp, e o número que podem fechar é o seu.",
+            "Em Configuração › WhatsApp: escreva um nome para o número («Balcão Hamra») e carregue em Adicionar.",
+            "Na linha que aparece, carregue em Ligar. O código demora alguns segundos e o ecrã atualiza-se sozinho.",
+            "Leia-o no telemóvel: WhatsApp › Definições › Dispositivos ligados › Ligar um dispositivo. É o mesmo gesto do WhatsApp Web.",
+            "A sessão é guardada cifrada, por isso não é preciso voltar a ler em cada reinício do servidor.",
+            "Pode ligar vários números: um por balcão. O que quiser por omissão marca-se na sua linha.",
+            "Comece com poucos envios e suba devagar, em semanas e não em horas. O limite diário ajusta-se na linha de cada número."
+          ]
+        },
+        "packages": {
+          "title": "Vender pacotes e cobrar",
+          "steps": [
+            "No ecrã do casamento há «Vender um pacote»: 100, 200 ou 500 convites. O preço não se escreve, sai do canal do evento.",
+            "Escreva o nome do casal e o WhatsApp, escolha o pacote e crie. Sai um link de pagamento.",
+            "Esse link envia-se por WhatsApp com um botão. O casal abre-o SEM conta, vê-o no seu próprio idioma, e paga na página da Whish.",
+            "Os convites são desbloqueados quando a Whish confirmar a cobrança, não antes. Um pedido pendente não desbloqueia nada.",
+            "Se cobrar em dinheiro, ative-o em Configuração › Cobrança e marque-o você a partir da linha do pacote. Fica no histórico com o seu nome.",
+            "Os pacotes somam-se: um casamento que cresce amplia-se comprando outro, sem devolver o primeiro.",
+            "Enquanto o evento não tiver pacote pago, o limite de convidados é o do plano do escritório."
           ]
         },
         "rsvp": {
@@ -202,13 +237,36 @@
           ]
         },
         "team": {
-          "title": "Equipa e permissões",
+          "title": "A equipa do escritório",
           "steps": [
             "Cada agência vê apenas os seus eventos. Uma agência nunca alcança os dados de outra.",
             "Há quatro papéis: superadministrador, administrador da agência, operador e organizador.",
             "O operador cria e edita eventos e convidados. O organizador só consulta.",
             "A faturação e a equipa são geridas pelo administrador da agência.",
             "As permissões são sempre verificadas no servidor: um botão que não se vê não é uma permissão."
+          ]
+        },
+        "roles": {
+          "title": "Funções e permissões",
+          "steps": [
+            "Cada função tem uma lista de permissões, e em Configuração › Funções e permissões vê-se por extenso o que cada uma concede.",
+            "O dono do sistema pode ajustar o que cada função pode fazer, e voltar ao original quando quiser.",
+            "Duas coisas nunca se tocam: o superadministrador por inteiro, e a permissão de administrar a plataforma. Se essa se pudesse distribuir, qualquer um a concedia à sua própria função.",
+            "Mudar a função de uma pessoa faz-se em «Equipa», linha a linha.",
+            "As permissões são verificadas no servidor. Um botão escondido não é uma permissão: não ver e não poder são coisas diferentes, e aqui são as duas."
+          ]
+        },
+        "config": {
+          "title": "A configuração do sistema",
+          "steps": [
+            "Só o dono do sistema. Está em sete secções: Correio, Cobrança, WhatsApp, Funções e permissões, Marca, Página inicial e O site.",
+            "Cada campo diz de onde vem o seu valor: guardado aqui, herdado do servidor, ou por pôr. E traz por baixo o que escrever e onde ir buscá-lo.",
+            "Guardar uma secção não toca nas outras.",
+            "Correio: sem isto configurado, ninguém entra com código. Há um botão que envia um e-mail de teste e mostra a resposta do fornecedor.",
+            "Cobrança: ligam-se em separado a Whish, o dinheiro e — quando houver credenciais — o SINPE Móvil. O botão de teste consulta o saldo, por isso verifica as credenciais sem mexer dinheiro.",
+            "Marca: o nome do sistema, o logótipo e o ícone do separador, com pré-visualização.",
+            "Página inicial: cada texto da página de entrada, nos quatro idiomas. Um campo vazio usa o texto original.",
+            "As palavras-passe são guardadas cifradas e o ecrã nunca as devolve: substituem-se, não se leem. Um campo vazio significa «não lhe toques»."
           ]
         },
         "system": {
