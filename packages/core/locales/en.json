@@ -129,16 +129,18 @@
             "The platform account and office administrators may also have a password, to get in on the days the mail is not moving. The link sits under the code field.",
             "The code works ONCE and expires after ten minutes. If it runs out, ask for another.",
             "The answer is the same whether the account exists or not: the system never reveals who is registered.",
-            "Sign out from the link at the top. On a shared computer, always sign out."
+            "You sign out from your account menu, at the end of the header. On a shared computer, always sign out."
           ]
         },
         "interface": {
-          "title": "The panel language",
+          "title": "Your account menu",
           "steps": [
-            "Top right there are four buttons: العربية, Español, Português and English. Press yours.",
-            "The choice is saved on YOUR account, not the office’s: two colleagues at the same desk can read it in different languages.",
+            "At the end of the header is your photo with your name. Everything of yours lives in there: who you are, which office and role you are working with, “My profile”, the language and “Sign out”.",
+            "They are together on purpose: they are things about WHOEVER is signed in, not about the site. And “Sign out” is no longer loose beside the navigation links, where it got clicked by accident.",
+            "The language is saved on YOUR account, not the office’s: two colleagues at the same desk can read it in different languages.",
             "Choosing Arabic turns the whole panel right to left, not just the words.",
-            "This does not touch the invitations’ language: that is decided per version, on the event’s page."
+            "This does not touch the invitations’ language: that is decided per version, on the event’s page.",
+            "On a phone only the photo is left, without the name: the header has no room for both."
           ]
         },
         "profile": {

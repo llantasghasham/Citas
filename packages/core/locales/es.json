@@ -129,16 +129,18 @@
             "La cuenta de la plataforma y los administradores de oficina pueden además tener contraseña, para entrar los días en que el correo no sale. El enlace está debajo del campo del código.",
             "El código sirve UNA vez y caduca a los diez minutos. Si se agota, se pide otro.",
             "La respuesta es la misma exista o no la cuenta: el sistema nunca revela quién está dado de alta.",
-            "La sesión se cierra desde el enlace de arriba a la derecha. En un ordenador compartido, ciérrela siempre."
+            "La sesión se cierra desde el menú de su cuenta, arriba al final de la cabecera. En un ordenador compartido, ciérrela siempre."
           ]
         },
         "interface": {
-          "title": "El idioma del panel",
+          "title": "El menú de su cuenta",
           "steps": [
-            "Arriba a la derecha hay cuatro botones: العربية, Español, Português y English. Pulse el suyo.",
-            "La elección se guarda en SU cuenta, no en la de la oficina: dos compañeros en el mismo escritorio pueden leerlo en idiomas distintos.",
+            "Arriba, al final de la cabecera, está su foto con su nombre. Ahí dentro va todo lo suyo: quién es, con qué oficina y qué rol está trabajando, «Mi perfil», el idioma y «Salir».",
+            "Están juntos a propósito: son cosas de QUIEN está dentro, no del sitio. Y «Salir» deja de estar suelto al lado de los enlaces, donde se pulsaba sin querer.",
+            "El idioma se guarda en SU cuenta, no en la de la oficina: dos compañeros en el mismo escritorio pueden leerlo en idiomas distintos.",
             "Elegir árabe pasa el panel entero de derecha a izquierda, no solo el texto.",
-            "Esto no toca el idioma de las invitaciones: ese lo decide cada versión, en la ficha del evento."
+            "Esto no toca el idioma de las invitaciones: ese lo decide cada versión, en la ficha del evento.",
+            "En un teléfono queda solo la foto, sin el nombre: la cabecera no tiene sitio para las dos cosas."
           ]
         },
         "profile": {

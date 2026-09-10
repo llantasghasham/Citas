@@ -333,8 +333,13 @@ de los versículos.
     una dejada abierta en un ordenador ajeno se arreglaba esperando un mes.
 - `/panel/equipo` — quién trabaja en la oficina, con qué rol, en qué idioma y
   con qué país. Cada fila se guarda por su cuenta.
-- Un icono de mundo en la cabecera cambia el idioma del panel. Se guarda en
-  `User.locale`, no en la oficina.
+- El idioma, «Mi perfil» y «Salir» van en UN solo menú de cuenta, al final de la
+  cabecera, detrás de la foto (`UserMenu`, con `<details>` y sin JavaScript de
+  cliente). Son cosas de QUIEN está dentro, no del sitio; sueltas ocupaban media
+  cabecera, se caían a una segunda línea en cuanto la oficina tenía un nombre
+  largo, y «Salir» subrayado al lado de los enlaces se pulsaba sin querer. El
+  menú enseña además con qué oficina y qué rol se está trabajando. El idioma se
+  guarda en `User.locale`, no en la oficina.
 
 ### Cómo se decide el idioma del documento
 `src/proxy.ts` (en Next 16 se llama `proxy`, no `middleware`) anota la ruta y el

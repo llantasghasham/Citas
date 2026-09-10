@@ -3,9 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
-import { signOutAction } from '@/app/entrar/actions';
-import { LanguageMenu } from '@/components/panel/LanguageMenu';
-import { Avatar } from '@/components/panel/profile/Avatar';
+import { UserMenu } from '@/components/panel/UserMenu';
 import { getAdminContext } from '@/lib/admin/context';
 import { loadSite } from '@/lib/home/site';
 import { getSession, sessionCan } from '@/lib/auth/session';
@@ -32,7 +30,6 @@ export default async function PanelLayout({ children }: { children: ReactNode })
     { href: '/panel/equipo', label: nav.team, visible: sessionCan(session, 'tenant:staff') },
     { href: '/panel/facturacion', label: nav.billing, visible: sessionCan(session, 'billing:manage') },
     { href: '/panel/manual', label: nav.manual, visible: true },
-    { href: '/panel/perfil', label: nav.profile, visible: true },
     {
       // El administrador de una oficina entra a conectar SU WhatsApp; lo demás
       // de esa pantalla no lo ve.
@@ -70,21 +67,19 @@ export default async function PanelLayout({ children }: { children: ReactNode })
               </Link>
             ))}
           </nav>
-          <LanguageMenu locale={locale} dictionary={dictionary} />
-
-          {/* Con qué cuenta se está trabajando. En un sistema donde una misma
-              persona entra como la oficina y como la plataforma, verlo en todo
-              momento evita configurar la agencia equivocada. */}
-          <Link href="/panel/perfil" className="flex items-center gap-2 hover:opacity-80">
-            <Avatar src={session.avatarUrl} name={session.email} size={28} />
-            <span className="sr-only">{dictionary.admin.nav.profile}</span>
-          </Link>
-
-          <form action={signOutAction}>
-            <button type="submit" className="text-sm underline opacity-70 hover:opacity-100">
-              {dictionary.admin.panel.signOut}
-            </button>
-          </form>
+          {/* El idioma, el perfil y salir son lo mismo —cosas de quien está
+              dentro, no del sitio— y van en un solo menú. Sueltos ocupaban
+              media cabecera y se caían a una segunda línea en cuanto la
+              oficina tenía un nombre largo. */}
+          <UserMenu
+            email={session.email}
+            name={session.name}
+            avatarUrl={session.avatarUrl}
+            office={tenant?.name ?? null}
+            role={session.role}
+            locale={locale}
+            dictionary={dictionary}
+          />
         </div>
       </header>
 

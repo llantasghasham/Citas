@@ -129,16 +129,18 @@
             "A conta da plataforma e os administradores de agência podem ainda ter palavra-passe, para entrar nos dias em que o email não sai. A ligação fica por baixo do campo do código.",
             "O código serve UMA vez e expira ao fim de dez minutos. Se se esgotar, pede-se outro.",
             "A resposta é a mesma exista ou não a conta: o sistema nunca revela quem está registado.",
-            "A sessão fecha-se pela ligação no topo. Num computador partilhado, feche-a sempre."
+            "A sessão fecha-se a partir do menu da sua conta, no fim do cabeçalho. Num computador partilhado, feche-a sempre."
           ]
         },
         "interface": {
-          "title": "O idioma do painel",
+          "title": "O menu da sua conta",
           "steps": [
-            "Em cima à direita há quatro botões: العربية, Español, Português e English. Carregue no seu.",
-            "A escolha fica guardada na SUA conta, não na da agência: dois colegas na mesma secretária podem lê-lo em idiomas diferentes.",
+            "Em cima, no fim do cabeçalho, está a sua foto com o seu nome. Lá dentro vai tudo o que é seu: quem é, com que escritório e que função está a trabalhar, «O meu perfil», o idioma e «Sair».",
+            "Estão juntos de propósito: são coisas de QUEM está dentro, não do sítio. E «Sair» deixa de estar solto ao lado dos atalhos, onde se carregava sem querer.",
+            "O idioma fica guardado na SUA conta, não na da agência: dois colegas na mesma secretária podem lê-lo em idiomas diferentes.",
             "Escolher árabe passa o painel inteiro da direita para a esquerda, não só o texto.",
-            "Isto não mexe no idioma dos convites: esse é decidido em cada versão, na página do evento."
+            "Isto não mexe no idioma dos convites: esse é decidido em cada versão, na página do evento.",
+            "Num telemóvel fica só a foto, sem o nome: o cabeçalho não tem espaço para as duas coisas."
           ]
         },
         "profile": {

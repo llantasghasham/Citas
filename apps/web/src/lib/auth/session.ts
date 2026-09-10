@@ -20,6 +20,8 @@ export interface AuthenticatedSession {
   sessionId: string;
   userId: string;
   email: string;
+  /** Cómo se llama. Nulo mientras no lo haya escrito en su perfil. */
+  name: string | null;
   isSuperadmin: boolean;
   tenantId: string | null;
   role: Role | null;
@@ -140,6 +142,7 @@ export async function resolveSession(token: string): Promise<AuthenticatedSessio
     sessionId: row.id,
     userId: row.userId,
     email: row.user.email,
+    name: row.user.name,
     isSuperadmin: row.user.isSuperadmin,
     tenantId: row.tenantId ?? (row.user.isSuperadmin ? await rootTenantId() : null),
     role,
