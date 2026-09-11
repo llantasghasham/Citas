@@ -5,6 +5,13 @@ import { after, before, beforeEach, describe, it } from 'node:test';
 import { POST as callback } from '../src/app/api/payments/[provider]/callback/route';
 import { beginPublicPayment, openPackageOrder } from '../src/lib/billing/checkout';
 import { applySettlement, reconcilePending } from '../src/lib/billing/reconcile';
+import {
+  alreadySeen,
+  MAX_CALLBACK_BYTES,
+  rateLimited,
+  resetCallbackGuards,
+  tooLarge,
+} from '../src/lib/payments/callback-guard';
 import { PaymentError } from '../src/lib/payments/types';
 import { openCollection } from '../src/lib/billing/reserve';
 import type { PaymentProvider } from '../src/lib/payments/types';
@@ -129,14 +136,26 @@ describe('el cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     assert.equal(await getPrisma().payment.count(), 1);
   });
 
+  /**
+   * El freno de repeticiones corta el MISMO aviso byte a byte durante un
+   * minuto, y eso es lo que se quiere en producción. Aquí estorba: lo que estas
+   * pruebas comprueban es la idempotencia de la LIQUIDACIÓN, que vive detrás de
+   * ese freno. Se suelta entre avisos para llegar hasta ella — comprobar el
+   * freno es otra prueba, y está más abajo.
+   */
+  const notifyAgain = async (ref: string): Promise<Response> => {
+    resetCallbackGuards();
+    return notify(ref);
+  };
+
   it('el aviso del proveedor activa el PEDIDO, no solo el cobro', async () => {
     const token = await newOrder();
     await beginPublicPayment(token, 'https://citas.posxml.com');
     const payment = await getPrisma().payment.findFirstOrThrow();
 
     // El falso da «pendiente» la primera vez; se consume para llegar a pagado.
-    await notify(payment.providerRef);
-    const response = await notify(payment.providerRef);
+    await notifyAgain(payment.providerRef);
+    const response = await notifyAgain(payment.providerRef);
     assert.equal(response.status, 200);
 
     const order = await getPrisma().order.findFirstOrThrow({ where: { payToken: token } });
@@ -148,10 +167,10 @@ describe('el cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     const token = await newOrder();
     await beginPublicPayment(token, 'https://citas.posxml.com');
     const payment = await getPrisma().payment.findFirstOrThrow();
-    await notify(payment.providerRef);
-    await notify(payment.providerRef);
-    await notify(payment.providerRef);
-    await notify(payment.providerRef);
+    await notifyAgain(payment.providerRef);
+    await notifyAgain(payment.providerRef);
+    await notifyAgain(payment.providerRef);
+    await notifyAgain(payment.providerRef);
     assert.equal(await getPrisma().auditLog.count({ where: { action: 'order.paid' } }), 1);
   });
 
@@ -159,8 +178,8 @@ describe('el cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     const token = await newOrder();
     await beginPublicPayment(token, 'https://citas.posxml.com');
     const payment = await getPrisma().payment.findFirstOrThrow();
-    await notify(payment.providerRef);
-    await notify(payment.providerRef);
+    await notifyAgain(payment.providerRef);
+    await notifyAgain(payment.providerRef);
 
     const order = await getPrisma().order.findFirstOrThrow({
       where: { payToken: token },
@@ -571,5 +590,137 @@ describe('el importe y las reservas en el aire', { skip: HAS_DB ? false : 'sin D
 
     await reconcilePending();
     assert.equal((await orderRow(orderId)).status, 'paid', 'el doble `mock` la da por pagada');
+  });
+});
+
+/**
+ * Los frenos del extremo por el que entra un aviso de cobro.
+ *
+ * Ese extremo es público y no va firmado, así que cualquiera puede llamarlo mil
+ * veces. Que no pueda COBRAR nada ya estaba resuelto —nada del cuerpo decide—;
+ * lo que faltaba es que llamarlo mil veces no costara mil consultas a la
+ * pasarela ni mil filas en el historial.
+ */
+describe('el extremo del aviso de cobro', () => {
+  beforeEach(() => {
+    resetCallbackGuards();
+  });
+
+  it('un cuerpo enorme se rechaza por la cabecera, sin llegar a leerlo', () => {
+    const grande = new Headers({ 'content-length': String(MAX_CALLBACK_BYTES + 1) });
+    assert.equal(tooLarge(grande), true);
+    assert.equal(tooLarge(new Headers({ 'content-length': '400' })), false);
+  });
+
+  it('y también si la cabecera miente', () => {
+    // `content-length` lo escribe quien llama, como todo lo demás.
+    const miente = new Headers({ 'content-length': '10' });
+    assert.equal(tooLarge(miente), false, 'la cabecera pasa');
+    assert.equal(tooLarge(miente, 'x'.repeat(MAX_CALLBACK_BYTES + 1)), true, 'el cuerpo no');
+  });
+
+  it('una misma dirección tiene cupo por minuto', () => {
+    let frenados = 0;
+    for (let intento = 0; intento < 200; intento += 1) {
+      if (rateLimited('whish:203.0.113.7')) frenados += 1;
+    }
+    assert.ok(frenados > 100, `frenados ${frenados} de 200`);
+    // Y no arrastra a los demás.
+    assert.equal(rateLimited('whish:198.51.100.4'), false);
+  });
+
+  it('el cupo se renueva al pasar el minuto', () => {
+    const ahora = Date.now();
+    for (let intento = 0; intento < 200; intento += 1) rateLimited('whish:x', ahora);
+    assert.equal(rateLimited('whish:x', ahora), true);
+    assert.equal(rateLimited('whish:x', ahora + 61_000), false);
+  });
+
+  it('el MISMO aviso repetido no se vuelve a tramitar', () => {
+    const cuerpo = '{"externalId":"123","status":"success"}';
+    assert.equal(alreadySeen('whish', cuerpo), false, 'la primera vez sí');
+    assert.equal(alreadySeen('whish', cuerpo), true, 'la segunda no');
+  });
+
+  it('pero dos avisos DISTINTOS del mismo cobro se tramitan los dos', () => {
+    // «pendiente» y luego «pagado» son cuerpos distintos, y el segundo es el
+    // que importa. Cortar por referencia en vez de por cuerpo lo habría perdido.
+    assert.equal(alreadySeen('whish', '{"externalId":"9","status":"pending"}'), false);
+    assert.equal(alreadySeen('whish', '{"externalId":"9","status":"success"}'), false);
+  });
+
+  it('y el olvido llega: pasado el rato, se vuelve a tramitar', () => {
+    const ahora = Date.now();
+    const cuerpo = '{"externalId":"7"}';
+    assert.equal(alreadySeen('whish', cuerpo, ahora), false);
+    assert.equal(alreadySeen('whish', cuerpo, ahora + 1000), true);
+    assert.equal(alreadySeen('whish', cuerpo, ahora + 61_000), false);
+  });
+});
+
+describe('la liquidación es atómica de verdad', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  beforeEach(async () => {
+    const prisma = getPrisma();
+    await prisma.paymentEvent.deleteMany({});
+    await prisma.payment.deleteMany({});
+    await prisma.order.deleteMany({});
+    await prisma.subscription.deleteMany({});
+  });
+
+  it('si algo falla a mitad, NO queda nada escrito', async () => {
+    // `applySettlement` escribe el pago, el pedido, la suscripción y el
+    // historial. Antes eran cuatro escrituras sueltas: morir entre la segunda y
+    // la tercera dejaba un pedido COBRADO y sin plan activo — pagado y sin
+    // producto, que es la peor de las dos maneras de equivocarse.
+    //
+    // El fallo se provoca con una restricción de verdad: el historial apunta a
+    // una oficina por clave foránea, así que con una oficina inventada la
+    // escritura del historial revienta DENTRO de la transacción.
+    const prisma = getPrisma();
+    const order = await prisma.order.create({
+      data: {
+        tenantId: fixture.get().tenantId,
+        amount: 1500,
+        currency: 'USD',
+        description: 'Plan Annual',
+        status: 'pending',
+      },
+      select: { id: true, amount: true, description: true, packageGuests: true },
+    });
+    const payment = await prisma.payment.create({
+      data: {
+        orderId: order.id,
+        provider: 'mock',
+        providerRef: `atomico-${Date.now()}`,
+        status: 'pending',
+        amount: 1500,
+        currency: 'USD',
+      },
+      select: { id: true },
+    });
+
+    await assert.rejects(
+      applySettlement({ ...order, tenantId: 'oficina-que-no-existe' }, payment.id, 'paid', 'job'),
+      'la clave foránea del historial tiene que reventar',
+    );
+
+    // Y después: TODO como estaba.
+    assert.equal(
+      (await prisma.payment.findUniqueOrThrow({ where: { id: payment.id } })).status,
+      'pending',
+      'el pago no se marcó pagado',
+    );
+    assert.equal(
+      (await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status,
+      'pending',
+      'el pedido tampoco',
+    );
+    assert.equal(
+      await prisma.auditLog.count({ where: { entityId: order.id } }),
+      0,
+      'ni quedó media línea de historial',
+    );
   });
 });

@@ -1,4 +1,10 @@
+import { clientIp } from '@/lib/admin/context';
 import { applySettlement } from '@/lib/billing/reconcile';
+import {
+  alreadySeen,
+  rateLimited,
+  tooLarge,
+} from '@/lib/payments/callback-guard';
 import { getPrisma } from '@/lib/db/client';
 import { PAYMENT_PROVIDERS, providerFor } from '@/lib/payments';
 
@@ -31,7 +37,30 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     return Response.json({ error: 'unknown_provider' }, { status: 404 });
   }
 
+  // El cuerpo, con tope y ANTES de leerlo: un aviso de cobro son unos cientos
+  // de bytes, y este extremo es público.
+  if (tooLarge(request.headers)) {
+    return Response.json({ error: 'too_large' }, { status: 413 });
+  }
+
+  // Un cupo por dirección. No decide nada sobre dinero —nada de este cuerpo lo
+  // hace— pero evita que llamarlo mil veces cueste mil consultas a la pasarela.
+  const from = clientIp(request.headers) ?? 'desconocida';
+  if (rateLimited(`${name}:${from}`)) {
+    return Response.json({ error: 'too_many' }, { status: 429 });
+  }
+
   const rawBody = await request.text();
+  if (tooLarge(request.headers, rawBody)) {
+    return Response.json({ error: 'too_large' }, { status: 413 });
+  }
+
+  // El MISMO aviso, byte a byte, repetido. Se contesta que sí y no se vuelve a
+  // trabajar: liquidar ya era idempotente, pero cada repetición costaba una
+  // consulta al proveedor y una fila en el historial.
+  if (alreadySeen(name, rawBody)) {
+    return Response.json({ received: true, repeated: true });
+  }
 
   try {
     const provider = providerFor(name);

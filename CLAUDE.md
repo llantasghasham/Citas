@@ -405,7 +405,15 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Líbano cobra con **Whish**. Costa Rica, si se abre, con Tilopay (SINPE Móvil).
 - El navegador NUNCA decide un pago. Un regreso a la URL de éxito no es una
   prueba de cobro: se confirma servidor contra servidor con `getStatus()`.
-- El callback es un aviso, no una prueba, mientras no haya firma verificable.
+- El callback es un aviso, no una prueba, mientras no haya firma verificable. Y
+  como es público y sin firmar, lleva TRES frenos que no deciden sobre dinero:
+  tope de diez kilobytes al cuerpo —mirando la cabecera antes de leerlo y el
+  cuerpo después, porque la cabecera la escribe quien llama—, cupo por dirección
+  y minuto, y corte del MISMO aviso byte a byte durante un minuto. Que no pueda
+  cobrar nada ya lo resolvía que nada del cuerpo decida; esto es para que
+  llamarlo mil veces no cueste mil consultas a la pasarela ni mil filas de
+  historial. El corte va por el CUERPO y no por la referencia: «pendiente» y
+  «pagado» son cuerpos distintos del mismo cobro y los dos tienen que pasar.
 - Importes SIEMPRE en entero, en la unidad menor de la moneda. Ningún decimal
   toca dinero.
 - Todo proveedor entra por el puerto `PaymentProvider`. La aplicación no sabe
