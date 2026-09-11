@@ -5,6 +5,7 @@ import { after, before, beforeEach, describe, it } from 'node:test';
 import { POST as callback } from '../src/app/api/payments/[provider]/callback/route';
 import { beginPublicPayment, openPackageOrder } from '../src/lib/billing/checkout';
 import { applySettlement, reconcilePending } from '../src/lib/billing/reconcile';
+import { limitsFor } from '../src/lib/billing/plans';
 import {
   alreadySeen,
   MAX_CALLBACK_BYTES,
@@ -722,5 +723,142 @@ describe('la liquidación es atómica de verdad', { skip: HAS_DB ? false : 'sin 
       0,
       'ni quedó media línea de historial',
     );
+  });
+});
+
+describe('devolver el dinero devuelve el producto', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  beforeEach(async () => {
+    const prisma = controlDb();
+    await prisma.paymentEvent.deleteMany({});
+    await prisma.payment.deleteMany({});
+    await prisma.order.deleteMany({});
+    await prisma.subscription.deleteMany({});
+  });
+
+  const planPagado = async (): Promise<{ orderId: string; paymentId: string }> => {
+    const prisma = controlDb();
+    const plan = await prisma.plan.findFirstOrThrow({ where: { tier: 'office' } });
+    const order = await prisma.order.create({
+      data: {
+        tenantId: fixture.get().tenantId,
+        amount: 12000,
+        currency: 'USD',
+        description: `Plan ${plan.name}`,
+        status: 'pending',
+      },
+      select: { id: true },
+    });
+    const payment = await prisma.payment.create({
+      data: {
+        orderId: order.id,
+        provider: 'mock',
+        providerRef: `ref-${Math.random().toString(36).slice(2, 10)}`,
+        status: 'pending',
+        amount: 12000,
+        currency: 'USD',
+      },
+      select: { id: true },
+    });
+    return { orderId: order.id, paymentId: payment.id };
+  };
+
+  const fila = async (orderId: string) =>
+    controlDb().order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: {
+        id: true,
+        tenantId: true,
+        amount: true,
+        description: true,
+        packageGuests: true,
+        status: true,
+      },
+    });
+
+  it('un reembolso saca al pedido de «pagado» y quita el plan', async () => {
+    const { orderId, paymentId } = await planPagado();
+    assert.equal(await applySettlement(await fila(orderId), paymentId, 'paid', 'callback'), true);
+
+    const scope = tenantScope(fixture.get().tenantId);
+    assert.equal((await limitsFor(scope)).tier, 'office', 'el pago no activó el plan');
+
+    // Y ahora vuelve el dinero. La condición del pedido excluía justo el estado
+    // del que hay que sacarlo, así que el dinero volvía y el producto se quedaba.
+    assert.equal(
+      await applySettlement(await fila(orderId), paymentId, 'refunded', 'callback'),
+      true,
+    );
+
+    assert.equal((await fila(orderId)).status, 'refunded', 'el pedido sigue diciendo «pagado»');
+    assert.equal(
+      (await limitsFor(scope)).tier,
+      'free',
+      'la oficina se quedó con el plan después de que le devolvieran el dinero',
+    );
+  });
+
+  it('una suscripción cancelada no da plan, aunque la fila siga ahí', async () => {
+    const scope = tenantScope(fixture.get().tenantId);
+    const prisma = controlDb();
+    const plan = await prisma.plan.findFirstOrThrow({ where: { tier: 'office' } });
+    await prisma.subscription.create({
+      data: { tenantId: scope.tenantId, planId: plan.id },
+    });
+    assert.equal((await limitsFor(scope)).tier, 'office');
+
+    // `cancelledAt` se escribía y no lo leía nadie.
+    await prisma.subscription.update({
+      where: { tenantId: scope.tenantId },
+      data: { cancelledAt: new Date(Date.now() - 1000) },
+    });
+    assert.equal((await limitsFor(scope)).tier, 'free');
+
+    // Y una cancelación con fecha FUTURA sigue dando plan hasta que llegue: es
+    // «cancelada a fin de periodo», sin necesidad de otra columna.
+    await prisma.subscription.update({
+      where: { tenantId: scope.tenantId },
+      data: { cancelledAt: new Date(Date.now() + 86400000) },
+    });
+    assert.equal((await limitsFor(scope)).tier, 'office');
+  });
+
+  it('devolver el dinero de un PAQUETE no toca la suscripción', async () => {
+    const scope = tenantScope(fixture.get().tenantId);
+    const prisma = controlDb();
+    const plan = await prisma.plan.findFirstOrThrow({ where: { tier: 'office' } });
+    await prisma.subscription.create({ data: { tenantId: scope.tenantId, planId: plan.id } });
+
+    const order = await prisma.order.create({
+      data: {
+        tenantId: scope.tenantId,
+        amount: 5000,
+        currency: 'USD',
+        description: 'Paquete 200',
+        packageGuests: 200,
+        status: 'pending',
+      },
+      select: { id: true },
+    });
+    const payment = await prisma.payment.create({
+      data: {
+        orderId: order.id,
+        provider: 'mock',
+        providerRef: `ref-${Math.random().toString(36).slice(2, 10)}`,
+        status: 'pending',
+        amount: 5000,
+        currency: 'USD',
+      },
+      select: { id: true },
+    });
+
+    assert.equal(await applySettlement(await fila(order.id), payment.id, 'paid', 'job'), true);
+    assert.equal(await applySettlement(await fila(order.id), payment.id, 'refunded', 'job'), true);
+
+    assert.equal((await fila(order.id)).status, 'refunded');
+    // Un paquete es una venta suelta para una boda: devolverlo no cambia lo que
+    // la oficina tiene contratado, igual que comprarlo tampoco lo cambiaba.
+    assert.equal((await limitsFor(scope)).tier, 'office');
   });
 });

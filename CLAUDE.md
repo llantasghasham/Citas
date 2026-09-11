@@ -185,6 +185,19 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   función. El aviso no pasaba, y el agujero era grave: escribía el pago como
   pagado sin tocar el pedido, y como el repaso solo mira los pagos PENDIENTES,
   ese mismo aviso apagaba la red que lo habría arreglado después.
+- Devolver el dinero devuelve el PRODUCTO, y no lo hacía. El pedido se escribía
+  con `NOT: { status: 'paid' }` para que una respuesta atrasada no desactivara lo
+  ya cobrado — y esa condición excluía justo el estado del que hay que sacarlo en
+  un reembolso. Así que el pago quedaba `refunded`, el pedido seguía diciendo
+  «pagado» y la oficina se quedaba con el plan. El reembolso es la ÚNICA
+  excepción a esa condición, y además marca `Subscription.cancelledAt`. Un
+  paquete de invitaciones no toca la suscripción, igual que al pagarlo: es una
+  venta suelta para una boda.
+- Una suscripción CANCELADA no da plan. `cancelledAt` se escribía y no lo leía
+  nadie: `limitsFor` miraba el plan de la fila y ya, así que cancelar no
+  cancelaba nada. Se compara con AHORA y no solo con si está puesta, y eso hace
+  que «cancelada a fin de periodo» sea una fecha futura — sin otra columna y sin
+  un trabajo que la aplique el día que toque.
 - `applySettlement` es ATÓMICO, MONÓTONO e IDEMPOTENTE, y las tres hacen falta.
   Todo en una transacción con la fila del pago bloqueada: morir entre dos
   escrituras dejaba un pedido cobrado sin plan activo. `paid` es terminal salvo

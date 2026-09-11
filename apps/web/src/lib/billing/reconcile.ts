@@ -131,11 +131,12 @@ export async function applySettlement(
       return false;
     }
 
-    // Ya cobrado. Solo un reembolso puede mover esto, y eso no llega por aquí.
+    // Ya cobrado. `paid` es terminal salvo reembolso.
     if (locked.status === 'paid' && status !== 'refunded') return false;
     if (locked.status === status) return false;
 
     const paidNow = status === 'paid';
+    const refundedNow = status === 'refunded';
     await tx.payment.update({
       where: { id: paymentId },
       data: {
@@ -148,8 +149,13 @@ export async function applySettlement(
 
     // `updateMany` con la condición dentro: si otra vía marcó el pedido pagado
     // entre medias, esto no lo pisa.
+    //
+    // El reembolso es la ÚNICA excepción, y sin ella el dinero volvía y el
+    // producto se quedaba: la condición excluía justo el estado del que hay que
+    // sacarlo. Un pedido reembolsado que sigue diciendo «pagado» no es un
+    // detalle de pantalla — es lo que la oficina sigue teniendo contratado.
     await tx.order.updateMany({
-      where: { id: order.id, NOT: { status: 'paid' } },
+      where: refundedNow ? { id: order.id } : { id: order.id, NOT: { status: 'paid' } },
       data: { status },
     });
 
@@ -178,6 +184,31 @@ export async function applySettlement(
           entity: 'Order',
           entityId: order.id,
           metadata: { amount: order.amount, via },
+        },
+      });
+    }
+
+    if (refundedNow) {
+      // Devolver el dinero de un PLAN quita el plan. Un paquete de invitaciones
+      // no toca la suscripción, igual que al pagarlo: es una venta suelta.
+      //
+      // Se marca, no se borra la fila: qué se tuvo y hasta cuándo es parte de la
+      // historia de esa oficina, y borrarla dejaría un reembolso sin rastro de
+      // qué se reembolsó.
+      if (order.packageGuests === null) {
+        await tx.subscription.updateMany({
+          where: { tenantId: order.tenantId, cancelledAt: null },
+          data: { cancelledAt: new Date() },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          tenantId: order.tenantId,
+          action: 'order.refunded',
+          entity: 'Order',
+          entityId: order.id,
+          metadata: { amount: order.amount, via, plan: order.packageGuests === null },
         },
       });
     }

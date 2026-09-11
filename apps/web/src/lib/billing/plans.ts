@@ -55,7 +55,18 @@ export async function limitsFor(scope: TenantScope): Promise<TenantLimits> {
     db(scope).event.count({ where: scopedWhere(scope) }),
   ]);
 
-  const plan = subscription?.plan;
+  // Una suscripción CANCELADA no da plan. `cancelledAt` se escribía y no lo leía
+  // nadie: un reembolso marcaba la fila y la oficina seguía con el plano anual
+  // completo, que es devolver el dinero y dejar el producto puesto.
+  //
+  // La fecha se compara con AHORA en vez de mirar solo si está puesta, para que
+  // «cancelada a fin de periodo» sea una fecha futura y no haga falta otra
+  // columna ni un trabajo que la aplique el día que toque.
+  const cancelled =
+    subscription?.cancelledAt !== null &&
+    subscription?.cancelledAt !== undefined &&
+    subscription.cancelledAt.getTime() <= Date.now();
+  const plan = cancelled ? undefined : subscription?.plan;
 
   // `null` on a plan means unlimited, so it must not fall through to the free
   // plan's limits: coalescing here once billed an office out of its own events.
