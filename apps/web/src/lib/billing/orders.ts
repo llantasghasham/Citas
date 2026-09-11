@@ -4,6 +4,7 @@ import { applySettlement } from '@/lib/billing/reconcile';
 import { getPrisma } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { getPaymentProvider, providerFor } from '@/lib/payments';
+import { newPayCode } from '@/lib/payments/sinpe/code';
 
 export interface OrderRow {
   id: string;
@@ -87,6 +88,8 @@ export async function startPlanOrder(
       currency: 'USD',
       description: `Plan ${plan.name}`,
       status: 'pending',
+      // Ver `checkout.ts`: todo pedido nace con su código.
+      payCode: newPayCode(),
     },
   });
 

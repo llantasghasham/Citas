@@ -31,6 +31,8 @@ export async function clean(): Promise<void> {
   const prisma = getPrisma();
   await prisma.whatsappMessage.deleteMany({});
   await prisma.whatsappConnection.deleteMany({});
+  await prisma.sinpeMovement.deleteMany({});
+  await prisma.sinpeAccount.deleteMany({});
   await prisma.paymentEvent.deleteMany({});
   await prisma.payment.deleteMany({});
   await prisma.order.deleteMany({});

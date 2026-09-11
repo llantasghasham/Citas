@@ -62,7 +62,7 @@ export async function applySettlement(
   order: { id: string; tenantId: string; amount: number; description: string; packageGuests: number | null },
   paymentId: string,
   status: PaymentStatus,
-  via: 'link' | 'panel' | 'job' | 'callback',
+  via: 'link' | 'panel' | 'job' | 'callback' | 'sinpe',
 ): Promise<boolean> {
   return getPrisma().$transaction(async (tx) => {
     // Se relee DENTRO de la transacción y con bloqueo de fila: dos avisos

@@ -5,6 +5,7 @@ import { PAYMENT_METHODS, type Locale, type PaymentMethod } from '@citas/core';
 
 import type { Currency } from '@/generated/prisma/enums';
 import { recordAudit } from '@/lib/audit';
+import { newPayCode } from '@/lib/payments/sinpe/code';
 import { applySettlement } from '@/lib/billing/reconcile';
 import { getPrisma } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
@@ -84,6 +85,10 @@ export async function openPackageOrder(
       clientName: sale.clientName,
       clientPhone: sale.clientPhone,
       payToken,
+      // Todo pedido nace con su código. Cuesta nada, y sin él un SINPE no se
+      // puede casar con nada: ponérselo después significaría que los pedidos
+      // abiertos antes de encender el SINPE no se pueden cobrar así.
+      payCode: newPayCode(),
     },
   });
 

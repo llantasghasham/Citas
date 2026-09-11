@@ -55,6 +55,16 @@ export interface SinpeMovement {
   movementType: MovementType;
   /** A qué número entró, cuando el aviso lo dice. */
   destinationNumber: string | null;
+  /**
+   * Lo que escribió quien pagó, cuando el banco lo trae.
+   *
+   * Es lo ÚNICO que puede decir a qué cobro va este dinero. El comprobante no
+   * sirve para eso: lo inventa el banco al mandarlo, así que aquí no se conoce
+   * antes de que llegue.
+   */
+  detail: string | null;
+  /** El correo ya limpio. Lo usa el casador, que busca en todo el texto. */
+  text: string;
 }
 
 export type SinpeReading =
@@ -121,6 +131,8 @@ export function parseSinpeEmail(subject: string, body: string): SinpeReading {
       bank,
       movementType: findMovementType(text),
       destinationNumber: phones[1] ?? null,
+      detail: findDetail(text),
+      text,
     },
   };
 }
@@ -250,4 +262,20 @@ function findSenderName(text: string): string | null {
     if (name !== undefined && name.length >= 3) return name;
   }
   return null;
+}
+
+/**
+ * El texto libre que escribió quien paga: «motivo», «detalle», «descripción».
+ *
+ * Cada banco lo llama de una manera y alguno no lo trae. Se saca como AYUDA
+ * para que una persona vea de un vistazo a qué venía el dinero — el casador no
+ * depende de esto: busca el código en el correo entero, que es lo único que
+ * funciona igual en los nueve bancos.
+ */
+function findDetail(text: string): string | null {
+  const match = text.match(
+    /(?:motivo|detalle|descripci[óo]n|concepto|nota)\s*[:=]?\s*([^\n]{1,120})/i,
+  );
+  const detail = match?.[1]?.trim();
+  return detail !== undefined && detail.length > 0 ? detail : null;
 }

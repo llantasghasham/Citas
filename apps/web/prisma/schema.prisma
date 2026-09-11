@@ -133,6 +133,7 @@ model Tenant {
   subscription Subscription?
   auditLogs    AuditLog[]
   whatsapps    WhatsappConnection[]
+  sinpeAccounts SinpeAccount[]
 
   @@index([status])
 }
@@ -541,6 +542,10 @@ enum Currency {
 enum PaymentProviderId {
   whish
   tilopay
+  /// Costa Rica, por SINPE Móvil. No es una pasarela: no hay a quién
+  /// preguntarle. Lo confirma un correo del banco leído por IMAP, y el
+  /// comprobante de ese correo es el `providerRef`.
+  sinpe
   /// Sin pasarela: el efectivo, que marca una persona con su nombre.
   manual
   /// Solo desarrollo. Se guardaba como `manual`, y esa mentira tenía coste: un
@@ -555,6 +560,104 @@ enum PaymentStatus {
   failed
   expired
   refunded
+}
+
+/// En qué punto está un movimiento leído del banco.
+enum SinpeMovementStatus {
+  /// Leído y guardado, sin cobro al que aplicarlo. Que sobren es NORMAL: alguien
+  /// paga sin poner el código, o paga otra cosa. Lo asigna una persona.
+  pending
+  /// Aplicado a un cobro. El `Payment` lleva el comprobante como `providerRef`.
+  applied
+  /// No es dinero que entra, o es el mismo dinero contado dos veces. Se guarda
+  /// igual: saber POR QUÉ no se cobró algo vale tanto como cobrarlo.
+  ignored
+}
+
+/// Un buzón de banco que se revisa para cobrar por SINPE Móvil.
+///
+/// El SINPE no tiene pasarela: no hay a quién preguntarle si un pago entró. Lo
+/// único que llega es un correo del banco, así que esto guarda de qué buzón hay
+/// que leerlo.
+model SinpeAccount {
+  id String @id @default(cuid())
+
+  /// NULO es la cuenta de la PLATAFORMA: el buzón donde las oficinas pagan su
+  /// mensualidad. Con oficina, es el buzón de ESA oficina, donde sus clientes le
+  /// pagan a ella. Hoy solo se usa lo primero, pero el modelo lo distingue desde
+  /// el principio: cambiarlo después significaría migrar filas de dinero.
+  tenantId String?
+
+  name  String
+  bank  String
+  /// El número al que se le hace el SINPE, en E.164 como todos los demás.
+  phone String
+
+  imapHost String
+  imapPort Int    @default(993)
+  imapUser String
+  /// Cifrada con AES-256-GCM y la llave fuera de la base, como la del SMTP.
+  /// Quien tiene este buzón ve todo el correo de quien cobra.
+  imapPasswordEnc String
+  folder          String @default("INBOX")
+
+  active Boolean @default(true)
+  /// Verdadero cuando este buzón cobra las MENSUALIDADES de la plataforma.
+  forSubscriptions Boolean @default(false)
+
+  lastCheckedAt DateTime?
+  /// Lo último que falló al conectar. Sale en el panel a propósito: un buzón que
+  /// dejó de conectar es plata que deja de entrar sin que nadie se entere.
+  lastError String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  movements SinpeMovement[]
+
+  @@index([active])
+  @@index([tenantId])
+}
+
+/// Un movimiento leído de un correo del banco.
+model SinpeMovement {
+  id        String  @id @default(cuid())
+  /// La oficina a la que pertenece, copiada de la cuenta. Nulo = la plataforma.
+  tenantId  String?
+  accountId String
+
+  senderName  String?
+  senderPhone String?
+  /// Céntimos enteros, como `Payment.amount`. Ningún decimal toca dinero.
+  amount   Int
+  currency Currency @default(CRC)
+
+  /// El comprobante del banco. ÚNICO por cuenta: leer el mismo correo dos veces
+  /// no puede crear dos movimientos, y eso no lo garantiza el código sino la
+  /// base. Es además el `providerRef` del `Payment` que se cree.
+  reference String
+  /// Lo que escribió quien pagó. Es lo ÚNICO que dice a qué cobro va.
+  detail    String?
+
+  bank              String?
+  movementType      String
+  destinationNumber String?
+
+  status SinpeMovementStatus @default(pending)
+  /// El cobro al que se aplicó. Uno por movimiento y movimiento por cobro.
+  paymentId String? @unique
+
+  receivedAt DateTime  @default(now())
+  settledAt  DateTime?
+  /// El correo tal cual llegó. Cuando se discute un cobro, es lo único que sirve.
+  raw String
+
+  account SinpeAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, reference])
+  @@index([tenantId, status])
+  @@index([status, receivedAt])
 }
 
 /// En qué punto está una conexión de WhatsApp.
@@ -739,6 +842,18 @@ model Order {
 
   /// Token del enlace público de pago. Corto y no adivinable, como /g/<token>.
   payToken String? @unique
+
+  /// El código que quien paga escribe en el detalle del SINPE.
+  ///
+  /// Sin él, un SINPE no se puede casar con nada. El comprobante del banco no
+  /// sirve: lo inventa el banco al mandar el dinero, así que aquí no se conoce
+  /// antes. Y el monto solo tampoco —dos oficinas con el mismo plan pagan lo
+  /// mismo el mismo día—, que es justo lo que no se puede confundir cuando el
+  /// resultado es activarle el plan a la oficina equivocada.
+  ///
+  /// Corto y en mayúsculas porque se teclea a mano en el móvil, y sin letras
+  /// que se confundan (ni O ni I ni 0 ni 1).
+  payCode String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
