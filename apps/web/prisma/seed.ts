@@ -70,7 +70,10 @@ async function main(): Promise<void> {
       update: { isSuperadmin: true },
       create: {
         email: superadminEmail,
-        name: 'Superadmin',
+        // Sin nombre a propósito: «Superadmin» es la etiqueta de un puesto, no
+        // el nombre de nadie, y acababa saludando al dueño por su cargo en su
+        // propio panel. Quien entre lo escribe en su perfil.
+        name: null,
         isSuperadmin: true,
         locale: 'ar',
       },

@@ -41,7 +41,7 @@ export function UserMenu({
   dictionary: Dictionary;
 }) {
   const copy = dictionary.admin.panel;
-  const shown = name ?? email;
+  const shown = displayName(name, email);
 
   return (
     <details className="relative ms-auto">
@@ -63,7 +63,7 @@ export function UserMenu({
             persona entra como la oficina y como la plataforma, verlo evita
             configurar la agencia equivocada. */}
         <div className="flex flex-col gap-0.5 border-b border-[#ddd6c6] px-4 pb-3 pt-2">
-          {name === null ? null : <span className="text-sm">{name}</span>}
+          {name === null ? null : <span className="text-sm">{displayName(name, email)}</span>}
           <span className="truncate font-mono text-xs text-[#6a6456]" dir="ltr">
             {email}
           </span>
@@ -144,4 +144,24 @@ function Globe() {
       <path d="M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" />
     </svg>
   );
+}
+
+/**
+ * Cómo se llama a quien está dentro.
+ *
+ * `npm run db:seed` deja «Superadmin» como nombre de la cuenta de la
+ * plataforma, y eso NO es un nombre: es la etiqueta de un puesto, puesta por un
+ * script porque tenía que poner algo. Verla en la cabecera de tu propio panel es
+ * como si tu correo te saludara llamándote «usuario».
+ *
+ * Así que los marcadores del sembrado se tratan como lo que son —«sin nombre»— y
+ * se cae a la parte local del correo, que al menos es de esa persona. Quien
+ * escriba su nombre en su perfil verá el suyo, que es lo que tiene que pasar.
+ */
+const PLACEHOLDERS = ['superadmin', 'super admin', 'admin', 'administrador'];
+
+export function displayName(name: string | null, email: string): string {
+  const clean = (name ?? '').trim();
+  if (clean.length > 0 && !PLACEHOLDERS.includes(clean.toLowerCase())) return clean;
+  return email.split('@')[0] ?? email;
 }

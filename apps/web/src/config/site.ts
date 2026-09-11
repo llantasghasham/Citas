@@ -68,7 +68,19 @@ export type SectionKey = (typeof SECTION_KEYS)[number];
  * el suyo vuelve AQUÍ, no a nada: una cabecera sin marca no es un estado que
  * nadie quiera dejar puesto.
  */
-export const DEFAULT_LOGO = '/brand/logo.png';
+/**
+ * El SELLO, no el logotipo con el nombre dentro.
+ *
+ * `logo.png` lleva la palabra «Citas» escrita en crema, y eso venía de dar por
+ * buena una cosa que no lo era: la cabecera del PANEL es crema, no oscura. Ahí
+ * el nombre del logotipo se volvía invisible y solo se veía el arco — y al lado,
+ * en texto, «Citas» otra vez. Dos veces el nombre, una de ellas borrada.
+ *
+ * El sello es cuadrado, se lee sobre claro y sobre oscuro, y deja que el nombre
+ * lo ponga el texto de al lado UNA vez. Que es además lo correcto cuando una
+ * oficina pone el suyo: lo que se enseña es el nombre de la oficina.
+ */
+export const DEFAULT_LOGO = '/brand/mark.svg';
 export const DEFAULT_ICON = '/brand/icon.png';
 
 export const SITE: SiteConfig = {

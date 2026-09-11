@@ -52,20 +52,29 @@ export default async function PanelLayout({ children }: { children: ReactNode })
           reparto de las mesas— y el nombre de la oficina con siete enlaces de
           menú ocupa el tercio de arriba de la primera hoja. */}
       <header className="border-b border-[#ddd6c6] print:hidden">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-6 gap-y-3 p-6">
-          {/* La oficina manda sobre la marca: quien trabaja para una agencia
-              quiere ver el nombre de SU agencia, no el de la plataforma. */}
-          <span className={`${displayFont(locale)} flex items-center gap-2 text-xl`}>
+        <div className="mx-auto flex max-w-5xl items-center gap-x-5 p-5 sm:gap-x-6 sm:p-6">
+          {/* El sello PEGADO al nombre, y el nombre una sola vez. La oficina
+              manda sobre la marca: quien trabaja para una agencia quiere ver el
+              nombre de SU agencia, no el de la plataforma.
+              `shrink-0` para que el nombre no se parta cuando el menú aprieta. */}
+          <span
+            className={`${displayFont(locale)} flex shrink-0 items-center gap-2 text-xl`}
+          >
             {site.logoUrl === null ? null : (
               // eslint-disable-next-line @next/next/no-img-element -- dirección
               // que escribe el operador, de cualquier origen.
-              <img src={site.logoUrl} alt="" referrerPolicy="no-referrer" className="max-h-7 w-auto" />
+              <img src={site.logoUrl} alt="" referrerPolicy="no-referrer" className="h-7 w-auto" />
             )}
             {tenant?.name ?? site.brand}
           </span>
-          <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+
+          {/* Los enlaces se quedan con el hueco que sobra y se parten ELLOS si
+              hace falta. Antes toda la fila era `flex-wrap`, así que el menú de
+              la cuenta era lo primero que se caía a una segunda línea — y es lo
+              que tiene que estar siempre al final, no lo que sobra. */}
+          <nav className="flex min-w-0 flex-wrap gap-x-5 gap-y-1.5 text-sm">
             {links.map((link) => (
-              <Link key={link.href} href={link.href} className="hover:underline">
+              <Link key={link.href} href={link.href} className="whitespace-nowrap hover:underline">
                 {link.label}
               </Link>
             ))}

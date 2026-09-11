@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import { draftProblems, EMPTY_DRAFT } from '../src/lib/create/draft';
 import { buildCsv } from '../src/lib/export/csv';
+import { displayName } from '../src/components/panel/UserMenu';
 import { renderOnce, renderingNow } from '../src/lib/render/once';
 import { allowedForCapture, captureUrl, renderOrigin } from '../src/lib/render/origin';
 import { isCalendarDate, isClockTime } from '../src/lib/time/zoned';
@@ -212,5 +213,28 @@ describe('doscientos invitados abriendo la misma invitación', () => {
     await assert.rejects(renderOnce('version-4:huella-a', roto));
     assert.equal(veces, 2);
     assert.equal(renderingNow().inFlight, 0, 'el mapa queda limpio');
+  });
+});
+
+describe('cómo se llama a quien está dentro', () => {
+  it('su nombre, cuando lo ha escrito', () => {
+    assert.equal(displayName('Moufid Ghasham', 'm@example.com'), 'Moufid Ghasham');
+  });
+
+  it('«Superadmin» no es un nombre: lo puso un script', () => {
+    // Es la etiqueta de un puesto. Verla en la cabecera de tu propio panel es
+    // como si tu correo te saludara llamándote «usuario».
+    assert.equal(displayName('Superadmin', 'moufid@example.com'), 'moufid');
+    assert.equal(displayName('superadmin', 'moufid@example.com'), 'moufid');
+    assert.equal(displayName('Administrador', 'moufid@example.com'), 'moufid');
+  });
+
+  it('sin nombre, la parte local del correo — que al menos es suya', () => {
+    assert.equal(displayName(null, 'moufid@example.com'), 'moufid');
+    assert.equal(displayName('   ', 'moufid@example.com'), 'moufid');
+  });
+
+  it('un nombre que EMPIEZA por «admin» sí es un nombre', () => {
+    assert.equal(displayName('Admina Salomé', 'x@example.com'), 'Admina Salomé');
   });
 });

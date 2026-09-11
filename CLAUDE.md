@@ -53,6 +53,13 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - El nombre va en HTML y no dentro del SVG: se escribe con Playfair Display, y
   un `font-family` dentro de un SVG cargado como `<img>` no encuentra nunca la
   fuente — se dibujaría con la de respaldo.
+- La marca de fábrica es el SELLO (`mark.svg`), no el logotipo con el nombre
+  dentro. `logo.png` lleva «Citas» escrito en crema, y eso venía de dar por
+  buena una cosa que no lo era: la cabecera del PANEL es crema, no oscura. Ahí
+  el nombre del logotipo se volvía invisible y solo se veía el arco — y al lado,
+  en texto, «Citas» otra vez. El sello se lee sobre claro y sobre oscuro, y deja
+  que el nombre lo ponga el texto de al lado UNA vez, que es además lo correcto
+  cuando una oficina pone lo suyo: lo que se enseña es el nombre de la oficina.
 - `DEFAULT_LOGO` y `DEFAULT_ICON` en `config/site.ts` son el último recurso, no
   un ajuste con capas: una instalación recién levantada enseñaba el nombre en
   texto pelado y una pestaña en blanco. Quien sube el suyo lo tapa, y quitarlo
@@ -676,6 +683,15 @@ de los versículos.
   largo, y «Salir» subrayado al lado de los enlaces se pulsaba sin querer. El
   menú enseña además con qué oficina y qué rol se está trabajando. El idioma se
   guarda en `User.locale`, no en la oficina.
+  - La fila NO es `flex-wrap`: los enlaces se quedan con el hueco que sobra y se
+    parten ellos. Envolviéndola entera, el menú de la cuenta era lo primero que
+    se caía a una segunda línea, y es justo lo que tiene que estar siempre al
+    final.
+  - «Superadmin» NO es un nombre: es la etiqueta de un puesto que escribe
+    `db:seed` porque tenía que escribir algo, y acababa saludando al dueño por
+    su cargo en su propio panel. `displayName()` trata los marcadores del
+    sembrado como «sin nombre» y cae a la parte local del correo, que al menos
+    es de esa persona. Quien escriba su nombre en su perfil verá el suyo.
 
 ### Cómo se decide el idioma del documento
 `src/proxy.ts` (en Next 16 se llama `proxy`, no `middleware`) anota la ruta y el
