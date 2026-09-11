@@ -542,6 +542,13 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   era, con el original ya borrado, no tiene arreglo, y esto son listas de
   invitados de bodas ya pagadas. `limpiar` se niega si los recuentos no cuadran o
   si queda alguna oficina sin base.
+- La frontera la vigila `npm run lint:planes`, y corre en el despliegue junto a
+  la de RTL. Una consulta de una oficina escrita contra `controlDb()` NO da
+  error: escribe en la base donde están todas y el aislamiento vuelve a depender
+  de que nadie se olvide un `where`, que es de lo que veníamos. Sigue las
+  variables y las transacciones, que heredan el plano de quien las abre. Cruzar
+  la frontera a propósito se puede, pero hay que NOMBRAR el archivo y decir por
+  qué: hoy son dos, el respaldo del directorio y el guion que mueve las filas.
 - Encender la flota sin haber copiado no parte nada: deja a las oficinas sin
   base, ninguna consulta suya se atiende y `/panel/sistema` lo marca en rojo. Es
   el fallo correcto —ruidoso y sin pérdida— y por eso `db(scope)` se niega a caer
@@ -642,6 +649,7 @@ npm run dev        # servidor de desarrollo
 npm run build      # build de producción
 npm run typecheck  # tsc --noEmit
 npm run lint:rtl   # guardia de CSS lógico (RTL)
+npm run lint:planes # guardia de la frontera: cada consulta en su base
 npm run brand:build # redibuja el logo, los iconos y los de la app móvil
 npm run db:check   # aplica las migraciones en una base nueva y comprueba el esquema
 npm run db:fleet   # la flota: -- migrar | estado | crear <subdominio>

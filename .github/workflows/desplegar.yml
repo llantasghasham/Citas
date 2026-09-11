@@ -51,6 +51,12 @@ jobs:
       - name: Guardia de RTL y tipografia
         run: npm run lint:rtl
 
+      - name: Guardia de la frontera entre las dos bases
+        # Una consulta de una oficina escrita contra la base de control no da
+        # error: escribe donde estan todas, y el aislamiento vuelve a depender
+        # de que nadie olvide un where. Que es de lo que veniamos.
+        run: npm run lint:planes
+
       - name: Construir, y que ninguna ruta salga estatica
         # Sin base de datos a proposito: si el build la necesitara, seria que
         # alguna ruta volvio a prerenderizarse, que es el fallo que ya tumbo el

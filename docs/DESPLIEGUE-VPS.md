@@ -255,9 +255,46 @@ crontab -e
 # 30 3 * * *  /usr/local/bin/backup-citas.sh
 ```
 
-Guarda 14 días en `/www/backup/citas`, avisa si el volcado sale vacío, y nunca
-pisa los buenos. **Prueba a restaurar uno**: un respaldo que nadie ha restaurado
-nunca no es un respaldo.
+Guarda 14 días en `/www/backup/citas`, una carpeta por ejecución, y **una base
+por oficina**: cada una tiene la suya, así que un volcado de `citas` a secas se
+llevaría el registro de oficinas y los cobros pero ni una sola boda. El guion
+enumera las bases, no las escribe, y por eso una oficina nueva entra sola en el
+respaldo sin que nadie tenga que acordarse. El manifiesto dice cuántas había que
+respaldar y cuántas salieron, para que falte una y se note. Si alguna falla, no
+borra lo viejo: con un respaldo a medias, lo último que hay que hacer es tirar el
+último que sí valía.
+
+Y no se queda en creer que restauran:
+
+```bash
+cp /www/wwwroot/citas/deploy/probar-restauracion.sh /usr/local/bin/
+chmod 700 /usr/local/bin/probar-restauracion.sh
+crontab -e
+# 0 5 * * 0  /usr/local/bin/probar-restauracion.sh
+```
+
+Restaura el último respaldo en bases de usar y tirar, **cuenta lo que hay dentro**
+—oficinas, bodas, invitados, mesas, pedidos— y las borra. No toca producción.
+Restaurar sin error no basta: un volcado de un esquema vacío restaura
+perfectamente y no trae nada.
+
+Para volver una sola oficina, sin tocar a las demás:
+
+```bash
+createdb citas_of_agenciax
+pg_restore --no-owner --no-privileges -d citas_of_agenciax \
+  /www/backup/citas/2026-09-11-0330/citas_of_agenciax.dump
+```
+
+**La llave de cifrado no va en el respaldo.** Las contraseñas de servicio y la
+sesión de WhatsApp están cifradas con la de `CITAS_SECRET_KEY_FILE`, que vive
+fuera de la base: un volcado sin ella no revela ningún secreto —que es para lo
+que se cifró— y tampoco sirve para levantarlos. Guárdela aparte, y **no** en la
+misma carpeta que los volcados: copiarla al lado deshace el cifrado.
+
+Esto sigue estando en el MISMO servidor. Un respaldo que se pierde con la máquina
+que respalda no es un respaldo: hay que sacar esa carpeta fuera —otro servidor,
+un disco que no esté en este proveedor, lo que sea— y eso todavía no está hecho.
 
 ## Actualizar
 
