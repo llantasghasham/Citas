@@ -401,6 +401,8 @@
         "NEXT_PUBLIC_SITE_URL": "Public site address",
         "PAYMENT_METHODS": "Accepted methods (comma-separated list)",
         "CASH_INSTRUCTIONS": "What a cash payer is told",
+        "SINPE_PHONE": "Number the SINPE is sent to",
+        "CRC_PER_USD": "Colones per dollar",
         "TILOPAY_BASE_URL": "Tilopay service address",
         "TILOPAY_API_USER": "Tilopay API user",
         "TILOPAY_API_KEY": "Tilopay API key",
@@ -479,7 +481,9 @@
         "WHATSAPP_GATEWAY_URL": "Where the WhatsApp service listens. Defaults to http://127.0.0.1:4100, and must not be published.",
         "WHATSAPP_DELAY_MIN": "Between 3 and 300. The real delay is random between minimum and maximum: an exact interval is a machine's signature. It cannot be zero — the brake can be shortened, not removed.",
         "WHATSAPP_DELAY_MAX": "Between 3 and 600. If it falls below the minimum, the minimum is used.",
-        "WHATSAPP_WARMUP_CAP": "Between 1 and 100. A newly connected number sends this on its first day, even if its daily cap is higher. Raise it slowly: over weeks, not hours."
+        "WHATSAPP_WARMUP_CAP": "Between 1 and 100. A newly connected number sends this on its first day, even if its daily cap is higher. Raise it slowly: over weeks, not hours.",
+        "SINPE_PHONE": "The one offices see when they go to pay. In E.164: +50687021496.",
+        "CRC_PER_USD": "Plans are written in dollars; this turns them into colones for SINPE. Change it when the rate changes. The amount is rounded to the nearest hundred colones so it can be typed."
       },
       "brandLogo": "Logo",
       "brandLogoHint": "Uploaded from your computer, up to {mb} MB. It appears on the home page and in the panel header, on a dark background.",
@@ -529,7 +533,13 @@
       "planSingle": "Single event",
       "planAnnual": "Annual",
       "planOffice": "Office",
-      "limitReached": "You have reached your plan’s event limit. Upgrade to continue."
+      "limitReached": "You have reached your plan’s event limit. Upgrade to continue.",
+      "paySinpe": "Pay by SINPE",
+      "sinpeHow": "Send the SINPE Móvil from your bank to the number below, for the exact amount, and write the code in the detail. When the bank tells us, the plan activates on its own.",
+      "sinpeTo": "To the number",
+      "sinpeAmount": "Exact amount",
+      "sinpeCode": "Write this in the detail",
+      "sinpeNoPhone": "The number the SINPE is sent to is not set yet, under Configuration → Payments."
     },
     "guests": {
       "heading": "Guests",

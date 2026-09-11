@@ -31,6 +31,11 @@ export const SETTING_KEYS = [
   'WHISH_CHANNEL',
   'WHISH_WEBSITE_URL',
   'CASH_INSTRUCTIONS',
+  // SINPE Móvil. No hay credenciales de pasarela —no hay pasarela— pero sí dos
+  // cosas que no puede adivinar el código: a qué número se le hace el SINPE, y
+  // a cuántos colones sale el dólar con el que están escritos los planes.
+  'SINPE_PHONE',
+  'CRC_PER_USD',
   'TILOPAY_BASE_URL',
   'TILOPAY_API_USER',
   'TILOPAY_API_KEY',

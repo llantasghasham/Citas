@@ -518,6 +518,8 @@ export interface Dictionary {
         | 'WHISH_SECRET'
         | 'PAYMENT_METHODS'
         | 'CASH_INSTRUCTIONS'
+        | 'SINPE_PHONE'
+        | 'CRC_PER_USD'
         | 'TILOPAY_BASE_URL'
         | 'TILOPAY_API_USER'
         | 'TILOPAY_API_KEY'
@@ -677,6 +679,16 @@ export interface Dictionary {
       planAnnual: string;
       planOffice: string;
       limitReached: string;
+      /**
+       * El cobro por SINPE. No hay pasarela adonde mandar a nadie: hay un
+       * número, un importe exacto y un código que escribir en el detalle.
+       */
+      paySinpe: string;
+      sinpeHow: string;
+      sinpeTo: string;
+      sinpeAmount: string;
+      sinpeCode: string;
+      sinpeNoPhone: string;
     };
     /** Los números de WhatsApp de la oficina, y la cola de envíos. */
     whatsapp: {

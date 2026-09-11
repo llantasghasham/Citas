@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 
 import { canonicalOrigin } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
-import { startPlanOrder, settleOrder } from '@/lib/billing/orders';
+import { startPlanOrder, startSinpeOrder, settleOrder } from '@/lib/billing/orders';
 import { addMember, createOffice, normalizeSubdomain } from '@/lib/repositories/tenants';
 import { LOCALES, type Locale } from '@/lib/types';
 import type { PlanTier, Role } from '@/generated/prisma/enums';
@@ -60,6 +60,26 @@ export async function startPlanOrderAction(formData: FormData): Promise<void> {
   );
 
   redirect(payUrl ?? '/panel/facturacion');
+}
+
+/**
+ * Abre el pedido de un plan para pagarlo por SINPE Móvil.
+ *
+ * No lleva a ninguna pasarela porque no la hay: devuelve a la misma pantalla,
+ * donde sale a qué número transferir, cuánto y qué código escribir. Lo demás lo
+ * hace el correo del banco.
+ */
+export async function startSinpeOrderAction(formData: FormData): Promise<void> {
+  const session = await getSession();
+  if (session === null || !sessionCan(session, 'billing:manage')) redirect('/panel');
+
+  const { orderId } = await startSinpeOrder(
+    scopeOf(session),
+    pick(formData.get('tier'), TIERS, 'free'),
+    session.userId,
+  );
+
+  redirect(`/panel/facturacion?sinpe=${orderId}`);
 }
 
 /**

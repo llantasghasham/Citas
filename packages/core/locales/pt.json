@@ -401,6 +401,8 @@
         "NEXT_PUBLIC_SITE_URL": "Endereço público do site",
         "PAYMENT_METHODS": "Meios aceites (lista separada por vírgulas)",
         "CASH_INSTRUCTIONS": "O que se diz a quem paga em dinheiro",
+        "SINPE_PHONE": "Número para onde se faz o SINPE",
+        "CRC_PER_USD": "Colones por dólar",
         "TILOPAY_BASE_URL": "Endereço do serviço da Tilopay",
         "TILOPAY_API_USER": "Utilizador da API da Tilopay",
         "TILOPAY_API_KEY": "Chave da API da Tilopay",
@@ -479,7 +481,9 @@
         "WHATSAPP_GATEWAY_URL": "Onde escuta o serviço de WhatsApp. Por omissão http://127.0.0.1:4100, e não deve ser publicado.",
         "WHATSAPP_DELAY_MIN": "Entre 3 e 300. O atraso real é aleatório entre o mínimo e o máximo: um intervalo exato é uma assinatura de máquina. Não pode ser zero — o travão encurta-se, não se retira.",
         "WHATSAPP_DELAY_MAX": "Entre 3 e 600. Se ficar abaixo do mínimo, usa-se o mínimo.",
-        "WHATSAPP_WARMUP_CAP": "Entre 1 e 100. Um número recém-ligado envia isto no primeiro dia, mesmo que o limite diário seja maior. Suba devagar: em semanas, não em horas."
+        "WHATSAPP_WARMUP_CAP": "Entre 1 e 100. Um número recém-ligado envia isto no primeiro dia, mesmo que o limite diário seja maior. Suba devagar: em semanas, não em horas.",
+        "SINPE_PHONE": "O que os escritórios veem ao ir pagar. Em E.164: +50687021496.",
+        "CRC_PER_USD": "Os planos estão escritos em dólares; isto passa-os a colones para o SINPE. Mude-o quando mudar o câmbio. O montante é arredondado à centena de colones mais próxima para se poder escrever."
       },
       "brandLogo": "Logótipo",
       "brandLogoHint": "Envia-se do seu computador, até {mb} MB. Sai na página inicial e no cabeçalho do painel, sobre fundo escuro.",
@@ -529,7 +533,13 @@
       "planSingle": "Um evento",
       "planAnnual": "Anual",
       "planOffice": "Escritório",
-      "limitReached": "Atingiu o limite de eventos do seu plano. Amplie-o para continuar."
+      "limitReached": "Atingiu o limite de eventos do seu plano. Amplie-o para continuar.",
+      "paySinpe": "Pagar por SINPE",
+      "sinpeHow": "Faça o SINPE Móvil do seu banco para o número abaixo, pelo montante exato, e escreva o código no detalhe. Quando o banco nos avisar, o plano ativa-se sozinho.",
+      "sinpeTo": "Para o número",
+      "sinpeAmount": "Montante exato",
+      "sinpeCode": "Escreva isto no detalhe",
+      "sinpeNoPhone": "Falta pôr o número para onde se faz o SINPE, em Configuração → Cobrança."
     },
     "guests": {
       "heading": "Convidados",

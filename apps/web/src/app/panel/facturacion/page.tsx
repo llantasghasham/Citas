@@ -1,26 +1,48 @@
 import { redirect } from 'next/navigation';
 
-import { settleOrderAction, startPlanOrderAction } from '@/app/panel/actions';
+import { settleOrderAction, startPlanOrderAction, startSinpeOrderAction } from '@/app/panel/actions';
 import { getAdminContext } from '@/lib/admin/context';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { listOrders } from '@/lib/billing/orders';
+import { enabledMethods } from '@/lib/billing/checkout';
+import { planPriceInCrc } from '@/lib/payments/sinpe/price';
+import { setting } from '@/lib/settings';
 import { formatMoney, limitsFor, PLAN_CATALOGUE, planLabel } from '@/lib/billing/plans';
 import { actorTimezone } from '@/lib/time/actor';
 import { formatDate } from '@/lib/time/display';
 import { displayFont, latinOnly } from '@/lib/typography';
 
+interface PageProps {
+  searchParams: Promise<{ sinpe?: string; settled?: string }>;
+}
+
 /** The office's plan, what it has used, and what it has been billed. */
-export default async function BillingPage() {
+export default async function BillingPage({ searchParams }: PageProps) {
   const session = await getSession();
   if (session === null || !sessionCan(session, 'billing:manage') || session.tenantId === null) {
     redirect('/panel');
   }
 
+  const { sinpe: justOpened } = await searchParams;
   const { dictionary, locale } = await getAdminContext(session.tenantId);
   const zone = await actorTimezone(session);
   const copy = dictionary.admin.billing;
   const scope = scopeOf(session);
-  const [limits, orders] = await Promise.all([limitsFor(session.tenantId), listOrders(scope)]);
+  const [limits, orders, methods, sinpePhone] = await Promise.all([
+    limitsFor(session.tenantId),
+    listOrders(scope),
+    enabledMethods(),
+    setting('SINPE_PHONE'),
+  ]);
+  // El SINPE se enseña solo si está encendido: un botón que no cobra es peor
+  // que ninguno.
+  const sinpeOn = methods.includes('sinpe');
+  // El pedido que se acaba de abrir, para enseñarlo en grande.
+  const opened = orders.find((order) => order.id === justOpened && order.status === 'pending');
+  // Los precios en colones, del tipo de cambio que haya puesto el panel.
+  const crcPrices = sinpeOn
+    ? await Promise.all(PLAN_CATALOGUE.map((plan) => planPriceInCrc(plan.priceMonthly)))
+    : [];
 
   return (
     <>
@@ -66,6 +88,89 @@ export default async function BillingPage() {
           ))}
         </div>
       </section>
+
+      {/* Lo que acaba de abrirse, en grande y arriba. Volver a una tabla de
+          veinte filas y buscar el código propio es cómo se teclea el de otro. */}
+      {opened === undefined ? null : (
+        <section className="flex flex-col gap-3 border border-[#8a6c22] bg-[#fdfaf2] p-5">
+          <p className="text-sm text-[#6a6456]">{copy.sinpeHow}</p>
+          <dl className="grid gap-4 sm:grid-cols-3">
+            <div className="flex flex-col gap-1">
+              <dt className="text-xs text-[#6a6456]">{copy.sinpeTo}</dt>
+              <dd className="font-mono text-lg text-[#23201a]" dir="ltr">
+                {sinpePhone ?? '—'}
+              </dd>
+            </div>
+            <div className="flex flex-col gap-1">
+              <dt className="text-xs text-[#6a6456]">{copy.sinpeAmount}</dt>
+              <dd className="text-lg tabular-nums text-[#23201a]">
+                {formatMoney(opened.amount, opened.currency, locale)}
+              </dd>
+            </div>
+            <div className="flex flex-col gap-1">
+              <dt className="text-xs text-[#6a6456]">{copy.sinpeCode}</dt>
+              <dd className={`${latinOnly(locale, 'tracking-[0.2em]')} font-mono text-lg text-[#8a6c22]`} dir="ltr">
+                {opened.payCode ?? '—'}
+              </dd>
+            </div>
+          </dl>
+        </section>
+      )}
+
+      {/* El SINPE va aparte y no como un botón más: no lleva a ninguna
+          pasarela. Lo que devuelve es un número, un importe exacto y un
+          código, y lo hace una persona desde su móvil. */}
+      {!sinpeOn ? null : (
+        <section className="flex flex-col gap-4 border-t border-[#ddd6c6] pt-6">
+          <h2 className={`${displayFont(locale)} text-xl`}>{copy.paySinpe}</h2>
+          <p className="max-w-2xl text-sm text-[#6a6456]">{copy.sinpeHow}</p>
+
+          {sinpePhone === undefined ? (
+            <p role="alert" className="text-sm text-[#8c2f1e]">
+              {copy.sinpeNoPhone}
+            </p>
+          ) : (
+            <p className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+              <span>
+                {copy.sinpeTo}:{' '}
+                <span className="font-mono text-[#23201a]" dir="ltr">
+                  {sinpePhone}
+                </span>
+              </span>
+            </p>
+          )}
+
+          {/* Solo los planes con mensualidad. El gratis y el de un evento
+              suelto no se pagan al mes, y salían a ₡0,00 con el botón apagado:
+              dos casillas que solo confunden. */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {PLAN_CATALOGUE.map((plan, index) => [plan, index] as const)
+              .filter(([plan]) => plan.priceMonthly > 0)
+              .map(([plan, index]) => (
+              <form
+                key={plan.tier}
+                action={startSinpeOrderAction}
+                className="flex items-center justify-between gap-4 border border-[#ddd6c6] bg-white/60 px-4 py-3"
+              >
+                <input type="hidden" name="tier" value={plan.tier} />
+                <span className="flex flex-col">
+                  <span>{planLabel(plan.tier, dictionary)}</span>
+                  <span className="text-sm tabular-nums text-[#6a6456]">
+                    {formatMoney(crcPrices[index] ?? 0, 'CRC', locale)}
+                  </span>
+                </span>
+                <button
+                  type="submit"
+                  disabled={plan.tier === limits.tier}
+                  className="border border-[#23201a] px-4 py-2 text-sm hover:opacity-70 disabled:opacity-30"
+                >
+                  {copy.paySinpe}
+                </button>
+              </form>
+              ))}
+          </div>
+        </section>
+      )}
 
       <section className="flex flex-col gap-4">
         <h2 className={`${displayFont(locale)} text-xl`}>{copy.orders}</h2>

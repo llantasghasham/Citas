@@ -5,6 +5,7 @@ import { getPrisma } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { getPaymentProvider, providerFor } from '@/lib/payments';
 import { newPayCode } from '@/lib/payments/sinpe/code';
+import { planPriceInCrc } from '@/lib/payments/sinpe/price';
 
 export interface OrderRow {
   id: string;
@@ -127,6 +128,69 @@ export async function startPlanOrder(
   });
 
   return { orderId: order.id, payUrl: handle.payUrl ?? null };
+}
+
+/**
+ * Abre el pedido de un plan para pagarlo por SINPE Móvil.
+ *
+ * No hay pasarela a la que pedirle una cobranza: el SINPE lo hace una persona
+ * desde su móvil, y lo único que llega después es el correo del banco. Así que
+ * esto solo escribe el pedido —en COLONES, que es lo único que mueve el SINPE—
+ * con su código, y devuelve lo que hay que enseñarle a quien va a pagar: a qué
+ * número, cuánto, y qué escribir en el detalle.
+ *
+ * Se reutiliza el pedido abierto del mismo plan, como con Whish: un segundo
+ * pedido por lo mismo es un segundo código, y entonces el SINPE que llegue casa
+ * con uno y el otro se queda ahí para siempre.
+ */
+export async function startSinpeOrder(
+  scope: TenantScope,
+  tier: PlanTier,
+  actorId: string,
+): Promise<{ orderId: string; amount: number; payCode: string }> {
+  const prisma = getPrisma();
+  const plan = await prisma.plan.findUnique({ where: { tier } });
+  if (plan === null) throw new Error(`Unknown plan tier "${tier}".`);
+
+  const amount = await planPriceInCrc(plan.priceMonthly);
+  const description = `Plan ${plan.name}`;
+
+  const open = await prisma.order.findFirst({
+    where: { ...scopedWhere(scope), description, status: 'pending', currency: 'CRC' },
+    select: { id: true, amount: true, payCode: true },
+  });
+  if (open !== null && open.payCode !== null) {
+    // El importe puede haber cambiado si cambió el tipo de cambio. Se actualiza
+    // en el pedido que ya existe en vez de abrir otro: lo que tiene que casar
+    // es lo que la oficina está viendo AHORA en la pantalla.
+    if (open.amount !== amount) {
+      await prisma.order.update({ where: { id: open.id }, data: { amount } });
+    }
+    return { orderId: open.id, amount, payCode: open.payCode };
+  }
+
+  const payCode = newPayCode();
+  const order = await prisma.order.create({
+    data: {
+      ...scopedWhere(scope),
+      amount,
+      currency: 'CRC',
+      description,
+      status: 'pending',
+      payCode,
+    },
+  });
+
+  await recordAudit({
+    tenantId: scope.tenantId,
+    actorId,
+    action: 'order.open.sinpe',
+    entity: 'Order',
+    entityId: order.id,
+    metadata: { tier, amount },
+  });
+
+  return { orderId: order.id, amount, payCode };
 }
 
 /**

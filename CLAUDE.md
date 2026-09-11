@@ -415,6 +415,12 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   registro de auditoría anota el servidor y el usuario, jamás la contraseña.
   `logger: false` en el cliente IMAP: por defecto escribe el diálogo completo
   con el servidor —la línea de LOGIN incluida— en el journal.
+- Los planes están escritos en DÓLARES y el SINPE solo mueve colones, así que
+  se convierten con `CRC_PER_USD`, que se edita en el panel. Un tipo de cambio
+  metido en el código envejece solo y el día que lo haga nadie se acordará de
+  dónde estaba. El importe se redondea HACIA ARRIBA a los cien colones más
+  cercanos: lo teclea una persona en el móvil y tiene que coincidir exacto, y
+  redondear hacia abajo regala unos colones en cada cobro.
 - El modelo distingue desde el principio el buzón de la PLATAFORMA
   (`tenantId` nulo, las oficinas pagando su mensualidad) del de una OFICINA
   (fase 2, sus clientes pagándole a ella). Hoy solo se usa el primero, pero

@@ -401,6 +401,8 @@
         "NEXT_PUBLIC_SITE_URL": "Dirección pública del sitio",
         "PAYMENT_METHODS": "Medios aceptados (lista separada por comas)",
         "CASH_INSTRUCTIONS": "Qué se le dice a quien paga en efectivo",
+        "SINPE_PHONE": "Número al que se le hace el SINPE",
+        "CRC_PER_USD": "Colones por dólar",
         "TILOPAY_BASE_URL": "Dirección del servicio de Tilopay",
         "TILOPAY_API_USER": "Usuario de la API de Tilopay",
         "TILOPAY_API_KEY": "Llave de la API de Tilopay",
@@ -479,7 +481,9 @@
         "WHATSAPP_GATEWAY_URL": "Dónde escucha el servicio de WhatsApp. Por defecto http://127.0.0.1:4100, y no debe publicarse.",
         "WHATSAPP_DELAY_MIN": "Entre 3 y 300. El retardo real es al azar entre el mínimo y el máximo: un intervalo exacto es una firma de máquina. No se puede poner a cero — se puede acortar el freno, no quitarlo.",
         "WHATSAPP_DELAY_MAX": "Entre 3 y 600. Si queda por debajo del mínimo, se usa el mínimo.",
-        "WHATSAPP_WARMUP_CAP": "Entre 1 y 100. Un número recién conectado manda esto el primer día, aunque su tope diario sea mayor. Suba despacio: en semanas, no en horas."
+        "WHATSAPP_WARMUP_CAP": "Entre 1 y 100. Un número recién conectado manda esto el primer día, aunque su tope diario sea mayor. Suba despacio: en semanas, no en horas.",
+        "SINPE_PHONE": "El que ven las oficinas cuando van a pagar. En E.164: +50687021496.",
+        "CRC_PER_USD": "Los planes están escritos en dólares; esto los pasa a colones para el SINPE. Cámbielo cuando cambie el tipo. El importe se redondea a los cien colones más cercanos para que se pueda teclear."
       },
       "brandLogo": "Logo",
       "brandLogoHint": "Se sube desde su ordenador, hasta {mb} MB. Sale en la portada y en la cabecera del panel, sobre fondo oscuro.",
@@ -529,7 +533,13 @@
       "planSingle": "Un evento",
       "planAnnual": "Anual",
       "planOffice": "Oficina",
-      "limitReached": "Ha alcanzado el límite de eventos de su plan. Amplíelo para continuar."
+      "limitReached": "Ha alcanzado el límite de eventos de su plan. Amplíelo para continuar.",
+      "paySinpe": "Pagar por SINPE",
+      "sinpeHow": "Haga el SINPE Móvil desde su banco al número de abajo, por el importe exacto, y escriba el código en el detalle. Cuando el banco nos avise, el plan se activa solo.",
+      "sinpeTo": "Al número",
+      "sinpeAmount": "Importe exacto",
+      "sinpeCode": "Escriba esto en el detalle",
+      "sinpeNoPhone": "Falta poner el número al que se le hace el SINPE, en Configuración → Cobro."
     },
     "guests": {
       "heading": "Invitados",
