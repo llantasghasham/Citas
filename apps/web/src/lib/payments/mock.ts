@@ -23,7 +23,10 @@ export const mockProvider: PaymentProvider = {
   },
 
   createCollection(request: CollectionRequest): Promise<CollectionHandle> {
-    const providerRef = `mock_${request.orderId}`;
+    // La referencia que se reservó, no una inventada: si el doble no siguiera
+    // la misma regla que el proveedor de verdad, las pruebas de doble cobro
+    // pasarían por el motivo equivocado.
+    const providerRef = request.reference;
     states.set(providerRef, 'pending');
     const payUrl = new URL(request.successUrl);
     payUrl.searchParams.set('mockRef', providerRef);

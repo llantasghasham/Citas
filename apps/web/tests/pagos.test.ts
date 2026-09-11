@@ -5,6 +5,8 @@ import { after, before, beforeEach, describe, it } from 'node:test';
 import { POST as callback } from '../src/app/api/payments/[provider]/callback/route';
 import { beginPublicPayment, openPackageOrder } from '../src/lib/billing/checkout';
 import { applySettlement, reconcilePending } from '../src/lib/billing/reconcile';
+import { openCollection } from '../src/lib/billing/reserve';
+import type { PaymentProvider } from '../src/lib/payments/types';
 import { getPrisma } from '../src/lib/db/client';
 import { tenantScope } from '../src/lib/db/tenant';
 import { encryptSecret } from '../src/lib/secrets';
@@ -215,5 +217,144 @@ describe('el cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     });
     const summary = await reconcilePending();
     assert.equal(summary.checked, 0, 'el efectivo no entra en el repaso');
+  });
+});
+
+/**
+ * Abrir una cobranza sin poder abrir dos.
+ *
+ * Llegó por un informe externo y era cierto: se llamaba al proveedor y DESPUÉS
+ * se escribía la fila. El índice impedía guardar la segunda fila, pero no
+ * impedía que se hubiera creado la segunda cobranza — esa se quedaba viva en la
+ * pasarela, con su enlace, esperando a que alguien la pagara.
+ */
+describe('la reserva del cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  beforeEach(async () => {
+    const prisma = getPrisma();
+    await prisma.payment.deleteMany({});
+    await prisma.order.deleteMany({});
+  });
+
+  /** Un proveedor que cuenta cuántas cobranzas se le pidieron de verdad. */
+  const contador = (): { provider: PaymentProvider; veces: () => number } => {
+    let veces = 0;
+    const provider: PaymentProvider = {
+      id: 'mock',
+      createCollection: async (request) => {
+        veces += 1;
+        // Tarda, que es cuando ocurren las carreras.
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        return {
+          provider: 'mock',
+          providerRef: request.reference,
+          payUrl: `https://pasarela.example/${request.reference}`,
+          status: 'pending',
+        };
+      },
+      getStatus: () => Promise.resolve({ status: 'pending' as const }),
+      verifyCallback: () => Promise.reject(new Error('no se usa')),
+    };
+    return { provider, veces: () => veces };
+  };
+
+  const pedido = async (): Promise<string> => {
+    const row = await getPrisma().order.create({
+      data: {
+        tenantId: fixture.get().tenantId,
+        amount: 1500,
+        currency: 'USD',
+        description: 'Plan Annual',
+        status: 'pending',
+      },
+      select: { id: true },
+    });
+    return row.id;
+  };
+
+  it('dos peticiones a la vez abren UNA sola cobranza en la pasarela', async () => {
+    const { provider, veces } = contador();
+    const orderId = await pedido();
+    const abrir = (): Promise<unknown> =>
+      openCollection(provider, {
+        orderId,
+        amount: 1500,
+        currency: 'USD',
+        description: 'Plan Annual',
+        successUrl: 'https://citas.example/ok',
+        failureUrl: 'https://citas.example/no',
+        callbackUrl: 'https://citas.example/cb',
+      });
+
+    const [uno, dos] = await Promise.all([abrir(), abrir()]);
+
+    assert.equal(veces(), 1, 'a la pasarela se le pidió UNA vez');
+    assert.equal(await getPrisma().payment.count({ where: { orderId } }), 1);
+
+    // Y las dos peticiones se llevan el mismo enlace, no un error.
+    const urls = [uno, dos].map((r) => (r as { ok: boolean; payUrl?: string }).payUrl);
+    assert.equal(urls[0], urls[1]);
+    assert.ok(typeof urls[0] === 'string' && urls[0].length > 0);
+  });
+
+  it('volver a pulsar después reutiliza el enlace, sin llamar otra vez', async () => {
+    const { provider, veces } = contador();
+    const orderId = await pedido();
+    const abrir = (): Promise<unknown> =>
+      openCollection(provider, {
+        orderId,
+        amount: 1500,
+        currency: 'USD',
+        description: 'Plan Annual',
+        successUrl: 'https://citas.example/ok',
+        failureUrl: 'https://citas.example/no',
+        callbackUrl: 'https://citas.example/cb',
+      });
+
+    await abrir();
+    await abrir();
+    assert.equal(veces(), 1);
+  });
+
+  it('si la pasarela falla, la reserva se suelta y se puede reintentar', async () => {
+    const orderId = await pedido();
+    let primera = true;
+    const provider: PaymentProvider = {
+      id: 'mock',
+      createCollection: (request) => {
+        if (primera) {
+          primera = false;
+          return Promise.reject(new Error('la pasarela no contesta'));
+        }
+        return Promise.resolve({
+          provider: 'mock' as const,
+          providerRef: request.reference,
+          payUrl: `https://pasarela.example/${request.reference}`,
+          status: 'pending' as const,
+        });
+      },
+      getStatus: () => Promise.resolve({ status: 'pending' as const }),
+      verifyCallback: () => Promise.reject(new Error('no se usa')),
+    };
+    const abrir = (): Promise<unknown> =>
+      openCollection(provider, {
+        orderId,
+        amount: 1500,
+        currency: 'USD',
+        description: 'Plan Annual',
+        successUrl: 'https://citas.example/ok',
+        failureUrl: 'https://citas.example/no',
+        callbackUrl: 'https://citas.example/cb',
+      });
+
+    await assert.rejects(abrir());
+    // Sin soltar la reserva, el reintento chocaría contra el índice para
+    // siempre: el pedido se quedaría sin poder cobrarse nunca.
+    assert.equal(await getPrisma().payment.count({ where: { orderId } }), 0);
+
+    const otra = (await abrir()) as { ok: boolean };
+    assert.equal(otra.ok, true);
+    assert.equal(await getPrisma().payment.count({ where: { orderId } }), 1);
   });
 });

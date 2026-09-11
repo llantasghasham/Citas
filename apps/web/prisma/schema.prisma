@@ -754,6 +754,13 @@ model WhatsappMessage {
   guestId String?
   eventId String?
 
+  /// Qué es este mensaje: `invitation` o `reminder`.
+  ///
+  /// Los distingue porque un invitado recibe LOS DOS, y el índice que impide
+  /// encolarlo dos veces tiene que dejar pasar el segundo. Sin esto, el mismo
+  /// índice que evita el doble envío habría impedido el recordatorio.
+  kind String @default("invitation")
+
   /// `queued` · `processing` · `sent` · `sent_unknown` · `failed` · `canceled`
   ///
   /// `processing` y `sent_unknown` no estaban, y su ausencia era el fallo. Sin

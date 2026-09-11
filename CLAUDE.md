@@ -185,6 +185,14 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   mismo aviso dos veces no activa el plan dos veces ni escribe dos líneas en el
   historial —que va DENTRO de la transacción, porque un historial que se pierde
   al morir el proceso no es un historial.
+- La fila del cobro se RESERVA antes de llamar a la pasarela, con la referencia
+  ya decidida aquí (`lib/billing/reserve.ts`). Al revés —llamar y escribir
+  después— el índice impedía guardar la segunda fila pero NO impedía que se
+  hubiera creado la segunda cobranza: esa quedaba viva en Whish, con su enlace,
+  esperando a que alguien la pagara. La segunda petición ni llega a la pasarela;
+  espera un momento al enlace de la primera. Y si la pasarela falla, la reserva
+  se suelta —solo si sigue siendo una reserva— o el pedido no se podría cobrar
+  nunca más.
 - El adaptador se resuelve por el proveedor GUARDADO en el pago (`providerFor`),
   no por el configurado hoy: preguntarle a la pasarela nueva por una referencia
   de la vieja devuelve «no existe», que se leería como pendiente.
@@ -303,6 +311,13 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   mano. Reintentar reinicia el contador —reintentar sin darle intentos no es
   reintentar— y lo pulsa una PERSONA que ya ha visto el motivo: un reintento
   automático en bucle es como se quema el número de un cliente.
+- Encolar a un invitado dos veces lo impide un índice único PARCIAL sobre
+  `(eventId, guestId, kind)` mientras el mensaje está `queued` o `processing`,
+  no la lectura previa: entre leer qué hay en cola y escribir cabe otra
+  petición, y dos operadores pulsando «Enviar» a la vez le mandaban dos mensajes
+  a cada invitado. Va por `kind` —`invitation` o `reminder`— porque el mismo
+  invitado recibe los dos, y sin esa columna lo que evita el doble envío habría
+  impedido el recordatorio.
 - Reimportar la misma lista no duplica: se reconoce por teléfono, y por nombre
   cuando no hay teléfono.
 - Los teléfonos se guardan normalizados a E.164. Una línea sin nombre se

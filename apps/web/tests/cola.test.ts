@@ -3,7 +3,7 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { getPrisma } from '../src/lib/db/client';
 import { tenantScope } from '../src/lib/db/tenant';
-import { cancelScheduled, listFailed, retryFailed } from '../src/lib/whatsapp/connections';
+import { cancelScheduled, listFailed, queueEventInvitations, retryFailed } from '../src/lib/whatsapp/connections';
 import { queueDueReminders } from '../src/lib/whatsapp/reminders';
 import { claimNext, markFailed, markSent, reclaimExpired } from '../../whatsapp/src/db';
 
@@ -235,5 +235,81 @@ describe('los recordatorios', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () 
     assert.equal((await queueDueReminders()).queued, 0);
     assert.equal(await prisma.guest.count({ where: { eventId, remindedAt: { not: null } } }), 0);
     await prisma.setting.deleteMany({ where: { key: 'NEXT_PUBLIC_SITE_URL' } });
+  });
+});
+
+/**
+ * Encolar dos veces a la vez.
+ *
+ * Llegó por un informe externo y era cierto: el código lee qué hay ya en cola y
+ * luego escribe, y entre las dos cosas cabe otra petición. Dos operadores
+ * pulsando «Enviar» a la vez y cada invitado recibía DOS mensajes.
+ */
+describe('encolar sin duplicar', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  beforeEach(async () => {
+    await getPrisma().whatsappMessage.deleteMany({});
+    await getPrisma().whatsappConnection.deleteMany({});
+  });
+
+  it('dos «Enviar» a la vez encolan UNA sola vez a cada invitado', async () => {
+    const prisma = getPrisma();
+    const tenantId = fixture.get().tenantId;
+    const eventId = await makeEvent(tenantId, [
+      { name: 'Ana', phone: '+96170111111' },
+      { name: 'Beto', phone: '+96170222222' },
+    ]);
+    const conexion = await prisma.whatsappConnection.create({
+      data: { tenantId, name: `N-${Math.random().toString(36).slice(2, 8)}`, status: 'connected' },
+      select: { id: true },
+    });
+    const scope = tenantScope(tenantId);
+    const mensaje = (): string => 'hola';
+
+    const [uno, dos] = await Promise.all([
+      queueEventInvitations(scope, eventId, conexion.id, mensaje, fixture.get().userId),
+      queueEventInvitations(scope, eventId, conexion.id, mensaje, fixture.get().userId),
+    ]);
+
+    const filas = await prisma.whatsappMessage.findMany({ where: { eventId } });
+    assert.equal(filas.length, 2, 'dos invitados, dos mensajes');
+
+    // Y el recuento que se devuelve es el que de VERDAD se escribió: decirle a
+    // quien pulsó el botón que se encolaron doscientos cuando se encolaron cero
+    // sería mentirle.
+    const total =
+      ('queued' in uno ? uno.queued : 0) + ('queued' in dos ? dos.queued : 0);
+    assert.equal(total, 2);
+  });
+
+  it('el recordatorio SÍ cabe junto a la invitación', async () => {
+    // El mismo invitado recibe los dos. Por eso el índice va por `kind`: sin esa
+    // columna, lo que evita el doble envío habría impedido el recordatorio.
+    const prisma = getPrisma();
+    const tenantId = fixture.get().tenantId;
+    const eventId = await makeEvent(tenantId, [{ name: 'Ana', phone: '+96170111111' }]);
+    const conexion = await prisma.whatsappConnection.create({
+      data: { tenantId, name: `N-${Math.random().toString(36).slice(2, 8)}`, status: 'connected' },
+      select: { id: true },
+    });
+    const invitado = await prisma.guest.findFirstOrThrow({ where: { eventId } });
+
+    const base = {
+      tenantId,
+      connectionId: conexion.id,
+      eventId,
+      guestId: invitado.id,
+      toPhone: '+96170111111',
+      body: 'hola',
+      status: 'queued',
+    };
+    await prisma.whatsappMessage.create({ data: { ...base, kind: 'invitation' } });
+    await prisma.whatsappMessage.create({ data: { ...base, kind: 'reminder' } });
+
+    assert.equal(await prisma.whatsappMessage.count({ where: { eventId } }), 2);
+
+    // Pero una segunda invitación en cola, no.
+    await assert.rejects(prisma.whatsappMessage.create({ data: { ...base, kind: 'invitation' } }));
   });
 });

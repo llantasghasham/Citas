@@ -38,22 +38,6 @@ const CONTRACT = {
   },
 } as const;
 
-/**
- * The reference we hand back is the `externalId` WE assign, not an id of
- * Whish's own.
- *
- * That is what the service echoes in its callback and the only thing its status
- * endpoint accepts, so storing anything else would leave a payment that can
- * never be reconciled. It has to be numeric: several live integrations state
- * it, and this product's ids are cuids.
- */
-function newExternalId(): string {
-  // Milliseconds since the epoch plus three random digits: unique per
-  // collection, ordered in time, and comfortably inside a 64-bit integer.
-  return `${Date.now()}${Math.floor(Math.random() * 1000)
-    .toString()
-    .padStart(3, '0')}`;
-}
 
 /**
  * El importe que se le manda a Whish, desde el que guarda esta aplicación.
@@ -188,7 +172,10 @@ export const whishProvider: PaymentProvider = {
 
   async createCollection(request: CollectionRequest): Promise<CollectionHandle> {
     const config = await readConfig();
-    const externalId = newExternalId();
+    // La referencia llega decidida y ya escrita en la base: ver
+    // `CollectionRequest.reference`. Generarla aquí era lo que permitía que dos
+    // peticiones simultáneas abrieran dos cobranzas.
+    const externalId = request.reference;
 
     const data = await call(config, CONTRACT.collect, {
       amount: toProviderAmount(request.amount.amount, request.amount.currency),

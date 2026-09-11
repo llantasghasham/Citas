@@ -133,6 +133,10 @@ export async function queueDueReminders(now = new Date()): Promise<ReminderOutco
           connectionId,
           eventId: event.id,
           guestId: guest.id,
+          // Un recordatorio, no una invitación: el mismo invitado recibe los
+          // dos, y el índice que impide encolarlo dos veces tiene que dejar
+          // pasar el segundo.
+          kind: 'reminder',
           toPhone: phone,
           // En el idioma DEL INVITADO, como todo lo que sale de aquí.
           body: interpolate(getDictionary(locale).share.reminderMessage, {

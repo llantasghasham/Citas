@@ -4,6 +4,7 @@ import { applySettlement } from '@/lib/billing/reconcile';
 import { getPrisma } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { getPaymentProvider, providerFor } from '@/lib/payments';
+import { openCollection } from '@/lib/billing/reserve';
 import { newPayCode } from '@/lib/payments/sinpe/code';
 import { planPriceInCrc } from '@/lib/payments/sinpe/price';
 
@@ -97,25 +98,17 @@ export async function startPlanOrder(
     },
   });
 
-  const handle = await provider.createCollection({
+  // Se RESERVA la fila del cobro antes de llamar a la pasarela: es lo que
+  // impide que dos peticiones simultáneas abran dos cobranzas de verdad. Ver
+  // `lib/billing/reserve.ts`.
+  const opened = await openCollection(provider, {
     orderId: order.id,
-    amount: { amount: order.amount, currency: order.currency },
+    amount: order.amount,
+    currency: order.currency,
     description: order.description,
     successUrl: `${origin}/panel/facturacion?order=${order.id}`,
     failureUrl: `${origin}/panel/facturacion?order=${order.id}&failed=1`,
     callbackUrl: `${origin}/api/payments/${provider.id}/callback`,
-  });
-
-  await prisma.payment.create({
-    data: {
-      orderId: order.id,
-      provider: provider.id,
-      providerRef: handle.providerRef,
-      payUrl: handle.payUrl ?? null,
-      status: 'pending',
-      amount: order.amount,
-      currency: order.currency,
-    },
   });
 
   await recordAudit({
@@ -127,7 +120,7 @@ export async function startPlanOrder(
     metadata: { tier, amount: order.amount },
   });
 
-  return { orderId: order.id, payUrl: handle.payUrl ?? null };
+  return { orderId: order.id, payUrl: opened.ok ? opened.payUrl : null };
 }
 
 /**

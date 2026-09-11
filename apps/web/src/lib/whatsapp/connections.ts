@@ -264,7 +264,15 @@ export async function queueEventInvitations(
     ];
   });
 
-  if (rows.length > 0) await prisma.whatsappMessage.createMany({ data: rows });
+  // `skipDuplicates` se apoya en el índice único parcial de la migración
+  // `queue_no_duplicates`: la lectura de arriba dice qué NO hace falta escribir,
+  // pero entre leerla y escribir cabe otra petición —dos operadores pulsando
+  // «Enviar» a la vez— y entonces cada invitado recibía dos mensajes. Quien lo
+  // impide de verdad es la base; esto solo hace que el segundo no dé error.
+  const written =
+    rows.length === 0
+      ? { count: 0 }
+      : await prisma.whatsappMessage.createMany({ data: rows, skipDuplicates: true });
 
   await recordAudit({
     tenantId: scope.tenantId,
@@ -273,14 +281,17 @@ export async function queueEventInvitations(
     entity: 'Event',
     entityId: eventId,
     metadata: {
-      queued: rows.length,
+      queued: written.count,
       skipped,
       connection: connection.name,
       scheduledAt: scheduledAt === null ? null : scheduledAt.toISOString(),
     },
   });
 
-  return { queued: rows.length, skipped };
+  // Lo que se escribió DE VERDAD, no lo que se intentó: si otra petición ganó
+  // la carrera, decir que se encolaron doscientos cuando se encolaron cero
+  // sería mentirle a quien acaba de pulsar el botón.
+  return { queued: written.count, skipped };
 }
 
 /**

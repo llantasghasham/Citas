@@ -24,6 +24,18 @@ export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'expired' | 'refunde
 export interface CollectionRequest {
   /** Our order id. Doubles as the idempotency key: retrying must not double-charge. */
   orderId: string;
+  /**
+   * La referencia con la que se abre el cobro, decidida AQUÍ y no por el
+   * adaptador.
+   *
+   * Importa el orden: la fila del cobro se escribe ANTES de llamar al
+   * proveedor, y la escribe con esta referencia. Así el índice único parcial
+   * —un cobro pendiente por pedido— para a la segunda petición antes de que
+   * llegue a Whish. Generándola dentro del adaptador, dos peticiones simultáneas
+   * abrían DOS cobranzas de verdad y solo se guardaba una: la otra se quedaba
+   * viva en Whish, y alguien podía pagarla.
+   */
+  reference: string;
   amount: Money;
   description: string;
   /** Whish identifies a payer by phone number. */
