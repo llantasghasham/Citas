@@ -3,7 +3,13 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { controlDb } from '../src/lib/db/client';
 import { tenantScope } from '../src/lib/db/tenant';
-import { cancelScheduled, listFailed, queueEventInvitations, retryFailed } from '../src/lib/whatsapp/connections';
+import {
+  cancelScheduled,
+  deleteConnection,
+  listFailed,
+  queueEventInvitations,
+  retryFailed,
+} from '../src/lib/whatsapp/connections';
 import { queueDueReminders } from '../src/lib/whatsapp/reminders';
 import { claimNext, markFailed, markSent, reclaimExpired } from '../../whatsapp/src/db';
 
@@ -152,6 +158,77 @@ describe('la cola de WhatsApp', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, (
 
     assert.equal(await retryFailed(tenantScope(fixture.get().tenantId), eventId, fixture.get().userId), 2);
     assert.equal(await controlDb().whatsappMessage.count({ where: { status: 'queued' } }), 2);
+  });
+  /**
+   * Quitar un número es lo NORMAL: a un número lo cierran y la oficina conecta
+   * otro. Y hasta ahora eso se llevaba por delante el registro entero de a quién
+   * se le había escrito — que es justo lo que se mira cuando alguien pregunta si
+   * a un invitado le llegó su invitación.
+   */
+  describe('quitar el número no borra lo que ya se mandó', () => {
+    it('lo enviado se queda, sin número, y lo que quedaba en cola se cancela', async () => {
+      const scope = tenantScope(fixture.get().tenantId);
+      const prisma = controlDb();
+      const connectionId = await connection();
+      const eventId = await makeEvent(fixture.get().tenantId, [
+        { name: 'Rami', phone: '+96170111222' },
+        { name: 'Nour', phone: '+96170111333' },
+      ]);
+      await queueEventInvitations(scope, eventId, connectionId, () => 'hola', fixture.get().userId);
+
+      // Uno sale de verdad; el otro se queda en la cola.
+      const claimed = await claimNext(connectionId, 'w1', day, 200);
+      assert.ok(claimed !== undefined);
+      assert.equal(await markSent(claimed.id, 'w1', 'wamid.1'), true);
+
+      assert.equal(await deleteConnection(scope, connectionId, fixture.get().userId), true);
+
+      // El número se fue.
+      assert.equal(await prisma.whatsappConnection.count({ where: { id: connectionId } }), 0);
+
+      // Los mensajes NO. Es el registro de lo que se mandó.
+      const quedan = await prisma.whatsappMessage.findMany({
+        where: { eventId },
+        select: { status: true, connectionId: true, toPhone: true },
+        orderBy: { toPhone: 'asc' },
+      });
+      assert.equal(quedan.length, 2, 'quitar el número se llevó el histórico');
+      assert.ok(quedan.every((row) => row.connectionId === null));
+      assert.deepEqual(
+        quedan.map((row) => row.status).sort(),
+        ['canceled', 'sent'],
+        'lo enviado tiene que seguir enviado y lo que quedaba en cola, cancelado',
+      );
+    });
+
+    it('lo que se quedó sin número no se puede reencolar', async () => {
+      const scope = tenantScope(fixture.get().tenantId);
+      const connectionId = await connection();
+      const eventId = await makeEvent(fixture.get().tenantId, [
+        { name: 'Rami', phone: '+96170111222' },
+      ]);
+      await queueEventInvitations(scope, eventId, connectionId, () => 'hola', fixture.get().userId);
+
+      const claimed = await claimNext(connectionId, 'w1', day, 200);
+      assert.ok(claimed !== undefined);
+      await markFailed(claimed.id, 'w1', connectionId, day, 'se cayó');
+      await controlDb().whatsappMessage.updateMany({
+        where: { id: claimed.id },
+        data: { status: 'failed', tries: 3 },
+      });
+
+      assert.equal((await listFailed(scope, eventId)).length, 1);
+      await deleteConnection(scope, connectionId, fixture.get().userId);
+
+      // Reencolarlo lo dejaría en la cola para siempre: el repartidor pide
+      // trabajo POR conexión, y esa fila ya no cuelga de ninguna.
+      assert.equal(await retryFailed(scope, eventId, fixture.get().userId), 0);
+      const row = await controlDb().whatsappMessage.findFirst({
+        where: { eventId },
+        select: { status: true },
+      });
+      assert.equal(row?.status, 'failed');
+    });
   });
 });
 

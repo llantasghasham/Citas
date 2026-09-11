@@ -779,9 +779,19 @@ model WhatsappConnection {
 /// exactamente lo que hace que WhatsApp cierre el número. Se encolan, y un
 /// proceso aparte las va soltando con su retardo.
 model WhatsappMessage {
-  id           String @id @default(cuid())
-  tenantId     String
-  connectionId String
+  id       String @id @default(cuid())
+  tenantId String
+
+  /// Por qué número salió. Nulo cuando ese número ya no está conectado.
+  ///
+  /// Se queda a nulo, NO se borra la fila, y es la misma regla que ya valía para
+  /// el evento y el invitado: el mensaje es el REGISTRO de lo que se mandó.
+  /// Quitar un número era lo único que se llevaba ese registro por delante, y
+  /// quitar un número es lo NORMAL — a un número lo cierran y la oficina conecta
+  /// otro. Con la cascada, esa oficina perdía el histórico entero de a quién le
+  /// había escrito, que es justo lo que se mira cuando alguien pregunta si a
+  /// Rami le llegó su invitación.
+  connectionId String?
 
   /// A quién, en E.164. Se guarda aunque el invitado se borre después: es el
   /// registro de lo que se mandó.
@@ -841,7 +851,11 @@ model WhatsappMessage {
   /// «la base no admite otra cosa». `tenantId`, `eventId` y `guestId` no tenían
   /// ninguna clave foránea: una consulta escrita a mano, o un descuido futuro,
   /// podía dejar un mensaje de una oficina colgando del número de otra.
-  connection WhatsappConnection @relation(fields: [connectionId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  /// `NoAction` por lo mismo que el evento y el invitado: sobre una clave
+  /// compuesta, `SET NULL` pondría a nulo TODAS sus columnas —`tenantId`
+  /// incluido, que no lo admite—. Se desata a mano al quitar el número, en la
+  /// misma transacción (`lib/whatsapp/connections.ts`).
+  connection WhatsappConnection? @relation(fields: [connectionId, tenantId], references: [id, tenantId], onDelete: NoAction)
 
   /// A `null` cuando se borra: el mensaje es el REGISTRO de lo que se mandó, y
   /// borrarlo porque el evento ya pasó sería borrar la prueba.

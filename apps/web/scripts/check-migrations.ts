@@ -70,6 +70,20 @@ const CHECKS: Check[] = [
     why: 'sin esto no se puede saber si la oficina sigue abierta al resolver la sesión',
   },
   {
+    what: 'quitar el número no se lleva el histórico de mensajes',
+    sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname = 'WhatsappMessage_connectionId_tenantId_fkey'`,
+    expect: (rows) => !String(rows[0]?.['def'] ?? '').includes('ON DELETE CASCADE'),
+    why: 'a un número lo cierran y la oficina conecta otro: con la cascada perdía a quién había escrito',
+  },
+  {
+    what: 'pero cerrar la oficina sí se lo lleva',
+    sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname = 'WhatsappMessage_tenantId_fkey'`,
+    expect: (rows) => String(rows[0]?.['def'] ?? '').includes('ON DELETE CASCADE'),
+    why: 'sin esto, quitar la cascada del número dejaba una oficina sin poder borrarse',
+  },
+  {
     what: 'cada oficina apunta a UNA base de datos y no a la de otra',
     sql: `SELECT indexdef FROM pg_indexes WHERE indexname = 'Tenant_databaseName_key'`,
     expect: (rows) => String(rows[0]?.['indexdef'] ?? '').includes('UNIQUE'),

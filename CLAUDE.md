@@ -236,6 +236,25 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   foránea, y una consulta a mano o un descuido futuro podía dejar un mensaje de
   una oficina colgando del número de otra. Borrar el evento o el invitado deja
   el mensaje con el campo a nulo, no lo borra: es el REGISTRO de lo que se mandó.
+- Y QUITAR EL NÚMERO tampoco lo borra. Era lo único que sí lo hacía —la clave a
+  la conexión iba en CASCADE— y es la operación más normal que hay: a un número
+  lo cierran y la oficina conecta otro. Esa oficina perdía de golpe el registro
+  entero de a quién le había escrito, que es exactamente lo que se mira cuando
+  alguien pregunta si a un invitado le llegó su invitación. Ahora se desata a
+  mano al quitarlo, en una transacción: lo que seguía EN COLA se cancela —sin
+  número no puede salir nunca— y el resto se queda sin número. Lo que estaba
+  `processing` también se desata en vez de tocarle el estado: puede estar en el
+  aire, y `markSent`/`markFailed` miran el arriendo y el id, no el número, así
+  que el repartidor todavía puede anotar lo que ya salió.
+- Lo que se quedó sin número NO se puede reencolar. El repartidor pide trabajo
+  POR conexión, así que una fila sin conexión reencolada se quedaría en la cola
+  para siempre sin que nadie la reclame.
+- El mensaje cuelga TAMBIÉN de su oficina, con clave foránea directa y en
+  cascada, y sin eso lo de arriba no funciona: al dejar de ser CASCADE la del
+  número, borrar una oficina pasó a FALLAR —la cascada se lleva sus conexiones y
+  los mensajes seguían apuntando a ellas—. Es la tercera vez que este proyecto
+  pisa esa piedra y la primera que se comprobó antes de subirla. Quitar un número
+  deja el mensaje; cerrar la oficina se lo lleva.
 - El servicio se apaga CON ORDEN: deja de repartir, espera al envío en curso,
   cierra los sockets, deja de escuchar y suelta la base, con tope de diez
   segundos. Era `process.exit(0)` en la misma línea que `server.close()`, lo que

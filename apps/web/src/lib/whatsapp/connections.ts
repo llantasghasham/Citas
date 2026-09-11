@@ -143,7 +143,27 @@ export async function deleteConnection(
   const owned = await ownedConnection(scope, id);
   if (owned === null) return false;
 
-  await db(scope).whatsappConnection.delete({ where: { id } });
+  // Los mensajes NO se van con el número. Son el registro de lo que se mandó, y
+  // quitar un número es lo normal —a un número lo cierran y se conecta otro—:
+  // con la cascada, esa oficina perdía de golpe a quién le había escrito.
+  //
+  // Todo en una transacción, y en este orden: lo que sigue en cola se CANCELA
+  // porque sin número no puede salir nunca; el resto se desata y se queda. Lo
+  // que esté `processing` puede estar en el aire ahora mismo, y por eso también
+  // se desata en vez de tocarle el estado: `markSent` y `markFailed` miran el
+  // arriendo y el id, no el número, así que el repartidor puede terminar de
+  // anotar lo que ya salió.
+  await db(scope).$transaction(async (tx) => {
+    await tx.whatsappMessage.updateMany({
+      where: { ...scopedWhere(scope), connectionId: id, status: 'queued' },
+      data: { status: 'canceled', connectionId: null },
+    });
+    await tx.whatsappMessage.updateMany({
+      where: { ...scopedWhere(scope), connectionId: id },
+      data: { connectionId: null },
+    });
+    await tx.whatsappConnection.delete({ where: { id } });
+  });
   await recordAudit({
     tenantId: scope.tenantId,
     actorId,
@@ -439,6 +459,10 @@ export async function retryFailed(
       ...scopedWhere(scope),
       eventId,
       status: { in: ['failed', 'sent_unknown'] },
+      // Solo lo que todavía tiene número por donde salir. Reencolar un mensaje
+      // cuyo número ya no está sería dejarlo en la cola para siempre: nadie lo
+      // reclama, porque el repartidor pide trabajo POR conexión.
+      connectionId: { not: null },
       ...(messageId === undefined ? {} : { id: messageId }),
     },
     data: {
