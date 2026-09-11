@@ -3,7 +3,7 @@ import { cache } from 'react';
 
 import type { Role } from '@/generated/prisma/enums';
 import type { Locale } from '@/lib/types';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { tenantScope, type TenantScope } from '@/lib/db/tenant';
 import { avatarSrc } from '@/lib/profile/avatar';
 
@@ -70,7 +70,7 @@ export async function issueSession(
 ): Promise<string> {
   const token = newSessionToken();
 
-  await getPrisma().session.create({
+  await controlDb().session.create({
     data: {
       userId,
       tenantId,
@@ -114,7 +114,7 @@ export async function createSession(
 export async function resolveSession(token: string): Promise<AuthenticatedSession | null> {
   if (token.length === 0) return null;
 
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const row = await prisma.session.findUnique({
     where: { tokenHash: hashSecret(token) },
     // `omit` de la foto, y no es cosmético: esta consulta corre en CADA
@@ -197,7 +197,7 @@ export async function resolveSession(token: string): Promise<AuthenticatedSessio
  */
 const rootTenant = cache(
   async (): Promise<{ id: string; databaseName: string | null } | null> => {
-    return getPrisma().tenant.findFirst({
+    return controlDb().tenant.findFirst({
       where: { isRoot: true },
       select: { id: true, databaseName: true },
     });
@@ -228,7 +228,7 @@ export async function destroySession(): Promise<void> {
   const token = store.get(COOKIE_NAME)?.value;
 
   if (token !== undefined && token.length > 0) {
-    await getPrisma()
+    await controlDb()
       .session.deleteMany({ where: { tokenHash: hashSecret(token) } })
       .catch(() => undefined);
   }

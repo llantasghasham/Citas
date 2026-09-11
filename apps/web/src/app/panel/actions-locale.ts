@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { getSession } from '@/lib/auth/session';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { LOCALES } from '@/lib/types';
 
 /**
@@ -20,7 +20,7 @@ export async function setPanelLocaleAction(formData: FormData): Promise<void> {
 
   const locale = LOCALES.find((candidate) => candidate === String(formData.get('locale')));
   if (locale !== undefined && locale !== session.locale) {
-    await getPrisma().user.update({ where: { id: session.userId }, data: { locale } });
+    await controlDb().user.update({ where: { id: session.userId }, data: { locale } });
   }
 
   // The session is cached per request, so the next render has to be a new one.

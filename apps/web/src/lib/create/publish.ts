@@ -5,7 +5,9 @@ import { defaultNumerals } from '@/lib/create/options';
 import { buildSlug } from '@/lib/create/slug';
 import { eventLimitReached } from '@/lib/billing/plans';
 import type { AuthenticatedSession } from '@/lib/auth/session';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb, db } from '@/lib/db/client';
+import { registerSlugs } from '@/lib/db/directory';
+import { tenantScope } from '@/lib/db/tenant';
 
 import { draftProblems, draftVersions, mapUrlFor, type InvitationDraft } from './draft';
 
@@ -25,17 +27,23 @@ export async function publishDraft(
   const problems = draftProblems(draft);
   if (problems.length > 0) return { ok: false, problems };
 
-  const prisma = getPrisma();
-
   // Concierge work has no office of its own: it belongs to the platform.
-  const tenantId =
-    session.tenantId ??
-    (await prisma.tenant.findFirst({ where: { isRoot: true }, select: { id: true } }))?.id;
-  if (tenantId === undefined) return { ok: false, problems: ['tenant'] };
+  const owner =
+    session.tenantId === null
+      ? await controlDb().tenant.findFirst({
+          where: { isRoot: true },
+          select: { id: true, databaseName: true },
+        })
+      : { id: session.tenantId, databaseName: session.tenantDatabase };
+  if (owner === null) return { ok: false, problems: ['tenant'] };
+
+  const tenantId = owner.id;
+  const scope = tenantScope(tenantId, owner.databaseName);
+  const prisma = db(scope);
 
   // The plan is checked here, on the server, at the moment of publishing —
   // not by hiding a button.
-  if (await eventLimitReached(tenantId)) return { ok: false, problems: ['planLimit'] };
+  if (await eventLimitReached(scope)) return { ok: false, problems: ['planLimit'] };
 
   const honorees = draft.honorees.filter((name) => name.length > 0);
   const hosts = draft.hosts.filter((host) => host.name.length > 0);
@@ -58,6 +66,16 @@ export async function publishDraft(
     publishedAt: new Date(),
   }));
   const slug = versions[0]?.slug ?? buildSlug(honorees);
+
+  // El directorio ANTES que la invitación, que es al revés de lo que parece.
+  // Una entrada apuntando a una invitación que no llegó a crearse resuelve a una
+  // base donde no hay nada: un 404, igual que si no existiera. Una invitación
+  // sin entrada no se puede encontrar nunca, y de eso nadie se entera hasta que
+  // un invitado abre su enlace.
+  await registerSlugs(
+    scope,
+    versions.map((version) => version.slug),
+  );
 
   const event = await prisma.event.create({
     data: {

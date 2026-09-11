@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 
-import { getPrisma } from '../src/lib/db/client';
+import { controlDb } from '../src/lib/db/client';
 import { newPayCode } from '../src/lib/payments/sinpe/code';
 import { ingestSinpeEmail, tryMatch } from '../src/lib/payments/sinpe/service';
 
@@ -19,7 +19,7 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
   const fixture = withDatabase();
 
   beforeEach(async () => {
-    const prisma = getPrisma();
+    const prisma = controlDb();
     await prisma.sinpeMovement.deleteMany({});
     await prisma.sinpeAccount.deleteMany({});
     await prisma.payment.deleteMany({});
@@ -28,7 +28,7 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
 
   /** El buzón de la plataforma: sin oficina, que es la fase 1. */
   const account = async (tenantId: string | null = null): Promise<{ id: string; tenantId: string | null }> => {
-    const row = await getPrisma().sinpeAccount.create({
+    const row = await controlDb().sinpeAccount.create({
       data: {
         tenantId,
         name: 'Buzón de prueba',
@@ -44,7 +44,7 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
   };
 
   const order = async (amount: number, tenantId?: string): Promise<{ id: string; payCode: string }> => {
-    const row = await getPrisma().order.create({
+    const row = await controlDb().order.create({
       data: {
         tenantId: tenantId ?? fixture.get().tenantId,
         amount,
@@ -74,10 +74,10 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
     assert.equal(resultado.kind, 'stored');
     assert.equal(resultado.kind === 'stored' ? resultado.applied : false, true);
 
-    const despues = await getPrisma().order.findUniqueOrThrow({ where: { id: pedido.id } });
+    const despues = await controlDb().order.findUniqueOrThrow({ where: { id: pedido.id } });
     assert.equal(despues.status, 'paid');
 
-    const pago = await getPrisma().payment.findFirstOrThrow({ where: { orderId: pedido.id } });
+    const pago = await controlDb().payment.findFirstOrThrow({ where: { orderId: pedido.id } });
     assert.equal(pago.provider, 'sinpe');
     assert.equal(pago.providerRef, '2026091012345678901234567', 'el comprobante ES la referencia');
     assert.equal(pago.status, 'paid');
@@ -94,8 +94,8 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
 
     assert.equal(primera.kind, 'stored');
     assert.equal(segunda.kind, 'duplicate', 'el comprobante ya estaba');
-    assert.equal(await getPrisma().sinpeMovement.count(), 1);
-    assert.equal(await getPrisma().payment.count({ where: { orderId: pedido.id } }), 1);
+    assert.equal(await controlDb().sinpeMovement.count(), 1);
+    assert.equal(await controlDb().payment.count({ where: { orderId: pedido.id } }), 1);
   });
 
   it('el monto tiene que ser EXACTO', async () => {
@@ -109,9 +109,9 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
       aviso('24.999,00', '2026091099999999999999999', pedido.payCode),
     );
 
-    const movimiento = await getPrisma().sinpeMovement.findFirstOrThrow();
+    const movimiento = await controlDb().sinpeMovement.findFirstOrThrow();
     assert.equal(movimiento.status, 'pending', 'queda para que lo mire una persona');
-    assert.equal((await getPrisma().order.findUniqueOrThrow({ where: { id: pedido.id } })).status, 'pending');
+    assert.equal((await controlDb().order.findUniqueOrThrow({ where: { id: pedido.id } })).status, 'pending');
   });
 
   it('NUNCA por monto solo: sin el código no se casa con nadie', async () => {
@@ -125,8 +125,8 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
         'Comprobante: 2026091012345678901234567. BAC Credomatic',
     );
 
-    assert.equal((await getPrisma().sinpeMovement.findFirstOrThrow()).status, 'pending');
-    assert.equal((await getPrisma().order.findUniqueOrThrow({ where: { id: pedido.id } })).status, 'pending');
+    assert.equal((await controlDb().sinpeMovement.findFirstOrThrow()).status, 'pending');
+    assert.equal((await controlDb().order.findUniqueOrThrow({ where: { id: pedido.id } })).status, 'pending');
   });
 
   it('dos oficinas con el mismo plan el mismo día no se confunden', async () => {
@@ -142,8 +142,8 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
       aviso('25.000,00', '2026091012345678901234567', otraB.payCode),
     );
 
-    const a = await getPrisma().order.findUniqueOrThrow({ where: { id: unoA.id } });
-    const b = await getPrisma().order.findUniqueOrThrow({ where: { id: otraB.id } });
+    const a = await controlDb().order.findUniqueOrThrow({ where: { id: unoA.id } });
+    const b = await controlDb().order.findUniqueOrThrow({ where: { id: otraB.id } });
     assert.equal(a.status, 'pending', 'la que no pagó sigue sin pagar');
     assert.equal(b.status, 'paid', 'la que puso su código');
   });
@@ -160,8 +160,8 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
       aviso('10.000,00', '2026091055555555555555555', pedidoB.payCode),
     );
 
-    assert.equal((await getPrisma().order.findUniqueOrThrow({ where: { id: pedidoB.id } })).status, 'pending');
-    assert.equal((await getPrisma().sinpeMovement.findFirstOrThrow()).status, 'pending');
+    assert.equal((await controlDb().order.findUniqueOrThrow({ where: { id: pedidoB.id } })).status, 'pending');
+    assert.equal((await controlDb().sinpeMovement.findFirstOrThrow()).status, 'pending');
   });
 
   it('un SINPE enviado no se guarda siquiera', async () => {
@@ -174,7 +174,7 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
     );
     assert.equal(resultado.kind, 'ignored');
     assert.equal(resultado.kind === 'ignored' ? resultado.reason : '', 'outgoing');
-    assert.equal(await getPrisma().sinpeMovement.count(), 0, 'no ensucia la pantalla');
+    assert.equal(await controlDb().sinpeMovement.count(), 0, 'no ensucia la pantalla');
   });
 
   it('el aviso repetido de cuenta SÍ se guarda, y como ignorado', async () => {
@@ -190,7 +190,7 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
     assert.equal(resultado.kind, 'ignored');
     assert.equal(resultado.kind === 'ignored' ? resultado.reason : '', 'account_notice');
 
-    const movimiento = await getPrisma().sinpeMovement.findFirstOrThrow();
+    const movimiento = await controlDb().sinpeMovement.findFirstOrThrow();
     assert.equal(movimiento.status, 'ignored');
     // Con su importe de verdad. Guardarlo en cero decía «llegó algo» y no
     // «llegó esto y no se cobró porque es el mismo dinero», que es la frase
@@ -215,9 +215,9 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
       aviso('25.000,00', '2026091022222222222222222', pedido.payCode),
     );
 
-    const pagos = await getPrisma().payment.findMany({ where: { orderId: pedido.id } });
+    const pagos = await controlDb().payment.findMany({ where: { orderId: pedido.id } });
     assert.equal(pagos.length, 1, 'un solo cobro');
-    const sueltos = await getPrisma().sinpeMovement.findMany({ where: { status: 'pending' } });
+    const sueltos = await controlDb().sinpeMovement.findMany({ where: { status: 'pending' } });
     assert.equal(sueltos.length, 1, 'el segundo queda a la vista, sin dueño');
   });
 
@@ -229,10 +229,10 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
       'SINPE Móvil',
       aviso('25.000,00', '2026091033333333333333333', pedido.payCode),
     );
-    const movimiento = await getPrisma().sinpeMovement.findFirstOrThrow();
+    const movimiento = await controlDb().sinpeMovement.findFirstOrThrow();
 
     assert.equal(await tryMatch(movimiento.id), false);
-    assert.equal(await getPrisma().payment.count({ where: { orderId: pedido.id } }), 1);
+    assert.equal(await controlDb().payment.count({ where: { orderId: pedido.id } }), 1);
   });
 
   it('releer el mismo aviso de cuenta no guarda dos filas', async () => {
@@ -249,7 +249,7 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
     await ingestSinpeEmail(cuenta, 'Movimiento', correo);
     await ingestSinpeEmail(cuenta, 'Movimiento', correo);
 
-    const filas = await getPrisma().sinpeMovement.findMany();
+    const filas = await controlDb().sinpeMovement.findMany();
     assert.equal(filas.length, 1, 'una sola fila');
     assert.equal(filas[0]?.status, 'ignored');
     assert.equal(filas[0]?.amount, 25_000, 'con su importe de verdad, no un cero');
@@ -267,7 +267,7 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
         `Se realizó un crédito en su cuenta por ₡${monto}. Referencia: 1054101. Davivienda`,
       );
     }
-    assert.equal(await getPrisma().sinpeMovement.count(), 3);
+    assert.equal(await controlDb().sinpeMovement.count(), 3);
   });
 
   it('el correo real de Davivienda cobra un pedido', async () => {
@@ -284,10 +284,10 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
     assert.equal(resultado.kind, 'stored');
     assert.equal(resultado.kind === 'stored' ? resultado.applied : false, true);
 
-    const movimiento = await getPrisma().sinpeMovement.findFirstOrThrow();
+    const movimiento = await controlDb().sinpeMovement.findFirstOrThrow();
     assert.equal(movimiento.senderName, 'DEYNA MARIA GUZMAN C');
     assert.equal(movimiento.bank, 'davivienda');
-    assert.equal((await getPrisma().order.findUniqueOrThrow({ where: { id: pedido.id } })).status, 'paid');
+    assert.equal((await controlDb().order.findUniqueOrThrow({ where: { id: pedido.id } })).status, 'paid');
   });
 
   it('el código se lee aunque venga en minúsculas o pegado a un punto', async () => {
@@ -300,6 +300,6 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
       `Ha recibido un SINPE Móvil de ANA por ₡5.000,00. Motivo: pago ` +
         `${pedido.payCode.toLowerCase()}. Comprobante: 2026091044444444444444444. BAC`,
     );
-    assert.equal((await getPrisma().order.findUniqueOrThrow({ where: { id: pedido.id } })).status, 'paid');
+    assert.equal((await controlDb().order.findUniqueOrThrow({ where: { id: pedido.id } })).status, 'paid');
   });
 });

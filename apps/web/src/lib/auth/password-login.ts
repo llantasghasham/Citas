@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 
 import { passwordMatches } from './password';
 import type { Role } from '@/generated/prisma/enums';
@@ -38,7 +38,7 @@ export async function signInWithPassword(
 
   if (!looksLikeEmail(email) || password.length === 0) return failure;
 
-  const prisma = getPrisma();
+  const prisma = controlDb();
 
   // Counted per address, not per account, so the limit applies before we know
   // whether the account exists — otherwise the rate limit itself would answer

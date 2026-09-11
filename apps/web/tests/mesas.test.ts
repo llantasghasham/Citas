@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 
-import { getPrisma } from '../src/lib/db/client';
+import { controlDb } from '../src/lib/db/client';
 import { tenantScope } from '../src/lib/db/tenant';
 import {
   addTable,
@@ -27,7 +27,7 @@ describe('las mesas', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
   const fixture = withDatabase();
 
   beforeEach(async () => {
-    const prisma = getPrisma();
+    const prisma = controlDb();
     await prisma.rsvp.deleteMany({});
     // Levantar antes de quitar las mesas: la clave foránea no admite que quede
     // un invitado apuntando a una mesa que ya no está, y eso es lo que se
@@ -42,11 +42,11 @@ describe('las mesas', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
 
   /** Confirma a un invitado por `party` personas, él incluido. */
   const confirm = async (guestId: string, party: number): Promise<void> => {
-    await getPrisma().rsvp.create({ data: { guestId, status: 'attending', party } });
+    await controlDb().rsvp.create({ data: { guestId, status: 'attending', party } });
   };
 
   const guestsOf = async (eventId: string): Promise<{ id: string; name: string }[]> =>
-    getPrisma().guest.findMany({ where: { eventId }, orderBy: { name: 'asc' }, select: { id: true, name: true } });
+    controlDb().guest.findMany({ where: { eventId }, orderBy: { name: 'asc' }, select: { id: true, name: true } });
 
   it('quien no ha contestado no ocupa silla', async () => {
     const eventId = await makeEvent(fixture.get().tenantId, [
@@ -77,7 +77,7 @@ describe('las mesas', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     const theirs = await makeEvent(fixture.get().tenantId, []);
     await addTable(scope(), theirs, 'Mesa ajena', 10, 'Mesa');
 
-    const table = await getPrisma().table.findFirstOrThrow({ where: { eventId: theirs } });
+    const table = await controlDb().table.findFirstOrThrow({ where: { eventId: theirs } });
     const [ana] = await guestsOf(mine);
 
     // Por la puerta de delante: el servicio dice que no.
@@ -85,7 +85,7 @@ describe('las mesas', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
 
     // Y por detrás tampoco: la clave foránea compuesta lleva el evento dentro.
     await assert.rejects(
-      getPrisma().guest.update({ where: { id: ana!.id }, data: { tableId: table.id } }),
+      controlDb().guest.update({ where: { id: ana!.id }, data: { tableId: table.id } }),
     );
   });
 
@@ -94,12 +94,12 @@ describe('las mesas', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     const [ana] = await guestsOf(eventId);
     await confirm(ana!.id, 2);
     await addTable(scope(), eventId, 'Mesa 1', 10, 'Mesa');
-    const table = await getPrisma().table.findFirstOrThrow({ where: { eventId } });
+    const table = await controlDb().table.findFirstOrThrow({ where: { eventId } });
     await seatGuest(scope(), eventId, ana!.id, table.id);
 
     await removeTable(scope(), eventId, table.id);
 
-    const after = await getPrisma().guest.findUniqueOrThrow({ where: { id: ana!.id } });
+    const after = await controlDb().guest.findUniqueOrThrow({ where: { id: ana!.id } });
     assert.equal(after.tableId, null, 'sin mesa');
     assert.equal(after.name, 'Ana', 'el invitado sigue ahí');
   });
@@ -119,7 +119,7 @@ describe('las mesas', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     await addTable(scope(), eventId, '   ', 10, 'Mesa');
 
     const names = (
-      await getPrisma().table.findMany({ where: { eventId }, orderBy: { position: 'asc' } })
+      await controlDb().table.findMany({ where: { eventId }, orderBy: { position: 'asc' } })
     ).map((table) => table.name);
     assert.deepEqual(names, ['Mesa 1', 'Mesa 2']);
   });
@@ -167,11 +167,11 @@ describe('las mesas', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     const [ana] = await guestsOf(eventId);
     await confirm(ana!.id, 2);
     await addTable(scope(), eventId, 'Mesa 1', 10, 'Mesa');
-    const table = await getPrisma().table.findFirstOrThrow({ where: { eventId } });
+    const table = await controlDb().table.findFirstOrThrow({ where: { eventId } });
     await seatGuest(scope(), eventId, ana!.id, table.id);
 
     // Cambia de idea. Nadie la levanta: eso lo decide una persona.
-    await getPrisma().rsvp.update({ where: { guestId: ana!.id }, data: { status: 'declined' } });
+    await controlDb().rsvp.update({ where: { guestId: ana!.id }, data: { status: 'declined' } });
 
     const seating = await readSeating(scope(), eventId);
     assert.equal(seating?.tables[0]?.guests.length, 1, 'sigue sentada');
@@ -203,16 +203,16 @@ describe('las mesas', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     await addTable(scope(), eventId, 'Mesa 1', 10, 'Mesa');
     await autoSeat(scope(), eventId);
 
-    await getPrisma().event.delete({ where: { id: eventId } });
+    await controlDb().event.delete({ where: { id: eventId } });
 
-    assert.equal(await getPrisma().table.count({ where: { eventId } }), 0);
-    assert.equal(await getPrisma().guest.count({ where: { eventId } }), 0);
+    assert.equal(await controlDb().table.count({ where: { eventId } }), 0);
+    assert.equal(await controlDb().guest.count({ where: { eventId } }), 0);
   });
 
   it('otra oficina no ve ni toca estas mesas', async () => {
     const eventId = await makeEvent(fixture.get().tenantId, [{ name: 'Ana', phone: null }]);
     await addTable(scope(), eventId, 'Mesa 1', 10, 'Mesa');
-    const table = await getPrisma().table.findFirstOrThrow({ where: { eventId } });
+    const table = await controlDb().table.findFirstOrThrow({ where: { eventId } });
     const [ana] = await guestsOf(eventId);
 
     const intruder = tenantScope(fixture.get().otherTenantId);
@@ -224,6 +224,6 @@ describe('las mesas', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     assert.equal(await clearSeating(intruder, eventId), 0);
 
     // Y nada de eso escribió nada.
-    assert.equal(await getPrisma().table.count({ where: { eventId } }), 1);
+    assert.equal(await controlDb().table.count({ where: { eventId } }), 1);
   });
 });

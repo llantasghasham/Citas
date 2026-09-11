@@ -29,7 +29,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
   const copy = dictionary.admin.billing;
   const scope = scopeOf(session);
   const [limits, orders, methods, sinpePhone] = await Promise.all([
-    limitsFor(session.tenantId),
+    limitsFor(scopeOf(session)),
     listOrders(scope),
     enabledMethods(),
     setting('SINPE_PHONE'),

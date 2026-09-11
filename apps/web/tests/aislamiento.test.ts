@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 
 import { capabilitiesOf, saveRoleCapabilities, resetRoleCapabilities } from '../src/lib/auth/role-config';
-import { getPrisma } from '../src/lib/db/client';
+import { controlDb } from '../src/lib/db/client';
 import { tenantScope } from '../src/lib/db/tenant';
 import { avatarSrc } from '../src/lib/profile/avatar';
 import { gatewayUrl } from '../src/lib/whatsapp/gateway';
@@ -29,7 +29,7 @@ describe('aislamiento entre oficinas', { skip: HAS_DB ? false : 'sin DATABASE_UR
   const fixture = withDatabase();
 
   beforeEach(async () => {
-    const prisma = getPrisma();
+    const prisma = controlDb();
     await prisma.whatsappMessage.deleteMany({});
     await prisma.whatsappConnection.deleteMany({});
     await prisma.guest.deleteMany({ where: { token: { startsWith: 'test-' } } });
@@ -37,7 +37,7 @@ describe('aislamiento entre oficinas', { skip: HAS_DB ? false : 'sin DATABASE_UR
   });
 
   const connectionOfB = async (): Promise<string> => {
-    const row = await getPrisma().whatsappConnection.create({
+    const row = await controlDb().whatsappConnection.create({
       data: {
         tenantId: fixture.get().otherTenantId,
         name: 'El número de B',
@@ -57,7 +57,7 @@ describe('aislamiento entre oficinas', { skip: HAS_DB ? false : 'sin DATABASE_UR
     const id = await connectionOfB();
     assert.equal(await deleteConnection(tenantScope(fixture.get().tenantId), id, fixture.get().userId), false);
 
-    const row = await getPrisma().whatsappConnection.findUnique({ where: { id } });
+    const row = await controlDb().whatsappConnection.findUnique({ where: { id } });
     assert.ok(row !== null, 'la fila sigue');
     assert.equal(row.authEnc, 'v1.credenciales-de-B', 'las credenciales siguen');
   });
@@ -65,7 +65,7 @@ describe('aislamiento entre oficinas', { skip: HAS_DB ? false : 'sin DATABASE_UR
   it('A no puede cambiarle el tope diario a B', async () => {
     const id = await connectionOfB();
     await setDailyCap(tenantScope(fixture.get().tenantId), id, 500, fixture.get().userId);
-    const row = await getPrisma().whatsappConnection.findUniqueOrThrow({ where: { id } });
+    const row = await controlDb().whatsappConnection.findUniqueOrThrow({ where: { id } });
     assert.equal(row.dailyCap, 200, 'sigue el de fábrica');
   });
 
@@ -81,13 +81,13 @@ describe('aislamiento entre oficinas', { skip: HAS_DB ? false : 'sin DATABASE_UR
       fixture.get().userId,
     );
     assert.deepEqual(result, { error: 'notFound' });
-    assert.equal(await getPrisma().whatsappMessage.count(), 0);
+    assert.equal(await controlDb().whatsappMessage.count(), 0);
   });
 
   it('A no ve ni reintenta los envíos fallidos de B', async () => {
     const id = await connectionOfB();
     const eventOfB = await makeEvent(fixture.get().otherTenantId);
-    await getPrisma().whatsappMessage.create({
+    await controlDb().whatsappMessage.create({
       data: {
         tenantId: fixture.get().otherTenantId,
         connectionId: id,
@@ -110,7 +110,7 @@ describe('aislamiento entre oficinas', { skip: HAS_DB ? false : 'sin DATABASE_UR
   it('la base no admite un mensaje de A colgado del número de B', async () => {
     const id = await connectionOfB();
     await assert.rejects(
-      getPrisma().whatsappMessage.create({
+      controlDb().whatsappMessage.create({
         data: { tenantId: fixture.get().tenantId, connectionId: id, toPhone: '+9', body: 'cruzado' },
       }),
       'la clave foránea compuesta lo impide',
@@ -137,25 +137,25 @@ describe('los candados de los roles', { skip: HAS_DB ? false : 'sin DATABASE_URL
   });
 
   it('una fila envenenada escrita a mano tampoco cuela', async () => {
-    await getPrisma().setting.upsert({
+    await controlDb().setting.upsert({
       where: { key: 'ROLE_CAPS_OPERATOR' },
       update: { value: 'platform:manage,event:read,inventado:cosa' },
       create: { key: 'ROLE_CAPS_OPERATOR', value: 'platform:manage,event:read,inventado:cosa' },
     });
     const caps = await capabilitiesOf('OPERATOR');
     assert.deepEqual([...caps], ['event:read']);
-    await getPrisma().setting.deleteMany({ where: { key: 'ROLE_CAPS_OPERATOR' } });
+    await controlDb().setting.deleteMany({ where: { key: 'ROLE_CAPS_OPERATOR' } });
   });
 });
 
 describe('lo que no puede salir hacia fuera', () => {
   it('la dirección del servicio de WhatsApp solo apunta al bucle local', async () => {
-    // El guardia va PRIMERO. `getPrisma()` lanza si no hay `DATABASE_URL`, así
+    // El guardia va PRIMERO. `controlDb()` lanza si no hay `DATABASE_URL`, así
     // que dejarlo por encima convertía en un fallo lo que tenía que ser un
     // salto: sin base de datos, esta prueba se salta como todas las demás.
     if (!HAS_DB) return;
 
-    const prisma = getPrisma();
+    const prisma = controlDb();
     const put = async (value: string): Promise<void> => {
       await prisma.setting.upsert({
         where: { key: 'WHATSAPP_GATEWAY_URL' }, update: { value },
@@ -199,7 +199,7 @@ describe('la cadena de oficina de un mensaje', { skip: HAS_DB ? false : 'sin DAT
   const fixture = withDatabase();
 
   it('un mensaje no puede colgar del evento de OTRA oficina', async () => {
-    const prisma = getPrisma();
+    const prisma = controlDb();
     const mio = fixture.get().tenantId;
     const ajeno = await makeEvent(fixture.get().otherTenantId, []);
     const conexion = await prisma.whatsappConnection.create({
@@ -232,7 +232,7 @@ describe('la cadena de oficina de un mensaje', { skip: HAS_DB ? false : 'sin DAT
   });
 
   it('ni del invitado de otro evento', async () => {
-    const prisma = getPrisma();
+    const prisma = controlDb();
     const mio = fixture.get().tenantId;
     const uno = await makeEvent(mio, [{ name: 'Ana', phone: null }]);
     const dos = await makeEvent(mio, []);
@@ -264,7 +264,7 @@ describe('la cadena de oficina de un mensaje', { skip: HAS_DB ? false : 'sin DAT
   });
 
   it('lo correcto sí entra, y borrar la oficina se lo lleva todo', async () => {
-    const prisma = getPrisma();
+    const prisma = controlDb();
     const tenant = await prisma.tenant.create({
       data: { name: 'Efímera', subdomain: 'prueba-cadena', slug: 'prueba-cadena' },
       select: { id: true },

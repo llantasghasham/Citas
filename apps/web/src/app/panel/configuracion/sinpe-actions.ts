@@ -14,7 +14,7 @@ import {
   type AccountInput,
 } from '@/lib/payments/sinpe/accounts';
 import { ingestSinpeEmail } from '@/lib/payments/sinpe/service';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 
 /**
  * Los buzones de SINPE.
@@ -138,7 +138,7 @@ export async function readPastedEmailAction(formData: FormData): Promise<void> {
   const body = String(formData.get('body') ?? '').slice(0, 100_000);
   if (accountId.length === 0 || body.trim().length === 0) redirect(`${BACK}&sinpe=incompleto`);
 
-  const account = await getPrisma().sinpeAccount.findUnique({
+  const account = await controlDb().sinpeAccount.findUnique({
     where: { id: accountId },
     select: { id: true, tenantId: true },
   });

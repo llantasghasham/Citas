@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { BRAND_KINDS, type BrandKind } from '@/lib/brand/assets';
 
 export const runtime = 'nodejs';
@@ -23,7 +23,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
   const valid = BRAND_KINDS.find((candidate) => candidate === kind) as BrandKind | undefined;
   if (valid === undefined) return new Response(null, { status: 404 });
 
-  const asset = await getPrisma().brandAsset.findUnique({ where: { kind: valid } });
+  const asset = await controlDb().brandAsset.findUnique({ where: { kind: valid } });
   if (asset === null) return new Response(null, { status: 404 });
 
   const etag = `"${asset.version}"`;

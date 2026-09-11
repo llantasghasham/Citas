@@ -1,7 +1,8 @@
 import { randomBytes } from 'node:crypto';
 
 import type { RsvpStatus } from '@/generated/prisma/enums';
-import { getPrisma } from '@/lib/db/client';
+import { db } from '@/lib/db/client';
+import { registerGuestTokens, scopeForSlug } from '@/lib/db/directory';
 
 export const RSVP_STATUSES = ['attending', 'declined', 'tentative'] as const;
 
@@ -71,7 +72,12 @@ export async function submitRsvp(input: SubmitRsvpInput): Promise<SubmitRsvpResu
   if (name.length === 0 || name.length > MAX_NAME) return { outcome: 'invalid' };
   if (!Number.isInteger(party) || party < 1 || party > MAX_PARTY) return { outcome: 'invalid' };
 
-  const prisma = getPrisma();
+  // El evento sale del slug y el slug dice de qué oficina es: el formulario es
+  // público y nada de lo que manda el cliente decide en qué base se escribe.
+  const scope = await scopeForSlug(input.slug);
+  if (scope === null) return { outcome: 'not_found' };
+
+  const prisma = db(scope);
   const version = await prisma.invitationVersion.findUnique({
     where: { slug: input.slug },
     select: {
@@ -108,6 +114,8 @@ export async function submitRsvp(input: SubmitRsvpInput): Promise<SubmitRsvpResu
   }
 
   if (guest === null) {
+    const token = newGuestToken();
+    await registerGuestTokens(scope, [token]);
     guest = await prisma.guest.create({
       data: {
         eventId: event.id,
@@ -115,7 +123,7 @@ export async function submitRsvp(input: SubmitRsvpInput): Promise<SubmitRsvpResu
         // The guest replied on this version of the invitation, so this is the
         // language they read it in — and the one to write to them in later.
         locale: version.locale,
-        token: newGuestToken(),
+        token,
         maxParty: MAX_PARTY,
         createdIp: input.ip ?? null,
         selfAdded: true,
@@ -167,7 +175,10 @@ export async function findGuestByToken(
   slug: string,
   token: string,
 ): Promise<GuestContext | null> {
-  const guest = await getPrisma().guest.findFirst({
+  const scope = await scopeForSlug(slug);
+  if (scope === null) return null;
+
+  const guest = await db(scope).guest.findFirst({
     where: { token, event: { versions: { some: { slug } } } },
     include: { rsvp: true, table: { select: { name: true } } },
   });

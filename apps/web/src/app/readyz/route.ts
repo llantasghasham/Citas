@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,7 +34,7 @@ export async function GET(): Promise<Response> {
     // Con tope: una base que acepta la conexión y no contesta dejaría esta
     // comprobación colgada, y un proxy esperando es un proxy que no decide.
     await Promise.race([
-      getPrisma().$queryRawUnsafe('SELECT 1'),
+      controlDb().$queryRawUnsafe('SELECT 1'),
       new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), TIMEOUT_MS)),
     ]);
     return new Response('ok', { status: 200, headers });

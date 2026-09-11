@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 
 /**
  * Tira las sesiones caducadas y los códigos gastados.
@@ -21,7 +21,7 @@ export interface PurgeSummary {
 const GRACE_DAYS = 1;
 
 export async function purgeExpired(): Promise<PurgeSummary> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const cutoff = new Date(Date.now() - GRACE_DAYS * 24 * 60 * 60 * 1000);
 
   const [sessions, codes] = await Promise.all([

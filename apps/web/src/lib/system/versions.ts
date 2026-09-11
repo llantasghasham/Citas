@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import type { StackKey } from '@/lib/types';
 
 /**
@@ -55,7 +55,7 @@ function declaredInMobile(name: string): string | null {
 async function databaseVersion(): Promise<string | null> {
   try {
     const rows =
-      await getPrisma().$queryRawUnsafe<{ version: string }[]>('SELECT version() AS version');
+      await controlDb().$queryRawUnsafe<{ version: string }[]>('SELECT version() AS version');
     const full = rows[0]?.version ?? '';
     return /PostgreSQL (\d+(?:\.\d+)?)/.exec(full)?.[1] ?? null;
   } catch {

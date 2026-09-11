@@ -1,5 +1,6 @@
 import type { AcquisitionChannel } from '@/generated/prisma/enums';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb, db } from '@/lib/db/client';
+import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 
 import { limitsFor } from './plans';
 
@@ -60,18 +61,16 @@ export interface GuestAllowance {
  * pendiente no abre nada, porque entonces el prepago no sería prepago.
  */
 export async function guestAllowanceFor(
-  tenantId: string,
+  scope: TenantScope,
   eventId: string,
 ): Promise<GuestAllowance> {
-  const prisma = getPrisma();
-
   const [limits, paid, used] = await Promise.all([
-    limitsFor(tenantId),
-    prisma.order.findMany({
-      where: { tenantId, eventId, status: 'paid', packageGuests: { not: null } },
+    limitsFor(scope),
+    controlDb().order.findMany({
+      where: { ...scopedWhere(scope), eventId, status: 'paid', packageGuests: { not: null } },
       select: { packageGuests: true },
     }),
-    prisma.guest.count({ where: { eventId } }),
+    db(scope).guest.count({ where: { eventId } }),
   ]);
 
   // Se suman: una boda que crece se amplía comprando otro paquete, sin tener

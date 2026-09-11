@@ -1,7 +1,7 @@
 import type { PlanTier } from '@/generated/prisma/enums';
 import { recordAudit } from '@/lib/audit';
 import { applySettlement } from '@/lib/billing/reconcile';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { getPaymentProvider, providerFor } from '@/lib/payments';
 import { openCollection } from '@/lib/billing/reserve';
@@ -22,7 +22,7 @@ export interface OrderRow {
 }
 
 export async function listOrders(scope: TenantScope): Promise<OrderRow[]> {
-  const orders = await getPrisma().order.findMany({
+  const orders = await controlDb().order.findMany({
     where: scopedWhere(scope),
     orderBy: { createdAt: 'desc' },
     take: 20,
@@ -56,7 +56,7 @@ export async function startPlanOrder(
   actorId: string,
   origin: string,
 ): Promise<{ orderId: string; payUrl: string | null }> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const plan = await prisma.plan.findUnique({ where: { tier } });
   if (plan === null) throw new Error(`Unknown plan tier "${tier}".`);
 
@@ -141,7 +141,7 @@ export async function startSinpeOrder(
   tier: PlanTier,
   actorId: string,
 ): Promise<{ orderId: string; amount: number; payCode: string }> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const plan = await prisma.plan.findUnique({ where: { tier } });
   if (plan === null) throw new Error(`Unknown plan tier "${tier}".`);
 
@@ -191,7 +191,7 @@ export async function startSinpeOrder(
  * the browser and not the callback body — is what decides that an order is paid.
  */
 export async function settleOrder(scope: TenantScope, orderId: string): Promise<boolean> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const order = await prisma.order.findFirst({
     where: { id: orderId, ...scopedWhere(scope) },
     include: { payments: { orderBy: { createdAt: 'desc' }, take: 1 } },

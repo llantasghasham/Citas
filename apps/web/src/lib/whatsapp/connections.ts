@@ -1,6 +1,6 @@
 import type { WhatsappStatus } from '@/generated/prisma/enums';
 import { recordAudit } from '@/lib/audit';
-import { getPrisma } from '@/lib/db/client';
+import { db } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { toE164 } from '@/lib/guests/phone';
 
@@ -32,7 +32,7 @@ export interface ConnectionRow {
 }
 
 export async function listConnections(scope: TenantScope): Promise<ConnectionRow[]> {
-  const prisma = getPrisma();
+  const prisma = db(scope);
   const rows = await prisma.whatsappConnection.findMany({
     where: scopedWhere(scope),
     orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
@@ -66,7 +66,7 @@ export async function createConnection(
   const clean = name.trim().slice(0, 60);
   if (clean.length === 0) return { error: 'empty' };
 
-  const prisma = getPrisma();
+  const prisma = db(scope);
   const existing = await prisma.whatsappConnection.count({ where: scopedWhere(scope) });
 
   try {
@@ -97,7 +97,7 @@ export async function ownedConnection(
   scope: TenantScope,
   id: string,
 ): Promise<{ id: string; name: string } | null> {
-  return getPrisma().whatsappConnection.findFirst({
+  return db(scope).whatsappConnection.findFirst({
     where: { id, ...scopedWhere(scope) },
     select: { id: true, name: true },
   });
@@ -122,7 +122,7 @@ export async function connectionState(
   lastError: string | null;
   updatedAt: Date;
 } | null> {
-  return getPrisma().whatsappConnection.findFirst({
+  return db(scope).whatsappConnection.findFirst({
     where: { id, ...scopedWhere(scope) },
     select: {
       id: true,
@@ -143,7 +143,7 @@ export async function deleteConnection(
   const owned = await ownedConnection(scope, id);
   if (owned === null) return false;
 
-  await getPrisma().whatsappConnection.delete({ where: { id } });
+  await db(scope).whatsappConnection.delete({ where: { id } });
   await recordAudit({
     tenantId: scope.tenantId,
     actorId,
@@ -168,7 +168,7 @@ export async function setDailyCap(
   // persona, y pasado de ahí no hay freno que salve al número. El campo acepta
   // menos, nunca más.
   const safe = Math.max(1, Math.min(500, Math.trunc(cap)));
-  await getPrisma().whatsappConnection.update({ where: { id }, data: { dailyCap: safe } });
+  await db(scope).whatsappConnection.update({ where: { id }, data: { dailyCap: safe } });
 
   await recordAudit({
     tenantId: scope.tenantId,
@@ -183,7 +183,7 @@ export async function setDailyCap(
 export async function makeDefault(scope: TenantScope, id: string): Promise<void> {
   if ((await ownedConnection(scope, id)) === null) return;
 
-  const prisma = getPrisma();
+  const prisma = db(scope);
   await prisma.$transaction([
     prisma.whatsappConnection.updateMany({
       where: scopedWhere(scope),
@@ -217,7 +217,7 @@ export async function queueEventInvitations(
   /** Antes de esta hora no salen. Nulo es «en cuanto le toque», como siempre. */
   scheduledAt: Date | null = null,
 ): Promise<QueueOutcome | { error: 'notFound' }> {
-  const prisma = getPrisma();
+  const prisma = db(scope);
 
   const [event, connection] = await Promise.all([
     prisma.event.findFirst({
@@ -306,7 +306,7 @@ export async function scheduledBatch(
   scope: TenantScope,
   eventId: string,
 ): Promise<{ count: number; at: Date } | null> {
-  const row = await getPrisma().whatsappMessage.findFirst({
+  const row = await db(scope).whatsappMessage.findFirst({
     where: {
       ...scopedWhere(scope),
       eventId,
@@ -318,7 +318,7 @@ export async function scheduledBatch(
   });
   if (row?.scheduledAt == null) return null;
 
-  const count = await getPrisma().whatsappMessage.count({
+  const count = await db(scope).whatsappMessage.count({
     where: { ...scopedWhere(scope), eventId, status: 'queued', scheduledAt: { gt: new Date() } },
   });
   return { count, at: row.scheduledAt };
@@ -343,7 +343,7 @@ export async function cancelScheduled(
   // Y se MARCA, no se borra: «se canceló» es información, y una fila que
   // desaparece no la da. Además deja volver a encolar a esa persona, porque lo
   // ya escrito se reconoce por `queued` y `sent`.
-  const { count } = await getPrisma().whatsappMessage.updateMany({
+  const { count } = await db(scope).whatsappMessage.updateMany({
     where: {
       ...scopedWhere(scope),
       eventId,
@@ -389,7 +389,7 @@ export async function listFailed(
   scope: TenantScope,
   eventId: string,
 ): Promise<FailedMessage[]> {
-  const rows = await getPrisma().whatsappMessage.findMany({
+  const rows = await db(scope).whatsappMessage.findMany({
     // También las dudosas: un mensaje que WhatsApp aceptó justo cuando se cayó
     // el repartidor no es un fallo, pero tampoco consta que llegara. Callárselo
     // sería peor que decirlo.
@@ -401,7 +401,7 @@ export async function listFailed(
 
   // Los nombres en una sola consulta: una por fila serían doce consultas para
   // pintar una tabla de doce líneas.
-  const guests = await getPrisma().guest.findMany({
+  const guests = await db(scope).guest.findMany({
     where: { id: { in: rows.flatMap((row) => (row.guestId === null ? [] : [row.guestId])) } },
     select: { id: true, name: true },
   });
@@ -434,7 +434,7 @@ export async function retryFailed(
   /** Uno solo, o toda la tanda si no se dice cuál. */
   messageId?: string,
 ): Promise<number> {
-  const { count } = await getPrisma().whatsappMessage.updateMany({
+  const { count } = await db(scope).whatsappMessage.updateMany({
     where: {
       ...scopedWhere(scope),
       eventId,
@@ -472,7 +472,7 @@ export interface QueueStats {
 
 /** Cómo va la tanda de un evento. */
 export async function queueStats(scope: TenantScope, eventId: string): Promise<QueueStats> {
-  const rows = await getPrisma().whatsappMessage.groupBy({
+  const rows = await db(scope).whatsappMessage.groupBy({
     by: ['status'],
     where: { eventId, ...scopedWhere(scope) },
     _count: { _all: true },

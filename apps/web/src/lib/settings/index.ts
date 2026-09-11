@@ -1,6 +1,6 @@
 import { cache } from 'react';
 
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { decryptSecret, encryptSecret } from '@/lib/secrets';
 
 /**
@@ -71,7 +71,7 @@ export type SecretKey = (typeof SECRET_KEYS)[number];
 const loadAll = cache(
   async (): Promise<Map<string, { value: string | null; valueEnc: string | null }>> => {
     try {
-      const rows = await getPrisma().setting.findMany();
+      const rows = await controlDb().setting.findMany();
       return new Map(rows.map((row) => [row.key, { value: row.value, valueEnc: row.valueEnc }]));
     } catch {
       // Sin base de datos —durante un build, por ejemplo— el entorno responde.
@@ -128,7 +128,7 @@ export async function origin(key: SettingKey | SecretKey): Promise<'panel' | 'en
 
 export async function saveSetting(key: SettingKey, value: string, actorId: string): Promise<void> {
   const clean = value.trim();
-  await getPrisma().setting.upsert({
+  await controlDb().setting.upsert({
     where: { key },
     update: { value: clean.length === 0 ? null : clean, updatedBy: actorId },
     create: { key, value: clean.length === 0 ? null : clean, updatedBy: actorId },
@@ -141,7 +141,7 @@ export async function saveSetting(key: SettingKey, value: string, actorId: strin
  */
 export async function saveSecret(key: SecretKey, value: string, actorId: string): Promise<void> {
   const clean = value.trim();
-  await getPrisma().setting.upsert({
+  await controlDb().setting.upsert({
     where: { key },
     update: { valueEnc: clean.length === 0 ? null : encryptSecret(clean), updatedBy: actorId },
     create: { key, valueEnc: clean.length === 0 ? null : encryptSecret(clean), updatedBy: actorId },
@@ -183,7 +183,7 @@ export async function settingsWithPrefix(prefix: string): Promise<Map<string, st
 export async function saveRawSetting(key: string, value: string, actorId: string): Promise<void> {
   checkRawKey(key);
   const clean = value.trim();
-  const prisma = getPrisma();
+  const prisma = controlDb();
 
   // Vacío significa «vuelve al valor por defecto», así que la fila se borra en
   // vez de guardarse en blanco: una fila vacía y una ausente tienen que

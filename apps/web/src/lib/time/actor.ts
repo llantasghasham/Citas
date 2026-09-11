@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { COUNTRIES } from '@citas/core';
 
 /**
@@ -13,7 +13,7 @@ export async function actorTimezone(session: {
   userId: string;
   country: string | null;
 }): Promise<string> {
-  const user = await getPrisma().user.findUnique({
+  const user = await controlDb().user.findUnique({
     where: { id: session.userId },
     select: { timezone: true },
   });

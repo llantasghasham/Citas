@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { CODE_SEND_FAILED_ACTION } from '@/lib/auth/otp';
 import { readSenderDns } from '@/lib/mail/dns';
 import { runningAsRoot } from '@/lib/render/browser';
-import { getPrisma, tenancyMode } from '@/lib/db/client';
+import { controlDb, tenancyMode } from '@/lib/db/client';
 import { unverifiedVerses } from '@/lib/verses';
 import { gatewayHealth } from '@/lib/whatsapp/gateway';
 import type { HealthKey } from '@/lib/types';
@@ -128,7 +128,7 @@ async function migrationsCheck(): Promise<HealthCheck> {
   }
 
   try {
-    const rows = await getPrisma().$queryRawUnsafe<{ migration_name: string }[]>(
+    const rows = await controlDb().$queryRawUnsafe<{ migration_name: string }[]>(
       'SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL',
     );
     const applied = new Set(rows.map((row) => row.migration_name));
@@ -195,7 +195,7 @@ function versesCheck(): HealthCheck {
 async function codeDeliveryCheck(): Promise<HealthCheck> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   try {
-    const failures = await getPrisma().auditLog.findMany({
+    const failures = await controlDb().auditLog.findMany({
       where: { action: CODE_SEND_FAILED_ACTION, createdAt: { gte: since } },
       orderBy: { createdAt: 'desc' },
       select: { metadata: true },
@@ -246,7 +246,7 @@ function siteUrlCheck(): HealthCheck {
 async function extraSuperadminsCheck(): Promise<HealthCheck> {
   const configured = (env('SUPERADMIN_EMAIL') ?? '').toLowerCase();
   try {
-    const others = await getPrisma().user.findMany({
+    const others = await controlDb().user.findMany({
       where: { isSuperadmin: true, email: { not: configured } },
       select: { email: true },
       orderBy: { email: 'asc' },
@@ -268,7 +268,7 @@ async function databaseCheck(): Promise<HealthCheck> {
     return { key: 'database', level: 'warn', detail: 'DATA_SOURCE ≠ database' };
   }
   try {
-    await getPrisma().$queryRawUnsafe('SELECT 1');
+    await controlDb().$queryRawUnsafe('SELECT 1');
     return { key: 'database', level: 'ok', detail: 'PostgreSQL' };
   } catch {
     return { key: 'database', level: 'fail', detail: 'DATABASE_URL' };
@@ -409,7 +409,7 @@ async function superadminCheck(): Promise<HealthCheck> {
     return { key: 'superadmin', level: 'fail', detail: 'SUPERADMIN_EMAIL' };
   }
   try {
-    const user = await getPrisma().user.findUnique({
+    const user = await controlDb().user.findUnique({
       where: { email: email.toLowerCase() },
       select: { isSuperadmin: true },
     });
@@ -455,7 +455,7 @@ async function tenancyCheck(): Promise<HealthCheck> {
     };
   }
 
-  const offices = await getPrisma().tenant.findMany({
+  const offices = await controlDb().tenant.findMany({
     select: { subdomain: true, databaseName: true },
   });
   const sinBase = offices.filter((office) => office.databaseName === null);

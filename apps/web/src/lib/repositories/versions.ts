@@ -2,7 +2,8 @@ import { templateFor, themeFor, type Locale } from '@citas/core';
 
 import { buildSlug } from '@/lib/create/slug';
 import { defaultNumerals } from '@/lib/create/options';
-import { getPrisma } from '@/lib/db/client';
+import { db } from '@/lib/db/client';
+import { registerSlugs } from '@/lib/db/directory';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { findVerse } from '@/lib/verses';
 
@@ -30,7 +31,7 @@ export async function listEventVersions(
   scope: TenantScope,
   eventId: string,
 ): Promise<EventVersion[] | null> {
-  const event = await getPrisma().event.findFirst({
+  const event = await db(scope).event.findFirst({
     where: { id: eventId, ...scopedWhere(scope) },
     select: {
       versions: {
@@ -65,7 +66,7 @@ export async function addEventVersion(
   eventId: string,
   input: NewVersion,
 ): Promise<AddVersionResult> {
-  const prisma = getPrisma();
+  const prisma = db(scope);
   const event = await prisma.event.findFirst({
     where: { id: eventId, ...scopedWhere(scope) },
     select: {
@@ -86,6 +87,7 @@ export async function addEventVersion(
   const theme = themeFor(event.type);
   const slug = buildSlug(event.honorees.map((honoree) => honoree.name));
 
+  await registerSlugs(scope, [slug]);
   await prisma.invitationVersion.create({
     data: {
       eventId: event.id,

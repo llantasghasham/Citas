@@ -2,6 +2,7 @@ import type { Locale, TenantStatus } from '@/generated/prisma/enums';
 
 import { controlDb, databaseByName } from './client';
 import { assertDatabaseName, isTenantDatabase, TENANT_DB_PREFIX } from './naming';
+import { tenantScope, type TenantScope } from './tenant';
 
 /**
  * La flota: crear, borrar y mirar las bases de datos de las oficinas.
@@ -144,4 +145,25 @@ export async function seedTenantRow(databaseName: string, tenant: TenantSeed): P
     update: { name: tenant.name, status: tenant.status, defaultLocale: tenant.defaultLocale },
     create: { ...tenant, databaseName },
   });
+}
+
+/**
+ * Un ámbito por cada oficina, para los trabajos que recorren la plataforma.
+ *
+ * Con todo en una base, un trabajo automático era UNA consulta con un `IN` y ya.
+ * Repartidas, es una consulta por oficina, y no hay atajo: preguntarle a todas a
+ * la vez es exactamente lo que una base por oficina impide.
+ *
+ * Funciona igual en los dos repartos, y a propósito: en `shared` devuelve
+ * ámbitos sin base —que encaminan a la de control— así que el trabajo recorre
+ * oficinas y consulta filtrando por oficina, que es lo mismo que hacía antes con
+ * un `IN`, solo que en varias consultas. Un solo camino, no dos.
+ */
+export async function eachOffice(): Promise<TenantScope[]> {
+  const offices = await controlDb().tenant.findMany({
+    where: { status: { not: 'suspended' } },
+    select: { id: true, databaseName: true },
+    orderBy: { createdAt: 'asc' },
+  });
+  return offices.map((office) => tenantScope(office.id, office.databaseName));
 }

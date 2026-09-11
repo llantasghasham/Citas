@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/auth/session';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,7 +25,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
 
   const { userId } = await context.params;
 
-  const user = await getPrisma().user.findUnique({
+  const user = await controlDb().user.findUnique({
     where: { id: userId },
     select: {
       avatarData: true,

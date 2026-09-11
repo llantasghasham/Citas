@@ -5,7 +5,7 @@ import {
   rateLimited,
   tooLarge,
 } from '@/lib/payments/callback-guard';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { PAYMENT_PROVIDERS, providerFor } from '@/lib/payments';
 
 export const runtime = 'nodejs';
@@ -67,7 +67,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     if (provider === null) return Response.json({ error: 'unknown_provider' }, { status: 404 });
 
     const result = await provider.verifyCallback(request.headers, rawBody);
-    const prisma = getPrisma();
+    const prisma = controlDb();
 
     // Por la clave COMPLETA. Buscar solo por la referencia podría dar con el
     // cobro de otra pasarela que use el mismo formato de identificador.

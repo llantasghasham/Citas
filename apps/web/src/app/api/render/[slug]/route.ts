@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { scopeForSlug } from '@/lib/db/directory';
 import { getInvitationRepository } from '@/lib/repositories';
 import { contentHashOf } from '@/lib/render/hash';
 import { renderOnce } from '@/lib/render/once';
@@ -38,10 +39,14 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
   }
 
   const asAttachment = new URL(request.url).searchParams.get('download') === '1';
-  const store = getRenderStore();
+  // La imagen guardada vive en la base de la oficina dueña de la invitación, no
+  // en una común: es contenido suyo, igual que el evento del que sale.
+  const scope = await scopeForSlug(slug);
+  const store = scope === null ? null : getRenderStore();
 
   try {
-    let png = (await store?.find(invitation.id, contentHash))?.data;
+    let png =
+      scope === null ? undefined : (await store?.find(scope, invitation.id, contentHash))?.data;
     const cached = png !== undefined;
 
     if (png === undefined) {
@@ -56,18 +61,21 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
         renderInvitationPng(captureUrl(invitation.slug)),
       );
       // Failing to keep the image must not fail the request that produced it.
-      await store
-        ?.save({
-          versionId: invitation.id,
-          contentHash,
-          data: png,
-          width: RENDER_WIDTH,
-          height: RENDER_HEIGHT,
-        })
-        .catch((error: unknown) => {
-          const message = error instanceof Error ? error.message : 'unknown_error';
-          console.error(`[render] could not cache ${invitation.slug}: ${message}`);
-        });
+      if (scope !== null) {
+        await store
+          ?.save({
+            scope,
+            versionId: invitation.id,
+            contentHash,
+            data: png,
+            width: RENDER_WIDTH,
+            height: RENDER_HEIGHT,
+          })
+          .catch((error: unknown) => {
+            const message = error instanceof Error ? error.message : 'unknown_error';
+            console.error(`[render] could not cache ${invitation.slug}: ${message}`);
+          });
+      }
     }
 
     const body = new Blob([png], { type: 'image/png' });

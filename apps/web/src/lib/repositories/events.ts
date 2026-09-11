@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db/client';
+import { db } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import type { RsvpStatus } from '@/generated/prisma/enums';
 import type { EventType } from '@/lib/types';
@@ -29,7 +29,7 @@ export interface GuestRow {
  * events. There is no variant of these functions without one.
  */
 export async function listEvents(scope: TenantScope): Promise<EventSummary[]> {
-  const events = await getPrisma().event.findMany({
+  const events = await db(scope).event.findMany({
     where: scopedWhere(scope),
     orderBy: { date: 'asc' },
     include: {
@@ -60,7 +60,7 @@ export async function listEvents(scope: TenantScope): Promise<EventSummary[]> {
 }
 
 export async function listGuests(scope: TenantScope, eventId: string): Promise<GuestRow[] | null> {
-  const event = await getPrisma().event.findFirst({
+  const event = await db(scope).event.findFirst({
     where: { id: eventId, ...scopedWhere(scope) },
     include: {
       guests: {

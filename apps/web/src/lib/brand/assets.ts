@@ -5,7 +5,7 @@ import sharp from 'sharp';
 
 import { recordAudit } from '@/lib/audit';
 import { MAX_INPUT_PIXELS, withImageSlot } from '@/lib/images/limits';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 
 /**
  * El logo y el icono de la pestaña, subidos desde el ordenador.
@@ -95,7 +95,7 @@ export async function saveBrandAsset(
   actorId: string,
 ): Promise<void> {
   const row = { data: image.data, type: image.type, version: image.version, updatedBy: actorId };
-  await getPrisma().brandAsset.upsert({
+  await controlDb().brandAsset.upsert({
     where: { kind },
     update: row,
     create: { kind, ...row },
@@ -112,7 +112,7 @@ export async function saveBrandAsset(
 }
 
 export async function deleteBrandAsset(kind: BrandKind, actorId: string): Promise<void> {
-  const { count } = await getPrisma().brandAsset.deleteMany({ where: { kind } });
+  const { count } = await controlDb().brandAsset.deleteMany({ where: { kind } });
   if (count === 0) return;
 
   await recordAudit({
@@ -132,7 +132,7 @@ export async function deleteBrandAsset(kind: BrandKind, actorId: string): Promis
  */
 export const brandVersions = cache(
   async (): Promise<Partial<Record<BrandKind, string>>> => {
-    const rows = await getPrisma()
+    const rows = await controlDb()
       .brandAsset.findMany({ select: { kind: true, version: true } })
       .catch(() => []);
 

@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 
 /**
  * Las sesiones abiertas de una persona, para que pueda cerrarlas.
@@ -24,7 +24,7 @@ export async function listSessions(
   userId: string,
   currentSessionId: string,
 ): Promise<SessionRow[]> {
-  const rows = await getPrisma().session.findMany({
+  const rows = await controlDb().session.findMany({
     where: { userId, expiresAt: { gt: new Date() } },
     select: { id: true, userAgent: true, ip: true, createdAt: true, lastSeenAt: true },
     orderBy: { lastSeenAt: 'desc' },
@@ -42,7 +42,7 @@ export async function listSessions(
 
 /** Cierra una, y solo si es de esta persona. El id viene del formulario. */
 export async function closeSession(userId: string, sessionId: string): Promise<void> {
-  await getPrisma().session.deleteMany({ where: { id: sessionId, userId } });
+  await controlDb().session.deleteMany({ where: { id: sessionId, userId } });
 }
 
 /** Cierra TODAS menos esta. Lo que se pulsa cuando algo huele mal. */
@@ -50,7 +50,7 @@ export async function closeOtherSessions(
   userId: string,
   keepSessionId: string,
 ): Promise<number> {
-  const { count } = await getPrisma().session.deleteMany({
+  const { count } = await controlDb().session.deleteMany({
     where: { userId, id: { not: keepSessionId } },
   });
   return count;

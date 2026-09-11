@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { applySettlement } from '@/lib/billing/reconcile';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { codeAppearsIn } from '@/lib/payments/sinpe/code';
 import { parseSinpeEmail, type SinpeMovement } from '@/lib/payments/sinpe/parse';
 import { plainText } from '@/lib/payments/sinpe/text';
@@ -82,7 +82,7 @@ async function store(
   movement: SinpeMovement,
   raw: string,
 ): Promise<{ id: string; duplicate: boolean }> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const existing = await prisma.sinpeMovement.findUnique({
     where: { accountId_reference: { accountId: account.id, reference: movement.reference } },
     select: { id: true },
@@ -134,7 +134,7 @@ async function store(
  */
 async function storeIgnored(account: AccountRef, raw: string, amount: number): Promise<void> {
   const fingerprint = createHash('sha256').update(raw).digest('hex').slice(0, 24);
-  await getPrisma()
+  await controlDb()
     .sinpeMovement.create({
       data: {
         accountId: account.id,
@@ -163,7 +163,7 @@ async function storeIgnored(account: AccountRef, raw: string, amount: number): P
  * generar dos cobros.
  */
 export async function tryMatch(movementId: string): Promise<boolean> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const movement = await prisma.sinpeMovement.findUnique({
     where: { id: movementId },
     select: {
@@ -221,7 +221,7 @@ async function settle(
     packageGuests: number | null;
   },
 ): Promise<boolean> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
 
   // El comprobante como `providerRef`. Si ya existe, es que este movimiento ya
   // se aplicó: se reutiliza en vez de crear un segundo cobro.

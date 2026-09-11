@@ -1,6 +1,6 @@
 import { after, before } from 'node:test';
 
-import { getPrisma } from '../src/lib/db/client';
+import { controlDb } from '../src/lib/db/client';
 
 /**
  * Lo común a las pruebas que tocan la base.
@@ -53,7 +53,7 @@ export interface Fixture {
 
 /** Deja la base como estaba antes de cada archivo, y al terminar. */
 export async function clean(): Promise<void> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   await prisma.whatsappMessage.deleteMany({});
   await prisma.whatsappConnection.deleteMany({});
   await prisma.sinpeMovement.deleteMany({});
@@ -77,7 +77,7 @@ export function withDatabase(): { get: () => Fixture } {
 
   before(async () => {
     await clean();
-    const prisma = getPrisma();
+    const prisma = controlDb();
     const tenant = await prisma.tenant.findFirstOrThrow({
       where: { isRoot: true },
       select: { id: true },
@@ -94,7 +94,7 @@ export function withDatabase(): { get: () => Fixture } {
 
   after(async () => {
     await clean();
-    await getPrisma().$disconnect();
+    await controlDb().$disconnect();
   });
 
   return { get: () => fixture };
@@ -106,7 +106,7 @@ export async function makeEvent(
   guests: { name: string; phone: string | null }[] = [],
   daysAway = 30,
 ): Promise<string> {
-  const event = await getPrisma().event.create({
+  const event = await controlDb().event.create({
     data: {
       tenantId,
       type: 'wedding',

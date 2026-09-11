@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { newPaymentReference } from '@/lib/payments/reference';
 import { isDefinitiveFailure, type PaymentProvider } from '@/lib/payments/types';
 import type { Currency } from '@/generated/prisma/enums';
@@ -52,7 +52,7 @@ export async function openCollection(
   provider: PaymentProvider,
   order: OpenCollection,
 ): Promise<ReserveOutcome> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
 
   // Lo que ya esté abierto y tenga enlace, se reutiliza: volver atrás y pulsar
   // otra vez es lo que hace cualquiera cuando una pasarela tarda.
@@ -136,7 +136,7 @@ export async function openCollection(
  */
 async function noteUnknown(paymentId: string, error: unknown): Promise<void> {
   const reason = error instanceof Error ? error.message : 'error desconocido';
-  await getPrisma()
+  await controlDb()
     .paymentEvent.create({
       data: {
         paymentId,
@@ -154,13 +154,13 @@ async function noteUnknown(paymentId: string, error: unknown): Promise<void> {
  * hubiera marcado pagada, borrarla sería borrar un cobro de verdad.
  */
 async function releaseReservation(paymentId: string): Promise<void> {
-  await getPrisma()
+  await controlDb()
     .payment.deleteMany({ where: { id: paymentId, status: 'pending', payUrl: null } })
     .catch(() => undefined);
 }
 
 async function waitForWinner(providerId: string, orderId: string): Promise<ReserveOutcome> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   for (let attempt = 0; attempt < WAIT_TRIES; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, WAIT_MS));
     const winner = await prisma.payment.findFirst({

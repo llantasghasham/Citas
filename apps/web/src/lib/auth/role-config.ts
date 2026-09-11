@@ -1,7 +1,7 @@
 import { cache } from 'react';
 
 import type { Role } from '@/generated/prisma/enums';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { CAPABILITIES, roleCan, type Capability } from '@/lib/auth/permissions';
 
 /**
@@ -43,7 +43,7 @@ function isEditable(role: Role): role is EditableRole {
 /** El reparto guardado, en una consulta por petición. */
 const loadOverrides = cache(async (): Promise<Map<string, Capability[]>> => {
   try {
-    const rows = await getPrisma().setting.findMany({
+    const rows = await controlDb().setting.findMany({
       where: { key: { startsWith: KEY_PREFIX } },
     });
 
@@ -93,7 +93,7 @@ export async function saveRoleCapabilities(
   );
 
   const key = `${KEY_PREFIX}${role}`;
-  await getPrisma().setting.upsert({
+  await controlDb().setting.upsert({
     where: { key },
     update: { value: clean.join(','), updatedBy: actorId },
     create: { key, value: clean.join(','), updatedBy: actorId },
@@ -103,5 +103,5 @@ export async function saveRoleCapabilities(
 /** Vuelve al reparto de fábrica borrando la fila. */
 export async function resetRoleCapabilities(role: Role): Promise<void> {
   if (!isEditable(role)) return;
-  await getPrisma().setting.deleteMany({ where: { key: `${KEY_PREFIX}${role}` } });
+  await controlDb().setting.deleteMany({ where: { key: `${KEY_PREFIX}${role}` } });
 }

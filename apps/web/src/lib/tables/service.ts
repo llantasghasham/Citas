@@ -1,6 +1,6 @@
 import type { Locale } from '@citas/core';
 
-import { getPrisma } from '@/lib/db/client';
+import { db } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import type { RsvpStatus } from '@/generated/prisma/enums';
 
@@ -57,7 +57,7 @@ export interface EventSeating {
 
 /** El evento, comprobando la oficina. Nulo si no es suya o no existe. */
 async function ownedEvent(scope: TenantScope, eventId: string): Promise<string | null> {
-  const event = await getPrisma().event.findFirst({
+  const event = await db(scope).event.findFirst({
     where: { id: eventId, ...scopedWhere(scope) },
     select: { id: true },
   });
@@ -69,7 +69,7 @@ export async function readSeating(
   eventId: string,
 ): Promise<EventSeating | null> {
   if ((await ownedEvent(scope, eventId)) === null) return null;
-  const prisma = getPrisma();
+  const prisma = db(scope);
 
   const [tables, guests] = await Promise.all([
     prisma.table.findMany({
@@ -132,9 +132,9 @@ export async function readSeating(
 }
 
 /** El nombre más corto que no choca con otro: «Mesa 1», «Mesa 2»… */
-async function nextName(eventId: string, prefix: string): Promise<string> {
+async function nextName(scope: TenantScope, eventId: string, prefix: string): Promise<string> {
   const taken = new Set(
-    (await getPrisma().table.findMany({ where: { eventId }, select: { name: true } })).map(
+    (await db(scope).table.findMany({ where: { eventId }, select: { name: true } })).map(
       (table) => table.name,
     ),
   );
@@ -157,15 +157,15 @@ export async function addTable(
   if ((await ownedEvent(scope, eventId)) === null) return 'notFound';
 
   const clean = name.trim().slice(0, 60);
-  const finalName = clean.length > 0 ? clean : await nextName(eventId, prefix);
-  const last = await getPrisma().table.findFirst({
+  const finalName = clean.length > 0 ? clean : await nextName(scope, eventId, prefix);
+  const last = await db(scope).table.findFirst({
     where: { eventId },
     orderBy: { position: 'desc' },
     select: { position: true },
   });
 
   try {
-    await getPrisma().table.create({
+    await db(scope).table.create({
       data: {
         eventId,
         name: finalName,
@@ -198,7 +198,7 @@ export async function editTable(
   const clean = name.trim().slice(0, 60);
   try {
     // Por `(id, eventId)`: un id de la boda de otro no encuentra nada.
-    const changed = await getPrisma().table.updateMany({
+    const changed = await db(scope).table.updateMany({
       where: { id: tableId, eventId },
       data: { seats: clampSeats(seats), ...(clean.length > 0 ? { name: clean } : {}) },
     });
@@ -225,7 +225,7 @@ export async function removeTable(
   tableId: string,
 ): Promise<TableOutcome> {
   if ((await ownedEvent(scope, eventId)) === null) return 'notFound';
-  const prisma = getPrisma();
+  const prisma = db(scope);
 
   return prisma.$transaction(async (tx) => {
     await tx.guest.updateMany({ where: { eventId, tableId }, data: { tableId: null } });
@@ -250,7 +250,7 @@ export async function seatGuest(
   tableId: string | null,
 ): Promise<TableOutcome> {
   if ((await ownedEvent(scope, eventId)) === null) return 'notFound';
-  const prisma = getPrisma();
+  const prisma = db(scope);
 
   if (tableId !== null) {
     const table = await prisma.table.findFirst({
@@ -296,7 +296,7 @@ export async function autoSeat(scope: TenantScope, eventId: string): Promise<num
 
   // En una transacción: un reparto a medias por un fallo de red deja al salón
   // con la mitad de la gente sentada y nadie sabiendo cuál mitad.
-  const prisma = getPrisma();
+  const prisma = db(scope);
   await prisma.$transaction(
     moves.map((move) =>
       prisma.guest.updateMany({ where: { id: move.guestId, eventId }, data: { tableId: move.tableId } }),
@@ -308,7 +308,7 @@ export async function autoSeat(scope: TenantScope, eventId: string): Promise<num
 /** Levanta a todo el mundo. El reparto se rehace; los invitados no se tocan. */
 export async function clearSeating(scope: TenantScope, eventId: string): Promise<number> {
   if ((await ownedEvent(scope, eventId)) === null) return 0;
-  const cleared = await getPrisma().guest.updateMany({
+  const cleared = await db(scope).guest.updateMany({
     where: { eventId, tableId: { not: null } },
     data: { tableId: null },
   });

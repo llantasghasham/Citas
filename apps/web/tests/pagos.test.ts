@@ -15,7 +15,7 @@ import {
 import { PaymentError } from '../src/lib/payments/types';
 import { openCollection } from '../src/lib/billing/reserve';
 import type { PaymentProvider } from '../src/lib/payments/types';
-import { getPrisma } from '../src/lib/db/client';
+import { controlDb } from '../src/lib/db/client';
 import { tenantScope } from '../src/lib/db/tenant';
 import { encryptSecret } from '../src/lib/secrets';
 
@@ -74,7 +74,7 @@ describe('el cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     server = fakeWhish();
     await new Promise<void>((resolve) => server.listen(PORT, '127.0.0.1', resolve));
 
-    const prisma = getPrisma();
+    const prisma = controlDb();
     for (const [key, value] of [
       ['WHISH_BASE_URL', `http://127.0.0.1:${PORT}/itel-service/api`],
       ['WHISH_CHANNEL', 'canal'],
@@ -91,13 +91,13 @@ describe('el cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
 
   after(async () => {
     await new Promise<void>((resolve) => server.close(() => resolve()));
-    await getPrisma().setting.deleteMany({
+    await controlDb().setting.deleteMany({
       where: { key: { in: ['WHISH_BASE_URL','WHISH_CHANNEL','WHISH_WEBSITE_URL','WHISH_SECRET','PAYMENTS_PROVIDER'] } },
     });
   });
 
   beforeEach(async () => {
-    const prisma = getPrisma();
+    const prisma = controlDb();
     await prisma.paymentEvent.deleteMany({});
     await prisma.payment.deleteMany({});
     await prisma.order.deleteMany({});
@@ -133,7 +133,7 @@ describe('el cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     ]);
     assert.ok('payUrl' in a && 'payUrl' in b);
     assert.equal(a.payUrl, b.payUrl, 'el mismo enlace');
-    assert.equal(await getPrisma().payment.count(), 1);
+    assert.equal(await controlDb().payment.count(), 1);
   });
 
   /**
@@ -151,49 +151,49 @@ describe('el cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
   it('el aviso del proveedor activa el PEDIDO, no solo el cobro', async () => {
     const token = await newOrder();
     await beginPublicPayment(token, 'https://citas.posxml.com');
-    const payment = await getPrisma().payment.findFirstOrThrow();
+    const payment = await controlDb().payment.findFirstOrThrow();
 
     // El falso da «pendiente» la primera vez; se consume para llegar a pagado.
     await notifyAgain(payment.providerRef);
     const response = await notifyAgain(payment.providerRef);
     assert.equal(response.status, 200);
 
-    const order = await getPrisma().order.findFirstOrThrow({ where: { payToken: token } });
+    const order = await controlDb().order.findFirstOrThrow({ where: { payToken: token } });
     assert.equal(order.status, 'paid');
-    assert.equal(await getPrisma().auditLog.count({ where: { action: 'order.paid' } }), 1);
+    assert.equal(await controlDb().auditLog.count({ where: { action: 'order.paid' } }), 1);
   });
 
   it('el mismo aviso repetido no activa nada dos veces', async () => {
     const token = await newOrder();
     await beginPublicPayment(token, 'https://citas.posxml.com');
-    const payment = await getPrisma().payment.findFirstOrThrow();
+    const payment = await controlDb().payment.findFirstOrThrow();
     await notifyAgain(payment.providerRef);
     await notifyAgain(payment.providerRef);
     await notifyAgain(payment.providerRef);
     await notifyAgain(payment.providerRef);
-    assert.equal(await getPrisma().auditLog.count({ where: { action: 'order.paid' } }), 1);
+    assert.equal(await controlDb().auditLog.count({ where: { action: 'order.paid' } }), 1);
   });
 
   it('una respuesta atrasada no devuelve a pendiente lo ya pagado', async () => {
     const token = await newOrder();
     await beginPublicPayment(token, 'https://citas.posxml.com');
-    const payment = await getPrisma().payment.findFirstOrThrow();
+    const payment = await controlDb().payment.findFirstOrThrow();
     await notifyAgain(payment.providerRef);
     await notifyAgain(payment.providerRef);
 
-    const order = await getPrisma().order.findFirstOrThrow({
+    const order = await controlDb().order.findFirstOrThrow({
       where: { payToken: token },
       select: { id: true, tenantId: true, amount: true, description: true, packageGuests: true },
     });
     assert.equal(await applySettlement(order, payment.id, 'pending', 'job'), false);
-    assert.equal((await getPrisma().order.findUniqueOrThrow({ where: { id: order.id } })).status, 'paid');
+    assert.equal((await controlDb().order.findUniqueOrThrow({ where: { id: order.id } })).status, 'paid');
   });
 
   it('dos liquidaciones simultáneas y solo una escribe', async () => {
     const token = await newOrder();
     await beginPublicPayment(token, 'https://citas.posxml.com');
-    const payment = await getPrisma().payment.findFirstOrThrow();
-    const order = await getPrisma().order.findFirstOrThrow({
+    const payment = await controlDb().payment.findFirstOrThrow();
+    const order = await controlDb().order.findFirstOrThrow({
       where: { payToken: token },
       select: { id: true, tenantId: true, amount: true, description: true, packageGuests: true },
     });
@@ -203,7 +203,7 @@ describe('el cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
       applySettlement(order, payment.id, 'paid', 'job'),
     ]);
     assert.equal(both.filter(Boolean).length, 1);
-    assert.equal(await getPrisma().auditLog.count({ where: { action: 'order.paid' } }), 1);
+    assert.equal(await controlDb().auditLog.count({ where: { action: 'order.paid' } }), 1);
   });
 
   it('un aviso con una referencia inventada no encuentra nada', async () => {
@@ -214,21 +214,21 @@ describe('el cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
   it('el repaso pregunta al proveedor con el que se abrió el cobro', async () => {
     const token = await newOrder();
     await beginPublicPayment(token, 'https://citas.posxml.com');
-    const payment = await getPrisma().payment.findFirstOrThrow();
+    const payment = await controlDb().payment.findFirstOrThrow();
     assert.equal(payment.provider, 'whish', 'se guarda el proveedor, no «manual»');
 
     // Pasado el periodo de gracia.
-    await getPrisma().payment.updateMany({ data: { createdAt: new Date(Date.now() - 10 * 60 * 1000) } });
+    await controlDb().payment.updateMany({ data: { createdAt: new Date(Date.now() - 10 * 60 * 1000) } });
     await reconcilePending();
     const second = await reconcilePending();
     assert.equal(second.paid, 1);
-    assert.equal((await getPrisma().order.findFirstOrThrow({ where: { payToken: token } })).status, 'paid');
+    assert.equal((await controlDb().order.findFirstOrThrow({ where: { payToken: token } })).status, 'paid');
   });
 
   it('el efectivo no se le pregunta a nadie', async () => {
     const token = await newOrder();
-    const order = await getPrisma().order.findFirstOrThrow({ where: { payToken: token } });
-    await getPrisma().payment.create({
+    const order = await controlDb().order.findFirstOrThrow({ where: { payToken: token } });
+    await controlDb().payment.create({
       data: {
         orderId: order.id, provider: 'manual', providerRef: `cash_${order.id}`,
         status: 'pending', amount: order.amount, currency: order.currency,
@@ -252,7 +252,7 @@ describe('la reserva del cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, 
   const fixture = withDatabase();
 
   beforeEach(async () => {
-    const prisma = getPrisma();
+    const prisma = controlDb();
     await prisma.payment.deleteMany({});
     await prisma.order.deleteMany({});
   });
@@ -293,7 +293,7 @@ describe('la reserva del cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, 
   const pedidoDeReserva = async (): Promise<string> => pedido();
 
   const pedido = async (): Promise<string> => {
-    const row = await getPrisma().order.create({
+    const row = await controlDb().order.create({
       data: {
         tenantId: fixture.get().tenantId,
         amount: 1500,
@@ -323,7 +323,7 @@ describe('la reserva del cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, 
     const [uno, dos] = await Promise.all([abrir(), abrir()]);
 
     assert.equal(veces(), 1, 'a la pasarela se le pidió UNA vez');
-    assert.equal(await getPrisma().payment.count({ where: { orderId } }), 1);
+    assert.equal(await controlDb().payment.count({ where: { orderId } }), 1);
 
     // Y las dos peticiones se llevan el mismo enlace, no un error.
     const urls = [uno, dos].map((r) => (r as { ok: boolean; payUrl?: string }).payUrl);
@@ -364,9 +364,9 @@ describe('la reserva del cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, 
     };
     const salida = (await abrirCon(ambiguo, orderId)) as { ok: boolean; reason?: string };
     assert.equal(salida.reason, 'unknown');
-    assert.equal(await getPrisma().payment.count({ where: { orderId } }), 1, 'se conserva');
+    assert.equal(await controlDb().payment.count({ where: { orderId } }), 1, 'se conserva');
 
-    await getPrisma().payment.deleteMany({ where: { orderId } });
+    await controlDb().payment.deleteMany({ where: { orderId } });
 
     let primera = true;
     const definitivo: PaymentProvider = {
@@ -389,7 +389,7 @@ describe('la reserva del cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, 
 
     await assert.rejects(abrirCon(definitivo, orderId));
     // Sin soltarla, el reintento chocaría contra el índice para siempre.
-    assert.equal(await getPrisma().payment.count({ where: { orderId } }), 0);
+    assert.equal(await controlDb().payment.count({ where: { orderId } }), 0);
     assert.equal(((await abrirCon(definitivo, orderId)) as { ok: boolean }).ok, true);
   });
 });
@@ -405,7 +405,7 @@ describe('el importe y las reservas en el aire', { skip: HAS_DB ? false : 'sin D
   const fixture = withDatabase();
 
   beforeEach(async () => {
-    const prisma = getPrisma();
+    const prisma = controlDb();
     await prisma.paymentEvent.deleteMany({});
     await prisma.payment.deleteMany({});
     await prisma.order.deleteMany({});
@@ -413,7 +413,7 @@ describe('el importe y las reservas en el aire', { skip: HAS_DB ? false : 'sin D
   });
 
   const pedidoConCobro = async (): Promise<{ orderId: string; paymentId: string }> => {
-    const prisma = getPrisma();
+    const prisma = controlDb();
     const order = await prisma.order.create({
       data: {
         tenantId: fixture.get().tenantId,
@@ -439,7 +439,7 @@ describe('el importe y las reservas en el aire', { skip: HAS_DB ? false : 'sin D
   };
 
   const orderRow = async (orderId: string) =>
-    getPrisma().order.findUniqueOrThrow({
+    controlDb().order.findUniqueOrThrow({
       where: { id: orderId },
       select: { id: true, tenantId: true, amount: true, description: true, packageGuests: true, status: true },
     });
@@ -458,13 +458,13 @@ describe('el importe y las reservas en el aire', { skip: HAS_DB ? false : 'sin D
     assert.equal(cambio, false);
     assert.equal((await orderRow(orderId)).status, 'pending');
     assert.equal(
-      (await getPrisma().payment.findUniqueOrThrow({ where: { id: paymentId } })).status,
+      (await controlDb().payment.findUniqueOrThrow({ where: { id: paymentId } })).status,
       'pending',
       'se queda pendiente para que el repaso lo siga mirando',
     );
 
     // Y queda escrito lo que llegó, que es lo único que sirve si se discute.
-    const evento = await getPrisma().paymentEvent.findFirstOrThrow({ where: { paymentId } });
+    const evento = await controlDb().paymentEvent.findFirstOrThrow({ where: { paymentId } });
     assert.equal(evento.kind, 'amount_mismatch');
   });
 
@@ -507,7 +507,7 @@ describe('el importe y las reservas en el aire', { skip: HAS_DB ? false : 'sin D
     // Esta es la ventana exacta que señaló el informe. Antes se soltaba pasara
     // lo que pasara, así que un reintento abría una SEGUNDA cobranza de verdad.
     const orderId = (await pedidoConCobro()).orderId;
-    await getPrisma().payment.deleteMany({ where: { orderId } });
+    await controlDb().payment.deleteMany({ where: { orderId } });
 
     const provider: PaymentProvider = {
       id: 'mock',
@@ -529,17 +529,17 @@ describe('el importe y las reservas en el aire', { skip: HAS_DB ? false : 'sin D
     assert.equal(salida.ok, false);
     assert.equal(salida.reason, 'unknown', 'ni sí ni no: no se sabe');
     assert.equal(
-      await getPrisma().payment.count({ where: { orderId, status: 'pending' } }),
+      await controlDb().payment.count({ where: { orderId, status: 'pending' } }),
       1,
       'la reserva se CONSERVA: es lo único que ata esa referencia al pedido',
     );
-    const evento = await getPrisma().paymentEvent.findFirst({ where: { kind: 'open_unknown' } });
+    const evento = await controlDb().paymentEvent.findFirst({ where: { kind: 'open_unknown' } });
     assert.notEqual(evento, null, 'y queda escrito por qué');
   });
 
   it('una negativa EXPLÍCITA sí la suelta: no se creó nada', async () => {
     const orderId = (await pedidoConCobro()).orderId;
-    await getPrisma().payment.deleteMany({ where: { orderId } });
+    await controlDb().payment.deleteMany({ where: { orderId } });
 
     const provider: PaymentProvider = {
       id: 'mock',
@@ -560,7 +560,7 @@ describe('el importe y las reservas en el aire', { skip: HAS_DB ? false : 'sin D
       });
 
     await assert.rejects(abrir());
-    assert.equal(await getPrisma().payment.count({ where: { orderId } }), 0, 'se puede reintentar');
+    assert.equal(await controlDb().payment.count({ where: { orderId } }), 0, 'se puede reintentar');
   });
 
   it('un cobro de hace dos meses se cierra en vez de quedarse pendiente para siempre', async () => {
@@ -569,12 +569,12 @@ describe('el importe y las reservas en el aire', { skip: HAS_DB ? false : 'sin D
     // por pedido», ese pedido no se podía cobrar nunca más.
     const { orderId } = await pedidoConCobro();
     const viejo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
-    await getPrisma().payment.updateMany({ where: { orderId }, data: { createdAt: viejo } });
+    await controlDb().payment.updateMany({ where: { orderId }, data: { createdAt: viejo } });
 
     const resumen = await reconcilePending();
     assert.ok(resumen.expired >= 1, `caducados: ${resumen.expired}`);
     assert.equal(
-      (await getPrisma().payment.findFirstOrThrow({ where: { orderId } })).status,
+      (await controlDb().payment.findFirstOrThrow({ where: { orderId } })).status,
       'expired',
     );
   });
@@ -583,7 +583,7 @@ describe('el importe y las reservas en el aire', { skip: HAS_DB ? false : 'sin D
     // Esto es lo que se protege al no borrarla: la cobranza huérfana existía y
     // alguien la pagó. Sin la fila, ese cobro no se podría ni reconocer.
     const { orderId, paymentId } = await pedidoConCobro();
-    await getPrisma().payment.update({
+    await controlDb().payment.update({
       where: { id: paymentId },
       data: { payUrl: null, createdAt: new Date(Date.now() - 20 * 60 * 1000) },
     });
@@ -662,7 +662,7 @@ describe('la liquidación es atómica de verdad', { skip: HAS_DB ? false : 'sin 
   const fixture = withDatabase();
 
   beforeEach(async () => {
-    const prisma = getPrisma();
+    const prisma = controlDb();
     await prisma.paymentEvent.deleteMany({});
     await prisma.payment.deleteMany({});
     await prisma.order.deleteMany({});
@@ -678,7 +678,7 @@ describe('la liquidación es atómica de verdad', { skip: HAS_DB ? false : 'sin 
     // El fallo se provoca con una restricción de verdad: el historial apunta a
     // una oficina por clave foránea, así que con una oficina inventada la
     // escritura del historial revienta DENTRO de la transacción.
-    const prisma = getPrisma();
+    const prisma = controlDb();
     const order = await prisma.order.create({
       data: {
         tenantId: fixture.get().tenantId,

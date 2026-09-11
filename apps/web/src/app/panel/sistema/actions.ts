@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { clientIp } from '@/lib/admin/context';
 import { recordAudit } from '@/lib/audit';
 import { getSession, sessionCan } from '@/lib/auth/session';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { getMailer } from '@/lib/mail';
 import { getPaymentProvider } from '@/lib/payments';
 
@@ -42,7 +42,7 @@ export async function sendTestMailAction(): Promise<void> {
   }
 
   const since = new Date(Date.now() - COOLDOWN_SECONDS * 1000);
-  const recent = await getPrisma().auditLog.count({
+  const recent = await controlDb().auditLog.count({
     where: { action: TEST_ACTION, createdAt: { gte: since } },
   });
   if (recent > 0) redirect('/panel/configuracion?mail=tooSoon');

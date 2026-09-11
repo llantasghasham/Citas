@@ -3,7 +3,8 @@ import { randomBytes } from 'node:crypto';
 import type { Locale } from '@citas/core';
 
 import { guestAllowanceFor } from '@/lib/billing/packages';
-import { getPrisma } from '@/lib/db/client';
+import { db } from '@/lib/db/client';
+import { registerGuestTokens } from '@/lib/db/directory';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import type { ImportedGuest } from '@/lib/guests/import';
 import { versionForLocale, type EventVersion } from '@/lib/repositories/versions';
@@ -68,7 +69,7 @@ export async function importGuests(
   eventId: string,
   incoming: ImportedGuest[],
 ): Promise<ImportOutcome> {
-  const prisma = getPrisma();
+  const prisma = db(scope);
   const event = await prisma.event.findFirst({
     where: { id: eventId, ...scopedWhere(scope) },
     select: { id: true },
@@ -91,7 +92,7 @@ export async function importGuests(
 
   // Comprobado contra los que YA hay, no contra los de esta importación: dos
   // pegadas de doscientos no pueden colarse por ser cada una menor del límite.
-  const allowance = await guestAllowanceFor(scope.tenantId, eventId);
+  const allowance = await guestAllowanceFor(scope, eventId);
   if (allowance.allowed !== null && allowance.used + fresh.length > allowance.allowed) {
     return {
       ok: false,
@@ -102,16 +103,23 @@ export async function importGuests(
     };
   }
 
-  await prisma.guest.createMany({
-    data: fresh.map((guest) => ({
-      eventId,
-      name: guest.name,
-      phone: guest.phone,
-      locale: guest.locale,
-      token: newToken(),
-      invitedAt: new Date(),
-    })),
-  });
+  const rows = fresh.map((guest) => ({
+    eventId,
+    name: guest.name,
+    phone: guest.phone,
+    locale: guest.locale,
+    token: newToken(),
+    invitedAt: new Date(),
+  }));
+
+  // El directorio antes que los invitados, por lo mismo que con los slugs: un
+  // token apuntado sin invitado detrás es un 404; un invitado sin token apuntado
+  // tiene un enlace en el móvil que no lleva a ninguna parte.
+  await registerGuestTokens(
+    scope,
+    rows.map((row) => row.token),
+  );
+  await prisma.guest.createMany({ data: rows });
 
   return { ok: true, added: fresh.length };
 }
@@ -120,7 +128,7 @@ export async function listGuestsWithLinks(
   scope: TenantScope,
   eventId: string,
 ): Promise<EventGuests | null> {
-  const event = await getPrisma().event.findFirst({
+  const event = await db(scope).event.findFirst({
     where: { id: eventId, ...scopedWhere(scope) },
     include: {
       honorees: { orderBy: { order: 'asc' }, select: { name: true } },

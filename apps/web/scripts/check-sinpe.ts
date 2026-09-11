@@ -1,5 +1,5 @@
 import { checkSinpeAccounts } from '../src/lib/payments/sinpe/check';
-import { getPrisma } from '../src/lib/db/client';
+import { controlDb } from '../src/lib/db/client';
 
 /**
  * Revisa los buzones de SINPE y cobra lo que case.
@@ -25,5 +25,5 @@ main()
     process.exitCode = 1;
   })
   .finally(() => {
-    void getPrisma().$disconnect();
+    void controlDb().$disconnect();
   });

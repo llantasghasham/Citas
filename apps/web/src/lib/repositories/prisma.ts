@@ -1,4 +1,5 @@
-import { getPrisma } from '@/lib/db/client';
+import { controlDb, db } from '@/lib/db/client';
+import { scopeForSlug } from '@/lib/db/directory';
 import type { Invitation } from '@/lib/types';
 import { findVerse } from '@/lib/verses';
 
@@ -15,7 +16,7 @@ const INCLUDE = {
 } as const;
 
 type VersionRow = Awaited<
-  ReturnType<ReturnType<typeof getPrisma>['invitationVersion']['findFirst']>
+  ReturnType<ReturnType<typeof controlDb>['invitationVersion']['findFirst']>
 >;
 
 /** ISO calendar date, without the time part a wall-clock date never had. */
@@ -89,7 +90,14 @@ function toInvitation(row: NonNullable<VersionRow>): Invitation {
  */
 export const prismaInvitationRepository: InvitationRepository = {
   async findBySlug(slug) {
-    const row = await getPrisma().invitationVersion.findUnique({
+    // Dos pasos y no uno: el directorio dice de qué oficina es el slug, y la
+    // invitación se lee en la base de ESA oficina. Sigue siendo la única
+    // consulta del producto que empieza sin oficina, y sigue resolviendo a UNA
+    // fila y nunca a un listado.
+    const scope = await scopeForSlug(slug);
+    if (scope === null) return undefined;
+
+    const row = await db(scope).invitationVersion.findUnique({
       where: { slug },
       include: INCLUDE,
     });

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { mayUsePassword } from '@/lib/auth/guards';
 import { getSession } from '@/lib/auth/session';
 import { hashPassword, passwordMatches, passwordProblems } from '@/lib/auth/password';
@@ -48,7 +48,7 @@ export async function saveProfileAction(formData: FormData): Promise<void> {
   const photo = await photoUpdate(formData);
   if (photo !== null && 'error' in photo) redirect(`${VOLVER}?foto=${photo.error}`);
 
-  await getPrisma().user.update({
+  await controlDb().user.update({
     where: { id: session.userId },
     data: {
       name: String(formData.get('name') ?? '').trim().slice(0, 120) || null,
@@ -131,7 +131,7 @@ export async function changePasswordAction(formData: FormData): Promise<void> {
   const problems = passwordProblems(next);
   if (problems.length > 0) redirect(`${VOLVER}?clave=${problems[0]}`);
 
-  const user = await getPrisma().user.findUnique({
+  const user = await controlDb().user.findUnique({
     where: { id: session.userId },
     select: { passwordHash: true },
   });
@@ -141,7 +141,7 @@ export async function changePasswordAction(formData: FormData): Promise<void> {
     redirect(`${VOLVER}?clave=wrongCurrent`);
   }
 
-  await getPrisma().user.update({
+  await controlDb().user.update({
     where: { id: session.userId },
     data: { passwordHash: await hashPassword(next) },
   });

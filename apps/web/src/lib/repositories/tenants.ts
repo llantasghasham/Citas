@@ -1,5 +1,5 @@
 import type { Locale, PlanTier, Role, TenantStatus } from '@/generated/prisma/enums';
-import { getPrisma, tenancyMode } from '@/lib/db/client';
+import { controlDb, tenancyMode } from '@/lib/db/client';
 import { createTenantDatabase, dropTenantDatabase, seedTenantRow } from '@/lib/db/fleet';
 import { databaseNameFor } from '@/lib/db/naming';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
@@ -17,7 +17,7 @@ export interface OfficeRow {
 
 /** Offices are platform-wide, so only a superadmin ever calls this. */
 export async function listOffices(): Promise<OfficeRow[]> {
-  const tenants = await getPrisma().tenant.findMany({
+  const tenants = await controlDb().tenant.findMany({
     orderBy: { createdAt: 'asc' },
     include: {
       subscription: { include: { plan: true } },
@@ -56,7 +56,7 @@ export function isValidSubdomain(value: string): boolean {
 export async function createOffice(input: CreateOfficeInput): Promise<string | null> {
   if (!isValidSubdomain(input.subdomain) || input.name.length === 0) return null;
 
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const taken = await prisma.tenant.findFirst({
     where: { OR: [{ subdomain: input.subdomain }, { slug: input.subdomain }] },
     select: { id: true },
@@ -123,7 +123,7 @@ export interface MemberRow {
 }
 
 export async function listMembers(scope: TenantScope): Promise<MemberRow[]> {
-  const memberships = await getPrisma().membership.findMany({
+  const memberships = await controlDb().membership.findMany({
     where: scopedWhere(scope),
     orderBy: { createdAt: 'asc' },
     include: {
@@ -166,7 +166,7 @@ export async function updateMember(
   userId: string,
   changes: { role?: Role; locale?: Locale; country?: string | null },
 ): Promise<boolean> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const membership = await prisma.membership.findFirst({
     where: { userId, ...scopedWhere(scope) },
     select: { id: true },
@@ -199,7 +199,7 @@ export async function addMember(
   const normalized = email.trim().toLowerCase();
   if (normalized.length === 0 || !normalized.includes('@')) return false;
 
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const user = await prisma.user.upsert({
     where: { email: normalized },
     update: {},

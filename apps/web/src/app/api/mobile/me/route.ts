@@ -1,3 +1,4 @@
+import { scopeOf } from '@/lib/auth/session';
 import { authorize, isResponse } from '@/lib/api/mobile';
 import { limitsFor } from '@/lib/billing/plans';
 import { getTenantById } from '@/lib/tenancy/current';
@@ -12,7 +13,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const { session } = authorized;
   const tenant = session.tenantId === null ? null : await getTenantById(session.tenantId);
-  const limits = session.tenantId === null ? null : await limitsFor(session.tenantId);
+  const limits = session.tenantId === null ? null : await limitsFor(scopeOf(session));
 
   return Response.json({
     email: session.email,

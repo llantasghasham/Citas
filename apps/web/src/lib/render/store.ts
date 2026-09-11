@@ -1,4 +1,5 @@
-import { getPrisma } from '@/lib/db/client';
+import { db } from '@/lib/db/client';
+import type { TenantScope } from '@/lib/db/tenant';
 
 export interface StoredRender {
   data: Uint8Array<ArrayBuffer>;
@@ -16,8 +17,9 @@ export interface StoredRender {
  * this one file.
  */
 export interface RenderStore {
-  find(versionId: string, contentHash: string): Promise<StoredRender | null>;
+  find(scope: TenantScope, versionId: string, contentHash: string): Promise<StoredRender | null>;
   save(input: {
+    scope: TenantScope;
     versionId: string;
     contentHash: string;
     data: Uint8Array<ArrayBuffer>;
@@ -27,8 +29,8 @@ export interface RenderStore {
 }
 
 export const databaseRenderStore: RenderStore = {
-  async find(versionId, contentHash) {
-    const row = await getPrisma().render.findFirst({
+  async find(scope, versionId, contentHash) {
+    const row = await db(scope).render.findFirst({
       where: { versionId, kind: 'png', contentHash },
       select: { data: true },
     });
@@ -36,8 +38,8 @@ export const databaseRenderStore: RenderStore = {
     return { data: new Uint8Array(row.data), contentHash };
   },
 
-  async save({ versionId, contentHash, data, width, height }) {
-    const prisma = getPrisma();
+  async save({ scope, versionId, contentHash, data, width, height }) {
+    const prisma = db(scope);
     // One image per version: an older fingerprint is a picture of an invitation
     // that no longer exists.
     await prisma.render.deleteMany({ where: { versionId, kind: 'png' } });

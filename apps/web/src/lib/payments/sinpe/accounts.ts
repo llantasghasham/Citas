@@ -1,5 +1,5 @@
 import { applySettlement } from '@/lib/billing/reconcile';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { encryptSecret } from '@/lib/secrets';
 import type { SinpeMovementStatus } from '@/generated/prisma/enums';
 
@@ -43,7 +43,7 @@ export interface MovementRow {
 }
 
 export async function listAccounts(): Promise<AccountRow[]> {
-  return getPrisma().sinpeAccount.findMany({
+  return controlDb().sinpeAccount.findMany({
     orderBy: { createdAt: 'asc' },
     select: {
       id: true,
@@ -66,7 +66,7 @@ export async function listAccounts(): Promise<AccountRow[]> {
 
 /** Lo último leído. Sin asignar primero: es lo único sobre lo que hay que obrar. */
 export async function listMovements(limit = 40): Promise<MovementRow[]> {
-  const rows = await getPrisma().sinpeMovement.findMany({
+  const rows = await controlDb().sinpeMovement.findMany({
     orderBy: [{ status: 'asc' }, { receivedAt: 'desc' }],
     take: limit,
     select: {
@@ -101,7 +101,7 @@ export interface AccountInput {
 }
 
 export async function addAccount(input: AccountInput): Promise<void> {
-  await getPrisma().sinpeAccount.create({
+  await controlDb().sinpeAccount.create({
     data: {
       // Sin oficina: el buzón de la plataforma. Ver arriba.
       tenantId: null,
@@ -122,7 +122,7 @@ export async function addAccount(input: AccountInput): Promise<void> {
 }
 
 export async function editAccount(id: string, input: AccountInput): Promise<void> {
-  await getPrisma().sinpeAccount.update({
+  await controlDb().sinpeAccount.update({
     where: { id },
     data: {
       name: input.name.slice(0, 80),
@@ -145,7 +145,7 @@ export async function editAccount(id: string, input: AccountInput): Promise<void
 }
 
 export async function removeAccount(id: string): Promise<void> {
-  await getPrisma().sinpeAccount.delete({ where: { id } }).catch(() => undefined);
+  await controlDb().sinpeAccount.delete({ where: { id } }).catch(() => undefined);
 }
 
 function clampPort(port: number): number {
@@ -164,7 +164,7 @@ export interface AssignableOrder {
 }
 
 export async function assignableOrders(limit = 50): Promise<AssignableOrder[]> {
-  const orders = await getPrisma().order.findMany({
+  const orders = await controlDb().order.findMany({
     where: { status: 'pending' },
     orderBy: { createdAt: 'desc' },
     take: limit,
@@ -188,7 +188,7 @@ export async function assignableOrders(limit = 50): Promise<AssignableOrder[]> {
  * de verdad no coinciden, lo que hay que arreglar es el pedido.
  */
 export async function assignMovement(movementId: string, orderId: string): Promise<boolean> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const movement = await prisma.sinpeMovement.findUnique({
     where: { id: movementId },
     select: { id: true, amount: true, reference: true, status: true },

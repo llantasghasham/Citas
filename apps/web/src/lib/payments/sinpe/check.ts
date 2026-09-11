@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { openImapMailbox, type SinpeMailbox } from '@/lib/payments/sinpe/mailbox';
 import { ingestSinpeEmail } from '@/lib/payments/sinpe/service';
 
@@ -49,7 +49,7 @@ type MailboxOpener = (config: {
 export async function checkSinpeAccounts(
   open: MailboxOpener = openImapMailbox,
 ): Promise<SinpeCheckSummary> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const accounts = await prisma.sinpeAccount.findMany({
     where: { active: true },
     orderBy: { createdAt: 'asc' },

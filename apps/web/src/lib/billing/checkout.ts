@@ -8,7 +8,8 @@ import { recordAudit } from '@/lib/audit';
 import { newPayCode } from '@/lib/payments/sinpe/code';
 import { applySettlement } from '@/lib/billing/reconcile';
 import { openCollection } from '@/lib/billing/reserve';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb, db } from '@/lib/db/client';
+import { tenantScope } from '@/lib/db/tenant';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { getPaymentProvider, providerFor, type PaymentStatus } from '@/lib/payments';
 import { setting } from '@/lib/settings';
@@ -61,8 +62,8 @@ export async function openPackageOrder(
   const pack = findPackage(sale.packageId);
   if (pack === undefined) return { error: 'unknownPackage' };
 
-  const prisma = getPrisma();
-  const event = await prisma.event.findFirst({
+  // El evento es de la oficina y el pedido es del arrendador: dos bases.
+  const event = await db(scope).event.findFirst({
     where: { id: sale.eventId, ...scopedWhere(scope) },
     select: { id: true, channel: true },
   });
@@ -74,7 +75,7 @@ export async function openPackageOrder(
   const amount = priceFor(pack, event.channel);
   const payToken = newPayToken();
 
-  const order = await prisma.order.create({
+  const order = await controlDb().order.create({
     data: {
       ...scopedWhere(scope),
       eventId: event.id,
@@ -130,9 +131,10 @@ export interface PublicOrder {
 export const loadPublicOrder = cache(async (payToken: string): Promise<PublicOrder | null> => {
   if (payToken.length < 16) return null;
 
-  const order = await getPrisma().order.findUnique({
+  const order = await controlDb().order.findUnique({
     where: { payToken },
     select: {
+      tenantId: true,
       payToken: true,
       amount: true,
       currency: true,
@@ -140,7 +142,7 @@ export const loadPublicOrder = cache(async (payToken: string): Promise<PublicOrd
       packageGuests: true,
       clientName: true,
       eventId: true,
-      tenant: { select: { name: true, defaultLocale: true } },
+      tenant: { select: { name: true, defaultLocale: true, databaseName: true } },
       payments: { orderBy: { createdAt: 'desc' }, take: 1, select: { providerRef: true } },
     },
   });
@@ -151,7 +153,7 @@ export const loadPublicOrder = cache(async (payToken: string): Promise<PublicOrd
   const event =
     order.eventId === null
       ? null
-      : await getPrisma().event.findUnique({
+      : await db(tenantScope(order.tenantId, order.tenant.databaseName)).event.findUnique({
           where: { id: order.eventId },
           select: {
             honorees: { orderBy: { order: 'asc' }, select: { name: true } },
@@ -183,7 +185,7 @@ export async function beginPublicPayment(
   payToken: string,
   origin: string,
 ): Promise<{ payUrl: string } | { error: 'notFound' | 'alreadyPaid' | 'provider' }> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const order = await prisma.order.findUnique({
     where: { payToken },
     select: { id: true, tenantId: true, amount: true, currency: true, description: true, status: true },
@@ -225,7 +227,7 @@ export async function beginPublicPayment(
  * del navegador, ni el cuerpo del callback— es lo que marca un pedido pagado.
  */
 export async function settlePublicOrder(payToken: string): Promise<PaymentStatus | null> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const order = await prisma.order.findUnique({
     where: { payToken },
     select: {
@@ -274,7 +276,7 @@ export async function listPackageOrders(
   scope: TenantScope,
   eventId: string,
 ): Promise<SoldPackage[]> {
-  const orders = await getPrisma().order.findMany({
+  const orders = await controlDb().order.findMany({
     where: { ...scopedWhere(scope), eventId, packageGuests: { not: null } },
     orderBy: { createdAt: 'desc' },
     select: {
@@ -351,7 +353,7 @@ export async function markPaidInCash(
   orderId: string,
   actorId: string,
 ): Promise<boolean> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const order = await prisma.order.findFirst({
     where: { id: orderId, ...scopedWhere(scope) },
     select: { id: true, amount: true, currency: true, status: true },

@@ -64,27 +64,27 @@ describe('el nombre de la base no se puede escribir desde fuera', () => {
   });
 });
 
-describe('el interruptor no se puede encender antes de tiempo', () => {
-  it('TENANCY=fleet con el traslado a medias NO arranca a medias: protesta', () => {
+describe('el reparto se elige a propósito, y falla cerrado', () => {
+  it('sin TENANCY, todo sigue como estaba', () => {
+    assert.equal(tenancyMode(), 'shared');
+    // En el reparto de siempre un ámbito encamina a la base común, que es donde
+    // están sus datos mientras no se hayan mudado.
+    assert.equal(db(tenantScope('cualquiera', null)), controlDb());
+  });
+
+  it('en flota, una oficina sin base propia NO cae en la común', () => {
     const antes = process.env['TENANCY'];
     process.env['TENANCY'] = 'fleet';
     try {
-      // Lo que NO puede pasar es que se encienda y funcione a medias: unas
-      // consultas en la base de la oficina y otras en la de control es la misma
-      // oficina partida en dos, y eso no da error, da datos incompletos.
-      assert.throws(() => tenancyMode(), /todavía no está terminado/);
+      assert.equal(tenancyMode(), 'fleet');
+      // Lo que no puede pasar de ninguna manera es que devuelva la base de
+      // control: ahí está el registro de TODAS las oficinas, y una consulta suya
+      // sin filtro las vería enteras. Antes que eso, que no atienda.
+      assert.throws(() => db(tenantScope('sin-base', null)), /no tiene base de datos propia/);
     } finally {
       if (antes === undefined) delete process.env['TENANCY'];
       else process.env['TENANCY'] = antes;
     }
-  });
-
-  it('mientras tanto el reparto es el de siempre y nada cambia de sitio', () => {
-    assert.equal(tenancyMode(), 'shared');
-    // Y en ese reparto un ámbito sin base propia sigue leyendo donde leía: esto
-    // es lo que hace que el traslado se pueda hacer consulta a consulta sin que
-    // ninguna se quede sin base a mitad de camino.
-    assert.equal(db(tenantScope('cualquiera', null)), controlDb());
   });
 });
 

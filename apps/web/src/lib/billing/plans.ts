@@ -1,5 +1,6 @@
 import type { PlanTier } from '@/generated/prisma/enums';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb, db } from '@/lib/db/client';
+import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import type { Dictionary } from '@/lib/types';
 
 /** The catalogue. Prices are in USD cents — money never touches a float. */
@@ -42,12 +43,16 @@ export interface TenantLimits {
 }
 
 /** What this office may still do. A tenant with no subscription is on `free`. */
-export async function limitsFor(tenantId: string): Promise<TenantLimits> {
-  const prisma = getPrisma();
-
+export async function limitsFor(scope: TenantScope): Promise<TenantLimits> {
+  // Las dos mitades de esto viven en bases distintas y no es casualidad: el plan
+  // que la oficina tiene contratado es del arrendador, y los eventos que lleva
+  // publicados son suyos.
   const [subscription, eventsUsed] = await Promise.all([
-    prisma.subscription.findUnique({ where: { tenantId }, include: { plan: true } }),
-    prisma.event.count({ where: { tenantId } }),
+    controlDb().subscription.findUnique({
+      where: { tenantId: scope.tenantId },
+      include: { plan: true },
+    }),
+    db(scope).event.count({ where: scopedWhere(scope) }),
   ]);
 
   const plan = subscription?.plan;
@@ -73,7 +78,7 @@ export async function limitsFor(tenantId: string): Promise<TenantLimits> {
 }
 
 /** True when another event would go past the plan. */
-export async function eventLimitReached(tenantId: string): Promise<boolean> {
-  const limits = await limitsFor(tenantId);
+export async function eventLimitReached(scope: TenantScope): Promise<boolean> {
+  const limits = await limitsFor(scope);
   return limits.maxEvents !== null && limits.eventsUsed >= limits.maxEvents;
 }

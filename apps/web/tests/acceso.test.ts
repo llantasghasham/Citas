@@ -3,7 +3,7 @@ import { beforeEach, describe, it } from 'node:test';
 
 import { mayUsePassword, tenantCanWork } from '../src/lib/auth/guards';
 import { issueSession, resolveSession } from '../src/lib/auth/session';
-import { getPrisma } from '../src/lib/db/client';
+import { controlDb } from '../src/lib/db/client';
 
 import { HAS_DB, withDatabase } from './helpers';
 
@@ -34,14 +34,14 @@ describe('una oficina suspendida', { skip: HAS_DB ? false : 'sin DATABASE_URL' }
   const fixture = withDatabase();
 
   beforeEach(async () => {
-    await getPrisma().tenant.updateMany({
+    await controlDb().tenant.updateMany({
       where: { id: fixture.get().otherTenantId },
       data: { status: 'active' },
     });
   });
 
   const suspend = async (): Promise<void> => {
-    await getPrisma().tenant.update({
+    await controlDb().tenant.update({
       where: { id: fixture.get().otherTenantId },
       data: { status: 'suspended' },
     });
@@ -61,7 +61,7 @@ describe('una oficina suspendida', { skip: HAS_DB ? false : 'sin DATABASE_URL' }
     // Esto es lo que hacía que suspender no suspendiera: una sesión dura
     // treinta días, así que quien ya estaba dentro seguía trabajando hasta que
     // se le ocurriera salir.
-    const prisma = getPrisma();
+    const prisma = controlDb();
     const user = await prisma.user.create({
       data: {
         email: `suspendido-${Date.now()}@example.com`,
@@ -80,7 +80,7 @@ describe('una oficina suspendida', { skip: HAS_DB ? false : 'sin DATABASE_URL' }
   });
 
   it('la del superadministrador sigue valiendo: es quien tiene que arreglarlo', async () => {
-    const prisma = getPrisma();
+    const prisma = controlDb();
     const root = await prisma.user.findFirstOrThrow({
       where: { isSuperadmin: true },
       select: { id: true },
@@ -96,7 +96,7 @@ describe('una oficina suspendida', { skip: HAS_DB ? false : 'sin DATABASE_URL' }
   it('borrar la oficina se lleva sus sesiones', async () => {
     // La clave foránea nueva. Sin ella quedaban filas apuntando a nada, con la
     // IP y el navegador de quien entró dentro.
-    const prisma = getPrisma();
+    const prisma = controlDb();
     const tenant = await prisma.tenant.create({
       data: { name: 'Efímera', subdomain: 'prueba-efimera', slug: 'prueba-efimera' },
       select: { id: true },

@@ -1,6 +1,6 @@
 import { cache } from 'react';
 
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 
 export interface CurrentTenant {
   id: string;
@@ -28,11 +28,11 @@ function subdomainOf(host: string): string | undefined {
 }
 
 export const getTenantById = cache(async (id: string): Promise<CurrentTenant | null> => {
-  return getPrisma().tenant.findUnique({ where: { id } });
+  return controlDb().tenant.findUnique({ where: { id } });
 });
 
 export const getTenantByHost = cache(async (host: string): Promise<CurrentTenant | null> => {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const hostname = host.split(':')[0] ?? '';
 
   const byDomain = await prisma.tenant.findUnique({ where: { customDomain: hostname } });

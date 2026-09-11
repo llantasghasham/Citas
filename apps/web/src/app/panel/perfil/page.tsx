@@ -9,7 +9,7 @@ import { getAdminContext } from '@/lib/admin/context';
 import { getSession } from '@/lib/auth/session';
 import { MIN_PASSWORD_LENGTH } from '@/lib/auth/password';
 import { LOCALE_NAMES } from '@/lib/create/options';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { avatarSrc, MAX_AVATAR_BYTES } from '@/lib/profile/avatar';
 import { listSessions } from '@/lib/profile/sessions';
 import { nowIn, timezones } from '@/lib/profile/timezones';
@@ -46,7 +46,7 @@ export default async function ProfilePage({ searchParams }: PageProps) {
   const { dictionary, locale } = await getAdminContext(session.tenantId, session.locale);
   const copy = dictionary.admin.profile;
 
-  const user = await getPrisma().user.findUnique({
+  const user = await controlDb().user.findUnique({
     where: { id: session.userId },
     select: {
       name: true,

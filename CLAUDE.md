@@ -521,13 +521,32 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   mismo tipo de avería —algo que desde fuera se ve igual que si no pasara nada—.
   Una oficina con el esquema viejo no falla al arrancar: falla la primera vez que
   alguien usa lo nuevo, que es cuando peor viene enterarse.
-- El interruptor es `TENANCY`, y `FLEET_READY` en el código es lo que decide si
-  se puede encender. Es una CONSTANTE y no una variable de entorno a propósito:
-  encender la flota con el traslado a medias no da un error, parte los datos en
-  dos —los eventos de una oficina en un sitio y sus invitados en otro— y nadie se
-  entera hasta que alguien abre una lista y le falta la mitad. La variable la
-  pone quien despliega, que no puede saber por dónde va el código; la constante
-  la pone quien termina el traslado, que sí.
+- Dónde vive cada cosa, y la línea no es arbitraria: en la base de la OFICINA va
+  lo que es su trabajo —eventos, invitaciones, imágenes, invitados, mesas,
+  confirmaciones, números de WhatsApp y sus mensajes—; en la de CONTROL va lo que
+  es del arrendador —el registro de oficinas, las personas y sus sesiones, los
+  planes, los pedidos y cobros, el SINPE, la configuración y el historial—. El
+  esquema ya estaba partido así: NINGUNA clave foránea cruza la frontera, y eso
+  no es casualidad sino la comprobación de que la línea está donde tenía que
+  estar.
+- Un trabajo automático que antes era UNA consulta con un `IN` ahora es una por
+  oficina (`eachOffice`). No hay atajo: preguntarle a todas a la vez es
+  exactamente lo que una base por oficina impide. Una oficina que falle no se
+  lleva por delante a las demás.
+- El interruptor es `TENANCY`, y el orden de encenderlo NO es negociable:
+  `npm run db:split -- copiar` mueve lo que ya existe y COMPRUEBA los recuentos,
+  luego se pone `TENANCY=fleet`, luego se MIRA —una boda, sus invitados, sus
+  mesas, una invitación pública— y solo entonces `npm run db:split -- limpiar`
+  borra de la común lo copiado. Son dos órdenes y no una porque entre copiar y
+  borrar tiene que caber que alguien mire: una copia que se creyó buena y no lo
+  era, con el original ya borrado, no tiene arreglo, y esto son listas de
+  invitados de bodas ya pagadas. `limpiar` se niega si los recuentos no cuadran o
+  si queda alguna oficina sin base.
+- Encender la flota sin haber copiado no parte nada: deja a las oficinas sin
+  base, ninguna consulta suya se atiende y `/panel/sistema` lo marca en rojo. Es
+  el fallo correcto —ruidoso y sin pérdida— y por eso `db(scope)` se niega a caer
+  en la base común cuando falta la propia: ahí está el registro de TODAS, y una
+  consulta suya sin filtro las vería enteras.
 
 ### Lo que impide la base, no el código
 - Una sesión cuelga de su oficina (`Session.tenantId` con clave foránea), y
@@ -626,6 +645,7 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
 npm run brand:build # redibuja el logo, los iconos y los de la app móvil
 npm run db:check   # aplica las migraciones en una base nueva y comprueba el esquema
 npm run db:fleet   # la flota: -- migrar | estado | crear <subdominio>
+npm run db:split   # mueve cada oficina a su base: -- copiar | limpiar
 npm run sinpe:check # revisa los buzones de SINPE (lo llama el temporizador)
 npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
 ```

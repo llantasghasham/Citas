@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { providerFor } from '@/lib/payments';
 import type { PaymentStatus } from '@/lib/payments/types';
 
@@ -93,7 +93,7 @@ export async function applySettlement(
    */
   reported?: { amount: number; currency: string },
 ): Promise<boolean> {
-  return getPrisma().$transaction(async (tx) => {
+  return controlDb().$transaction(async (tx) => {
     // Se relee DENTRO de la transacción y con bloqueo de fila: dos avisos
     // simultáneos del mismo cobro llegan aquí a la vez, y sin esto los dos
     // verían «pendiente» y los dos activarían el plan.
@@ -194,7 +194,7 @@ export async function applySettlement(
  * el registro del servicio.
  */
 export async function reconcilePending(): Promise<ReconcileSummary> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const now = Date.now();
 
   const payments = await prisma.payment.findMany({
@@ -287,7 +287,7 @@ export async function reconcilePending(): Promise<ReconcileSummary> {
  * Devuelve cuántas se cerraron.
  */
 async function resolveOrphans(now: number): Promise<number> {
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const orphans = await prisma.payment.findMany({
     where: {
       status: 'pending',

@@ -37,17 +37,21 @@ export type TenancyMode = 'shared' | 'fleet';
 /**
  * Si el traslado a una base por oficina está TERMINADO en el código.
  *
- * Es una constante y no una variable de entorno a propósito, y es el freno más
- * importante de este archivo. Encender `TENANCY=fleet` con el traslado a medias
- * no da un error: parte los datos en dos. Las consultas ya trasladadas escriben
- * en la base de la oficina y las que todavía no, en la de control — la misma
- * oficina con sus eventos en un sitio y sus invitados en otro, y nadie se entera
- * hasta que alguien abre una lista y le falta la mitad.
+ * Es una constante y no una variable de entorno a propósito. Encender
+ * `TENANCY=fleet` con el traslado a medias no daría un error: partiría los datos
+ * en dos —las consultas ya trasladadas escribiendo en la base de la oficina y
+ * las que no, en la de control— y nadie se enteraría hasta que alguien abriera
+ * una lista y le faltara la mitad. Una variable de entorno la pone quien
+ * despliega, que no puede saber por dónde va el código; esto lo pone quien
+ * termina el traslado, que sí.
  *
- * Una variable de entorno la pone quien despliega, que no puede saber por dónde
- * va el código. Esto lo pone quien termina el traslado, que sí.
+ * Ya está terminado: todas las consultas de negocio pasan por `db(scope)`. Lo
+ * que queda es de quien despliega y va en su orden — `npm run db:split -- copiar`
+ * mueve lo que ya existe, y solo después se enciende `TENANCY=fleet`. Encenderlo
+ * antes no parte nada, pero deja a las oficinas sin base: `/panel/sistema` lo
+ * marca en rojo y ninguna consulta suya se atiende, que es el fallo correcto.
  */
-const FLEET_READY = false;
+const FLEET_READY = true;
 
 export function tenancyMode(): TenancyMode {
   if (process.env['TENANCY'] !== 'fleet') return 'shared';
@@ -175,15 +179,4 @@ export async function closeAllDatabases(): Promise<void> {
   const clients = [...registry.values()];
   registry.clear();
   await Promise.all(clients.map((client) => client.$disconnect().catch(() => undefined)));
-}
-
-/**
- * Compatibilidad: sigue siendo la base de control.
- *
- * Todas las consultas del proyecto entraban por aquí. Las que son de una oficina
- * van pasando a `db(scope)`; mientras tanto esto las deja donde estaban, que en
- * modo `shared` es exactamente donde tienen que estar.
- */
-export function getPrisma(): PrismaClient {
-  return controlDb();
 }

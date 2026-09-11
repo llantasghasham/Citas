@@ -1,5 +1,5 @@
 import { recordAudit } from '@/lib/audit';
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import { getMailer } from '@/lib/mail';
 
 import { tenantCanWork } from './guards';
@@ -36,7 +36,7 @@ export async function requestLoginCode(rawEmail: string, ip?: string): Promise<v
   const email = normalizeEmail(rawEmail);
   if (!looksLikeEmail(email)) return;
 
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const since = new Date(Date.now() - WINDOW_MINUTES * 60 * 1000);
 
   const recent = await prisma.loginCode.count({ where: { email, createdAt: { gte: since } } });
@@ -106,7 +106,7 @@ export async function verifyLoginCode(
 
   if (!looksLikeEmail(email) || !/^\d{6}$/.test(code)) return failure;
 
-  const prisma = getPrisma();
+  const prisma = controlDb();
   const challenge = await prisma.loginCode.findFirst({
     where: { email, consumedAt: null, expiresAt: { gt: new Date() } },
     orderBy: { createdAt: 'desc' },

@@ -1,5 +1,6 @@
 import { recordAudit } from '@/lib/audit';
-import { getPrisma } from '@/lib/db/client';
+import { db } from '@/lib/db/client';
+import { eachOffice } from '@/lib/db/fleet';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { toE164 } from '@/lib/guests/phone';
 import { setting } from '@/lib/settings';
@@ -38,7 +39,7 @@ export async function setReminder(
 ): Promise<void> {
   const safe = days === null ? null : (REMINDER_DAYS.find((d) => d === days) ?? null);
 
-  const { count } = await getPrisma().event.updateMany({
+  const { count } = await db(scope).event.updateMany({
     where: { id: eventId, ...scopedWhere(scope) },
     data: { reminderDaysBefore: safe },
   });
@@ -64,14 +65,40 @@ export async function setReminder(
  * ninguna entrada por la que un usuario pueda alcanzarla.
  */
 export async function queueDueReminders(now = new Date()): Promise<ReminderOutcome> {
-  const prisma = getPrisma();
   const origin = (await setting('NEXT_PUBLIC_SITE_URL'))?.replace(/\/$/, '');
   if (origin === undefined || origin.length === 0) {
     throw new Error('Falta la dirección del sitio: el enlace del invitado no se puede escribir.');
   }
 
+  // Oficina por oficina, porque cada una tiene su base y no se le puede
+  // preguntar a todas a la vez. Una que falle no se lleva por delante a las
+  // demás: el trabajo sigue y lo dice al terminar.
+  const outcome: ReminderOutcome = { events: 0, queued: 0 };
+  for (const scope of await eachOffice()) {
+    try {
+      const partial = await queueRemindersFor(scope, origin, now);
+      outcome.events += partial.events;
+      outcome.queued += partial.queued;
+    } catch (error) {
+      console.error(
+        `[recordatorios] la oficina ${scope.tenantId} falló: ` +
+          `${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+  return outcome;
+}
+
+/** Lo de UNA oficina, en su base. */
+async function queueRemindersFor(
+  scope: TenantScope,
+  origin: string,
+  now: Date,
+): Promise<ReminderOutcome> {
+  const prisma = db(scope);
+
   const events = await prisma.event.findMany({
-    where: { reminderDaysBefore: { not: null } },
+    where: { ...scopedWhere(scope), reminderDaysBefore: { not: null } },
     select: {
       id: true,
       tenantId: true,
@@ -93,7 +120,7 @@ export async function queueDueReminders(now = new Date()): Promise<ReminderOutco
   // Los números conectados, de una vez. Era una consulta POR EVENTO: veinte
   // bodas del mismo mes, veinte consultas para preguntar lo mismo veinte veces.
   const connections = await prisma.whatsappConnection.findMany({
-    where: { tenantId: { in: [...new Set(events.map((event) => event.tenantId))] }, status: 'connected' },
+    where: { ...scopedWhere(scope), status: 'connected' },
     orderBy: { isDefault: 'desc' },
     select: { id: true, tenantId: true },
   });

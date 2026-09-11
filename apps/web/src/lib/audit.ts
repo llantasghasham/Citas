@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 
 export interface AuditEntry {
   tenantId?: string | null;
@@ -16,7 +16,7 @@ export interface AuditEntry {
  * and an audit write that can fail quietly is not a record — it is a back door.
  */
 export async function recordAudit(entry: AuditEntry): Promise<void> {
-  await getPrisma().auditLog.create({
+  await controlDb().auditLog.create({
     data: {
       tenantId: entry.tenantId ?? null,
       actorId: entry.actorId ?? null,

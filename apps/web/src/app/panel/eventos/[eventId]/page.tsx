@@ -79,7 +79,7 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
   const canSell = sessionCan(session, 'billing:manage');
   const [allowance, sold, methods, connections, whatsappStats, scheduled, failed, actor] =
     await Promise.all([
-      guestAllowanceFor(session.tenantId, eventId),
+      guestAllowanceFor(scopeOf(session), eventId),
       listPackageOrders(scopeOf(session), eventId),
       enabledMethods(),
       listConnections(scopeOf(session)),

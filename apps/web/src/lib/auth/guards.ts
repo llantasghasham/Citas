@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db/client';
+import { controlDb } from '@/lib/db/client';
 import type { Role } from '@/generated/prisma/enums';
 
 /**
@@ -18,7 +18,7 @@ import type { Role } from '@/generated/prisma/enums';
  */
 export async function tenantCanWork(tenantId: string | null): Promise<boolean> {
   if (tenantId === null) return true;
-  const tenant = await getPrisma().tenant.findUnique({
+  const tenant = await controlDb().tenant.findUnique({
     where: { id: tenantId },
     select: { status: true },
   });

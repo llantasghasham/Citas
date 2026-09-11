@@ -1,7 +1,8 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { getPrisma } from '@/lib/db/client';
+import { db } from '@/lib/db/client';
+import { scopeForGuestToken } from '@/lib/db/directory';
 import { versionForLocale } from '@/lib/repositories/versions';
 import { guestCookieName } from '@/lib/rsvp/cookie';
 
@@ -22,7 +23,12 @@ interface RouteContext {
  */
 export async function GET(_request: Request, context: RouteContext): Promise<Response> {
   const { token } = await context.params;
-  const prisma = getPrisma();
+
+  // El directorio primero: dice de qué oficina es este enlace. El token sigue
+  // sin adivinarse y sigue resolviendo a UN invitado, nunca a una lista.
+  const scope = await scopeForGuestToken(token);
+  if (scope === null) redirect('/');
+  const prisma = db(scope);
 
   const guest = await prisma.guest.findUnique({
     where: { token },
