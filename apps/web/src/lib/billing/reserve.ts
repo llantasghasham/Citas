@@ -1,6 +1,6 @@
 import { getPrisma } from '@/lib/db/client';
 import { newPaymentReference } from '@/lib/payments/reference';
-import type { PaymentProvider } from '@/lib/payments/types';
+import { isDefinitiveFailure, type PaymentProvider } from '@/lib/payments/types';
 import type { Currency } from '@/generated/prisma/enums';
 
 /**
@@ -24,7 +24,14 @@ export type ReserveOutcome =
   | { ok: true; payUrl: string }
   /** Otra petición está abriendo esta misma cobranza y aún no tiene enlace. */
   | { ok: false; reason: 'inFlight' }
-  | { ok: false; reason: 'provider' };
+  | { ok: false; reason: 'provider' }
+  /**
+   * La pasarela ni dijo que sí ni dijo que no: se agotó el tiempo, o contestó
+   * un 500. La cobranza PUEDE existir al otro lado, así que la reserva se
+   * queda puesta y no se abre otra. Quien la resuelve es el repaso periódico,
+   * preguntándole al proveedor.
+   */
+  | { ok: false; reason: 'unknown' };
 
 /** Cuánto se espera a que gane la otra petición: cinco intentos de 300 ms. */
 const WAIT_TRIES = 5;
@@ -89,6 +96,8 @@ export async function openCollection(
     });
 
     if (handle.payUrl === undefined || handle.payUrl.length === 0) {
+      // Contestó, y contestó sin enlace: no hay nada que reutilizar y tampoco
+      // una cobranza en el aire. Se suelta.
       await releaseReservation(reservedId);
       return { ok: false, reason: 'provider' };
     }
@@ -100,9 +109,42 @@ export async function openCollection(
     });
     return { ok: true, payUrl: handle.payUrl };
   } catch (error) {
-    await releaseReservation(reservedId);
-    throw error;
+    // AQUÍ estaba la ventana. Se soltaba la reserva pasara lo que pasara, así
+    // que un tiempo agotado —con la cobranza ya creada al otro lado y solo la
+    // respuesta perdida— dejaba el camino libre para abrir una SEGUNDA.
+    //
+    // Ahora solo se suelta cuando se SABE que no se creó nada: una negativa
+    // explícita de la pasarela, o un 4xx. Ante la duda se conserva, y quien lo
+    // resuelve es el repaso periódico: pregunta por esa referencia, y si nunca
+    // aparece la da por caducada para que se pueda volver a intentar.
+    if (isDefinitiveFailure(error)) {
+      await releaseReservation(reservedId);
+      throw error;
+    }
+
+    await noteUnknown(reservedId, error);
+    return { ok: false, reason: 'unknown' };
   }
+}
+
+/**
+ * Deja escrito que esta reserva quedó en el aire, y por qué.
+ *
+ * No se borra: la cobranza puede existir en la pasarela. La fila es lo único
+ * que ata esa referencia a este pedido, así que sin ella la cobranza huérfana
+ * no se podría ni reconocer si alguien la paga.
+ */
+async function noteUnknown(paymentId: string, error: unknown): Promise<void> {
+  const reason = error instanceof Error ? error.message : 'error desconocido';
+  await getPrisma()
+    .paymentEvent.create({
+      data: {
+        paymentId,
+        kind: 'open_unknown',
+        payload: { reason: reason.slice(0, 500) },
+      },
+    })
+    .catch(() => undefined);
 }
 
 /**

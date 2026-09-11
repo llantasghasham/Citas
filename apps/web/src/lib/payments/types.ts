@@ -100,10 +100,34 @@ export interface PaymentProvider {
 
 export class PaymentError extends Error {
   readonly provider: PaymentProviderId;
+  /**
+   * Si se SABE que el proveedor no llegó a crear nada.
+   *
+   * Es la diferencia entre poder reintentar y no poder. Una negativa explícita
+   * —«esos datos no valen»— es definitiva: no hay cobranza al otro lado y la
+   * reserva local se suelta para que se pueda volver a intentar. Un tiempo
+   * agotado o un 500 NO lo son: la cobranza puede existir perfectamente y ser
+   * la respuesta la que se perdió, así que soltar la reserva y reintentar sería
+   * abrir una SEGUNDA cobranza de verdad.
+   *
+   * Por defecto es falso, que es la suposición segura: ante la duda, se
+   * conserva.
+   */
+  readonly definitive: boolean;
 
-  constructor(message: string, provider: PaymentProviderId, cause?: unknown) {
-    super(message, { cause });
+  constructor(
+    message: string,
+    provider: PaymentProviderId,
+    options: { cause?: unknown; definitive?: boolean } = {},
+  ) {
+    super(message, { cause: options.cause });
     this.name = 'PaymentError';
     this.provider = provider;
+    this.definitive = options.definitive ?? false;
   }
+}
+
+/** Lo que se sabe de un fallo al hablar con la pasarela. */
+export function isDefinitiveFailure(error: unknown): boolean {
+  return error instanceof PaymentError && error.definitive;
 }

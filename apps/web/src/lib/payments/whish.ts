@@ -9,6 +9,8 @@ import {
   type PaymentProvider,
   type PaymentStatus,
   type SettlementReading,
+  type Money,
+  CURRENCIES,
 } from './types';
 
 /**
@@ -132,11 +134,16 @@ async function call(
   });
 
   if (!response.ok) {
-    throw new PaymentError(`Whish returned HTTP ${response.status} for ${path}`, 'whish');
+    // Un 4xx es una negativa: los datos no valían y no se creó nada. Un 5xx no
+    // dice nada — la cobranza puede haberse creado y haberse caído la respuesta.
+    throw new PaymentError(`Whish returned HTTP ${response.status} for ${path}`, 'whish', {
+      definitive: response.status >= 400 && response.status < 500,
+    });
   }
 
   const payload: unknown = await response.json();
   if (typeof payload !== 'object' || payload === null) {
+    // Contestó algo que no se entiende: no se puede saber si creó la cobranza.
     throw new PaymentError(`Whish returned a non-object body for ${path}`, 'whish');
   }
 
@@ -144,8 +151,11 @@ async function call(
   // The service wraps everything in `{ status, code, dialog, data }` and answers
   // 200 even when it refused: a failure has to be read from the body.
   if (envelope['status'] === false) {
+    // Una negativa EXPLÍCITA: contestó que no. No hay nada al otro lado.
     const code = envelope['code'] ?? 'unknown';
-    throw new PaymentError(`Whish refused ${path}: ${String(code)}`, 'whish');
+    throw new PaymentError(`Whish refused ${path}: ${String(code)}`, 'whish', {
+      definitive: true,
+    });
   }
 
   const data = envelope['data'];
@@ -215,12 +225,17 @@ export const whishProvider: PaymentProvider = {
       currency,
       externalId: Number(providerRef),
     });
-    // Sin importe, y a propósito: no se ha visto todavía una respuesta de
-    // verdad de Whish, y adivinar el nombre del campo daría una comprobación
-    // que pasa siempre — peor que no tenerla, porque parecería que protege.
-    // En cuanto llegue la especificación, aquí se lee y `applySettlement` ya
-    // sabe qué hacer con él.
-    return { status: toStatus(data['collectStatus'] ?? data['status']) };
+    // El importe, SI viene. Se leen los nombres de campo corrientes, igual que
+    // ya se hace con el estado dos líneas más arriba — ser purista aquí y
+    // tolerante allí no tenía sentido.
+    //
+    // Cuando no viene, se devuelve sin importe y `applySettlement` lo dice: es
+    // mejor saber que la comprobación NO se hizo que creer que se hizo. Con la
+    // especificación de Whish delante esto se ajusta en una línea.
+    return {
+      status: toStatus(data['collectStatus'] ?? data['status']),
+      ...readAmount(data),
+    };
   },
 
   async verifyCallback(_headers: Headers, rawBody: string): Promise<CallbackResult> {
@@ -231,7 +246,7 @@ export const whishProvider: PaymentProvider = {
     try {
       parsed = JSON.parse(rawBody);
     } catch (error) {
-      throw new PaymentError('Whish callback body is not JSON', 'whish', error);
+      throw new PaymentError('Whish callback body is not JSON', 'whish', { cause: error });
     }
     if (typeof parsed !== 'object' || parsed === null) {
       throw new PaymentError('Whish callback body is not an object', 'whish');
@@ -252,3 +267,23 @@ export const whishProvider: PaymentProvider = {
     };
   },
 };
+
+/**
+ * El importe que dice el proveedor, pasado a la unidad menor de la moneda.
+ *
+ * Es la vuelta de `toProviderAmount`: Whish habla en unidades con dos decimales
+ * y aquí todo el dinero son enteros. `Math.round` y no truncado — `24.99 * 100`
+ * da 2498.9999... en coma flotante, y truncar convertiría veinticinco dólares
+ * menos un céntimo en veinticuatro con noventa y ocho.
+ */
+function readAmount(data: Record<string, unknown>): { amount?: Money } {
+  const raw = data['amount'] ?? data['collectAmount'] ?? data['paidAmount'];
+  const currency = data['currency'] ?? data['collectCurrency'];
+
+  const value = typeof raw === 'number' ? raw : Number.parseFloat(String(raw ?? ''));
+  const code = CURRENCIES.find((candidate) => candidate === String(currency ?? ''));
+  if (!Number.isFinite(value) || code === undefined) return {};
+
+  const minor = code === 'LBP' ? Math.round(value) : Math.round(value * 100);
+  return { amount: { amount: minor, currency: code } };
+}

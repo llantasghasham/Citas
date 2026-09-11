@@ -390,10 +390,18 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   no cuadra, NO liquida nada: deja el cobro pendiente y escribe un
   `PaymentEvent` de `amount_mismatch` con lo esperado y lo recibido. Activar un
   plan porque alguien pagó mil de veinticinco mil es regalar el producto.
-- El importe es OPCIONAL en la lectura del proveedor a propósito: Whish todavía
-  no lo devuelve aquí porque no se ha visto una respuesta de verdad, y adivinar
-  el nombre del campo daría una comprobación que pasa siempre — peor que no
-  tenerla, porque parecería que protege.
+- El importe es OPCIONAL en la lectura del proveedor: se leen los nombres de
+  campo corrientes, igual que ya se hacía con el estado, y cuando no viene se
+  liquida igual — negarse a cobrar porque el proveedor no dice el importe
+  dejaría sin cobrar todo. Con la especificación de Whish delante esto se ajusta
+  en una línea.
+- Un fallo al abrir una cobranza se clasifica: DEFINITIVO —la pasarela contestó
+  que no, o un 4xx— suelta la reserva; AMBIGUO —tiempo agotado, un 500— la
+  conserva. Ante la duda se conserva, porque la cobranza puede existir al otro
+  lado y solo se haya perdido la respuesta: soltarla y reintentar sería abrir
+  una SEGUNDA cobranza de verdad. Las que quedan en el aire las resuelve el
+  repaso: pregunta por esa referencia, la liquida si se pagó, y si a los quince
+  minutos el proveedor sigue sin conocerla la caduca para poder reintentar.
 - Líbano cobra con **Whish**. Costa Rica, si se abre, con Tilopay (SINPE Móvil).
 - El navegador NUNCA decide un pago. Un regreso a la URL de éxito no es una
   prueba de cobro: se confirma servidor contra servidor con `getStatus()`.
@@ -486,6 +494,11 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   PostgreSQL; pasar a almacenamiento de objetos es cambiar ese archivo.
 - La ruta responde `inline` por defecto y `attachment` solo con `?download=1`:
   la vista previa al compartir no es una descarga.
+- Chromium NO corre como root. Se niega a usar su recinto siéndolo, y entonces
+  hay que quitárselo: una pared menos entre una página y la máquina, después del
+  filtro de red de `render/origin.ts`. La unidad de systemd corre como `www` y
+  la imagen de Docker declara `USER node`; si aun así se llega ahí,
+  `/panel/sistema` lo marca en rojo y el diario lo dice.
 - Un memorial NUNCA usa la plantilla de celebración. `templateFor()` y
   `themeFor()` lo deciden por tipo de evento, no quien rellena el formulario.
 - Las invitaciones se renderizan en el SERVIDOR, nunca en el cliente
@@ -547,6 +560,7 @@ npm run build      # build de producción
 npm run typecheck  # tsc --noEmit
 npm run lint:rtl   # guardia de CSS lógico (RTL)
 npm run brand:build # redibuja el logo, los iconos y los de la app móvil
+npm run db:check   # aplica las migraciones en una base nueva y comprueba el esquema
 npm run sinpe:check # revisa los buzones de SINPE (lo llama el temporizador)
 npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
 ```
@@ -558,6 +572,16 @@ npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
   compuestas— lo hace la base, no el código: un doble que no las implemente daría
   verde a los mismos fallos que estas pruebas existen para atrapar.
 - **En serie** (`--test-concurrency=1`): comparten una sola base.
+- Sin `DATABASE_URL` se saltan, pero lo DICEN en grande. Saltarse una prueba en
+  silencio es peor que no tenerla: quien la ejecuta ve «0 fallos» y se queda
+  tranquilo sin enterarse de que lo que protege el dinero no llegó a correr. Una
+  revisión externa contó sesenta y seis pruebas donde hay ciento cuarenta y una,
+  y la diferencia era exactamente esa.
+- `npm run db:check` es lo otro que no se puede dar por hecho: aplica TODAS las
+  migraciones sobre una base creada desde cero y comprueba que el esquema salió
+  como dice el código. «Escritas» y «funcionan» no es lo mismo, y dos de este
+  proyecto lo demostraron: la de las mesas reventaba al quitar una, y la de la
+  cadena de oficina impedía borrar una oficina entera.
 - Seis frentes, los que costaron dinero o confianza: el cobro y su liquidación,
   la concurrencia de la cola de WhatsApp, el aislamiento entre oficinas, las
   fechas con el calendario —que ahora se comprueban contra el CALENDARIO y no

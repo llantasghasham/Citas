@@ -21,7 +21,8 @@
     "whatsapp:reminders": "tsx scripts/send-reminders.ts",
     "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts",
     "brand:build": "tsx scripts/build-brand.ts",
-    "sinpe:check": "tsx scripts/check-sinpe.ts"
+    "sinpe:check": "tsx scripts/check-sinpe.ts",
+    "db:check": "tsx scripts/check-migrations.ts"
   },
   "dependencies": {
     "@citas/core": "*",

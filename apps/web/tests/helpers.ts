@@ -20,6 +20,31 @@ import { getPrisma } from '../src/lib/db/client';
  */
 export const HAS_DB = (process.env['DATABASE_URL'] ?? '').length > 0;
 
+/**
+ * Y si no la hay, se DICE, en grande.
+ *
+ * Saltarse una prueba en silencio es peor que no tenerla: quien ejecuta la
+ * suite ve «0 fallos» y se queda tranquilo, sin enterarse de que lo que de
+ * verdad protege el dinero y el aislamiento entre oficinas no llegó a correr.
+ * Ya pasó: un informe externo contó sesenta y seis pruebas donde hay ciento y
+ * pico, y la diferencia era exactamente esto.
+ */
+if (!HAS_DB) {
+  console.error(
+    '\n' +
+      '  ╭──────────────────────────────────────────────────────────────────╮\n' +
+      '  │  SIN DATABASE_URL                                                │\n' +
+      '  │                                                                  │\n' +
+      '  │  Las pruebas que tocan PostgreSQL NO se han ejecutado: el cobro,  │\n' +
+      '  │  el aislamiento entre oficinas, la cola de WhatsApp, las mesas    │\n' +
+      '  │  y el acceso. Lo que corre sin base es una PARTE.                 │\n' +
+      '  │                                                                  │\n' +
+      '  │  Para ejecutarlas todas:                                         │\n' +
+      '  │    DATABASE_URL=postgresql://... npm test --workspace @citas/web  │\n' +
+      '  ╰──────────────────────────────────────────────────────────────────╯\n',
+  );
+}
+
 export interface Fixture {
   tenantId: string;
   otherTenantId: string;

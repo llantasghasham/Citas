@@ -3,6 +3,7 @@ import { join } from 'node:path';
 
 import { CODE_SEND_FAILED_ACTION } from '@/lib/auth/otp';
 import { readSenderDns } from '@/lib/mail/dns';
+import { runningAsRoot } from '@/lib/render/browser';
 import { getPrisma } from '@/lib/db/client';
 import { unverifiedVerses } from '@/lib/verses';
 import { gatewayHealth } from '@/lib/whatsapp/gateway';
@@ -383,10 +384,22 @@ function chromiumCheck(): HealthCheck {
   if (path === undefined) return { key: 'chromium', level: 'fail', detail: 'CHROMIUM_PATH' };
   try {
     accessSync(path, constants.X_OK);
-    return { key: 'chromium', level: 'ok', detail: path };
   } catch {
     return { key: 'chromium', level: 'fail', detail: path };
   }
+
+  // Como ROOT, Chromium se niega a usar su recinto y hay que quitárselo. Esa es
+  // una pared menos entre una página y la máquina —la primera es el filtro de
+  // red de `render/origin.ts`— y tiene que VERSE. La unidad de systemd corre
+  // como `www` justo para no llegar aquí.
+  if (runningAsRoot()) {
+    return {
+      key: 'chromium',
+      level: inProduction() ? 'fail' : 'warn',
+      detail: `${path} · sin recinto (root)`,
+    };
+  }
+  return { key: 'chromium', level: 'ok', detail: path };
 }
 
 async function superadminCheck(): Promise<HealthCheck> {

@@ -25,6 +25,23 @@ const GRACE_MS = 2 * 60 * 1000;
 /** Después de esto se deja en paz: un cobro de hace un mes no va a pagarse. */
 const GIVE_UP_MS = 30 * 24 * 60 * 60 * 1000;
 
+/**
+ * Cuánto se le da a una reserva que quedó EN EL AIRE antes de darla por
+ * perdida.
+ *
+ * Es la fila que se escribió antes de llamar a la pasarela y a la que nunca se
+ * le pudo poner enlace, porque la respuesta se perdió. Mientras esté ahí, el
+ * índice de «un cobro abierto por pedido» impide abrir otro — que es justo lo
+ * que se quiere al principio: si la cobranza existe al otro lado, abrir una
+ * segunda es cobrar dos veces.
+ *
+ * Un cuarto de hora es tiempo de sobra para que la pasarela sepa de ella. Si
+ * pasado eso sigue sin aparecer, se da por caducada y el pedido puede volver a
+ * intentarlo. Y si apareciera después, el aviso del proveedor la encuentra
+ * igual por su referencia: `applySettlement` admite pasar de caducado a pagado.
+ */
+const UNKNOWN_GRACE_MS = 15 * 60 * 1000;
+
 /** Cuántos se miran de una pasada. El proveedor no es nuestro para saturarlo. */
 const BATCH = 200;
 
@@ -227,6 +244,7 @@ export async function reconcilePending(): Promise<ReconcileSummary> {
     data: { status: 'expired' },
   });
   summary.expired = stale.count;
+  summary.expired += await resolveOrphans(now);
 
   if (payments.length === 0) return summary;
 
@@ -256,4 +274,80 @@ export async function reconcilePending(): Promise<ReconcileSummary> {
   }
 
   return summary;
+}
+
+/**
+ * Las reservas que quedaron en el aire: sin enlace y sin respuesta.
+ *
+ * Se le PREGUNTA al proveedor por esa referencia antes de nada. Si dice que se
+ * pagó, se liquida —esa es la cobranza huérfana que sí existía y que alguien
+ * pagó—. Si dice que no sabe nada y ya pasó la gracia, se caduca para que el
+ * pedido pueda volver a intentarlo.
+ *
+ * Devuelve cuántas se cerraron.
+ */
+async function resolveOrphans(now: number): Promise<number> {
+  const prisma = getPrisma();
+  const orphans = await prisma.payment.findMany({
+    where: {
+      status: 'pending',
+      payUrl: null,
+      provider: { not: 'manual' },
+      createdAt: { lt: new Date(now - UNKNOWN_GRACE_MS) },
+    },
+    orderBy: { createdAt: 'asc' },
+    take: BATCH,
+    select: {
+      id: true,
+      provider: true,
+      providerRef: true,
+      currency: true,
+      order: {
+        select: {
+          id: true,
+          tenantId: true,
+          amount: true,
+          description: true,
+          packageGuests: true,
+        },
+      },
+    },
+  });
+
+  let closed = 0;
+  for (const orphan of orphans) {
+    const provider = providerFor(orphan.provider);
+    if (provider === null) continue;
+
+    try {
+      const reading = await provider.getStatus(orphan.providerRef, orphan.currency);
+      if (reading.status === 'paid') {
+        // Existía, y alguien la pagó. Esto es exactamente lo que se protegía al
+        // no borrar la reserva: sin la fila, este cobro no se podría reconocer.
+        await applySettlement(
+          orphan.order,
+          orphan.id,
+          'paid',
+          'job',
+          reading.amount === undefined
+            ? undefined
+            : { amount: reading.amount.amount, currency: reading.amount.currency },
+        );
+        continue;
+      }
+    } catch {
+      // El proveedor no contesta. Se vuelve a mirar en la siguiente pasada: no
+      // se caduca una reserva por no poder preguntar.
+      continue;
+    }
+
+    // Contestó y no la conoce, o sigue sin pagarse pasada la gracia. Se cierra
+    // para que el pedido pueda volver a intentarlo.
+    const done = await prisma.payment.updateMany({
+      where: { id: orphan.id, status: 'pending', payUrl: null },
+      data: { status: 'expired' },
+    });
+    closed += done.count;
+  }
+  return closed;
 }

@@ -36,8 +36,17 @@ async function launchBrowser(): Promise<Browser> {
     '--font-render-hinting=none',
     '--hide-scrollbars',
   ];
-  // Chromium refuses to run its sandbox as root; only then do we drop it.
-  if (typeof process.getuid === 'function' && process.getuid() === 0) {
+  // Chromium se niega a arrancar su recinto como root, así que solo entonces se
+  // le quita. Pero quitarlo NO es normal y no puede pasar en silencio: el
+  // recinto es la segunda pared entre una página y la máquina, después del
+  // filtro de red de `origin.ts`. La unidad de systemd de este proyecto corre
+  // como `www` justo para no llegar aquí; el camino de Docker tiene que declarar
+  // su usuario igual. `/panel/sistema` lo enseña en rojo.
+  if (runningAsRoot()) {
+    console.error(
+      '[render] Chromium arranca SIN recinto porque este proceso es root. ' +
+        'Ejecute el servicio con un usuario normal: ver docs/DESPLIEGUE.md.',
+    );
     args.push('--no-sandbox');
   }
 
@@ -74,4 +83,15 @@ export function getBrowser(): Promise<Browser> {
     });
   }
   return browserPromise;
+}
+
+/**
+ * Si este proceso corre como root.
+ *
+ * Se exporta para que la pantalla de salud pueda decirlo: un Chromium sin
+ * recinto es una pared menos entre una página y la máquina, y eso tiene que
+ * verse, no quedarse en una línea del diario que nadie abre.
+ */
+export function runningAsRoot(): boolean {
+  return typeof process.getuid === 'function' && process.getuid() === 0;
 }

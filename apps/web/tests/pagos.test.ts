@@ -5,6 +5,7 @@ import { after, before, beforeEach, describe, it } from 'node:test';
 import { POST as callback } from '../src/app/api/payments/[provider]/callback/route';
 import { beginPublicPayment, openPackageOrder } from '../src/lib/billing/checkout';
 import { applySettlement, reconcilePending } from '../src/lib/billing/reconcile';
+import { PaymentError } from '../src/lib/payments/types';
 import { openCollection } from '../src/lib/billing/reserve';
 import type { PaymentProvider } from '../src/lib/payments/types';
 import { getPrisma } from '../src/lib/db/client';
@@ -259,6 +260,19 @@ describe('la reserva del cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, 
     return { provider, veces: () => veces };
   };
 
+  const abrirCon = (provider: PaymentProvider, orderId: string): Promise<unknown> =>
+    openCollection(provider, {
+      orderId,
+      amount: 1500,
+      currency: 'USD',
+      description: 'Plan Annual',
+      successUrl: 'https://citas.example/ok',
+      failureUrl: 'https://citas.example/no',
+      callbackUrl: 'https://citas.example/cb',
+    });
+
+  const pedidoDeReserva = async (): Promise<string> => pedido();
+
   const pedido = async (): Promise<string> => {
     const row = await getPrisma().order.create({
       data: {
@@ -317,15 +331,31 @@ describe('la reserva del cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, 
     assert.equal(veces(), 1);
   });
 
-  it('si la pasarela falla, la reserva se suelta y se puede reintentar', async () => {
-    const orderId = await pedido();
+  it('un fallo AMBIGUO conserva la reserva; uno definitivo la suelta', async () => {
+    // Esta prueba decía antes que «si la pasarela falla, la reserva se suelta».
+    // Eso era describir el fallo, no probarlo: con un tiempo agotado la
+    // cobranza puede existir al otro lado, y soltarla dejaba abrir una segunda.
+    const orderId = await pedidoDeReserva();
+
+    const ambiguo: PaymentProvider = {
+      id: 'mock',
+      createCollection: () => Promise.reject(new Error('socket hang up')),
+      getStatus: () => Promise.resolve({ status: 'pending' as const }),
+      verifyCallback: () => Promise.reject(new Error('no se usa')),
+    };
+    const salida = (await abrirCon(ambiguo, orderId)) as { ok: boolean; reason?: string };
+    assert.equal(salida.reason, 'unknown');
+    assert.equal(await getPrisma().payment.count({ where: { orderId } }), 1, 'se conserva');
+
+    await getPrisma().payment.deleteMany({ where: { orderId } });
+
     let primera = true;
-    const provider: PaymentProvider = {
+    const definitivo: PaymentProvider = {
       id: 'mock',
       createCollection: (request) => {
         if (primera) {
           primera = false;
-          return Promise.reject(new Error('la pasarela no contesta'));
+          return Promise.reject(new PaymentError('datos inválidos', 'mock', { definitive: true }));
         }
         return Promise.resolve({
           provider: 'mock' as const,
@@ -337,24 +367,209 @@ describe('la reserva del cobro', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, 
       getStatus: () => Promise.resolve({ status: 'pending' as const }),
       verifyCallback: () => Promise.reject(new Error('no se usa')),
     };
+
+    await assert.rejects(abrirCon(definitivo, orderId));
+    // Sin soltarla, el reintento chocaría contra el índice para siempre.
+    assert.equal(await getPrisma().payment.count({ where: { orderId } }), 0);
+    assert.equal(((await abrirCon(definitivo, orderId)) as { ok: boolean }).ok, true);
+  });
+});
+
+/**
+ * Lo que el proveedor dice que cobró, y lo que quedó en el aire.
+ *
+ * Los dos llegaron por la cuarta revisión del informe externo y los dos eran
+ * ciertos: el importe no se comprobaba de verdad, y la ventana entre crear la
+ * cobranza y guardarla dejaba abrir una segunda.
+ */
+describe('el importe y las reservas en el aire', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  beforeEach(async () => {
+    const prisma = getPrisma();
+    await prisma.paymentEvent.deleteMany({});
+    await prisma.payment.deleteMany({});
+    await prisma.order.deleteMany({});
+    await prisma.subscription.deleteMany({});
+  });
+
+  const pedidoConCobro = async (): Promise<{ orderId: string; paymentId: string }> => {
+    const prisma = getPrisma();
+    const order = await prisma.order.create({
+      data: {
+        tenantId: fixture.get().tenantId,
+        amount: 12000,
+        currency: 'USD',
+        description: 'Plan Office',
+        status: 'pending',
+      },
+      select: { id: true, tenantId: true, amount: true, description: true, packageGuests: true },
+    });
+    const payment = await prisma.payment.create({
+      data: {
+        orderId: order.id,
+        provider: 'mock',
+        providerRef: `ref-${Math.random().toString(36).slice(2, 10)}`,
+        status: 'pending',
+        amount: 12000,
+        currency: 'USD',
+      },
+      select: { id: true },
+    });
+    return { orderId: order.id, paymentId: payment.id };
+  };
+
+  const orderRow = async (orderId: string) =>
+    getPrisma().order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { id: true, tenantId: true, amount: true, description: true, packageGuests: true, status: true },
+    });
+
+  it('un importe que no cuadra NO activa nada', async () => {
+    const { orderId, paymentId } = await pedidoConCobro();
+    const order = await orderRow(orderId);
+
+    // Pagó mil doscientos de ciento veinte mil. «Pagado» no es «pagado lo que
+    // se pedía», y activar el plano aquí es regalar el producto.
+    const cambio = await applySettlement(order, paymentId, 'paid', 'callback', {
+      amount: 1200,
+      currency: 'USD',
+    });
+
+    assert.equal(cambio, false);
+    assert.equal((await orderRow(orderId)).status, 'pending');
+    assert.equal(
+      (await getPrisma().payment.findUniqueOrThrow({ where: { id: paymentId } })).status,
+      'pending',
+      'se queda pendiente para que el repaso lo siga mirando',
+    );
+
+    // Y queda escrito lo que llegó, que es lo único que sirve si se discute.
+    const evento = await getPrisma().paymentEvent.findFirstOrThrow({ where: { paymentId } });
+    assert.equal(evento.kind, 'amount_mismatch');
+  });
+
+  it('una MONEDA que no cuadra tampoco', async () => {
+    const { orderId, paymentId } = await pedidoConCobro();
+    const order = await orderRow(orderId);
+
+    const cambio = await applySettlement(order, paymentId, 'paid', 'callback', {
+      amount: 12000,
+      currency: 'LBP',
+    });
+    assert.equal(cambio, false);
+    assert.equal((await orderRow(orderId)).status, 'pending');
+  });
+
+  it('el importe correcto sí liquida', async () => {
+    const { orderId, paymentId } = await pedidoConCobro();
+    const order = await orderRow(orderId);
+
+    assert.equal(
+      await applySettlement(order, paymentId, 'paid', 'callback', {
+        amount: 12000,
+        currency: 'USD',
+      }),
+      true,
+    );
+    assert.equal((await orderRow(orderId)).status, 'paid');
+  });
+
+  it('sin importe del proveedor se liquida igual, y se sabe que no se comprobó', async () => {
+    // Es lo honesto mientras Whish no lo devuelva: negarse a cobrar porque el
+    // proveedor no dice el importe dejaría sin cobrar todo.
+    const { orderId, paymentId } = await pedidoConCobro();
+    const order = await orderRow(orderId);
+    assert.equal(await applySettlement(order, paymentId, 'paid', 'callback'), true);
+    assert.equal((await orderRow(orderId)).status, 'paid');
+  });
+
+  it('un tiempo agotado NO suelta la reserva: la cobranza puede existir', async () => {
+    // Esta es la ventana exacta que señaló el informe. Antes se soltaba pasara
+    // lo que pasara, así que un reintento abría una SEGUNDA cobranza de verdad.
+    const orderId = (await pedidoConCobro()).orderId;
+    await getPrisma().payment.deleteMany({ where: { orderId } });
+
+    const provider: PaymentProvider = {
+      id: 'mock',
+      createCollection: () => Promise.reject(new Error('The operation was aborted due to timeout')),
+      getStatus: () => Promise.resolve({ status: 'pending' as const }),
+      verifyCallback: () => Promise.reject(new Error('no se usa')),
+    };
+
+    const salida = (await openCollection(provider, {
+      orderId,
+      amount: 12000,
+      currency: 'USD',
+      description: 'Plan Office',
+      successUrl: 'https://citas.example/ok',
+      failureUrl: 'https://citas.example/no',
+      callbackUrl: 'https://citas.example/cb',
+    })) as { ok: boolean; reason?: string };
+
+    assert.equal(salida.ok, false);
+    assert.equal(salida.reason, 'unknown', 'ni sí ni no: no se sabe');
+    assert.equal(
+      await getPrisma().payment.count({ where: { orderId, status: 'pending' } }),
+      1,
+      'la reserva se CONSERVA: es lo único que ata esa referencia al pedido',
+    );
+    const evento = await getPrisma().paymentEvent.findFirst({ where: { kind: 'open_unknown' } });
+    assert.notEqual(evento, null, 'y queda escrito por qué');
+  });
+
+  it('una negativa EXPLÍCITA sí la suelta: no se creó nada', async () => {
+    const orderId = (await pedidoConCobro()).orderId;
+    await getPrisma().payment.deleteMany({ where: { orderId } });
+
+    const provider: PaymentProvider = {
+      id: 'mock',
+      createCollection: () =>
+        Promise.reject(new PaymentError('datos inválidos', 'mock', { definitive: true })),
+      getStatus: () => Promise.resolve({ status: 'pending' as const }),
+      verifyCallback: () => Promise.reject(new Error('no se usa')),
+    };
     const abrir = (): Promise<unknown> =>
       openCollection(provider, {
         orderId,
-        amount: 1500,
+        amount: 12000,
         currency: 'USD',
-        description: 'Plan Annual',
+        description: 'Plan Office',
         successUrl: 'https://citas.example/ok',
         failureUrl: 'https://citas.example/no',
         callbackUrl: 'https://citas.example/cb',
       });
 
     await assert.rejects(abrir());
-    // Sin soltar la reserva, el reintento chocaría contra el índice para
-    // siempre: el pedido se quedaría sin poder cobrarse nunca.
-    assert.equal(await getPrisma().payment.count({ where: { orderId } }), 0);
+    assert.equal(await getPrisma().payment.count({ where: { orderId } }), 0, 'se puede reintentar');
+  });
 
-    const otra = (await abrir()) as { ok: boolean };
-    assert.equal(otra.ok, true);
-    assert.equal(await getPrisma().payment.count({ where: { orderId } }), 1);
+  it('un cobro de hace dos meses se cierra en vez de quedarse pendiente para siempre', async () => {
+    // El repaso solo mira la ventana de treinta días, así que lo anterior se
+    // quedaba «pendiente» eternamente — y con el índice de «un cobro abierto
+    // por pedido», ese pedido no se podía cobrar nunca más.
+    const { orderId } = await pedidoConCobro();
+    const viejo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    await getPrisma().payment.updateMany({ where: { orderId }, data: { createdAt: viejo } });
+
+    const resumen = await reconcilePending();
+    assert.ok(resumen.expired >= 1, `caducados: ${resumen.expired}`);
+    assert.equal(
+      (await getPrisma().payment.findFirstOrThrow({ where: { orderId } })).status,
+      'expired',
+    );
+  });
+
+  it('una reserva en el aire que el proveedor dice PAGADA se liquida', async () => {
+    // Esto es lo que se protege al no borrarla: la cobranza huérfana existía y
+    // alguien la pagó. Sin la fila, ese cobro no se podría ni reconocer.
+    const { orderId, paymentId } = await pedidoConCobro();
+    await getPrisma().payment.update({
+      where: { id: paymentId },
+      data: { payUrl: null, createdAt: new Date(Date.now() - 20 * 60 * 1000) },
+    });
+
+    await reconcilePending();
+    assert.equal((await orderRow(orderId)).status, 'paid', 'el doble `mock` la da por pagada');
   });
 });

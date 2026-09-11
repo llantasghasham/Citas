@@ -31,6 +31,16 @@ COPY apps/web apps/web
 RUN npm run db:generate --workspace @citas/web \
   && npm run build --workspace @citas/web
 
+# No root, y no es una formalidad. Chromium se NIEGA a usar su recinto como
+# root, así que arrancar la imagen como root obliga a quitárselo — una pared
+# menos entre una página y la máquina. La unidad de systemd ya corre como `www`;
+# este camino tenía que igualarla y no lo hacía.
+#
+# `node` es el usuario que ya trae la imagen base, con su uid 1000. La carpeta
+# de trabajo pasa a ser suya para que Next pueda escribir su caché.
+RUN chown -R node:node /app
+USER node
+
 EXPOSE 3000
 # Las migraciones se aplican al arrancar: un despliegue nunca sirve una versión
 # del código contra un esquema viejo.
