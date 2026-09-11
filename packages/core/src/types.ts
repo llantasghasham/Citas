@@ -817,6 +817,8 @@ export interface Dictionary {
       imapPassword: string;
       imapPasswordHint: string;
       folder: string;
+      verifyCertificate: string;
+      verifyCertificateHint: string;
       active: string;
       forSubscriptions: string;
       platform: string;
@@ -840,6 +842,7 @@ export interface Dictionary {
       paste: string;
       pasteHint: string;
       pasteSubject: string;
+      pasteFrom: string;
       pasteBody: string;
       pasteAccount: string;
       pasteButton: string;

@@ -43,6 +43,7 @@ type MailboxOpener = (config: {
   imapUser: string;
   imapPasswordEnc: string;
   folder: string;
+  rejectUnauthorized?: boolean;
 }) => Promise<SinpeMailbox>;
 
 export async function checkSinpeAccounts(
@@ -64,12 +65,12 @@ export async function checkSinpeAccounts(
 
     let mailbox: SinpeMailbox | null = null;
     try {
-      mailbox = await open(account);
+      mailbox = await open({ ...account, rejectUnauthorized: account.verifyCertificate });
       const emails = await mailbox.fetchSince(since, BATCH);
       summary.emails += emails.length;
 
       for (const email of emails) {
-        const outcome = await ingestSinpeEmail(account, email.subject, email.body);
+        const outcome = await ingestSinpeEmail(account, email.subject, email.body, email.from);
         if (outcome.kind === 'stored') {
           summary.stored += 1;
           if (outcome.applied) summary.applied += 1;

@@ -42,6 +42,7 @@ function readInput(formData: FormData): AccountInput {
     imapUser: String(formData.get('imapUser') ?? '').trim(),
     imapPassword: String(formData.get('imapPassword') ?? ''),
     folder: String(formData.get('folder') ?? 'INBOX').trim(),
+    verifyCertificate: formData.get('verifyCertificate') !== null,
     active: formData.get('active') !== null,
     forSubscriptions: formData.get('forSubscriptions') !== null,
   };
@@ -132,6 +133,7 @@ export async function assignMovementAction(formData: FormData): Promise<void> {
 export async function readPastedEmailAction(formData: FormData): Promise<void> {
   await guard();
   const accountId = String(formData.get('accountId') ?? '');
+  const from = String(formData.get('from') ?? '').slice(0, 200);
   const subject = String(formData.get('subject') ?? '').slice(0, 500);
   const body = String(formData.get('body') ?? '').slice(0, 100_000);
   if (accountId.length === 0 || body.trim().length === 0) redirect(`${BACK}&sinpe=incompleto`);
@@ -142,7 +144,7 @@ export async function readPastedEmailAction(formData: FormData): Promise<void> {
   });
   if (account === null) redirect(`${BACK}&sinpe=incompleto`);
 
-  const outcome = await ingestSinpeEmail(account, subject, body);
+  const outcome = await ingestSinpeEmail(account, subject, body, from);
   const result =
     outcome.kind === 'duplicate'
       ? 'duplicado'

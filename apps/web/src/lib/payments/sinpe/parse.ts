@@ -68,8 +68,15 @@ export interface SinpeMovement {
 }
 
 export type SinpeReading =
-  /** Plata que SALE, un aviso de cuenta repetido, o un correo que no es del banco. */
-  | { outcome: 'ignore'; reason: 'outgoing' | 'account_notice' | 'not_a_notice' }
+  /** Plata que SALE, o un correo que no es del banco. Ni se guarda. */
+  | { outcome: 'ignore'; reason: 'outgoing' | 'not_a_notice' }
+  /**
+   * El aviso de movimiento de cuenta: el mismo dinero que ya contó el aviso de
+   * SINPE Móvil. Se devuelve lo que se pudo leer para poder GUARDARLO con su
+   * importe de verdad: «no se cobró esto, y esto es lo que era» dice mucho más
+   * que una fila en blanco — y el dueño ya se confundió una vez con esto.
+   */
+  | { outcome: 'ignore'; reason: 'account_notice'; amount: number | null; reference: string | null }
   | { outcome: 'movement'; movement: SinpeMovement };
 
 /**
@@ -86,8 +93,12 @@ const ACCOUNT_NOTICE = /(cr[ée]dito|d[ée]bito)\s+(en|de)\s+su\s+cuenta/i;
 const MENTIONS_PAYMENT =
   /sinpe|dep[óo]sito|transferencia|cr[ée]dito\s+(en|a)\s+(su\s+)?cuenta|ha\s+recibido/i;
 
-export function parseSinpeEmail(subject: string, body: string): SinpeReading {
-  const text = plainText(`${subject}\n${body}`);
+export function parseSinpeEmail(subject: string, body: string, from = ''): SinpeReading {
+  // El REMITENTE cuenta como texto. El correo de Davivienda no nombra al banco
+  // en ninguna parte del cuerpo: lo único que lo dice es que viene de
+  // `notificaciones.gx@davivienda.cr`. Sin esto, todos los movimientos de ese
+  // banco se guardaban con el banco en blanco.
+  const text = plainText(`${from}\n${subject}\n${body}`);
 
   // 1. PLATA QUE SALE. Antes de nada, porque un SINPE enviado también dice
   //    «Transferencia SINPE» y pasaría cualquier filtro de los de abajo. Darlo
@@ -102,7 +113,7 @@ export function parseSinpeEmail(subject: string, body: string): SinpeReading {
   //    movimiento de cuenta, sin nombre y con una referencia corta que se
   //    repite. Son la misma plata; el segundo se guarda y no se cobra.
   if (ACCOUNT_NOTICE.test(text) && (reference === null || reference.length < SHORT_REFERENCE)) {
-    return { outcome: 'ignore', reason: 'account_notice' };
+    return { outcome: 'ignore', reason: 'account_notice', amount: findAmount(text), reference };
   }
 
   // 3. ¿ES SIQUIERA UN AVISO DE BANCO? Las DOS cosas, o cualquier factura del
@@ -253,24 +264,39 @@ function findPhones(text: string): string[] {
  */
 function findSenderName(text: string): string | null {
   const patterns = [
-    /(?:de\s+parte\s+de|remitente|env[íi]a(?:do\s+por)?)\s*[:]?\s*([\p{Lu}][\p{L}.'\-\s]{2,60}?)(?=\s+(?:por|el|desde|con)\b|[\n,.;]|$)/u,
-    /ha\s+recibido\s+(?:un\s+)?(?:sinpe\s*m[óo]vil\s+)?de\s+([\p{Lu}][\p{L}.'\-\s]{2,60}?)(?=\s+(?:por|el|desde|con)\b|[\n,.;]|$)/iu,
+    /(?:de\s+parte\s+de|remitente|env[íi]a(?:do\s+por)?)\s*[:]?\s*([\p{Lu}][\p{L}\p{M}_.'\-\s]{2,60}?)(?=\s+(?:por|el|desde|con|mediante)\b|[\n,.;]|$)/u,
+    // «Ha recibido 66.000,00 Colones de FULANO DE TAL por SINPE Movil.»
+    //
+    // Entre «recibido» y «de» va el monto, así que no se puede exigir que
+    // vayan pegados: era lo que hacía la versión anterior, y con el correo de
+    // verdad de Davivienda devolvía siempre nulo.
+    /ha\s+recibido\b[^\n]*?\bde\s+([\p{Lu}][\p{L}\p{M}_.'\-\s]{2,60}?)(?=\s+(?:por|el|desde|con|mediante)\b|[\n,.;]|$)/iu,
   ];
 
   for (const pattern of patterns) {
-    const name = text.match(pattern)?.[1]?.trim().replace(/\s+/g, ' ');
-    if (name !== undefined && name.length >= 3) return name;
+    const name = text.match(pattern)?.[1];
+    if (name === undefined) continue;
+    const clean = tidyName(name);
+    if (clean.length >= 3) return clean;
   }
   return null;
 }
 
 /**
+ * Davivienda escribe el nombre con guiones bajos: `DEYNA_MARIA_GUZMAN_C`.
+ * Se dejan como espacios — es un nombre de persona y así se lee — pero no se
+ * toca nada más: ni mayúsculas ni acentos, que no son nuestros para arreglar.
+ */
+function tidyName(raw: string): string {
+  return raw.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
  * El texto libre que escribió quien paga: «motivo», «detalle», «descripción».
  *
- * Cada banco lo llama de una manera y alguno no lo trae. Se saca como AYUDA
- * para que una persona vea de un vistazo a qué venía el dinero — el casador no
- * depende de esto: busca el código en el correo entero, que es lo único que
- * funciona igual en los nueve bancos.
+ * Cada banco lo llama de una manera y alguno —Davivienda, sin ir más lejos— no
+ * lo manda. Se saca como AYUDA para que una persona vea de un vistazo a qué
+ * venía el dinero; el casador no depende de esto.
  */
 function findDetail(text: string): string | null {
   const match = text.match(

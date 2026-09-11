@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { applySettlement } from '@/lib/billing/reconcile';
 import { getPrisma } from '@/lib/db/client';
 import { codeAppearsIn } from '@/lib/payments/sinpe/code';
@@ -37,9 +39,11 @@ export async function ingestSinpeEmail(
   account: AccountRef,
   subject: string,
   body: string,
+  /** De quién viene. Davivienda no nombra al banco más que aquí. */
+  from = '',
 ): Promise<IngestOutcome> {
-  const reading = parseSinpeEmail(subject, body);
-  const raw = `${subject}\n${body}`.slice(0, 20_000);
+  const reading = parseSinpeEmail(subject, body, from);
+  const raw = `${from}\n${subject}\n${body}`.trim().slice(0, 20_000);
 
   // Plata que SALE no se guarda: no es un cobro que nadie vaya a revisar, y
   // llenar la pantalla de movimientos propios es cómo se deja de mirarla.
@@ -55,12 +59,11 @@ export async function ingestSinpeEmail(
   // plata que el aviso de SINPE Móvil contada dos veces, y el dueño ya se
   // confundió una vez creyendo que eran pagos repetidos: dejarlo escrito, con
   // su motivo, es lo que evita que vuelva a pasar.
-  if (reading.outcome === 'ignore') {
-    const text = plainText(`${subject}\n${body}`);
-    const reference = accountNoticeReference(text);
-    await storeIgnored(account, reference, raw);
+  if (reading.outcome === 'ignore' && reading.reason === 'account_notice') {
+    await storeIgnored(account, raw, reading.amount ?? 0);
     return { kind: 'ignored', reason: 'account_notice' };
   }
+  if (reading.outcome === 'ignore') return { kind: 'ignored', reason: reading.reason };
 
   const stored = await store(account, reading.movement, raw);
   if (stored.duplicate) return { kind: 'duplicate', movementId: stored.id };
@@ -118,31 +121,34 @@ async function store(
 }
 
 /**
- * El aviso de movimiento de cuenta, guardado para que se vea por qué no se
- * cobró. Su referencia es SIEMPRE la misma —identifica al aviso, no al
- * movimiento—, así que se le añade la fecha para que quepan varios.
+ * El aviso de movimiento de cuenta, guardado para que se vea POR QUÉ no se
+ * cobró — y con su importe de verdad, no con un cero: «esto llegó y no se
+ * cobró porque es el mismo dinero» es lo que evita la confusión que ya hubo.
+ *
+ * Su referencia no sirve de clave: es SIEMPRE LA MISMA porque identifica al
+ * aviso y no al movimiento (en el sistema del que viene esto se repite
+ * `1054101` en cinco correos distintos). Así que la clave se saca del correo
+ * entero, con una huella. Y tiene que ser DETERMINISTA: con la hora dentro,
+ * cada pasada del temporizador —cada cinco minutos, releyendo lo mismo— habría
+ * guardado otra fila del mismo aviso.
  */
-async function storeIgnored(account: AccountRef, reference: string, raw: string): Promise<void> {
+async function storeIgnored(account: AccountRef, raw: string, amount: number): Promise<void> {
+  const fingerprint = createHash('sha256').update(raw).digest('hex').slice(0, 24);
   await getPrisma()
     .sinpeMovement.create({
       data: {
         accountId: account.id,
         tenantId: account.tenantId,
-        amount: 0,
+        amount,
         currency: 'CRC',
-        reference,
+        reference: `aviso-${fingerprint}`,
         movementType: 'credito',
         status: 'ignored',
         raw,
       },
     })
+    // Ya estaba: es el mismo aviso releído, que es lo normal.
     .catch(() => undefined);
-}
-
-/** Una referencia que no choca para el aviso repetido. */
-function accountNoticeReference(text: string): string {
-  const short = text.match(/\b(\d{4,11})\b/)?.[1] ?? 'sin-referencia';
-  return `aviso-${short}-${Date.now()}`;
 }
 
 /**

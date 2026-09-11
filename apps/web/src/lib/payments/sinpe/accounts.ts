@@ -21,6 +21,7 @@ export interface AccountRow {
   imapPort: number;
   imapUser: string;
   folder: string;
+  verifyCertificate: boolean;
   active: boolean;
   forSubscriptions: boolean;
   tenantId: string | null;
@@ -53,6 +54,7 @@ export async function listAccounts(): Promise<AccountRow[]> {
       imapPort: true,
       imapUser: true,
       folder: true,
+      verifyCertificate: true,
       active: true,
       forSubscriptions: true,
       tenantId: true,
@@ -93,6 +95,7 @@ export interface AccountInput {
   /** Vacía significa «no la toques», como en todo el resto del panel. */
   imapPassword: string;
   folder: string;
+  verifyCertificate: boolean;
   active: boolean;
   forSubscriptions: boolean;
 }
@@ -111,6 +114,7 @@ export async function addAccount(input: AccountInput): Promise<void> {
       // Cifrada con AES-256-GCM y la llave fuera de la base, como la del SMTP.
       imapPasswordEnc: encryptSecret(input.imapPassword),
       folder: input.folder.slice(0, 100) || 'INBOX',
+      verifyCertificate: input.verifyCertificate,
       active: input.active,
       forSubscriptions: input.forSubscriptions,
     },
@@ -133,6 +137,7 @@ export async function editAccount(id: string, input: AccountInput): Promise<void
         ? { imapPasswordEnc: encryptSecret(input.imapPassword) }
         : {}),
       folder: input.folder.slice(0, 100) || 'INBOX',
+      verifyCertificate: input.verifyCertificate,
       active: input.active,
       forSubscriptions: input.forSubscriptions,
     },

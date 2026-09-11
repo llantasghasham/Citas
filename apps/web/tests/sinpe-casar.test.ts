@@ -192,7 +192,10 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
 
     const movimiento = await getPrisma().sinpeMovement.findFirstOrThrow();
     assert.equal(movimiento.status, 'ignored');
-    assert.equal(movimiento.amount, 0, 'no suma dinero: es el mismo de otro correo');
+    // Con su importe de verdad. Guardarlo en cero decía «llegó algo» y no
+    // «llegó esto y no se cobró porque es el mismo dinero», que es la frase
+    // que evita la confusión — al dueño ya le pasó una vez.
+    assert.equal(movimiento.amount, 2_500_000);
   });
 
   it('un pedido ya pagado no se vuelve a cobrar', async () => {
@@ -230,6 +233,61 @@ describe('el cobro por SINPE', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
 
     assert.equal(await tryMatch(movimiento.id), false);
     assert.equal(await getPrisma().payment.count({ where: { orderId: pedido.id } }), 1);
+  });
+
+  it('releer el mismo aviso de cuenta no guarda dos filas', async () => {
+    // El temporizador relee cada cinco minutos con solape, así que este correo
+    // vuelve a pasar por aquí tres veces. Su referencia NO sirve de clave —es
+    // siempre la misma, identifica al aviso y no al movimiento— así que la
+    // clave sale de una huella del correo, y tiene que ser determinista.
+    const cuenta = await account();
+    const correo =
+      'Le informamos que se realizó un crédito en su cuenta por ₡250,00. ' +
+      'Referencia: 1054101. Davivienda';
+
+    await ingestSinpeEmail(cuenta, 'Movimiento', correo);
+    await ingestSinpeEmail(cuenta, 'Movimiento', correo);
+    await ingestSinpeEmail(cuenta, 'Movimiento', correo);
+
+    const filas = await getPrisma().sinpeMovement.findMany();
+    assert.equal(filas.length, 1, 'una sola fila');
+    assert.equal(filas[0]?.status, 'ignored');
+    assert.equal(filas[0]?.amount, 25_000, 'con su importe de verdad, no un cero');
+  });
+
+  it('dos avisos de cuenta distintos con la MISMA referencia caben los dos', async () => {
+    // En el sistema del dueño la referencia `1054101` se repite en cinco
+    // correos distintos, con importes distintos. Si fuera la clave, cuatro se
+    // habrían perdido.
+    const cuenta = await account();
+    for (const monto of ['250,00', '29,00', '1.000,00']) {
+      await ingestSinpeEmail(
+        cuenta,
+        'Movimiento',
+        `Se realizó un crédito en su cuenta por ₡${monto}. Referencia: 1054101. Davivienda`,
+      );
+    }
+    assert.equal(await getPrisma().sinpeMovement.count(), 3);
+  });
+
+  it('el correo real de Davivienda cobra un pedido', async () => {
+    const cuenta = await account();
+    const pedido = await order(6_600_000);
+
+    const resultado = await ingestSinpeEmail(
+      cuenta,
+      'Recepción de pago por SINPE Móvil',
+      `Ha recibido 66,000.00 Colones de DEYNA_MARIA_GUZMAN_C por SINPE Movil. ` +
+        `Motivo ${pedido.payCode}. Comprobante 2026090910283002226510944`,
+      'notificaciones.gx@davivienda.cr',
+    );
+    assert.equal(resultado.kind, 'stored');
+    assert.equal(resultado.kind === 'stored' ? resultado.applied : false, true);
+
+    const movimiento = await getPrisma().sinpeMovement.findFirstOrThrow();
+    assert.equal(movimiento.senderName, 'DEYNA MARIA GUZMAN C');
+    assert.equal(movimiento.bank, 'davivienda');
+    assert.equal((await getPrisma().order.findUniqueOrThrow({ where: { id: pedido.id } })).status, 'paid');
   });
 
   it('el código se lee aunque venga en minúsculas o pegado a un punto', async () => {

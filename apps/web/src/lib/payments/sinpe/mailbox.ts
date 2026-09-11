@@ -19,6 +19,8 @@ import { decryptSecret } from '@/lib/secrets';
  */
 
 export interface SinpeEmail {
+  /** De quién viene. El banco a veces solo se nombra aquí. */
+  from: string;
   subject: string;
   /** El cuerpo, ya sin MIME: texto si lo hay, y si no el HTML tal cual. */
   body: string;
@@ -31,6 +33,13 @@ export interface SinpeMailboxConfig {
   imapUser: string;
   imapPasswordEnc: string;
   folder: string;
+  /**
+   * Comprobar el certificado del servidor. Se apaga SOLO si el correo va en un
+   * servidor con certificado propio y la conexión falla por eso; apagarlo abre
+   * la puerta a que alguien en medio lea la contraseña y todo el correo, así
+   * que viene encendido y quien lo apague tiene que saber por qué.
+   */
+  rejectUnauthorized?: boolean;
 }
 
 /** Un buzón que cualquiera puede implementar. Hoy hay uno: IMAP. */
@@ -52,6 +61,7 @@ export async function openImapMailbox(config: SinpeMailboxConfig): Promise<Sinpe
     // servidor — la línea de LOGIN incluida. La contraseña acabaría en el
     // journal del sistema, que es justo lo que el cifrado viene a evitar.
     logger: false,
+    ...(config.rejectUnauthorized === false ? { tls: { rejectUnauthorized: false } } : {}),
     greetingTimeout: TIMEOUT_MS,
     socketTimeout: TIMEOUT_MS,
     connectionTimeout: TIMEOUT_MS,
@@ -81,6 +91,7 @@ export async function openImapMailbox(config: SinpeMailboxConfig): Promise<Sinpe
         if (receivedAt.getTime() < since.getTime()) continue;
 
         emails.push({
+          from: parsed.from?.text ?? '',
           subject: parsed.subject ?? '',
           // El texto plano cuando lo hay. Si el banco manda solo HTML —y hay
           // alguno—, el HTML entero: quien lo limpia es `text.ts`, y hacerlo

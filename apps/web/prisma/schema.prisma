@@ -600,6 +600,10 @@ model SinpeAccount {
   /// Quien tiene este buzón ve todo el correo de quien cobra.
   imapPasswordEnc String
   folder          String @default("INBOX")
+  /// Comprobar el certificado del servidor. Se apaga SOLO con un certificado
+  /// propio que no valide; apagarlo deja que alguien en medio lea la contraseña
+  /// y todo el correo, así que viene encendido.
+  verifyCertificate Boolean @default(true)
 
   active Boolean @default(true)
   /// Verdadero cuando este buzón cobra las MENSUALIDADES de la plataforma.

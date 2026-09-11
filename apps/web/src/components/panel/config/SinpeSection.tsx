@@ -138,6 +138,12 @@ export function SinpeSection({
                 ))}
               </select>
             </label>
+            {/* De quién viene: Davivienda no nombra al banco en el cuerpo, y
+                lo único que lo dice es su dirección de correo. */}
+            <label className="flex flex-col gap-1 text-xs text-[#6a6456]">
+              {copy.pasteFrom}
+              <input name="from" maxLength={200} dir="ltr" className={CONTROL} />
+            </label>
             <label className="flex flex-col gap-1 text-xs text-[#6a6456]">
               {copy.pasteSubject}
               <input name="subject" maxLength={500} className={CONTROL} />
@@ -337,6 +343,21 @@ function AccountFields({ copy, account }: { copy: Copy; account?: AccountRow }) 
           className={CONTROL}
         />
         <span className="text-xs text-[#8a8272]">{copy.imapPasswordHint}</span>
+      </label>
+
+      {/* Encendido por defecto, y con su explicación debajo: apagarlo deja que
+          alguien en medio lea la contraseña del buzón y todo el correo. */}
+      <label className="flex flex-col gap-1 text-xs text-[#6a6456]">
+        <span className="flex items-center gap-2 text-sm text-[#23201a]">
+          <input
+            type="checkbox"
+            name="verifyCertificate"
+            value="1"
+            defaultChecked={account?.verifyCertificate ?? true}
+          />
+          {copy.verifyCertificate}
+        </span>
+        <span className="text-xs text-[#8a8272]">{copy.verifyCertificateHint}</span>
       </label>
 
       <div className="flex flex-wrap gap-x-6 gap-y-2">

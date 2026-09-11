@@ -148,6 +148,51 @@ describe('el lector de avisos de SINPE', () => {
     });
   });
 
+
+  /**
+   * El correo de verdad, copiado de la bandeja del dueño.
+   *
+   * Esto ya no es una suposición: es lo que manda Davivienda, y las dos cosas
+   * que fallaban con él son justo las que un correo inventado no habría
+   * enseñado nunca.
+   */
+  describe('el correo REAL de Davivienda', () => {
+    const DE = 'notificaciones.gx@davivienda.cr';
+    const ASUNTO = 'Recepción de pago por SINPE Móvil';
+    const CUERPO =
+      'Ha recibido 66,000.00 Colones de DEYNA_MARIA_GUZMAN_C por SINPE Movil. ' +
+      'Comprobante 2026090910283002226510944';
+
+    it('se lee entero', () => {
+      const leido = parseSinpeEmail(ASUNTO, CUERPO, DE);
+      assert.equal(leido.outcome, 'movement');
+      if (leido.outcome !== 'movement') return;
+      assert.equal(leido.movement.amount, 6_600_000, '₡66.000,00 en céntimos');
+      assert.equal(leido.movement.reference, '2026090910283002226510944');
+      assert.equal(leido.movement.movementType, 'sinpe_movil');
+    });
+
+    it('el nombre lleva el monto en medio, y guiones bajos', () => {
+      // «Ha recibido 66,000.00 Colones de NOMBRE por…»: exigir que «de» fuera
+      // pegado a «recibido» devolvía nulo SIEMPRE con este banco. Y el nombre
+      // viene con guiones bajos, que se leen como espacios.
+      const leido = parseSinpeEmail(ASUNTO, CUERPO, DE);
+      assert.equal(leido.outcome, 'movement');
+      if (leido.outcome !== 'movement') return;
+      assert.equal(leido.movement.senderName, 'DEYNA MARIA GUZMAN C');
+    });
+
+    it('el banco solo se nombra en el remitente', () => {
+      // El cuerpo no dice «Davivienda» en ninguna parte.
+      assert.ok(!CUERPO.toLowerCase().includes('davivienda'));
+
+      const conRemitente = parseSinpeEmail(ASUNTO, CUERPO, DE);
+      const sinRemitente = parseSinpeEmail(ASUNTO, CUERPO);
+      assert.equal(conRemitente.outcome === 'movement' ? conRemitente.movement.bank : '', 'davivienda');
+      assert.equal(sinRemitente.outcome === 'movement' ? sinRemitente.movement.bank : 'x', null);
+    });
+  });
+
   describe('¿es siquiera un aviso de banco?', () => {
     it('una factura del buzón no es un SINPE', () => {
       const leido = parseSinpeEmail(
