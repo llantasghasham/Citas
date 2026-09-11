@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import { beforeEach, describe, it } from 'node:test';
+import { after, beforeEach, describe, it } from 'node:test';
 
 import { mayUsePassword, tenantCanWork } from '../src/lib/auth/guards';
+import { requestLoginCode } from '../src/lib/auth/otp';
 import { issueSession, resolveSession } from '../src/lib/auth/session';
 import { controlDb } from '../src/lib/db/client';
 
@@ -107,5 +108,76 @@ describe('una oficina suspendida', { skip: HAS_DB ? false : 'sin DATABASE_URL' }
     assert.equal(await prisma.session.count({ where: { tenantId: tenant.id } }), 1);
     await prisma.tenant.delete({ where: { id: tenant.id } });
     assert.equal(await prisma.session.count({ where: { tenantId: tenant.id } }), 0);
+  });
+});
+
+/**
+ * El freno del código por correo era por DIRECCIÓN y solo por dirección: desde
+ * una máquina se podían pedir tres códigos para cada una de mil direcciones.
+ * Saber si una dirección existe seguía siendo imposible, pero el correo salía
+ * igual — así que este servidor servía para llenarle la bandeja al equipo de una
+ * oficina y quemar de paso la reputación del dominio que envía.
+ */
+describe('pedir códigos desde el mismo sitio', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+  const ip = '203.0.113.9';
+
+  beforeEach(async () => {
+    await controlDb().loginCode.deleteMany({});
+  });
+
+  // Las cuentas de prueba no se quedan: cuelgan de la oficina raíz, que no se
+  // borra entre archivos, y ahí ensuciarían los recuentos de equipo de otros.
+  after(async () => {
+    await controlDb().user.deleteMany({ where: { email: { startsWith: 'prueba-freno-' } } });
+  });
+
+  /** Cuentas de verdad: sin usuario no se escribe fila y no se prueba nada. */
+  const cuentas = async (cuantas: number): Promise<string[]> => {
+    const prisma = controlDb();
+    const correos: string[] = [];
+    for (let n = 0; n < cuantas; n += 1) {
+      const email = `prueba-freno-${n}@example.com`;
+      await prisma.user.upsert({
+        where: { email },
+        update: {},
+        create: { email, memberships: { create: { tenantId: fixture.get().tenantId, role: 'OPERATOR' } } },
+      });
+      correos.push(email);
+    }
+    return correos;
+  };
+
+  it('un mismo origen no puede recorrer una lista de direcciones', async () => {
+    const prisma = controlDb();
+    const correos = await cuentas(12);
+
+    for (const email of correos) await requestLoginCode(email, ip);
+
+    // Diez direcciones distintas pasan; de la undécima en adelante, no sale
+    // correo. Lo que se cuenta son DIRECCIONES, no códigos.
+    const pedidas = await prisma.loginCode.groupBy({ by: ['email'], where: { ip } });
+    assert.equal(pedidas.length, 10);
+    for (const email of correos.slice(10)) {
+      assert.equal(await prisma.loginCode.count({ where: { email } }), 0, `salió código a ${email}`);
+    }
+  });
+
+  it('pero quien reintenta lo SUYO desde ahí sigue pudiendo', async () => {
+    const prisma = controlDb();
+    const correos = await cuentas(10);
+    for (const email of correos) await requestLoginCode(email, ip);
+
+    // La oficina entera sale por una sola IP. El décimo vuelve a pedir el suyo
+    // —se le perdió el correo— y tiene que llegarle: choca contra el freno de su
+    // propia dirección, que son tres, no contra el del origen.
+    const suyo = correos[9] ?? '';
+    await requestLoginCode(suyo, ip);
+    assert.equal(await prisma.loginCode.count({ where: { email: suyo } }), 2);
+
+    // Y el suyo sigue teniendo su propio tope.
+    await requestLoginCode(suyo, ip);
+    await requestLoginCode(suyo, ip);
+    assert.equal(await prisma.loginCode.count({ where: { email: suyo } }), 3);
   });
 });

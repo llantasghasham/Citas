@@ -69,6 +69,7 @@ export async function clean(): Promise<void> {
   await prisma.guest.deleteMany({ where: { token: { startsWith: 'test-' } } });
   await prisma.event.deleteMany({ where: { venueName: { startsWith: 'Prueba' } } });
   await prisma.auditLog.deleteMany({ where: { action: { startsWith: 'order.' } } });
+  await prisma.user.deleteMany({ where: { email: { startsWith: 'prueba-' } } });
   await prisma.tenant.deleteMany({ where: { subdomain: { startsWith: 'prueba-' } } });
 }
 

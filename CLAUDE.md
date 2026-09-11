@@ -109,6 +109,19 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   el código decía ocho, así que una foto de dos megas se rechazaba con un error
   del framework en vez de con el mensaje escrito para ese caso.
 - Nunca se revela si una dirección tiene cuenta. La respuesta es la misma.
+- Pedir código tiene DOS frenos, y el segundo faltaba. El primero es por
+  dirección: tres en quince minutos, para que la bandeja de nadie sea un arma.
+  Pero solo por dirección, así que desde una máquina se podían pedir tres
+  códigos para cada una de mil direcciones: averiguar si una existe seguía
+  siendo imposible, y aun así el correo SALÍA — este servidor servía de ariete
+  contra el equipo de una oficina, quemando de paso la reputación del dominio
+  que envía. El segundo freno cuenta DIRECCIONES DISTINTAS por origen, no
+  códigos, y esa diferencia es la que lo hace usable: una oficina entera sale a
+  internet por una sola IP y ocho personas un lunes son ocho direcciones, no
+  ochenta; quien reintenta lo suyo choca contra el freno de su dirección, no
+  contra este. La firma de un ariete es la contraria — muchas direcciones desde
+  un solo sitio. Vale lo que valga el proxy, y por eso es el SEGUNDO freno y no
+  el único.
 - La oficina se resuelve por `x-forwarded-host`, no por `host`: en las peticiones
   de una Server Action, Next reescribe `host`. El origen debe estar detrás del
   proxy que fija esa cabecera — y por eso Docker publica en `127.0.0.1:3000`, no

@@ -13,6 +13,28 @@ const MAX_ATTEMPTS = 5;
 const MAX_CODES_PER_WINDOW = 3;
 const WINDOW_MINUTES = 15;
 
+/**
+ * Cuántas DIRECCIONES DISTINTAS puede pedir código un mismo origen.
+ *
+ * El freno de arriba es por dirección, y solo: desde una máquina se podían pedir
+ * tres códigos para cada una de mil direcciones. Enterarse de si una dirección
+ * existe seguía siendo imposible —la respuesta es la misma— pero el correo SÍ
+ * salía, así que este servidor servía de ariete para llenarle la bandeja al
+ * equipo de una oficina, y de paso quemar la reputación del dominio que envía.
+ *
+ * Va por direcciones distintas y NO por códigos, que es lo que lo hace usable:
+ * una oficina entera sale a internet por una sola IP, y ocho personas entrando
+ * un lunes por la mañana son ocho direcciones, no ochenta. Quien reintenta lo
+ * suyo choca contra el freno de su dirección, no contra este. La firma de un
+ * ariete es justo la contraria: muchas direcciones desde un solo sitio.
+ *
+ * Vale lo que valga el proxy: `x-forwarded-for` lo escribe quien llama si
+ * delante no hay nada que lo reescriba. Por eso este es el segundo freno y no
+ * el único — y por eso el origen tiene que estar detrás del proxy, que es la
+ * misma condición que ya pide resolver la oficina por `x-forwarded-host`.
+ */
+const MAX_ADDRESSES_PER_IP = 10;
+
 /** Recorded when the code was made but the mail server would not take it. */
 export const CODE_SEND_FAILED_ACTION = 'auth.code.send_failed';
 
@@ -41,6 +63,21 @@ export async function requestLoginCode(rawEmail: string, ip?: string): Promise<v
 
   const recent = await prisma.loginCode.count({ where: { email, createdAt: { gte: since } } });
   if (recent >= MAX_CODES_PER_WINDOW) return;
+
+  if (ip !== undefined && ip.length > 0) {
+    const asked = await prisma.loginCode.groupBy({
+      by: ['email'],
+      where: { ip, createdAt: { gte: since } },
+    });
+    // Una dirección por la que este origen YA preguntó no cuenta como nueva: lo
+    // contrario dejaría fuera a quien reintenta desde el mismo sitio.
+    if (
+      asked.length >= MAX_ADDRESSES_PER_IP &&
+      !asked.some((row) => row.email === email)
+    ) {
+      return;
+    }
+  }
 
   const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   if (user === null) return;
