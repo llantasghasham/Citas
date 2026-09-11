@@ -101,3 +101,36 @@ export function utcToZoned(instant: Date, timeZone: string): string {
   const offset = offsetMs(instant.getTime(), timeZone);
   return new Date(instant.getTime() + offset).toISOString().slice(0, 16);
 }
+
+/**
+ * Que la fecha EXISTA en el calendario, no solo que tenga la forma.
+ *
+ * `^\d{4}-\d{2}-\d{2}$` deja pasar el 30 de febrero, el 31 de abril y el 29
+ * de febrero de un año que no es bisiesto. Y lo que viene después no protesta:
+ * `new Date('2026-02-30')` devuelve el 2 de marzo, así que la invitación se
+ * publicaba con una fecha, el `.ics` llevaba otra y nadie veía el salto.
+ *
+ * La comprobación es el camino de vuelta: se arma la fecha y se mira si los
+ * tres números siguen siendo los mismos. Si el mes se corrió, no existía.
+ */
+export function isCalendarDate(iso: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (match === null) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (year < 1900 || year > 2999 || month < 1 || month > 12 || day < 1 || day > 31) return false;
+
+  const built = new Date(Date.UTC(year, month - 1, day));
+  return (
+    built.getUTCFullYear() === year &&
+    built.getUTCMonth() === month - 1 &&
+    built.getUTCDate() === day
+  );
+}
+
+/** Una hora de reloj de veinticuatro horas: `19:00`, nunca `25:61`. */
+export function isClockTime(value: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}

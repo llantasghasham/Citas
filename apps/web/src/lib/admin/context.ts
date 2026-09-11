@@ -35,15 +35,17 @@ export function requestHost(requestHeaders: Headers): string {
  * La dirección con la que se ESCRIBEN los enlaces que salen de aquí: el de pago
  * de la pareja, el personal del invitado, el aviso que le damos al proveedor.
  *
- * Manda lo configurado en el panel, no la cabecera de la petición. La cabecera
- * la escribe quien llama, y solo es de fiar si el origen está de verdad detrás
- * del proxy — que es la condición que este proyecto se impone y que un despliegue
- * mal atado rompe sin avisar. Un enlace de pago apuntando a un dominio ajeno es
- * exactamente el correo que le roba el dinero a una pareja.
+ * Manda lo configurado en el panel. La cabecera la escribe QUIEN LLAMA, y solo
+ * es de fiar si el origen está de verdad detrás del proxy — que es la condición
+ * que este proyecto se impone y que un despliegue mal atado rompe sin avisar.
+ * Un enlace de pago apuntando a un dominio ajeno es exactamente el correo que
+ * le roba el dinero a una pareja.
  *
- * Si no hay nada configurado se usa la cabecera, porque en una instalación
- * recién levantada no hay otra cosa — y en esa situación tampoco hay dinero que
- * perder todavía. En cuanto se guarda «la dirección del sitio», manda esa.
+ * Cuando no hay nada configurado se cae a la cabecera, pero NO a cualquier
+ * cabecera: tiene que tener forma de nombre de dominio público, y en producción
+ * además tiene que ser un dominio que esta instalación conozca —el suyo o el de
+ * una oficina—. Una cabecera inventada deja de escribir enlaces en vez de
+ * escribirlos mal, que es la única de las dos que se puede arreglar después.
  */
 export async function canonicalOrigin(requestHeaders: Headers): Promise<string> {
   const configured = (await setting('NEXT_PUBLIC_SITE_URL'))?.trim();
@@ -56,7 +58,51 @@ export async function canonicalOrigin(requestHeaders: Headers): Promise<string> 
       console.warn(`[config] NEXT_PUBLIC_SITE_URL no es una dirección válida: ${configured}`);
     }
   }
-  return `https://${requestHost(requestHeaders)}`;
+
+  const host = requestHost(requestHeaders);
+  if (!isPublicHost(host)) {
+    throw new Error(
+      'No hay una dirección del sitio configurada y la cabecera de la petición no sirve ' +
+        'para escribir un enlace. Póngala en /panel/configuracion.',
+    );
+  }
+
+  if (process.env.NODE_ENV === 'production' && !(await knownHost(host))) {
+    throw new Error(
+      `La petición llega con el host "${host}", que esta instalación no conoce. ` +
+        'Póngale la dirección del sitio en /panel/configuracion.',
+    );
+  }
+
+  return `https://${host}`;
+}
+
+/**
+ * Forma de nombre de dominio público: letras, dígitos, guiones y puntos, con
+ * una extensión de verdad. Fuera el bucle local, las direcciones IP y el puerto
+ * — un enlace que mande a una pareja a `127.0.0.1` no es un enlace.
+ */
+function isPublicHost(host: string): boolean {
+  const bare = host.trim().toLowerCase();
+  if (bare.length === 0 || bare.length > 253) return false;
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(bare)) return false;
+  if (/^\d+(\.\d+)*$/.test(bare)) return false;
+  return !bare.endsWith('.localhost') && bare !== 'localhost';
+}
+
+/** Si este dominio es el de la instalación o el de alguna de sus oficinas. */
+async function knownHost(host: string): Promise<boolean> {
+  const bare = host.toLowerCase();
+  const configured = (await setting('NEXT_PUBLIC_SITE_URL'))?.trim();
+  if (configured !== undefined && configured.length > 0) {
+    try {
+      const known = new URL(configured).host.toLowerCase();
+      if (bare === known || bare.endsWith(`.${known}`)) return true;
+    } catch {
+      // Ya se anotó arriba.
+    }
+  }
+  return (await getTenantByHost(bare)) !== null;
 }
 
 /** First hop in the forwarding chain, which is the client we can name. */

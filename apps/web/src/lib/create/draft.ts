@@ -11,6 +11,7 @@ import {
   type Locale,
   type NumeralSystem,
 } from '@/lib/types';
+import { isCalendarDate, isClockTime } from '@/lib/time/zoned';
 import { findVerse } from '@/lib/verses';
 
 /** Slots offered per person list. Fixed, so the form needs no client JavaScript. */
@@ -196,18 +197,25 @@ export function serializeDraft(draft: InvitationDraft): string {
   return JSON.stringify(draft);
 }
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const WALL_CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
+/**
+ * La fecha se comprueba contra el CALENDARIO, no contra una expresión.
+ *
+ * `^\\d{4}-\\d{2}-\\d{2}$` deja pasar un 30 de febrero, y lo que viene detrás no
+ * protesta: `new Date('2026-02-30')` es el 2 de marzo. Así se publicaba una
+ * invitación con una fecha y su `.ics` llevaba otra, sin un solo aviso.
+ */
+const isDate = isCalendarDate;
+const isTime = isClockTime;
 
 /** Field names that are not yet good enough to publish. */
 export function draftProblems(draft: InvitationDraft): string[] {
   const problems: string[] = [];
   if (draft.honorees.every((name) => name.length === 0)) problems.push('honorees');
-  if (!ISO_DATE.test(draft.date)) problems.push('date');
-  if (!WALL_CLOCK.test(draft.time)) problems.push('time');
+  if (!isDate(draft.date)) problems.push('date');
+  if (!isTime(draft.time)) problems.push('time');
   if (draft.venueName.length === 0) problems.push('venueName');
   if (draft.venueAddress.length === 0) problems.push('venueAddress');
-  if (draft.rsvpEnabled && draft.rsvpDeadline.length > 0 && !ISO_DATE.test(draft.rsvpDeadline)) {
+  if (draft.rsvpEnabled && draft.rsvpDeadline.length > 0 && !isDate(draft.rsvpDeadline)) {
     problems.push('rsvpDeadline');
   }
   return problems;
@@ -239,8 +247,8 @@ export function draftToInvitation(draft: InvitationDraft): Invitation {
     numeralSystem: draft.numeralSystem,
     hosts: draft.hosts.filter((host) => host.name.length > 0),
     honorees: draft.honorees.filter((name) => name.length > 0).map((name) => ({ name })),
-    date: ISO_DATE.test(draft.date) ? draft.date : '2026-01-01',
-    time: WALL_CLOCK.test(draft.time) ? draft.time : '00:00',
+    date: isDate(draft.date) ? draft.date : '2026-01-01',
+    time: isTime(draft.time) ? draft.time : '00:00',
     timeZone: draft.timeZone,
     venue: {
       name: draft.venueName,
@@ -255,7 +263,7 @@ export function draftToInvitation(draft: InvitationDraft): Invitation {
     theme: themeFor(draft.eventType),
     rsvp: {
       enabled: draft.rsvpEnabled,
-      deadline: ISO_DATE.test(draft.rsvpDeadline) ? draft.rsvpDeadline : null,
+      deadline: isDate(draft.rsvpDeadline) ? draft.rsvpDeadline : null,
     },
   };
 }

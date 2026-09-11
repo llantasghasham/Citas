@@ -1,0 +1,148 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+
+import { draftProblems, EMPTY_DRAFT } from '../src/lib/create/draft';
+import { buildCsv } from '../src/lib/export/csv';
+import { allowedForCapture, captureUrl, renderOrigin } from '../src/lib/render/origin';
+import { isCalendarDate, isClockTime } from '../src/lib/time/zoned';
+
+/**
+ * Lo que se comprueba ANTES de publicar, y lo que sale en una exportación.
+ *
+ * No toca la base, así que corre siempre. Las dos cosas de aquí llegaron por un
+ * informe externo y las dos eran ciertas.
+ */
+describe('la fecha tiene que existir en el calendario', () => {
+  it('un 30 de febrero no es una fecha', () => {
+    // Tenía la forma correcta y pasaba. Y lo que venía detrás no protestaba:
+    // `new Date('2026-02-30')` es el 2 de marzo, así que la invitación se
+    // publicaba con una fecha y su `.ics` llevaba otra.
+    assert.equal(isCalendarDate('2026-02-30'), false);
+    assert.equal(new Date('2026-02-30T00:00:00Z').getUTCMonth(), 2, 'marzo: el salto era real');
+  });
+
+  it('ni un 31 de abril, ni un 29 de febrero de un año que no es bisiesto', () => {
+    assert.equal(isCalendarDate('2026-04-31'), false);
+    assert.equal(isCalendarDate('2026-02-29'), false);
+    assert.equal(isCalendarDate('2024-02-29'), true, '2024 sí es bisiesto');
+  });
+
+  it('las fechas de verdad pasan', () => {
+    for (const fecha of ['2026-01-01', '2026-12-31', '2026-02-28', '2028-02-29']) {
+      assert.equal(isCalendarDate(fecha), true, fecha);
+    }
+  });
+
+  it('lo que no tiene forma de fecha tampoco', () => {
+    for (const mal of ['', '2026-1-1', '26-01-01', '2026/01/01', 'ayer', '2026-13-01', '2026-00-10']) {
+      assert.equal(isCalendarDate(mal), false, mal);
+    }
+  });
+
+  it('la hora es de veinticuatro horas', () => {
+    assert.equal(isClockTime('19:00'), true);
+    assert.equal(isClockTime('00:00'), true);
+    assert.equal(isClockTime('23:59'), true);
+    assert.equal(isClockTime('24:00'), false);
+    assert.equal(isClockTime('19:60'), false);
+    assert.equal(isClockTime('7:00'), false);
+  });
+
+  it('publicar un 30 de febrero se rechaza en el mismo sitio que todo lo demás', () => {
+    // `publishDraft` llama a `draftProblems`, así que arreglarlo aquí lo
+    // arregla también al publicar: un solo validador, no dos criterios.
+    const draft = {
+      ...EMPTY_DRAFT,
+      honorees: ['ليلى', 'كريم'],
+      date: '2026-02-30',
+      time: '19:00',
+      venueName: 'Le Royal',
+      venueAddress: 'Beirut',
+    };
+    assert.ok(draftProblems(draft).includes('date'));
+
+    const bueno = { ...draft, date: '2026-03-30' };
+    assert.ok(!draftProblems(bueno).includes('date'));
+  });
+});
+
+describe('la exportación no puede llevar fórmulas', () => {
+  it('una celda que empieza por = se neutraliza', () => {
+    // El nombre lo escribe cualquiera: el formulario de confirmación es
+    // público a propósito. Un nombre con una fórmula dentro convierte la lista
+    // de la boda en una hoja que filtra los datos del cliente con un clic.
+    const csv = buildCsv(['name'], [['=HYPERLINK("https://malo.example","clic")']]);
+    assert.ok(csv.includes(`"'=HYPERLINK`), 'con apóstrofo delante');
+    assert.ok(!csv.includes('"=HYPERLINK'), 'nunca sin él');
+  });
+
+  it('también con espacios delante, y con + - @', () => {
+    for (const peligroso of ['  =1+1', '+1', '-1+1', '@SUM(A1)', '\t=1']) {
+      const csv = buildCsv(['x'], [[peligroso]]);
+      assert.ok(csv.includes(`"'`), peligroso);
+    }
+  });
+
+  it('un teléfono con prefijo se queda como texto, que es lo que se quiere', () => {
+    // Excel trata `+50688887777` como una fórmula y se come el signo. Con el
+    // apóstrofo se lee tal cual, que es lo que hace falta para un teléfono.
+    const csv = buildCsv(['phone'], [['+50688887777']]);
+    assert.ok(csv.includes(`"'+50688887777"`));
+  });
+
+  it('un número no se neutraliza: la columna tiene que poder sumarse', () => {
+    const csv = buildCsv(['party'], [[4], [-1]]);
+    assert.ok(csv.includes('"4"'));
+    assert.ok(csv.includes('"-1"'), 'sin apóstrofo');
+    assert.ok(!csv.includes(`"'-1"`));
+  });
+
+  it('el árabe y la marca de orden de bytes siguen intactos', () => {
+    const csv = buildCsv(['name'], [['نادية الحاج']]);
+    assert.equal(csv.codePointAt(0), 0xfeff, 'sin esto Excel destroza el árabe');
+    assert.ok(csv.includes('نادية الحاج'));
+  });
+});
+
+describe('a dónde puede navegar Chromium al hacer la foto', () => {
+  it('solo al origen interno', () => {
+    const origen = 'http://127.0.0.1:3000';
+    assert.equal(allowedForCapture('http://127.0.0.1:3000/render/boda', origen), true);
+    assert.equal(allowedForCapture('http://127.0.0.1:3000/fonts/Amiri-400.ttf', origen), true);
+  });
+
+  it('y a nada más', () => {
+    // Todo esto era alcanzable: la dirección salía de `request.url`, que Next
+    // arma con la cabecera `Host` — y esa la escribe quien llama.
+    const origen = 'http://127.0.0.1:3000';
+    for (const fuera of [
+      'http://atacante.example/render/boda',
+      'https://atacante.example/render/boda',
+      'http://169.254.169.254/latest/meta-data/',
+      'http://10.0.0.5:8080/admin',
+      'http://192.168.1.1/',
+      'http://[::1]:3000/render/boda',
+      'http://127.0.0.1:9200/_cluster/health',
+      'http://localhost:3000/render/boda',
+      'file:///etc/passwd',
+      'no es una url',
+      '',
+    ]) {
+      assert.equal(allowedForCapture(fuera, origen), false, fuera);
+    }
+  });
+
+  it('la dirección del lienzo no depende de la petición', () => {
+    // Es lo único que cierra el agujero de raíz: por muy hostil que venga la
+    // cabecera, esta función no la mira.
+    const url = new URL(captureUrl('boda-de-laila'));
+    assert.equal(url.origin, renderOrigin());
+    assert.equal(url.pathname, '/render/boda-de-laila');
+  });
+
+  it('un slug con barras no se sale de su ruta', () => {
+    const url = new URL(captureUrl('../../etc/passwd'));
+    assert.equal(url.origin, renderOrigin());
+    assert.ok(url.pathname.startsWith('/render/'), url.pathname);
+  });
+});
