@@ -36,13 +36,13 @@ async function main(): Promise<void> {
   const { reconcilePending } = await import('../src/lib/billing/reconcile');
   const summary = await reconcilePending();
 
-  if (summary.checked === 0) {
+  if (summary.checked === 0 && summary.expired === 0) {
     console.log('[conciliar] no había ninguno pendiente.');
     return;
   }
   console.log(
     `[conciliar] mirados ${summary.checked}, cambiados ${summary.changed}, ` +
-      `pagados ${summary.paid}, con error ${summary.errors}`,
+      `pagados ${summary.paid}, caducados ${summary.expired}, con error ${summary.errors}`,
   );
 
   // Un error suelto no tumba la pasada, pero sí tiene que verse desde fuera: el

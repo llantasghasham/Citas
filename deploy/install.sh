@@ -238,6 +238,13 @@ systemctl restart citas
 sleep 4
 systemctl is-active --quiet citas || alto "el servicio no arrancó — mira: journalctl -u citas -n 40"
 
+# `/readyz` antes que la invitacion de ejemplo: dice si el proceso puede
+# ATENDER —que la base contesta— sin depender de que los ejemplos esten
+# cargados. Vivo y listo no son lo mismo, y confundirlos manda trafico a un
+# proceso que no puede leer nada.
+LISTO="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/readyz" || true)"
+[ "$LISTO" = "200" ] || aviso "el servicio responde $LISTO en /readyz — mira: journalctl -u citas -n 40"
+
 CODIGO="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/i/ejemplo-ar" || true)"
 [ "$CODIGO" = "200" ] || alto "el servicio responde $CODIGO en el puerto $PORT — mira: journalctl -u citas -n 40"
 ok "responde en http://127.0.0.1:$PORT"

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getInvitationRepository } from '@/lib/repositories';
 import { contentHashOf } from '@/lib/render/hash';
+import { renderOnce } from '@/lib/render/once';
 import { captureUrl } from '@/lib/render/origin';
 import { RENDER_HEIGHT, RENDER_WIDTH, renderInvitationPng } from '@/lib/render/png';
 import { getRenderStore } from '@/lib/render/store';
@@ -47,7 +48,13 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
       // La dirección del lienzo sale de un origen FIJO, nunca de la
       // petición: `request.url` lo arma Next con la cabecera `Host`, y esa la
       // escribe quien llama. Ver `lib/render/origin.ts`.
-      png = await renderInvitationPng(captureUrl(invitation.slug));
+      //
+      // Y una sola vez por versión: una invitación reenviada a un grupo la
+      // abren doscientas personas en el mismo minuto, y la primera vez ninguna
+      // la tiene en caché. Sin `renderOnce`, cada una arrancaba su Chromium.
+      png = await renderOnce(`${invitation.id}:${contentHash}`, () =>
+        renderInvitationPng(captureUrl(invitation.slug)),
+      );
       // Failing to keep the image must not fail the request that produced it.
       await store
         ?.save({

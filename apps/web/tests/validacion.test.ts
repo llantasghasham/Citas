@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import { draftProblems, EMPTY_DRAFT } from '../src/lib/create/draft';
 import { buildCsv } from '../src/lib/export/csv';
+import { renderOnce, renderingNow } from '../src/lib/render/once';
 import { allowedForCapture, captureUrl, renderOrigin } from '../src/lib/render/origin';
 import { isCalendarDate, isClockTime } from '../src/lib/time/zoned';
 
@@ -144,5 +145,72 @@ describe('a dónde puede navegar Chromium al hacer la foto', () => {
     const url = new URL(captureUrl('../../etc/passwd'));
     assert.equal(url.origin, renderOrigin());
     assert.ok(url.pathname.startsWith('/render/'), url.pathname);
+  });
+});
+
+describe('doscientos invitados abriendo la misma invitación', () => {
+  it('se dibuja UNA vez, no doscientas', async () => {
+    // El caso normal, no el raro: la invitación se reenvía a un grupo y la
+    // abren todos en el mismo minuto — y la primera vez ninguna está en caché.
+    let veces = 0;
+    const dibujar = async (): Promise<Uint8Array<ArrayBuffer>> => {
+      veces += 1;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return new Uint8Array(new ArrayBuffer(4));
+    };
+
+    const todas = await Promise.all(
+      Array.from({ length: 200 }, () => renderOnce('version-1:huella-a', dibujar)),
+    );
+
+    assert.equal(veces, 1, 'un solo Chromium');
+    assert.equal(todas.length, 200, 'y todas reciben su imagen');
+  });
+
+  it('dos versiones distintas no se estorban', async () => {
+    let veces = 0;
+    const dibujar = async (): Promise<Uint8Array<ArrayBuffer>> => {
+      veces += 1;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return new Uint8Array(new ArrayBuffer(4));
+    };
+
+    await Promise.all([
+      renderOnce('version-2:huella-a', dibujar),
+      renderOnce('version-3:huella-a', dibujar),
+    ]);
+    assert.equal(veces, 2);
+  });
+
+  it('nunca hay más de dos dibujándose a la vez', async () => {
+    let ahora = 0;
+    let maximo = 0;
+    const dibujar = async (): Promise<Uint8Array<ArrayBuffer>> => {
+      ahora += 1;
+      maximo = Math.max(maximo, ahora);
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      ahora -= 1;
+      return new Uint8Array(new ArrayBuffer(4));
+    };
+
+    await Promise.all(
+      Array.from({ length: 10 }, (_, index) => renderOnce(`version-c${index}:h`, dibujar)),
+    );
+    assert.ok(maximo <= 2, `llegaron a dibujarse ${maximo} a la vez`);
+  });
+
+  it('si el dibujo falla, la siguiente petición vuelve a intentarlo', async () => {
+    // Sin soltar la entrada del mapa, un fallo dejaría esa invitación sin poder
+    // renderizarse nunca más mientras viviera el proceso.
+    let veces = 0;
+    const roto = (): Promise<Uint8Array<ArrayBuffer>> => {
+      veces += 1;
+      return Promise.reject(new Error('Chromium no arrancó'));
+    };
+
+    await assert.rejects(renderOnce('version-4:huella-a', roto));
+    await assert.rejects(renderOnce('version-4:huella-a', roto));
+    assert.equal(veces, 2);
+    assert.equal(renderingNow().inFlight, 0, 'el mapa queda limpio');
   });
 });

@@ -487,6 +487,24 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   no se duplica nunca la maquetación
 - Las plantillas son HTML/SVG con capas, nunca imágenes generadas por IA
 
+### Operación
+- `GET /healthz` dice si el PROCESO está vivo y `GET /readyz` si puede ATENDER
+  —que la base contesta, con dos segundos de tope—. No son lo mismo y
+  confundirlos cuesta en las dos direcciones: un proxy que quite de rotación un
+  proceso sano porque la base tarda deja el sitio sin servidores, y uno que
+  mande tráfico a un proceso que no puede leer nada devuelve errores a los
+  invitados. Las once comprobaciones con detalle siguen en `/panel/sistema`;
+  esto es para un proxy, sin sesión y sin datos dentro.
+- Un cobro que lleva un mes abierto se CIERRA a `expired` en el repaso. El
+  repaso solo mira la ventana de los últimos treinta días, así que lo anterior
+  se quedaba «pendiente» para siempre: pendientes eternos que ensucian la
+  facturación y que, por el índice de «un cobro abierto por pedido», impiden
+  abrir uno nuevo.
+- Una invitación se dibuja UNA vez por versión aunque la pidan doscientos a la
+  vez (`lib/render/once.ts`), y nunca hay más de dos Chromium dibujando. Es el
+  caso normal, no el raro: la invitación se reenvía a un grupo y la abren todos
+  en el mismo minuto, y la primera vez ninguna está en caché.
+
 ### Seguridad de borde
 - La dirección que abre Chromium para hacer la foto sale de un origen FIJO
   (`lib/render/origin.ts`), NUNCA de la petición. Salía de `request.url`, que

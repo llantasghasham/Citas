@@ -33,6 +33,8 @@ export interface ReconcileSummary {
   changed: number;
   paid: number;
   errors: number;
+  /** Cobros que llevaban un mes abiertos y se dieron por caducados. */
+  expired: number;
 }
 
 /**
@@ -205,7 +207,27 @@ export async function reconcilePending(): Promise<ReconcileSummary> {
     },
   });
 
-  const summary: ReconcileSummary = { checked: 0, changed: 0, paid: 0, errors: 0 };
+  const summary: ReconcileSummary = { checked: 0, changed: 0, paid: 0, errors: 0, expired: 0 };
+
+  // Lo que lleva un mes abierto se CIERRA. El repaso solo mira la ventana de
+  // los últimos treinta días, así que lo anterior se quedaba «pendiente» para
+  // siempre: pendientes eternos que ensucian la facturación, mantienen ocupado
+  // el índice de «un cobro abierto por pedido» —y con él impiden abrir uno
+  // nuevo— y hacen que nadie se fíe de lo que dice esa columna.
+  //
+  // Se cierran con una sola escritura condicional, sin preguntarle a nadie: a
+  // los treinta días la pasarela tampoco lo tiene ya abierto. Y solo los que
+  // SIGUEN pendientes, para no pisar uno que acabe de cobrarse.
+  const stale = await prisma.payment.updateMany({
+    where: {
+      status: 'pending',
+      provider: { not: 'manual' },
+      createdAt: { lt: new Date(now - GIVE_UP_MS) },
+    },
+    data: { status: 'expired' },
+  });
+  summary.expired = stale.count;
+
   if (payments.length === 0) return summary;
 
   for (const payment of payments) {
