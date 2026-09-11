@@ -1,5 +1,7 @@
 import type { Locale, PlanTier, Role, TenantStatus } from '@/generated/prisma/enums';
-import { getPrisma } from '@/lib/db/client';
+import { getPrisma, tenancyMode } from '@/lib/db/client';
+import { createTenantDatabase, dropTenantDatabase, seedTenantRow } from '@/lib/db/fleet';
+import { databaseNameFor } from '@/lib/db/naming';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { avatarSrc } from '@/lib/profile/avatar';
 
@@ -63,19 +65,49 @@ export async function createOffice(input: CreateOfficeInput): Promise<string | n
 
   const plan = await prisma.plan.findUnique({ where: { tier: input.tier } });
 
-  const tenant = await prisma.tenant.create({
-    data: {
-      slug: input.subdomain,
-      subdomain: input.subdomain,
-      name: input.name,
-      defaultLocale: input.defaultLocale,
-      status: 'trial',
-      ...(plan === null ? {} : { subscription: { create: { planId: plan.id } } }),
-    },
-    select: { id: true },
-  });
+  // Una oficina nueva es una EMPRESA nueva: su propia base de datos, vacía, sin
+  // una sola fila de nadie más. Se crea ANTES que la fila del registro y no al
+  // revés — una oficina apuntada sin base es una oficina que no puede hacer
+  // nada, y en este reparto cada consulta suya fallaría; una base creada sin
+  // oficina es un descuido que se limpia aquí mismo, unas líneas más abajo.
+  const fleet = tenancyMode() === 'fleet';
+  const databaseName = fleet ? databaseNameFor(input.subdomain) : null;
+  if (databaseName !== null) await createTenantDatabase(databaseName);
 
-  return tenant.id;
+  try {
+    const tenant = await prisma.tenant.create({
+      data: {
+        slug: input.subdomain,
+        subdomain: input.subdomain,
+        name: input.name,
+        defaultLocale: input.defaultLocale,
+        status: 'trial',
+        ...(databaseName === null ? {} : { databaseName }),
+        ...(plan === null ? {} : { subscription: { create: { planId: plan.id } } }),
+      },
+      select: { id: true },
+    });
+
+    // Su base necesita su propia fila de oficina: todo lo demás cuelga de ella
+    // por clave foránea, así que sin esto no se puede guardar ni un evento.
+    if (databaseName !== null) {
+      await seedTenantRow(databaseName, {
+        id: tenant.id,
+        slug: input.subdomain,
+        subdomain: input.subdomain,
+        name: input.name,
+        status: 'trial',
+        defaultLocale: input.defaultLocale,
+      });
+    }
+
+    return tenant.id;
+  } catch (error) {
+    // Sin esto quedaría una base huérfana con el nombre cogido, y el siguiente
+    // intento con el mismo subdominio fallaría al crearla sin decir por qué.
+    if (databaseName !== null) await dropTenantDatabase(databaseName).catch(() => undefined);
+    throw error;
+  }
 }
 
 export interface MemberRow {

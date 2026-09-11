@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { CODE_SEND_FAILED_ACTION } from '@/lib/auth/otp';
 import { readSenderDns } from '@/lib/mail/dns';
 import { runningAsRoot } from '@/lib/render/browser';
-import { getPrisma } from '@/lib/db/client';
+import { getPrisma, tenancyMode } from '@/lib/db/client';
 import { unverifiedVerses } from '@/lib/verses';
 import { gatewayHealth } from '@/lib/whatsapp/gateway';
 import type { HealthKey } from '@/lib/types';
@@ -50,6 +50,7 @@ export async function readHealth(): Promise<HealthCheck[]> {
     await codeDeliveryCheck(),
     await migrationsCheck(),
     await whatsappCheck(),
+    await tenancyCheck(),
     versesCheck(),
   ];
 }
@@ -418,4 +419,60 @@ async function superadminCheck(): Promise<HealthCheck> {
   } catch {
     return { key: 'superadmin', level: 'warn', detail: email };
   }
+}
+
+/**
+ * Cómo están repartidas las oficinas, y si el reparto está a medias.
+ *
+ * Con `fleet`, cada oficina tiene su propia base de datos y lo que impide que
+ * una vea a otra no es el filtro del código: es que están en bases distintas del
+ * servidor. Pero una oficina APUNTADA sin base aprovisionada no trabaja, y eso
+ * desde fuera se ve igual que si estuviera todo bien — el mismo tipo de avería
+ * que un buzón de SINPE caído. Así que sale aquí, y sale en rojo.
+ */
+async function tenancyCheck(): Promise<HealthCheck> {
+  let mode: ReturnType<typeof tenancyMode>;
+  try {
+    mode = tenancyMode();
+  } catch (error) {
+    // `TENANCY=fleet` con el traslado a medias. Protesta a propósito, y aquí se
+    // ENSEÑA en vez de tumbar la pantalla: esta es justo la pantalla donde hay
+    // que poder leer por qué no arranca lo demás.
+    return {
+      key: 'tenancy',
+      level: 'fail',
+      detail: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  if (mode === 'shared') {
+    return {
+      key: 'tenancy',
+      level: 'warn',
+      detail:
+        'Todas las oficinas comparten una base de datos. Lo que las separa es el ' +
+        'filtro por oficina del código. Para darle a cada una la suya: TENANCY=fleet.',
+    };
+  }
+
+  const offices = await getPrisma().tenant.findMany({
+    select: { subdomain: true, databaseName: true },
+  });
+  const sinBase = offices.filter((office) => office.databaseName === null);
+  if (sinBase.length > 0) {
+    return {
+      key: 'tenancy',
+      level: 'fail',
+      detail:
+        `${sinBase.length} oficina(s) sin base propia y no pueden trabajar: ` +
+        `${sinBase.map((office) => office.subdomain).join(', ')}. ` +
+        'Se arregla con «npm run db:fleet -- crear <subdominio>».',
+    };
+  }
+
+  return {
+    key: 'tenancy',
+    level: 'ok',
+    detail: `Una base de datos por oficina · ${offices.length} oficina(s), ${offices.length} base(s).`,
+  };
 }

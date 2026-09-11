@@ -118,6 +118,11 @@ model Tenant {
   subdomain    String  @unique
   customDomain String? @unique
 
+  /// Su base de datos. Cada oficina tiene la SUYA y no comparte ninguna fila con
+  /// otra: lo que impide que se vean no es el filtro del código, es que están en
+  /// bases distintas del servidor. Nulo mientras el reparto sea `shared`.
+  databaseName String? @unique
+
   // Marca blanca. Las plantillas base NO son configurables: son el producto.
   logoUrl       String?
   brandPrimary  String?
@@ -135,8 +140,41 @@ model Tenant {
   whatsapps    WhatsappConnection[]
   sinpeAccounts SinpeAccount[]
   sessions     Session[]
+  publicSlugs  PublicSlug[]
+  guestTokens  GuestToken[]
 
   @@index([status])
+}
+
+/// El directorio de las invitaciones públicas: qué oficina tiene este slug.
+///
+/// Con una base por oficina, `/i/<slug>` deja de poder resolverse mirando: la
+/// fila está en una de trescientas bases y no se sabe en cuál. Esta tabla vive
+/// en la base de CONTROL y es lo único que se consulta sin oficina, igual que
+/// antes lo era la propia invitación. No lleva nada del evento dentro: dice en
+/// qué base seguir buscando, y nada más.
+model PublicSlug {
+  slug     String @id
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+/// Lo mismo para el enlace personal del invitado, `/g/<token>`.
+///
+/// El token no se adivina y resuelve a UNA fila, nunca a un listado: las mismas
+/// dos razones por las que ya era una consulta sin oficina.
+model GuestToken {
+  token    String @id
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
 }
 
 model User {

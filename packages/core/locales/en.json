@@ -348,6 +348,7 @@
           "codeDelivery": "Codes that never went out",
           "migrations": "Migrations applied",
           "whatsapp": "WhatsApp service",
+          "tenancy": "How offices are separated",
           "verses": "Verses nobody has checked"
         }
       },

@@ -348,6 +348,7 @@
           "codeDelivery": "Códigos que no salieron",
           "migrations": "Migraciones aplicadas",
           "whatsapp": "Servicio de WhatsApp",
+          "tenancy": "Reparto de oficinas",
           "verses": "Versículos sin verificar"
         }
       },

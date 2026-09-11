@@ -24,6 +24,12 @@ export interface AuthenticatedSession {
   name: string | null;
   isSuperadmin: boolean;
   tenantId: string | null;
+  /**
+   * En qué base de datos vive esa oficina. Cada una tiene la suya y no comparte
+   * ninguna con otra; viaja en la sesión porque el ámbito se acuña aquí, una
+   * vez, donde la oficina ya está leída. Nulo mientras el reparto sea `shared`.
+   */
+  tenantDatabase: string | null;
   role: Role | null;
   /** The language this person reads the panel in. Theirs, not the office's. */
   locale: Locale;
@@ -118,7 +124,7 @@ export async function resolveSession(token: string): Promise<AuthenticatedSessio
       user: { include: { memberships: true }, omit: { avatarData: true } },
       // Para saber si la oficina sigue abierta. Es una columna, no una consulta
       // más: esto corre en cada petición del panel.
-      tenant: { select: { status: true } },
+      tenant: { select: { status: true, databaseName: true } },
     },
   });
 
@@ -161,7 +167,12 @@ export async function resolveSession(token: string): Promise<AuthenticatedSessio
     email: row.user.email,
     name: row.user.name,
     isSuperadmin: row.user.isSuperadmin,
-    tenantId: row.tenantId ?? (row.user.isSuperadmin ? await rootTenantId() : null),
+    tenantId: row.tenantId ?? (row.user.isSuperadmin ? (await rootTenant())?.id ?? null : null),
+    tenantDatabase:
+      row.tenant?.databaseName ??
+      (row.tenantId === null && row.user.isSuperadmin
+        ? ((await rootTenant())?.databaseName ?? null)
+        : null),
     role,
     locale: row.user.locale,
     country: row.user.country,
@@ -184,13 +195,14 @@ export async function resolveSession(token: string): Promise<AuthenticatedSessio
  * la ÚNICA consulta de tenant sin tenant, y no devuelve datos de negocio de
  * nadie: devuelve cuál es la oficina propia.
  */
-const rootTenantId = cache(async (): Promise<string | null> => {
-  const root = await getPrisma().tenant.findFirst({
-    where: { isRoot: true },
-    select: { id: true },
-  });
-  return root?.id ?? null;
-});
+const rootTenant = cache(
+  async (): Promise<{ id: string; databaseName: string | null } | null> => {
+    return getPrisma().tenant.findFirst({
+      where: { isRoot: true },
+      select: { id: true, databaseName: true },
+    });
+  },
+);
 
 /**
  * The signed-in user for a browser request, or null. Memoised per request, so a
@@ -242,5 +254,5 @@ export function scopeOf(session: AuthenticatedSession): TenantScope {
   if (session.tenantId === null) {
     throw new Error('This session is not working inside a tenant.');
   }
-  return tenantScope(session.tenantId);
+  return tenantScope(session.tenantId, session.tenantDatabase);
 }

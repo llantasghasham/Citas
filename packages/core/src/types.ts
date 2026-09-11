@@ -126,6 +126,7 @@ export const HEALTH_KEYS = [
   'codeDelivery',
   'migrations',
   'whatsapp',
+  'tenancy',
   'verses',
 ] as const;
 export type HealthKey = (typeof HEALTH_KEYS)[number];

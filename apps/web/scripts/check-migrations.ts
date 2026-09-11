@@ -70,6 +70,21 @@ const CHECKS: Check[] = [
     why: 'sin esto no se puede saber si la oficina sigue abierta al resolver la sesión',
   },
   {
+    what: 'cada oficina apunta a UNA base de datos y no a la de otra',
+    sql: `SELECT indexdef FROM pg_indexes WHERE indexname = 'Tenant_databaseName_key'`,
+    expect: (rows) => String(rows[0]?.['indexdef'] ?? '').includes('UNIQUE'),
+    why: 'dos oficinas apuntando a la misma base es justo lo que el reparto evita',
+  },
+  {
+    what: 'el directorio de lo público se va con su oficina',
+    sql: `SELECT conname, pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname IN ('PublicSlug_tenantId_fkey', 'GuestToken_tenantId_fkey')`,
+    expect: (rows) =>
+      rows.length === 2 &&
+      rows.every((row) => String(row['def']).includes('ON DELETE CASCADE')),
+    why: 'un slug que sobrevive a su oficina apunta a una base que ya no existe',
+  },
+  {
     what: 'el comprobante del SINPE es único por cuenta',
     sql: `SELECT indexdef FROM pg_indexes
            WHERE indexname = 'SinpeMovement_accountId_reference_key'`,

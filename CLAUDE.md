@@ -473,6 +473,62 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   (fase 2, sus clientes pagándole a ella). Hoy solo se usa el primero, pero
   cambiarlo después sería migrar filas de dinero.
 
+### Una base de datos por oficina
+- Alquilarle esto a una oficina es darle una EMPRESA nueva: su propia base de
+  datos, vacía, sin una sola fila de nadie más. No comparte tabla, ni índice, ni
+  fila con ninguna otra oficina, y lo que lo impide no es el filtro por
+  `tenantId` que el código no se olvida de poner — es que dos bases de datos de
+  PostgreSQL no se consultan entre sí. No hay consulta, descuido ni `where`
+  olvidado que pueda cruzarlas.
+- `TenantScope` NO desaparece: sigue filtrando dentro de la base de la oficina.
+  Son dos redes, la misma idea que el comprobante del SINPE, único por proveedor
+  Y por cuenta. La de fuera es la que no se puede saltar.
+- Hay DOS planos y no se mezclan. El de CONTROL es la base del ARRENDADOR: el
+  registro de oficinas, los planes, los pedidos y cobros de las oficinas al
+  dueño, los buzones de SINPE de la plataforma y el superadministrador. El de la
+  OFICINA es una base por oficina: sus bodas, sus invitados, sus mesas, su
+  equipo, su WhatsApp, su marca. `controlDb()` y `db(scope)`, en
+  `lib/db/client.ts`.
+- El ámbito lleva la base dentro y se acuña UNA vez, al abrir la sesión, donde
+  la oficina ya está leída. Por eso `db(scope)` es SÍNCRONA, por la misma razón
+  que `sessionCan`: una función asíncrona a la que se le olvida un `await`
+  devuelve una promesa, que es verdadera, y así es como un filtro deja de
+  filtrar.
+- Una oficina nueva no se migra: se COPIA de una plantilla ya migrada
+  (`CREATE DATABASE … TEMPLATE`). Migrar exige la herramienta de Prisma, que es
+  una dependencia de desarrollo y no está en la imagen de producción — dar de
+  alta una oficina desde el panel no puede depender de algo que allí no existe.
+  Y de regalo, el esquema de una oficina nueva es EXACTAMENTE el de una base
+  migrada de verdad, `_prisma_migrations` incluida: no hay un segundo camino por
+  el que pueda salir distinto.
+- La base se crea ANTES que la fila del registro, y si la fila falla se borra la
+  base. Al revés queda una oficina apuntada que no puede hacer nada: en este
+  reparto, cada una de sus consultas fallaría.
+- El nombre de la base se INCRUSTA en la orden —`CREATE DATABASE` no admite
+  parámetros— así que pasa por `assertDatabaseName` en CADA frontera que escribe
+  DDL. Minúsculas, dígitos y bajos, nada más. Los guiones del subdominio se
+  vuelven bajos porque un guion obliga a entrecomillar el nombre en cada
+  herramienta que lo toque, y el día que alguien se olvide de las comillas el
+  error no es un fallo, es la base equivocada.
+- Con una base por oficina, lo que se sirve SIN oficina deja de poder resolverse
+  mirando: `/i/<slug>` y `/g/<token>` están en una de trescientas bases y no se
+  sabe en cuál. Para eso están `PublicSlug` y `GuestToken` en la base de control,
+  que dicen en qué base seguir buscando y nada más — ni el evento, ni la fecha,
+  ni los novios.
+- «Aplicar las migraciones» deja de ser una orden y pasa a ser una por oficina.
+  `npm run db:fleet -- migrar` pone al día la plantilla y todas; `estado` enseña
+  las atrasadas ARRIBA y en rojo, igual que los buzones de SINPE caídos: es el
+  mismo tipo de avería —algo que desde fuera se ve igual que si no pasara nada—.
+  Una oficina con el esquema viejo no falla al arrancar: falla la primera vez que
+  alguien usa lo nuevo, que es cuando peor viene enterarse.
+- El interruptor es `TENANCY`, y `FLEET_READY` en el código es lo que decide si
+  se puede encender. Es una CONSTANTE y no una variable de entorno a propósito:
+  encender la flota con el traslado a medias no da un error, parte los datos en
+  dos —los eventos de una oficina en un sitio y sus invitados en otro— y nadie se
+  entera hasta que alguien abre una lista y le falta la mitad. La variable la
+  pone quien despliega, que no puede saber por dónde va el código; la constante
+  la pone quien termina el traslado, que sí.
+
 ### Lo que impide la base, no el código
 - Una sesión cuelga de su oficina (`Session.tenantId` con clave foránea), y
   resolverla mira si esa oficina sigue abierta. Suspender una oficina no
@@ -569,6 +625,7 @@ npm run typecheck  # tsc --noEmit
 npm run lint:rtl   # guardia de CSS lógico (RTL)
 npm run brand:build # redibuja el logo, los iconos y los de la app móvil
 npm run db:check   # aplica las migraciones en una base nueva y comprueba el esquema
+npm run db:fleet   # la flota: -- migrar | estado | crear <subdominio>
 npm run sinpe:check # revisa los buzones de SINPE (lo llama el temporizador)
 npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
 ```

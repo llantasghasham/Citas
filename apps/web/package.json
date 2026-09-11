@@ -22,7 +22,8 @@
     "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts",
     "brand:build": "tsx scripts/build-brand.ts",
     "sinpe:check": "tsx scripts/check-sinpe.ts",
-    "db:check": "tsx scripts/check-migrations.ts"
+    "db:check": "tsx scripts/check-migrations.ts",
+    "db:fleet": "tsx scripts/fleet.ts"
   },
   "dependencies": {
     "@citas/core": "*",
