@@ -89,7 +89,22 @@ export default async function BillingPage() {
                     <td className="py-3 tabular-nums text-[#6a6456]">
                       {formatDate(order.createdAt, locale, zone)}
                     </td>
-                    <td className="py-3">{order.description}</td>
+                    <td className="py-3">
+                      {order.description}
+                      {/* El código va JUNTO a la factura que paga. Escrito en
+                          otra pantalla no lo encuentra nadie, y sin él un SINPE
+                          no se puede casar con nada: llega el dinero y no se
+                          sabe de quién es. */}
+                      {order.status === 'pending' && order.payCode !== null ? (
+                        <span
+                          className="ms-2 border border-[#ddd6c6] bg-white px-2 py-0.5 font-mono text-xs text-[#8a6c22]"
+                          dir="ltr"
+                          title={dictionary.admin.sinpe.payCodeHint}
+                        >
+                          {order.payCode}
+                        </span>
+                      ) : null}
+                    </td>
                     <td className="py-3 text-end tabular-nums">
                       {formatMoney(order.amount, order.currency, locale)}
                     </td>

@@ -373,6 +373,53 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   qué pasarela hay detrás.
 - El proveedor `mock` está prohibido en producción y el código lo impide.
 
+### SINPE Móvil (Costa Rica)
+- NO es una pasarela: no hay a quién preguntarle si un pago entró. Lo único que
+  llega es un correo del banco, leído por IMAP cada cinco minutos
+  (`citas-sinpe.timer`). Por eso el lector de esos correos es la pieza más
+  peligrosa del proyecto: si falla, INVENTA DINERO.
+- El lector FALLA CERRADO. Sin monto y comprobante ciertos no devuelve un
+  movimiento a medias: no devuelve ninguno. Un pago no reconocido lo arregla una
+  persona en un minuto; uno inventado activa un plan que nadie pagó.
+- Un número sin marca de moneda ni etiqueta NUNCA es un monto. Es la raíz del
+  fallo del CSS: un `width:402.812px` de una hoja de estilo daba ₡402.812 en
+  todos los correos de Davivienda.
+- Tres trampas, las tres con pruebas (`tests/sinpe.test.ts`):
+  1. **Plata que SALE.** Un SINPE enviado también dice «Transferencia SINPE».
+     «Débito en su cuenta» se descarta lo PRIMERO, antes de mirar nada más.
+  2. **El mismo pago dos veces.** Por cada pago llegan dos correos: el del SINPE
+     Móvil —con nombre y comprobante de 25 dígitos— y el de movimiento de
+     cuenta, sin nombre y con una referencia corta que se repite siempre porque
+     identifica al aviso, no al movimiento. Lo que los distingue es la
+     REFERENCIA CORTA, no la frase: un «crédito en su cuenta» con comprobante
+     largo sí es un cobro. El repetido se guarda como `ignored` con monto cero.
+  3. **Bancos que mandan solo HTML.** `<script>` y `<style>` se van ENTEROS
+     antes de nada, y los cierres de celda y fila se vuelven salto de línea o
+     «Monto:» se pega a su valor. La referencia se busca en dígitos y solo
+     dígitos: capturando letras salía «ncia», el final de «Referencia».
+- Se casa por MONTO EXACTO Y CÓDIGO, nunca por monto solo: dos oficinas con el
+  mismo plan pagan lo mismo el mismo día. El código (`Order.payCode`) lo escribe
+  QUIEN PAGA en el detalle del SINPE — seis caracteres, sin O ni 0 ni I ni 1
+  porque en la pantalla de un banco no se distinguen— y se busca en el correo
+  ENTERO, porque cada banco llama a esa casilla de otra manera. El comprobante
+  del banco no sirve para casar: lo inventa el banco al mandar el dinero.
+- El comprobante ES el `providerRef`, único por proveedor, y además único por
+  cuenta en `SinpeMovement`. Dos redes distintas contra el doble cobro.
+- Lo que no casa se queda `pending` y lo asigna una PERSONA, que sigue exigiendo
+  que el importe coincida: que lo pulse alguien no hace buena idea dar por
+  pagado un plan de veinticinco mil con un SINPE de mil.
+- El buzón se abre en SOLO LECTURA y no se marca nada. Es el correo personal de
+  quien cobra, no uno de servicio — y no hace falta: releer los mismos correos
+  cada cinco minutos no cobra nada dos veces.
+- La contraseña del IMAP, cifrada con AES-256-GCM como la del SMTP, y el
+  registro de auditoría anota el servidor y el usuario, jamás la contraseña.
+  `logger: false` en el cliente IMAP: por defecto escribe el diálogo completo
+  con el servidor —la línea de LOGIN incluida— en el journal.
+- El modelo distingue desde el principio el buzón de la PLATAFORMA
+  (`tenantId` nulo, las oficinas pagando su mensualidad) del de una OFICINA
+  (fase 2, sus clientes pagándole a ella). Hoy solo se usa el primero, pero
+  cambiarlo después sería migrar filas de dinero.
+
 ### Render
 - El PNG se genera UNA vez por versión y se guarda (`Render`), porque esa URL es
   también la vista previa que pide WhatsApp: sin caché, cada invitado del grupo
@@ -404,6 +451,7 @@ npm run build      # build de producción
 npm run typecheck  # tsc --noEmit
 npm run lint:rtl   # guardia de CSS lógico (RTL)
 npm run brand:build # redibuja el logo, los iconos y los de la app móvil
+npm run sinpe:check # revisa los buzones de SINPE (lo llama el temporizador)
 npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
 ```
 
@@ -414,9 +462,11 @@ npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
   compuestas— lo hace la base, no el código: un doble que no las implemente daría
   verde a los mismos fallos que estas pruebas existen para atrapar.
 - **En serie** (`--test-concurrency=1`): comparten una sola base.
-- Cinco frentes, los que costaron dinero o confianza: el cobro y su liquidación,
+- Seis frentes, los que costaron dinero o confianza: el cobro y su liquidación,
   la concurrencia de la cola de WhatsApp, el aislamiento entre oficinas, las
-  fechas con el calendario, y el reparto de las mesas.
+  fechas con el calendario, el reparto de las mesas, y el SINPE — que es el
+  único que puede inventar dinero, y por eso lleva dos archivos de pruebas: el
+  lector de correos y el casado contra la base.
 
 ## Documentos
 - `MANUAL.md` — manual de uso: arrancar, crear invitaciones, idiomas, PNG,
@@ -495,6 +545,12 @@ de los versículos.
     cuadrado es destrozarlo—; el icono sí es cuadrado. La dirección de imagen
     sigue existiendo, plegada, porque hay instalaciones que ya tienen una puesta
     y sin el campo no habría cómo quitarla.
+  - **SINPE Móvil**: los buzones de banco que se revisan y todo lo leído de
+    ellos. Los que NO conectan salen arriba del todo y en rojo: un buzón caído
+    es plata que deja de entrar, y desde fuera se ve igual que si nadie hubiera
+    pagado. Hay además una caja para pegar un correo a mano — es la única forma
+    de comprobar que los patrones de SU banco funcionan antes de confiarle el
+    cobro, y sirve para un SINPE que llegó por mensaje.
   - **Portada**: cada texto del bloque `home`, en los cuatro idiomas. La lista
     se genera recorriendo el diccionario, así que una frase nueva aparece sola.
     Un campo vacío es «el texto original», y no se guarda fila.

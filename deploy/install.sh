@@ -27,6 +27,8 @@ SERVICE_REC="/etc/systemd/system/citas-conciliar.service"
 SERVICE_REM="/etc/systemd/system/citas-recordatorios.service"
 TIMER_REM="/etc/systemd/system/citas-recordatorios.timer"
 TIMER_REC="/etc/systemd/system/citas-conciliar.timer"
+SERVICE_SINPE="/etc/systemd/system/citas-sinpe.service"
+TIMER_SINPE="/etc/systemd/system/citas-sinpe.timer"
 APP_USER="www"
 
 paso() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
@@ -406,6 +408,58 @@ if systemctl is-active --quiet citas-recordatorios.timer; then
   ok "los recordatorios se revisan cada cuarto de hora"
 else
   aviso "los recordatorios no arrancaron — mira: journalctl -u citas-recordatorios -n 40"
+fi
+
+paso "SINPE Movil"
+
+# Revisa los buzones de banco y cobra lo que case. El SINPE no tiene pasarela:
+# no hay a quien preguntarle si un pago entro, asi que lo unico que llega es un
+# correo del banco. Es idempotente por construccion —el comprobante es unico por
+# cuenta—, y el buzon se abre en SOLO LECTURA: es el correo personal de quien
+# cobra, no uno de servicio.
+cat > "$SERVICE_SINPE" <<UNIT
+[Unit]
+Description=Citas — revision de buzones de SINPE Movil
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+User=$APP_USER
+Group=$APP_USER
+WorkingDirectory=$DIR/apps/web
+EnvironmentFile=$DIR/apps/web/.env
+ExecStart=$NODE_BIN $DIR/node_modules/tsx/dist/cli.mjs $DIR/apps/web/scripts/check-sinpe.ts
+Environment=NODE_ENV=production
+Environment=HOME=/tmp
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+UNIT
+
+cat > "$TIMER_SINPE" <<UNIT
+[Unit]
+Description=Citas — buzones de SINPE, cada cinco minutos
+
+[Timer]
+# Ver arriba: \`Persistent\` solo cuenta con \`OnCalendar\`.
+OnCalendar=*:0/5
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now citas-sinpe.timer >/dev/null 2>&1
+# No detiene el despliegue: sin buzones configurados no hace nada, y quien no
+# cobra por SINPE no lo necesita.
+if systemctl is-active --quiet citas-sinpe.timer; then
+  ok "los buzones de SINPE se revisan cada cinco minutos"
+else
+  aviso "la revision de SINPE no arranco — mira: journalctl -u citas-sinpe -n 40"
 fi
 
 # SELinux impide que nginx hable con un puerto local. Es la causa del 502

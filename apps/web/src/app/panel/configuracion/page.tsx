@@ -8,6 +8,7 @@ import { HomeSection } from '@/components/panel/config/HomeSection';
 import { MailSection } from '@/components/panel/config/MailSection';
 import { PaymentsSection } from '@/components/panel/config/PaymentsSection';
 import { RolesSection, type RoleRow } from '@/components/panel/config/RolesSection';
+import { SinpeSection } from '@/components/panel/config/SinpeSection';
 import { SiteSection } from '@/components/panel/config/SiteSection';
 import { WhatsappSection } from '@/components/panel/config/WhatsappSection';
 import { getAdminContext } from '@/lib/admin/context';
@@ -18,6 +19,8 @@ import { origin, secret, setting, type SecretKey, type SettingKey } from '@/lib/
 import { homeTexts, isLocale } from '@/lib/settings/home';
 import { capabilitiesOf, isCustomised } from '@/lib/auth/role-config';
 import { listConnections } from '@/lib/whatsapp/connections';
+import { assignableOrders, listAccounts, listMovements } from '@/lib/payments/sinpe/accounts';
+import { actorTimezone } from '@/lib/time/actor';
 import { scopeOf } from '@/lib/auth/session';
 import { displayFont } from '@/lib/typography';
 import { CONFIG_SECTIONS, type ConfigSection } from '@citas/core';
@@ -37,6 +40,8 @@ interface PageProps {
     motivo?: string;
     mail?: string;
     reason?: string;
+    sinpe?: string;
+    leido?: string;
   }>;
 }
 
@@ -172,6 +177,22 @@ export default async function ConfigPage({ searchParams }: PageProps) {
           {...(params.servicio === undefined ? {} : { gatewayError: params.servicio })}
           {...(params.error === undefined ? {} : { error: params.error })}
           {...(params.esperando === undefined ? {} : { esperando: params.esperando })}
+          dictionary={dictionary}
+          locale={locale}
+        />
+      ) : null}
+
+      {/* El SINPE es de la PLATAFORMA: son los buzones por donde entra el dinero
+          de las mensualidades, así que lo guarda el mismo permiso que la
+          pasarela. */}
+      {section === 'sinpe' && platform ? (
+        <SinpeSection
+          accounts={await listAccounts()}
+          movements={await listMovements()}
+          orders={await assignableOrders()}
+          zone={await actorTimezone(session)}
+          {...(params.sinpe === undefined ? {} : { outcome: params.sinpe })}
+          {...(params.leido === undefined ? {} : { read: params.leido })}
           dictionary={dictionary}
           locale={locale}
         />

@@ -9,8 +9,19 @@ import { FIELD_CLASS } from '@/components/create/Field';
 import { displayFont } from '@/lib/typography';
 import { PAYMENT_METHODS, type Dictionary, type Locale, type PaymentMethod } from '@citas/core';
 
-/** Los medios que hoy pueden encenderse. Tilopay espera su especificación. */
-const READY: Record<PaymentMethod, boolean> = { whish: true, cash: true, tilopay: false };
+/**
+ * Los medios que hoy pueden encenderse.
+ *
+ * `sinpe` sí: no es una pasarela —no hay credenciales que pedirle a nadie—,
+ * sino leer el correo del banco, y eso se configura en su propia pantalla.
+ * Tilopay sigue apagado: espera su especificación y sus credenciales.
+ */
+const READY: Record<PaymentMethod, boolean> = {
+  whish: true,
+  cash: true,
+  sinpe: true,
+  tilopay: false,
+};
 
 interface Props {
   action: (formData: FormData) => Promise<void>;

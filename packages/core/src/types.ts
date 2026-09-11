@@ -95,6 +95,7 @@ export const CONFIG_SECTIONS = [
   'mail',
   'payments',
   'whatsapp',
+  'sinpe',
   'roles',
   'brand',
   'home',
@@ -106,7 +107,7 @@ export type ConfigSection = (typeof CONFIG_SECTIONS)[number];
  * Cómo se puede cobrar. `cash` no es una pasarela: es que alguien de la oficina
  * recibe el dinero y lo anota, y por eso lo marca una persona con su nombre.
  */
-export const PAYMENT_METHODS = ['whish', 'cash', 'tilopay'] as const;
+export const PAYMENT_METHODS = ['whish', 'cash', 'sinpe', 'tilopay'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 /** What the status page checks before saying the system is healthy. */
@@ -793,6 +794,63 @@ export interface Dictionary {
       limitTitle: string;
       limitDetail: string;
       limitHint: string;
+    };
+    /**
+     * El cobro por SINPE Móvil: los buzones de banco y lo leído de ellos.
+     *
+     * No hay pasarela detrás, así que esta pantalla es donde se ve si el dinero
+     * está entrando — y sobre todo, si un buzón dejó de conectar.
+     */
+    sinpe: {
+      heading: string;
+      intro: string;
+      accounts: string;
+      accountsEmpty: string;
+      add: string;
+      name: string;
+      nameHint: string;
+      bank: string;
+      phone: string;
+      imapHost: string;
+      imapPort: string;
+      imapUser: string;
+      imapPassword: string;
+      imapPasswordHint: string;
+      folder: string;
+      active: string;
+      forSubscriptions: string;
+      platform: string;
+      lastChecked: string;
+      never: string;
+      lastError: string;
+      remove: string;
+      movements: string;
+      movementsEmpty: string;
+      sender: string;
+      amount: string;
+      reference: string;
+      detail: string;
+      received: string;
+      states: { pending: string; applied: string; ignored: string };
+      assign: string;
+      assignHint: string;
+      assignNone: string;
+      assigned: string;
+      assignFailed: string;
+      paste: string;
+      pasteHint: string;
+      pasteSubject: string;
+      pasteBody: string;
+      pasteAccount: string;
+      pasteButton: string;
+      readOk: string;
+      readApplied: string;
+      readDuplicate: string;
+      readOutgoing: string;
+      readAccountNotice: string;
+      readNotANotice: string;
+      payCode: string;
+      payCodeHint: string;
     };
     /** El reparto del salón: qué mesas hay y quién se sienta en cada una. */
     tables: {

@@ -15,6 +15,8 @@ export interface OrderRow {
   createdAt: Date;
   paymentId: string | null;
   payUrl: string | null;
+  /** El código que hay que escribir en el detalle del SINPE, si se cobra así. */
+  payCode: string | null;
 }
 
 export async function listOrders(scope: TenantScope): Promise<OrderRow[]> {
@@ -36,6 +38,7 @@ export async function listOrders(scope: TenantScope): Promise<OrderRow[]> {
       createdAt: order.createdAt,
       paymentId: payment?.id ?? null,
       payUrl: null,
+      payCode: order.payCode,
     };
   });
 }
