@@ -50,6 +50,20 @@ export interface CallbackResult {
   amount?: Money;
 }
 
+/**
+ * Lo que el proveedor dice de un cobro: en qué estado está y, si lo cuenta, por
+ * cuánto.
+ *
+ * El importe es OPCIONAL porque no todo proveedor lo devuelve al preguntar por
+ * un estado, y porque inventarse el nombre de un campo que no se ha visto en la
+ * respuesta de verdad es peor que no leerlo: daría una comprobación que siempre
+ * pasa. Cuando viene, se compara; cuando no, se dice que no se comparó.
+ */
+export interface SettlementReading {
+  status: PaymentStatus;
+  amount?: Money;
+}
+
 export interface PaymentProvider {
   readonly id: PaymentProviderId;
   /**
@@ -67,7 +81,7 @@ export interface PaymentProvider {
    * moneda equivocada no da un error, da un cobro que no aparece — y un pedido
    * pagado que se queda en «pendiente» para siempre es peor que un fallo.
    */
-  getStatus(providerRef: string, currency: Currency): Promise<PaymentStatus>;
+  getStatus(providerRef: string, currency: Currency): Promise<SettlementReading>;
   /** Validates an inbound callback and says what it means. Throws if not authentic. */
   verifyCallback(headers: Headers, rawBody: string): Promise<CallbackResult>;
 }

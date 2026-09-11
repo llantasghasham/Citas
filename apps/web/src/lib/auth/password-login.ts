@@ -1,6 +1,8 @@
 import { getPrisma } from '@/lib/db/client';
 
 import { passwordMatches } from './password';
+import type { Role } from '@/generated/prisma/enums';
+import { mayUsePassword, tenantCanWork } from './guards';
 import { issueSession, type SessionMetadata } from './session';
 import type { VerifyOutcome } from './otp';
 import { looksLikeEmail, normalizeEmail } from './otp';
@@ -66,6 +68,19 @@ export async function signInWithPassword(
   } else {
     tenantId = user.memberships[0]?.tenantId ?? null;
   }
+
+  // El rol de AHORA, no el de cuando se puso la contraseña. Degradar a un
+  // administrador a operador le quitaba los permisos y le dejaba la contraseña
+  // puesta: la mitad del trabajo. Responde lo mismo que una contraseña mala, que
+  // es lo que responde todo aquí.
+  const role: Role | null =
+    tenantId === null
+      ? null
+      : (user.memberships.find((entry) => entry.tenantId === tenantId)?.role ?? null);
+  if (!mayUsePassword(user.isSuperadmin, role)) return failure;
+
+  // Una oficina suspendida no trabaja, tampoco con contraseña.
+  if (!(await tenantCanWork(tenantId))) return failure;
 
   const token = await issueSession(user.id, tenantId, metadata);
 

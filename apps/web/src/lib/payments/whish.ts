@@ -8,6 +8,7 @@ import {
   type Currency,
   type PaymentProvider,
   type PaymentStatus,
+  type SettlementReading,
 } from './types';
 
 /**
@@ -221,13 +222,18 @@ export const whishProvider: PaymentProvider = {
    * día que uno se abriera en libras, el dinero cobrado no se habría enterado
    * nadie.
    */
-  async getStatus(providerRef: string, currency: Currency): Promise<PaymentStatus> {
+  async getStatus(providerRef: string, currency: Currency): Promise<SettlementReading> {
     const config = await readConfig();
     const data = await call(config, CONTRACT.status, {
       currency,
       externalId: Number(providerRef),
     });
-    return toStatus(data['collectStatus'] ?? data['status']);
+    // Sin importe, y a propósito: no se ha visto todavía una respuesta de
+    // verdad de Whish, y adivinar el nombre del campo daría una comprobación
+    // que pasa siempre — peor que no tenerla, porque parecería que protege.
+    // En cuanto llegue la especificación, aquí se lee y `applySettlement` ya
+    // sabe qué hacer con él.
+    return { status: toStatus(data['collectStatus'] ?? data['status']) };
   },
 
   async verifyCallback(_headers: Headers, rawBody: string): Promise<CallbackResult> {

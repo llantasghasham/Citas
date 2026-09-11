@@ -2,6 +2,7 @@ import { recordAudit } from '@/lib/audit';
 import { getPrisma } from '@/lib/db/client';
 import { getMailer } from '@/lib/mail';
 
+import { tenantCanWork } from './guards';
 import { issueSession, type SessionMetadata } from './session';
 import { hashSecret, newLoginCode, secretMatches } from './tokens';
 
@@ -155,6 +156,11 @@ export async function verifyLoginCode(
     data: { consumedAt: new Date() },
   });
   if (spent.count === 0) return failure;
+
+  // Una oficina suspendida no trabaja: el código es válido y aun así no abre.
+  // Se responde lo mismo que a un código malo — decir «su oficina está
+  // suspendida» le confirma a cualquiera que esa dirección tiene cuenta.
+  if (!(await tenantCanWork(tenantId))) return failure;
 
   const token = await issueSession(user.id, tenantId, metadata);
 

@@ -114,12 +114,29 @@ export async function resolveSession(token: string): Promise<AuthenticatedSessio
     // `omit` de la foto, y no es cosmético: esta consulta corre en CADA
     // petición del panel. Traerse los bytes de la imagen para acabar usando
     // solo su huella sería pagar la foto entera en cada carga de pantalla.
-    include: { user: { include: { memberships: true }, omit: { avatarData: true } } },
+    include: {
+      user: { include: { memberships: true }, omit: { avatarData: true } },
+      // Para saber si la oficina sigue abierta. Es una columna, no una consulta
+      // más: esto corre en cada petición del panel.
+      tenant: { select: { status: true } },
+    },
   });
 
   if (row === null) return null;
   if (row.expiresAt.getTime() <= Date.now()) {
     await prisma.session.delete({ where: { id: row.id } }).catch(() => undefined);
+    return null;
+  }
+
+  // Una oficina SUSPENDIDA no trabaja, y no basta con dejar de dejarla entrar:
+  // una sesión abierta dura treinta días, así que suspender sin esto no
+  // suspendía nada hasta que a esa persona se le ocurriera cerrar sesión. Se
+  // comprueba aquí, en el único sitio por el que pasa todo —panel, acciones de
+  // servidor, API móvil y trabajos automáticos—, en vez de en cada pantalla.
+  //
+  // El superadministrador se salva: es quien tiene que poder entrar a arreglar
+  // lo que sea que llevó a suspenderla.
+  if (row.tenant !== null && row.tenant.status === 'suspended' && !row.user.isSuperadmin) {
     return null;
   }
 

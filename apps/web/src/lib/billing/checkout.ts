@@ -279,7 +279,8 @@ export async function settlePublicOrder(payToken: string): Promise<PaymentStatus
   const provider = providerFor(payment.provider);
   if (provider === null) return payment.status === 'paid' ? 'paid' : order.status;
 
-  const status = await provider.getStatus(payment.providerRef, payment.currency);
+  const reading = await provider.getStatus(payment.providerRef, payment.currency);
+  const status = reading.status;
 
   // Lo que significa ese estado lo decide UN solo sitio, el mismo que usan el
   // botón de la oficina y el repaso periódico.

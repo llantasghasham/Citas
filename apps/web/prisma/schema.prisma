@@ -134,6 +134,7 @@ model Tenant {
   auditLogs    AuditLog[]
   whatsapps    WhatsappConnection[]
   sinpeAccounts SinpeAccount[]
+  sessions     Session[]
 
   @@index([status])
 }
@@ -258,6 +259,9 @@ model Event {
   tables   Table[]
   messages WhatsappMessage[]
 
+  /// Para que otras tablas puedan apuntar a (id, tenantId) a la vez y la BASE
+  /// impida que una fila de una oficina cuelgue del evento de otra.
+  @@unique([id, tenantId])
   @@index([tenantId, status])
   @@index([tenantId, date])
   // El repaso de recordatorios recorre solo los eventos que tienen uno puesto.
@@ -402,6 +406,10 @@ model Guest {
   rsvp     Rsvp?
   messages WhatsappMessage[]
 
+  /// Misma razón que en `Event`: permite apuntar a (id, eventId) a la vez.
+  /// El invitado no lleva `tenantId` —cuelga de su evento— así que la cadena se
+  /// cierra por ahí: mensaje → evento (con oficina) → invitado (con evento).
+  @@unique([id, eventId])
   @@index([eventId])
   @@index([eventId, locale])
   @@index([tableId])
@@ -792,8 +800,28 @@ model WhatsappMessage {
 
   /// A `null` cuando se borra: el mensaje es el REGISTRO de lo que se mandó, y
   /// borrarlo porque el evento ya pasó sería borrar la prueba.
-  event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  guest Guest? @relation(fields: [guestId], references: [id], onDelete: SetNull)
+  /// Claves COMPUESTAS también aquí, no solo en la conexión.
+  ///
+  /// Con `eventId` a secas, que el evento fuera de la misma oficina que el
+  /// mensaje dependía de que el código no se equivocara nunca. Ahora no lo
+  /// admite la base: el evento tiene que ser de ESTA oficina, y el invitado
+  /// tiene que ser de ESE evento — el invitado no lleva oficina porque cuelga
+  /// de su evento, así que la cadena se cierra por ahí.
+  ///
+  /// `NoAction` y no `SetNull`: sobre una clave compuesta, `SET NULL` pondría a
+  /// nulo TODAS sus columnas, y `tenantId` no lo admite.
+  ///
+  /// En la MIGRACIÓN van además como `DEFERRABLE INITIALLY DEFERRED`, y sin eso
+  /// no funcionan: borrar una oficina fallaba, porque la cascada borra sus
+  /// eventos y la comprobación saltaba ahí mismo aunque los mensajes que
+  /// apuntaban a ese evento se estuvieran borrando en la misma orden. Prisma no
+  /// sabe declarar `DEFERRABLE`, así que eso vive solo en el SQL — como el
+  /// índice único parcial de los cobros.
+  ///
+  /// El día que se añada «borrar un evento» a mano habrá que desligar antes
+  /// estos mensajes, igual que hace `removeTable` con las mesas.
+  event Event? @relation(fields: [eventId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  guest Guest? @relation(fields: [guestId, eventId], references: [id, eventId], onDelete: NoAction)
 
   // Por `connectionId` primero: es por donde filtra el repartidor. El índice
   // anterior empezaba por `status` y no le servía para nada.
@@ -968,7 +996,14 @@ model Session {
   lastSeenAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// La oficina, para poder mirar si sigue abierta al resolver la sesión.
+  ///
+  /// Sin esta relación, suspender una oficina no suspendía nada: las sesiones
+  /// abiertas duran treinta días y seguían trabajando hasta que a alguien se le
+  /// ocurriera cerrar sesión. Borrar la oficina se lleva sus sesiones.
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([tenantId])
 }

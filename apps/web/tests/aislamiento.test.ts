@@ -186,3 +186,112 @@ describe('lo que no puede salir hacia fuera', () => {
     assert.equal(avatarSrc('u', { avatarUrl: 'https://ajeno/x', avatarVersion: 'abc' }), '/api/avatar/u?v=abc');
   });
 });
+
+/**
+ * Lo que impide la BASE, no el código.
+ *
+ * Llegó por un informe externo y era cierto: la conexión iba por
+ * `(id, tenantId)` pero el evento y el invitado eran claves por id a secas, así
+ * que que fueran de la misma oficina dependía solo de que el código acertara
+ * siempre.
+ */
+describe('la cadena de oficina de un mensaje', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  it('un mensaje no puede colgar del evento de OTRA oficina', async () => {
+    const prisma = getPrisma();
+    const mio = fixture.get().tenantId;
+    const ajeno = await makeEvent(fixture.get().otherTenantId, []);
+    const conexion = await prisma.whatsappConnection.create({
+      data: { tenantId: mio, name: `N-${Math.random().toString(36).slice(2, 8)}`, status: 'connected' },
+      select: { id: true },
+    });
+
+    await assert.rejects(
+      prisma.whatsappMessage.create({
+        data: {
+          tenantId: mio,
+          connectionId: conexion.id,
+          // El evento es de la otra oficina. La base no lo admite.
+          eventId: ajeno,
+          toPhone: '+96170000000',
+          body: 'hola',
+          status: 'queued',
+        },
+      }),
+      (error: unknown) =>
+        // Que lo rechace la CLAVE, no una validación de Prisma: si el mensaje
+        // no menciona la restricción, esta prueba estaría pasando por el motivo
+        // equivocado y no probaría nada.
+        String(error).includes('Foreign key constraint') ||
+        String(error).includes('foreign key'),
+    );
+
+    await prisma.whatsappConnection.delete({ where: { id: conexion.id } });
+    await prisma.event.delete({ where: { id: ajeno } });
+  });
+
+  it('ni del invitado de otro evento', async () => {
+    const prisma = getPrisma();
+    const mio = fixture.get().tenantId;
+    const uno = await makeEvent(mio, [{ name: 'Ana', phone: null }]);
+    const dos = await makeEvent(mio, []);
+    const invitado = await prisma.guest.findFirstOrThrow({ where: { eventId: uno } });
+    const conexion = await prisma.whatsappConnection.create({
+      data: { tenantId: mio, name: `N-${Math.random().toString(36).slice(2, 8)}`, status: 'connected' },
+      select: { id: true },
+    });
+
+    await assert.rejects(
+      prisma.whatsappMessage.create({
+        data: {
+          tenantId: mio,
+          connectionId: conexion.id,
+          eventId: dos,
+          // El invitado es del evento de al lado.
+          guestId: invitado.id,
+          toPhone: '+96170000000',
+          body: 'hola',
+          status: 'queued',
+        },
+      }),
+      (error: unknown) =>
+        String(error).includes('Foreign key constraint') || String(error).includes('foreign key'),
+    );
+
+    await prisma.whatsappConnection.delete({ where: { id: conexion.id } });
+    await prisma.event.deleteMany({ where: { id: { in: [uno, dos] } } });
+  });
+
+  it('lo correcto sí entra, y borrar la oficina se lo lleva todo', async () => {
+    const prisma = getPrisma();
+    const tenant = await prisma.tenant.create({
+      data: { name: 'Efímera', subdomain: 'prueba-cadena', slug: 'prueba-cadena' },
+      select: { id: true },
+    });
+    const evento = await makeEvent(tenant.id, [{ name: 'Ana', phone: null }]);
+    const invitado = await prisma.guest.findFirstOrThrow({ where: { eventId: evento } });
+    const conexion = await prisma.whatsappConnection.create({
+      data: { tenantId: tenant.id, name: `N-${Math.random().toString(36).slice(2, 8)}`, status: 'connected' },
+      select: { id: true },
+    });
+
+    await prisma.whatsappMessage.create({
+      data: {
+        tenantId: tenant.id,
+        connectionId: conexion.id,
+        eventId: evento,
+        guestId: invitado.id,
+        toPhone: '+96170000000',
+        body: 'hola',
+        status: 'queued',
+      },
+    });
+
+    // Y la cascada sigue funcionando: `NO ACTION` se comprueba al final de la
+    // orden, así que evento, invitado y mensaje se van juntos sin tropezar.
+    await prisma.tenant.delete({ where: { id: tenant.id } });
+    assert.equal(await prisma.whatsappMessage.count({ where: { tenantId: tenant.id } }), 0);
+    assert.equal(await prisma.event.count({ where: { id: evento } }), 0);
+  });
+});

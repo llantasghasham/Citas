@@ -5,6 +5,7 @@ import {
   type CollectionRequest,
   type PaymentProvider,
   type PaymentStatus,
+  type SettlementReading,
 } from './types';
 
 /**
@@ -37,12 +38,12 @@ export const mockProvider: PaymentProvider = {
 
   // La moneda no le hace falta a un proveedor de mentira, pero el puerto la
   // pide: quien la ignora tiene que decirlo, no omitirla.
-  getStatus(providerRef: string, _currency: Currency): Promise<PaymentStatus> {
+  getStatus(providerRef: string, _currency: Currency): Promise<SettlementReading> {
     // First read is pending, every read after that is paid: enough to exercise
     // both branches of the polling code.
     const current = states.get(providerRef) ?? 'pending';
     if (current === 'pending') states.set(providerRef, 'paid');
-    return Promise.resolve(current);
+    return Promise.resolve({ status: current });
   },
 
   verifyCallback(_headers: Headers, rawBody: string): Promise<CallbackResult> {

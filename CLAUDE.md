@@ -363,6 +363,15 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   sitio que nadie le ha guardado.
 
 ### Cobro
+- Un pago «pagado» no es un pago por el importe correcto. Cuando el proveedor
+  dice por cuánto cobró, `applySettlement` lo compara con lo que se abrió y, si
+  no cuadra, NO liquida nada: deja el cobro pendiente y escribe un
+  `PaymentEvent` de `amount_mismatch` con lo esperado y lo recibido. Activar un
+  plan porque alguien pagó mil de veinticinco mil es regalar el producto.
+- El importe es OPCIONAL en la lectura del proveedor a propósito: Whish todavía
+  no lo devuelve aquí porque no se ha visto una respuesta de verdad, y adivinar
+  el nombre del campo daría una comprobación que pasa siempre — peor que no
+  tenerla, porque parecería que protege.
 - Líbano cobra con **Whish**. Costa Rica, si se abre, con Tilopay (SINPE Móvil).
 - El navegador NUNCA decide un pago. Un regreso a la URL de éxito no es una
   prueba de cobro: se confirma servidor contra servidor con `getStatus()`.
@@ -426,6 +435,25 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   (fase 2, sus clientes pagándole a ella). Hoy solo se usa el primero, pero
   cambiarlo después sería migrar filas de dinero.
 
+### Lo que impide la base, no el código
+- Una sesión cuelga de su oficina (`Session.tenantId` con clave foránea), y
+  resolverla mira si esa oficina sigue abierta. Suspender una oficina no
+  suspendía NADA: se comprobaba en cero sitios, y aunque se comprobara al
+  entrar, una sesión dura treinta días — quien ya estaba dentro seguía
+  trabajando hasta que se le ocurriera salir. El superadministrador se salva:
+  es quien tiene que poder entrar a arreglar lo que llevó a suspenderla.
+- Quién puede usar CONTRASEÑA se decide por el rol de AHORA (`mayUsePassword`),
+  no por tener un hash guardado. Degradar a un administrador a operador le
+  quitaba los permisos y le dejaba la contraseña: la mitad del trabajo. Una sola
+  función, usada al entrar, en el perfil y por `npm run auth:password`.
+- Un mensaje de WhatsApp cuelga de su evento por `(eventId, tenantId)` y de su
+  invitado por `(guestId, eventId)`. El invitado no lleva oficina —cuelga de su
+  evento— así que la cadena se cierra por ahí. Las dos claves van
+  `DEFERRABLE INITIALLY DEFERRED` en la migración y sin eso NO funcionan: borrar
+  una oficina fallaba, porque la cascada borra sus eventos y la comprobación
+  saltaba ahí mismo aunque los mensajes se estuvieran borrando en la misma
+  orden. Prisma no sabe declararlo, así que vive en el SQL.
+
 ### Render
 - El PNG se genera UNA vez por versión y se guarda (`Render`), porque esa URL es
   también la vista previa que pide WhatsApp: sin caché, cada invitado del grupo
@@ -443,6 +471,28 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - La página web y el PNG comparten el MISMO componente (`InvitationCard`);
   no se duplica nunca la maquetación
 - Las plantillas son HTML/SVG con capas, nunca imágenes generadas por IA
+
+### Seguridad de borde
+- La dirección que abre Chromium para hacer la foto sale de un origen FIJO
+  (`lib/render/origin.ts`), NUNCA de la petición. Salía de `request.url`, que
+  Next arma con la cabecera `Host` — la escribe quien llama: bastaba una
+  petición con `Host: atacante.example` para que el servidor abriera un
+  navegador contra esa dirección y el resultado se guardara en `Render` y se
+  sirviera desde nuestro dominio. Y Chromium solo puede PEDIR lo que cuelga de
+  ese origen: lista de permitidos, no de prohibidos, porque una de prohibidos se
+  salta con una redirección o con un nombre que resuelve a una IP privada.
+- `canonicalOrigin` no acepta cualquier cabecera: tiene que tener forma de
+  dominio público y, en producción, ser un dominio que esta instalación conozca.
+  Si no, no escribe el enlace. Fallar es arreglable; un enlace de pago hacia un
+  dominio ajeno, no.
+- Cabeceras de seguridad en `next.config.mjs`: CSP, HSTS, `nosniff`,
+  `Referrer-Policy`, `Permissions-Policy`. `frame-ancestors 'self'` y no
+  `'none'`, porque la espera del código QR vive en un marco de este mismo
+  origen.
+- El CSV neutraliza las celdas que empiezan por `=`, `+`, `-` o `@`: esas tres
+  hojas de cálculo las EJECUTAN al abrir el archivo, y aquí el nombre lo escribe
+  cualquiera — el formulario de confirmación es público a propósito. Los números
+  no se tocan: la columna tiene que poder sumarse.
 
 ### Código
 - TypeScript estricto, sin `any`
@@ -470,7 +520,9 @@ npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
 - **En serie** (`--test-concurrency=1`): comparten una sola base.
 - Seis frentes, los que costaron dinero o confianza: el cobro y su liquidación,
   la concurrencia de la cola de WhatsApp, el aislamiento entre oficinas, las
-  fechas con el calendario, el reparto de las mesas, y el SINPE — que es el
+  fechas con el calendario —que ahora se comprueban contra el CALENDARIO y no
+  contra una expresión: un 30 de febrero pasaba y se publicaba—, el reparto de
+  las mesas, el acceso, y el SINPE — que es el
   único que puede inventar dinero, y por eso lleva dos archivos de pruebas: el
   lector de correos y el casado contra la base.
 

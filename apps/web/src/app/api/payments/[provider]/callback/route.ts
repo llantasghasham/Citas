@@ -69,8 +69,20 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
 
     // La moneda sale de la fila que ya tenemos, NUNCA del cuerpo del aviso: ese
     // cuerpo no va firmado, y con él se elige en qué cobro se mira.
-    const status = await provider.getStatus(result.providerRef, payment.currency);
-    await applySettlement(payment.order, payment.id, status, 'callback');
+    const reading = await provider.getStatus(result.providerRef, payment.currency);
+    const status = reading.status;
+
+    // Por cuánto dice el proveedor que se cobró. Se prefiere lo que devuelve la
+    // CONSULTA sobre lo que traía el aviso, porque el aviso no va firmado. Si no
+    // cuadra con lo que se abrió, `applySettlement` no liquida nada.
+    const reported = reading.amount ?? result.amount;
+    await applySettlement(
+      payment.order,
+      payment.id,
+      status,
+      'callback',
+      reported === undefined ? undefined : { amount: reported.amount, currency: reported.currency },
+    );
 
     return Response.json({ received: true });
   } catch (error) {

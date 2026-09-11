@@ -63,15 +63,54 @@ export async function applySettlement(
   paymentId: string,
   status: PaymentStatus,
   via: 'link' | 'panel' | 'job' | 'callback' | 'sinpe',
+  /**
+   * Por cuánto dice el proveedor que se cobró, cuando lo dice.
+   *
+   * Que un cobro esté «pagado» no significa que se haya pagado LO QUE SE PEDÍA.
+   * Si el importe o la moneda no coinciden con lo que se abrió, esto NO liquida
+   * nada: deja el cobro pendiente, escribe lo que llegó y que lo mire una
+   * persona. Activar un plan porque alguien pagó mil de veinticinco mil es
+   * regalar el producto; darlo por bueno cobrando de más es peor.
+   */
+  reported?: { amount: number; currency: string },
 ): Promise<boolean> {
   return getPrisma().$transaction(async (tx) => {
     // Se relee DENTRO de la transacción y con bloqueo de fila: dos avisos
     // simultáneos del mismo cobro llegan aquí a la vez, y sin esto los dos
     // verían «pendiente» y los dos activarían el plan.
-    const [locked] = await tx.$queryRaw<{ id: string; status: PaymentStatus }[]>`
-      SELECT id, status FROM "Payment" WHERE id = ${paymentId} FOR UPDATE
+    const [locked] = await tx.$queryRaw<
+      { id: string; status: PaymentStatus; amount: number; currency: string }[]
+    >`
+      SELECT id, status, amount, currency FROM "Payment" WHERE id = ${paymentId} FOR UPDATE
     `;
     if (locked === undefined) return false;
+
+    // El importe, antes que nada. Un pago que no cuadra no se liquida ni se
+    // marca fallido: se deja pendiente —para que el repaso siga mirándolo— y se
+    // guarda crudo lo que dijo el proveedor, que es lo único que sirve cuando
+    // se discute un cobro.
+    if (
+      reported !== undefined &&
+      status === 'paid' &&
+      (reported.amount !== locked.amount || reported.currency !== locked.currency)
+    ) {
+      await tx.paymentEvent.create({
+        data: {
+          paymentId,
+          kind: 'amount_mismatch',
+          payload: {
+            esperado: { amount: locked.amount, currency: locked.currency },
+            recibido: reported,
+            via,
+          },
+        },
+      });
+      console.error(
+        `[pagos] importe que no cuadra en ${paymentId}: se esperaban ` +
+          `${locked.amount} ${locked.currency} y llegaron ${reported.amount} ${reported.currency}`,
+      );
+      return false;
+    }
 
     // Ya cobrado. Solo un reembolso puede mover esto, y eso no llega por aquí.
     if (locked.status === 'paid' && status !== 'refunded') return false;
@@ -178,7 +217,8 @@ export async function reconcilePending(): Promise<ReconcileSummary> {
       const provider = providerFor(payment.provider);
       if (provider === null) continue;
 
-      const status = await provider.getStatus(payment.providerRef, payment.currency);
+      const reading = await provider.getStatus(payment.providerRef, payment.currency);
+      const status = reading.status;
       if (status === 'pending') continue;
 
       if (await applySettlement(payment.order, payment.id, status, 'job')) {

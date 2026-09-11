@@ -213,7 +213,8 @@ export async function settleOrder(scope: TenantScope, orderId: string): Promise<
   // nombre y ya está decidido.
   if (provider === null) return payment.status === 'paid';
 
-  const status = await provider.getStatus(payment.providerRef, payment.currency);
+  const reading = await provider.getStatus(payment.providerRef, payment.currency);
+  const status = reading.status;
 
   // Escribirlo y aplicar lo que significa: un solo sitio, compartido con el
   // enlace de pago de la pareja y con el repaso periódico. Tres copias de esto

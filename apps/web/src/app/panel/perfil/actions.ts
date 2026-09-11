@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { getPrisma } from '@/lib/db/client';
+import { mayUsePassword } from '@/lib/auth/guards';
 import { getSession } from '@/lib/auth/session';
 import { hashPassword, passwordMatches, passwordProblems } from '@/lib/auth/password';
 import { recordAudit } from '@/lib/audit';
@@ -116,7 +117,10 @@ export async function changePasswordAction(formData: FormData): Promise<void> {
   const session = await getSession();
   if (session === null) redirect('/entrar');
 
-  if (!session.isSuperadmin && session.role !== 'TENANT_ADMIN') redirect(`${VOLVER}?clave=notAllowed`);
+  // La MISMA regla que aplica `npm run auth:password` y que ahora comprueba
+  // también el propio inicio de sesión. Una sola función, para que no haya dos
+  // criterios de quién puede tener contraseña.
+  if (!mayUsePassword(session.isSuperadmin, session.role)) redirect(`${VOLVER}?clave=notAllowed`);
 
   const current = String(formData.get('currentPassword') ?? '');
   const next = String(formData.get('newPassword') ?? '');
