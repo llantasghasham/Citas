@@ -20,6 +20,11 @@ import { CAPABILITIES, roleCan, type Capability } from '@/lib/auth/permissions';
  * 3. **Solo lo cambia la plataforma.** Un administrador de oficina que pudiera
  *    editar el reparto se ampliaría a sí mismo, que es la definición exacta de
  *    escalada de privilegios.
+ * 4. **`directory:moderate` tampoco se reparte.** Es quien aprueba, suspende y
+ *    verifica proveedores del directorio. Un proveedor que pudiera concederse
+ *    ese permiso se aprobaría a sí mismo, y entonces la moderación deja de
+ *    existir: es el fallo entero de un directorio moderado, no un permiso de
+ *    más.
  *
  * Se guarda en `Setting` con una fila por rol y no en una tabla nueva: son tres
  * filas de texto y ya existe el sitio donde va la configuración del sistema.
@@ -27,8 +32,11 @@ import { CAPABILITIES, roleCan, type Capability } from '@/lib/auth/permissions';
 export const EDITABLE_ROLES = ['TENANT_ADMIN', 'OPERATOR', 'ORGANIZER'] as const;
 export type EditableRole = (typeof EDITABLE_ROLES)[number];
 
-/** Lo que jamás se concede desde una pantalla. Ver el candado 2. */
-export const NEVER_GRANTABLE: readonly Capability[] = ['platform:manage'];
+/** Lo que jamás se concede desde una pantalla. Ver los candados 2 y 4. */
+export const NEVER_GRANTABLE: readonly Capability[] = [
+  'platform:manage',
+  'directory:moderate',
+];
 
 export const GRANTABLE: readonly Capability[] = CAPABILITIES.filter(
   (capability) => !NEVER_GRANTABLE.includes(capability),

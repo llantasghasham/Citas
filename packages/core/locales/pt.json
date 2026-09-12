@@ -552,7 +552,9 @@
           "tenant:staff": "Adicionar e remover pessoas do seu escritório",
           "event:write": "Criar eventos, escrever versões e importar convidados",
           "event:read": "Ver os eventos e os seus convidados",
-          "billing:manage": "Vender pacotes, cobrar e ver a faturação"
+          "billing:manage": "Vender pacotes, cobrar e ver a faturação",
+          "provider:manage": "Gerir o seu negócio no diretório: perfil, textos e imagens",
+          "directory:moderate": "Moderar o diretório: aprovar, rejeitar, suspender e verificar fornecedores"
         },
         "fixed": "fixo, não se pode mudar",
         "custom": "alterado aqui",

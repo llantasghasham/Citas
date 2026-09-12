@@ -270,7 +270,8 @@ model User {
   lastLoginAt DateTime?
   createdAt   DateTime  @default(now())
 
-  memberships Membership[]
+  memberships         Membership[]
+  providerMemberships ProviderMembership[]
   ownedEvents Event[]      @relation("EventOwner")
   auditLogs   AuditLog[]
   sessions    Session[]
@@ -1536,6 +1537,15 @@ model Session {
   /// Oficina en la que se está trabajando. Nulo para el superadmin fuera de una.
   tenantId String?
 
+  /// El PROVEEDOR del directorio en el que se está trabajando.
+  ///
+  /// Una sesión es de una oficina, de un proveedor, o de ninguna de las dos (el
+  /// superadministrador). NUNCA de las dos a la vez, y eso lo impide la base con
+  /// una restricción `Session_one_scope`, no el cuidado de quien escribe la
+  /// consulta. Una misma persona puede administrar un salón y además trabajar en
+  /// una oficina: tiene dos membresías y elige con cuál entra.
+  providerId String?
+
   tokenHash String   @unique
   expiresAt DateTime
 
@@ -1546,6 +1556,8 @@ model Session {
   lastSeenAt DateTime @default(now())
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider Provider? @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
   /// La oficina, para poder mirar si sigue abierta al resolver la sesión.
   ///
   /// Sin esta relación, suspender una oficina no suspendía nada: las sesiones
@@ -1555,5 +1567,296 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([providerId])
   @@index([tenantId])
+}
+
+// ---------------------------------------------------------------- el directorio
+//
+// El portal público de proveedores y celebraciones. Vive ENTERO en el plano de
+// CONTROL: se busca por región y no por oficina, así que con `TENANCY=fleet`
+// —una base por oficina— ninguna base de oficina podría servir un listado que
+// las cruza a todas.
+//
+// Y no comparte NI UNA clave foránea con lo privado de una boda: ni con `Guest`,
+// ni con `Rsvp`, ni con `GuestPreference`, ni con `CheckIn`, ni con `Table`, ni
+// con `GuestActRsvp`. No es una precaución, es la arquitectura: una consulta
+// pública no llega a la lista de invitados de nadie porque no hay camino.
+// `db:check` lo comprueba contra `pg_constraint` en cada despliegue.
+
+enum ProviderStatus {
+  draft
+  pending_review
+  approved
+  rejected
+  suspended
+  archived
+}
+
+enum ProviderRole {
+  PROVIDER_ADMIN
+  PROVIDER_EDITOR
+}
+
+/// Las ocho gobernaciones del Líbano. Cerradas: no son un campo de texto.
+enum Governorate {
+  beirut
+  mount_lebanon
+  north
+  akkar
+  bekaa
+  baalbek_hermel
+  south
+  nabatieh
+}
+
+enum MediaKind {
+  image
+  video
+}
+
+enum MediaStatus {
+  pending_review
+  approved
+  rejected
+  hidden
+}
+
+/// Por qué está oculta. `hidden` a secas no dice si fue una reclamación de
+/// derechos sin resolver o si la escondió el propio proveedor, y se resuelven y
+/// se notifican distinto.
+enum MediaHiddenReason {
+  copyright
+  moderation
+  provider
+}
+
+enum ReportReason {
+  false_info
+  scam
+  offensive
+  wrong_number
+  closed
+  copyright
+}
+
+enum ReportStatus {
+  new
+  reviewing
+  upheld
+  dismissed
+}
+
+/// Un negocio del directorio: un salón, un fotógrafo, un grupo de dabke.
+model Provider {
+  id   String @id @default(cuid())
+  /// La dirección pública. ESTABLE: cambiar el nombre comercial no la cambia, y
+  /// un nombre árabe NO se translitera — sale de lo que el proveedor escriba en
+  /// latino, o es `p-<azar>`. La misma regla que los slugs de invitación.
+  slug String @unique
+
+  /// El nombre legal, interno. NO se publica: lo que se enseña es la traducción.
+  legalName String
+
+  status ProviderStatus @default(draft)
+
+  /// Cuándo pidió revisión. Es el reloj de las 24 horas hábiles.
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  /// El motivo del rechazo, visible SOLO para el proveedor.
+  rejectedNote String?
+  /// La primera vez que se aprobó. Ordena el listado público.
+  publishedAt DateTime?
+
+  /// Verificado por la plataforma: la insignia. No es lo mismo que aprobado.
+  verifiedAt DateTime?
+  verifiedBy String?
+
+  governorate Governorate
+  /// El distrito, de la lista cerrada de cada gobernación.
+  district String
+  city     String
+
+  /// La dirección exacta y el mapa, que van JUNTOS y con un solo interruptor:
+  /// nulo significa que no se publica. Una repostera que trabaja desde su casa
+  /// no publica dónde vive.
+  addressPublic String?
+  lat           Float?
+  lng           Float?
+
+  capacity Int?
+  /// El año en que empezó el negocio.
+  since Int?
+  /// «Desde», en la unidad menor de la moneda. No es una tarifa: nadie cotiza
+  /// una boda por una web.
+  priceFrom     Int?
+  priceCurrency Currency?
+
+  /// El idioma en el que escribe: el respaldo cuando falta una traducción.
+  mainLocale String @default("ar")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  translations ProviderTranslation[]
+  memberships  ProviderMembership[]
+  categories   ProviderCategoryLink[]
+  contacts     ProviderContact[]
+  media        ProviderMedia[]
+  reviews      ProviderReview[]
+  reports      ProviderReport[]
+  sessions     Session[]
+
+  @@index([status, publishedAt])
+  @@index([governorate, district, status])
+}
+
+/// Lo que se publica, en cada idioma del portal. Nunca se traduce solo.
+model ProviderTranslation {
+  id         String @id @default(cuid())
+  providerId String
+  /// Del conjunto del PORTAL (`DIRECTORY_LOCALES`), que incluye el francés y no
+  /// es el `Locale` del producto. Por eso es texto y no el enum.
+  locale String
+
+  name        String
+  tagline     String?
+  description String?
+  /// Líneas cortas: «montaje», «barra libre», «hasta 400 personas».
+  services String[]
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, locale])
+}
+
+/// Quién administra este negocio. En paralelo a `Membership`, no encima.
+model ProviderMembership {
+  id         String       @id @default(cuid())
+  userId     String
+  providerId String
+  role       ProviderRole
+
+  createdAt DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, providerId])
+  @@index([providerId, role])
+}
+
+/// La categoría es un valor de una LISTA CERRADA en TypeScript, como las claves
+/// de las preferencias y como los versículos: no una fila que cualquiera añade.
+model ProviderCategoryLink {
+  id         String  @id @default(cuid())
+  providerId String
+  category   String
+  /// Una, y solo una, es la principal. Lo impide un índice único parcial.
+  isPrimary  Boolean @default(false)
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, category])
+  @@index([category, providerId])
+}
+
+/// Un canal de contacto, con SU PROPIO interruptor de publicación. Uno global
+/// es cómo se publica sin querer un número personal.
+model ProviderContact {
+  id         String  @id @default(cuid())
+  providerId String
+  /// phone | whatsapp | email | website | instagram | facebook | tiktok
+  channel    String
+  /// Normalizado: E.164 el teléfono, minúsculas el correo.
+  value      String
+  isPublic   Boolean @default(false)
+  verifiedAt DateTime?
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, channel])
+}
+
+/// Una imagen o un vídeo. Los BYTES no están aquí: están en el almacén de
+/// objetos, y de ellos solo se guarda la llave. La razón, en
+/// `docs/DIRECTORIO-ALMACEN.md`.
+model ProviderMedia {
+  id         String    @id @default(cuid())
+  providerId String
+  kind       MediaKind @default(image)
+
+  /// La llave en el almacén. Nula si es un vídeo externo.
+  objectKey String? @unique
+  /// La miniatura, que es el mismo archivo recortado.
+  thumbKey String? @unique
+  /// Solo para vídeo: YouTube o Vimeo, de una lista blanca.
+  externalUrl String?
+
+  mimeType String?
+  bytes    Int?
+  width    Int?
+  height   Int?
+  /// El texto alternativo, en el idioma principal del proveedor.
+  altText String?
+
+  status       MediaStatus        @default(pending_review)
+  hiddenReason MediaHiddenReason?
+  /// El orden que decide el proveedor: qué foto va primera es media portada.
+  sortOrder Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId, sortOrder])
+  @@index([status, createdAt])
+}
+
+/// Un paso de la cola de moderación. NO son reseñas de clientes: eso no se
+/// construye.
+model ProviderReview {
+  id         String  @id @default(cuid())
+  providerId String
+  mediaId    String?
+
+  /// submitted | approved | rejected | suspended | restored | verified | hidden
+  action  String
+  actorId String?
+  note    String?
+
+  createdAt DateTime @default(now())
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId, createdAt])
+}
+
+/// Una denuncia pública, sin cuenta.
+model ProviderReport {
+  id         String  @id @default(cuid())
+  providerId String
+  mediaId    String?
+
+  reason  ReportReason
+  message String?
+  /// Obligatorio para `copyright`: sin alguien a quien responder no hay
+  /// reclamación, hay un botón de sabotaje.
+  reporterEmail String?
+
+  status     ReportStatus @default(new)
+  resolution String?
+  resolvedAt DateTime?
+  resolvedBy String?
+
+  /// Para el freno por dirección. Se purga a los treinta días.
+  ip String?
+
+  createdAt DateTime @default(now())
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId, status, createdAt])
+  @@index([status, createdAt])
 }

@@ -110,7 +110,12 @@ export async function clean(): Promise<void> {
   await prisma.guest.deleteMany({ where: { token: { startsWith: 'test-' } } });
   await prisma.event.deleteMany({ where: { venueName: { startsWith: 'Prueba' } } });
   await prisma.auditLog.deleteMany({ where: { action: { startsWith: 'order.' } } });
+  // El directorio: se va entero, y con él sus membresías, traducciones,
+  // categorías, contactos, imágenes y denuncias por la cascada. Va ANTES de los
+  // usuarios porque una membresía cuelga de los dos.
+  await prisma.provider.deleteMany({});
   await prisma.user.deleteMany({ where: { email: { startsWith: 'prueba-' } } });
+  await prisma.user.deleteMany({ where: { email: { startsWith: 'prov-' } } });
   await prisma.tenant.deleteMany({ where: { subdomain: { startsWith: 'prueba-' } } });
 }
 

@@ -550,7 +550,14 @@ export interface Dictionary {
       /** El reparto de permisos por rol. */
       roles: {
         capability: Record<
-          'platform:manage' | 'tenant:manage' | 'tenant:staff' | 'event:write' | 'event:read' | 'billing:manage',
+          | 'platform:manage'
+          | 'tenant:manage'
+          | 'tenant:staff'
+          | 'event:write'
+          | 'event:read'
+          | 'billing:manage'
+          | 'provider:manage'
+          | 'directory:moderate',
           string
         >;
         fixed: string;

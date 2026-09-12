@@ -31,6 +31,11 @@ const CONTROL = new Set([
   'plan', 'subscription', 'order', 'payment', 'paymentEvent',
   'sinpeAccount', 'sinpeMovement', 'setting', 'brandAsset', 'auditLog',
   'publicSlug', 'guestToken',
+  // El directorio. Va en CONTROL porque es global —se busca por región, no por
+  // oficina— y con una base por oficina ninguna de ellas podría servir un
+  // listado que las cruza a todas.
+  'provider', 'providerTranslation', 'providerMembership', 'providerCategoryLink',
+  'providerContact', 'providerMedia', 'providerReview', 'providerReport',
 ]);
 
 /** Lo de la oficina: su trabajo. */

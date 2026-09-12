@@ -880,6 +880,45 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   saltaba ahí mismo aunque los mensajes se estuvieran borrando en la misma
   orden. Prisma no sabe declararlo, así que vive en el SQL.
 
+### El directorio de proveedores
+- Vive ENTERO en el plano de CONTROL. Es global —se busca por región, no por
+  oficina— y con `TENANCY=fleet` ninguna base de oficina podría servir un
+  listado que las cruza a todas.
+- NINGUNA clave foránea llega desde el directorio a lo privado de una boda:
+  ni a `Guest`, ni a `Rsvp`, ni a `GuestPreference`, ni a `CheckIn`, ni a
+  `Table`, ni a `GuestActRsvp`. No es una precaución, es la arquitectura: una
+  consulta pública no alcanza la lista de invitados de nadie porque no hay
+  camino. `db:check` lo comprueba contra `pg_constraint` en cada despliegue.
+- Un proveedor NO es una oficina. En `fleet`, dar de alta un `Tenant` crea una
+  base de datos, y un proveedor no tiene datos privados que aislar. Entidad
+  propia, `ProviderMembership` en paralelo a `Membership`, y `Session.providerId`
+  al lado de `tenantId`.
+- Una sesión es de una oficina, de un proveedor, o de ninguna. NUNCA de las dos,
+  y lo impide la BASE (`Session_one_scope`). Sin eso, quien administra un salón
+  y además trabaja en una oficina tendría una sesión que vale para los dos
+  sitios.
+- `ProviderScope` es un tipo MARCADO, como `TenantScope`, y se acuña SOLO
+  comprobando la membresía. Y son DOS funciones de WHERE, no una: `scopedWhere`
+  para lo que cuelga del proveedor y `ownWhere` para el proveedor mismo, cuya
+  columna es `id`. Mezclarlas no compila, que es justo lo que se quiere.
+- Las categorías y las regiones son listas CERRADAS en código, traducidas en el
+  diccionario. Si fueran filas, en un mes habría «fotografo», «Fotógrafo» y
+  «photo» y el buscador no encontraría a nadie. El distrito se valida contra SU
+  gobernación: uno suelto no significa nada.
+- El slug de un proveedor NO translitera el árabe: sale `p-<azar>`. La misma
+  regla que los slugs de invitación. Y es ESTABLE: cambiar el nombre comercial no
+  cambia una dirección que ya se compartió y se indexó.
+- El historial anota QUÉ pasó —el canal, el idioma, las categorías— y jamás el
+  teléfono, el correo ni el texto. Un historial no es una copia del contenido.
+- Lo que impide la base y no el código: una sola categoría principal por
+  proveedor; una imagen tiene llave y un vídeo dirección, nunca las dos ni
+  ninguna; una imagen oculta lleva MOTIVO —porque una reclamación de derechos sin
+  resolver y algo que escondió el proveedor se tratan distinto—; una denuncia de
+  copyright lleva el correo de quien la pone —sin alguien a quien responder no
+  hay reclamación, hay un botón anónimo para tumbar las fotos de un competidor—;
+  y el mapa exige dirección pública, porque publicar por descuido dónde vive
+  quien hace pasteles en su cocina no se arregla después.
+
 ### El almacén de imágenes del directorio
 - Las imágenes de un proveedor NO van a PostgreSQL. Entran por el puerto
   `ObjectStore` (`lib/storage/`), con dos adaptadores: uno compatible con S3

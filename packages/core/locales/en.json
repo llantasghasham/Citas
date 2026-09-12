@@ -552,7 +552,9 @@
           "tenant:staff": "Add and remove people from their office",
           "event:write": "Create events, write versions and import guests",
           "event:read": "See the events and their guests",
-          "billing:manage": "Sell packages, charge and see the billing"
+          "billing:manage": "Sell packages, charge and see the billing",
+          "provider:manage": "Run their business in the directory: profile, texts and images",
+          "directory:moderate": "Moderate the directory: approve, reject, suspend and verify providers"
         },
         "fixed": "fixed, cannot be changed",
         "custom": "changed here",

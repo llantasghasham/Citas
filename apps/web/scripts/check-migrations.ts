@@ -155,6 +155,73 @@ const CHECKS: Check[] = [
     why: 'un slug que sobrevive a su oficina apunta a una base que ya no existe',
   },
   {
+    what: 'una sesión es de una oficina O de un proveedor, nunca de las dos',
+    sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname = 'Session_one_scope'`,
+    expect: (rows) => String(rows[0]?.['def'] ?? '').includes('CHECK'),
+    why: 'sin esto, quien administra un salón y trabaja en una oficina tendría una sesión que vale para los dos sitios',
+  },
+  {
+    what: 'un proveedor tiene UNA categoría principal',
+    sql: `SELECT indexdef FROM pg_indexes WHERE indexname = 'ProviderCategoryLink_one_primary'`,
+    expect: (rows) => String(rows[0]?.['indexdef'] ?? '').includes('UNIQUE'),
+    why: 'con dos, el listado lo enseñaría dos veces y nadie sabría en cuál buscarlo',
+  },
+  {
+    what: 'una imagen tiene llave y un vídeo dirección, nunca las dos',
+    sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname = 'ProviderMedia_image_or_video'`,
+    expect: (rows) => String(rows[0]?.['def'] ?? '').includes('CHECK'),
+    why: 'una fila a medias es un hueco roto en el perfil de alguien',
+  },
+  {
+    what: 'una imagen oculta tiene MOTIVO',
+    sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname = 'ProviderMedia_hidden_needs_reason'`,
+    expect: (rows) => String(rows[0]?.['def'] ?? '').includes('CHECK'),
+    why: 'una reclamación de derechos sin resolver y algo que escondió el proveedor se tratan distinto',
+  },
+  {
+    what: 'una denuncia de copyright lleva el correo de quien la pone',
+    sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname = 'ProviderReport_copyright_needs_email'`,
+    expect: (rows) => String(rows[0]?.['def'] ?? '').includes('CHECK'),
+    why: 'sin alguien a quien responder no hay reclamación: hay un botón anónimo para tumbar las fotos de un competidor',
+  },
+  {
+    what: 'el mapa de un proveedor exige dirección pública',
+    sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname = 'Provider_map_needs_address'`,
+    expect: (rows) => String(rows[0]?.['def'] ?? '').includes('CHECK'),
+    why: 'publicar por descuido dónde vive quien hace pasteles en su cocina no se arregla después',
+  },
+  {
+    /**
+     * La que vale por todas: NINGUNA clave foránea del directorio llega a lo
+     * privado de una boda.
+     *
+     * No es una precaución, es la arquitectura entera: una consulta pública no
+     * puede alcanzar la lista de invitados de nadie porque no hay camino. Y se
+     * comprueba contra el catálogo de PostgreSQL en cada despliegue, no leyendo
+     * el esquema a ojo — que es exactamente lo que se deja de hacer el día que
+     * hay prisa.
+     */
+    what: 'el directorio NO toca nada privado de una boda',
+    sql: `SELECT count(*)::int AS n
+            FROM pg_constraint c
+            JOIN pg_class origen ON origen.oid = c.conrelid
+            JOIN pg_class destino ON destino.oid = c.confrelid
+           WHERE c.contype = 'f'
+             AND origen.relname LIKE 'Provider%'
+             AND destino.relname IN (
+               'Guest', 'Rsvp', 'GuestPreference', 'CheckIn', 'Table',
+               'GuestActRsvp', 'GuestActInvite', 'GuestSegment', 'Event',
+               'EventAct', 'InvitationVersion', 'WhatsappMessage'
+             )`,
+    expect: (rows) => rows[0]?.['n'] === 0,
+    why: 'una sola clave foránea ahí convierte el directorio público en un camino hasta la lista de invitados de una boda',
+  },
+  {
     what: 'el comprobante del SINPE es único por cuenta',
     sql: `SELECT indexdef FROM pg_indexes
            WHERE indexname = 'SinpeMovement_accountId_reference_key'`,
