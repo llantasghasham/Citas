@@ -18,7 +18,20 @@ import {
   submitForReview,
   updateProvider,
 } from '../src/lib/directory/service';
+import {
+  businessHoursBetween,
+  hoursLeft,
+  isOverdue,
+} from '../src/lib/directory/clock';
 import { contactHref } from '../src/lib/directory/contacts';
+import {
+  approveProvider,
+  rejectProvider,
+  restoreProvider,
+  reviewQueue,
+  setVerified,
+  suspendProvider,
+} from '../src/lib/directory/moderation';
 import {
   addImage,
   listMedia,
@@ -1070,6 +1083,214 @@ describe('el panel del proveedor', { skip: HAS_DB ? false : 'sin DATABASE_URL' }
     assert.equal(panelLocale('de', 'es'), 'es');
     // Y sin nada, árabe.
     assert.equal(panelLocale(undefined, null), 'ar');
+  });
+
+  void fixture;
+});
+
+/**
+ * El reloj de las veinticuatro horas HÁBILES.
+ *
+ * Sin base de datos, así que no se salta nunca. Y hace falta porque una fórmula
+ * cerrada —días por ocho, más los extremos— es donde se cuelan los errores de un
+ * día: el fin de semana, el cambio de hora y empezar y terminar la misma tarde.
+ */
+describe('el plazo de la moderación', () => {
+  // Todo en Asia/Beirut, que es la zona de la plataforma. Las fechas se escriben
+  // como instantes UTC y se comprueba lo que marca allí.
+  const beirut = (iso: string): Date => new Date(iso);
+
+  it('un martes por la mañana cuenta las horas de la jornada', () => {
+    // Martes 10:00 → martes 15:00 en Beirut (UTC+3 en verano).
+    const desde = beirut('2026-09-15T07:00:00Z');
+    const hasta = beirut('2026-09-15T12:00:00Z');
+    assert.equal(businessHoursBetween(desde, hasta), 5);
+  });
+
+  it('la noche no cuenta', () => {
+    // Martes 16:00 → miércoles 10:00. Una hora del martes y una del miércoles.
+    const desde = beirut('2026-09-15T13:00:00Z');
+    const hasta = beirut('2026-09-16T07:00:00Z');
+    assert.equal(businessHoursBetween(desde, hasta), 2);
+  });
+
+  it('el fin de semana no cuenta, y por eso el viernes por la tarde no está atrasado el sábado', () => {
+    // Viernes 16:00 en Beirut.
+    const viernes = beirut('2026-09-18T13:00:00Z');
+    // Sábado a mediodía: ha pasado una jornada de nada.
+    assert.equal(businessHoursBetween(viernes, beirut('2026-09-19T09:00:00Z')), 1);
+    assert.equal(isOverdue(viernes, beirut('2026-09-19T09:00:00Z')), false);
+    // Domingo tampoco.
+    assert.equal(isOverdue(viernes, beirut('2026-09-20T09:00:00Z')), false);
+    // El lunes por la tarde van 1 + 8 = 9 horas hábiles: sigue en plazo.
+    assert.equal(isOverdue(viernes, beirut('2026-09-21T13:00:00Z')), false);
+    // El miércoles por la tarde ya son más de veinticuatro.
+    assert.equal(isOverdue(viernes, beirut('2026-09-23T13:00:00Z')), true);
+  });
+
+  it('veinticuatro horas hábiles son TRES jornadas', () => {
+    // Lunes a las 9:00 en Beirut.
+    const lunes = beirut('2026-09-14T06:00:00Z');
+    // Jueves a las 9:00: lunes, martes y miércoles enteros.
+    assert.equal(businessHoursBetween(lunes, beirut('2026-09-17T06:00:00Z')), 24);
+    assert.equal(isOverdue(lunes, beirut('2026-09-17T06:00:00Z')), true);
+    // Un minuto antes, no.
+    assert.equal(isOverdue(lunes, beirut('2026-09-16T13:00:00Z')), false);
+  });
+
+  it('hacia atrás y en el mismo instante es cero, no un número negativo', () => {
+    const ahora = beirut('2026-09-15T07:00:00Z');
+    assert.equal(businessHoursBetween(ahora, ahora), 0);
+    assert.equal(businessHoursBetween(ahora, beirut('2026-09-14T07:00:00Z')), 0);
+    assert.equal(hoursLeft(ahora, ahora), 24);
+    // Y lo que queda nunca baja de cero.
+    assert.equal(hoursLeft(beirut('2026-09-01T06:00:00Z'), ahora), 0);
+  });
+});
+
+/**
+ * La moderación: lo que decide si el directorio se puede enseñar.
+ */
+describe('la moderación', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  let providerId = '';
+  let duenoId = '';
+  let moderadorId = '';
+
+  beforeEach(async () => {
+    const prisma = controlDb();
+    await prisma.provider.deleteMany({});
+    await prisma.user.deleteMany({ where: { email: { startsWith: 'mod-' } } });
+
+    const dueno = await prisma.user.create({
+      data: { email: 'mod-dueno@example.com', locale: 'ar' },
+      select: { id: true },
+    });
+    const moderador = await prisma.user.create({
+      data: { email: 'mod-quien@example.com', locale: 'es', isSuperadmin: true },
+      select: { id: true },
+    });
+    duenoId = dueno.id;
+    moderadorId = moderador.id;
+
+    const result = await createProvider(dueno.id, {
+      legalName: 'Salon a revisar',
+      governorate: 'beirut',
+      district: 'beirut',
+      city: 'Beirut',
+      mainLocale: 'ar',
+    });
+    assert.ok(result.ok);
+    providerId = result.id;
+
+    await setTranslation(unsafeProviderScope(providerId), dueno.id, 'ar', {
+      name: 'قاعة',
+      tagline: '',
+      description: '',
+      services: [],
+    });
+    await setCategories(unsafeProviderScope(providerId), dueno.id, ['wedding_hall'], 'wedding_hall');
+    await submitForReview(unsafeProviderScope(providerId), dueno.id);
+  });
+
+  it('lo mandado sale en la cola, lo más viejo primero', async () => {
+    const cola = await reviewQueue();
+    assert.equal(cola.length, 1);
+    assert.equal(cola[0]?.id, providerId);
+    assert.equal(cola[0]?.overdue, false);
+
+    // Aprobarlo lo saca de la cola y lo pone en la calle.
+    assert.deepEqual(await approveProvider(providerId, moderadorId), { ok: true });
+    assert.deepEqual(await reviewQueue(), []);
+    assert.equal((await listProviders('ar')).length, 1);
+  });
+
+  it('rechazar EXIGE motivo, y el motivo se le enseña a quien lo mandó', async () => {
+    assert.deepEqual(await rejectProvider(providerId, moderadorId, '  '), {
+      ok: false,
+      problems: ['note'],
+    });
+    // Y sigue en revisión: un rechazo que falla no cambia nada.
+    assert.equal((await reviewQueue()).length, 1);
+
+    assert.deepEqual(
+      await rejectProvider(providerId, moderadorId, 'Las fotos son de otro salón.'),
+      { ok: true },
+    );
+    const fila = await controlDb().provider.findUniqueOrThrow({
+      where: { id: providerId },
+      select: { status: true, rejectedNote: true },
+    });
+    assert.equal(fila.status, 'rejected');
+    assert.equal(fila.rejectedNote, 'Las fotos son de otro salón.');
+    assert.deepEqual(await listProviders('ar'), []);
+  });
+
+  it('suspender saca de la calle; volver a publicar NO reescribe la fecha de estreno', async () => {
+    await approveProvider(providerId, moderadorId);
+    const estreno = (
+      await controlDb().provider.findUniqueOrThrow({
+        where: { id: providerId },
+        select: { publishedAt: true },
+      })
+    ).publishedAt;
+    assert.ok(estreno !== null);
+
+    assert.deepEqual(await suspendProvider(providerId, moderadorId, 'Un cliente denunció.'), {
+      ok: true,
+    });
+    assert.deepEqual(await listProviders('ar'), []);
+
+    assert.deepEqual(await restoreProvider(providerId, moderadorId), { ok: true });
+    assert.equal((await listProviders('ar')).length, 1);
+
+    // La fecha de estreno es la de la PRIMERA vez: es lo que ordena el listado,
+    // y reescribirla mandaría arriba del todo lo que solo se revisó otra vez.
+    const despues = await controlDb().provider.findUniqueOrThrow({
+      where: { id: providerId },
+      select: { publishedAt: true },
+    });
+    assert.equal(despues.publishedAt?.getTime(), estreno.getTime());
+  });
+
+  it('verificado NO es lo mismo que aprobado', async () => {
+    await approveProvider(providerId, moderadorId);
+    assert.equal((await listProviders('ar'))[0]?.verified, false);
+
+    assert.deepEqual(await setVerified(providerId, moderadorId, true), { ok: true });
+    assert.equal((await listProviders('ar'))[0]?.verified, true);
+
+    assert.deepEqual(await setVerified(providerId, moderadorId, false), { ok: true });
+    assert.equal((await listProviders('ar'))[0]?.verified, false);
+  });
+
+  it('cada decisión deja su línea, con quién la tomó', async () => {
+    await approveProvider(providerId, moderadorId);
+    await setVerified(providerId, moderadorId, true);
+    await suspendProvider(providerId, moderadorId, 'Se fue del pueblo.');
+
+    const lineas = await controlDb().providerReview.findMany({
+      where: { providerId },
+      orderBy: { createdAt: 'asc' },
+      select: { action: true, actorId: true, note: true },
+    });
+    // La primera la escribió el propio proveedor al mandarlo a revisión.
+    assert.deepEqual(
+      lineas.map((one) => one.action),
+      ['submitted', 'approved', 'verified', 'suspended'],
+    );
+    assert.equal(lineas[1]?.actorId, moderadorId);
+    assert.equal(lineas[3]?.note, 'Se fue del pueblo.');
+    // Y quien lo mandó fue el dueño, no quien modera.
+    assert.equal(lineas[0]?.actorId, duenoId);
+  });
+
+  it('un proveedor que no existe no se aprueba', async () => {
+    assert.deepEqual(await approveProvider('cmtyinventadoinventado00', moderadorId), {
+      ok: false,
+      problems: ['notFound'],
+    });
   });
 
   void fixture;

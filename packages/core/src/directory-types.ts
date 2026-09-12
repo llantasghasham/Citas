@@ -203,4 +203,33 @@ export interface DirectoryDictionary {
       badVideo: string;
     };
   };
+
+  /**
+   * La moderación. Va aquí y no en el diccionario del producto porque son las
+   * palabras de este módulo, y las de estado ya están escritas arriba.
+   */
+  moderation: {
+    title: string;
+    queue: string;
+    mediaQueue: string;
+    empty: string;
+    waiting: string;
+    overdue: string;
+    hoursLeft: string;
+    review: string;
+    approve: string;
+    reject: string;
+    suspend: string;
+    restore: string;
+    verify: string;
+    unverify: string;
+    hide: string;
+    purge: string;
+    purgeHelp: string;
+    note: string;
+    noteRequired: string;
+    history: string;
+    images: string;
+    languages: string;
+  };
 }

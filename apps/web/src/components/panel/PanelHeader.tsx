@@ -47,6 +47,13 @@ export async function PanelHeader({ session }: { session: AuthenticatedSession }
     },
     // Names the environment variables that are unset, which is a map of the
     // machine's weak spots: the platform's own account only.
+    {
+      href: '/panel/moderacion',
+      label: nav.moderation,
+      // Quien modera el directorio no es necesariamente quien lleva la
+      // plataforma: es su propia capacidad, y por eso su propio enlace.
+      visible: sessionCan(session, 'directory:moderate'),
+    },
     { href: '/panel/sistema', label: nav.system, visible: sessionCan(session, 'platform:manage') },
   ].filter((link) => link.visible);
 

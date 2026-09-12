@@ -509,6 +509,7 @@ export interface Dictionary {
       | 'manual'
       | 'system'
       | 'config'
+      | 'moderation'
       | 'profile',
       string
     >;

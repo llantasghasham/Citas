@@ -237,5 +237,29 @@
       "tooManyPixels": "La photo est trop grande.",
       "badVideo": "YouTube ou Vimeo uniquement, en https."
     }
+  },
+  "moderation": {
+    "title": "Modération",
+    "queue": "Profils en attente",
+    "mediaQueue": "Photos en attente",
+    "empty": "Rien n'attend.",
+    "waiting": "Envoyé le {date}",
+    "overdue": "EN RETARD",
+    "hoursLeft": "Il reste {count} h ouvrées",
+    "review": "Examiner",
+    "approve": "Publier",
+    "reject": "Refuser",
+    "suspend": "Suspendre",
+    "restore": "Republier",
+    "verify": "Marquer vérifié",
+    "unverify": "Retirer la vérification",
+    "hide": "Masquer",
+    "purge": "Supprimer pour de bon",
+    "purgeHelp": "Supprime le fichier du stockage. C'est irréversible.",
+    "note": "Motif",
+    "noteRequired": "Refuser et suspendre exigent un motif : sans lui, personne ne sait quoi corriger.",
+    "history": "Historique",
+    "images": "Photos",
+    "languages": "Langues écrites"
   }
 }
