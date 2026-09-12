@@ -36,6 +36,7 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
       id: true,
       locale: true,
       openedAt: true,
+      eventId: true,
       event: {
         select: {
           // Oldest first: when this guest's language was never written, the
@@ -56,6 +57,22 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
       .update({ where: { id: guest.id }, data: { openedAt: new Date() } })
       .catch(() => undefined);
   }
+
+  // Cada apertura, no solo la primera. `openedAt` dice «la abrió alguna vez», y
+  // con eso no se distingue a quien la abrió y no contestó —a ese hay que
+  // escribirle— de quien no la abrió nunca —a ese hay que mandársela otra vez—,
+  // que son dos conversaciones distintas.
+  //
+  // Solo desde el enlace PERSONAL. Contar también las aperturas anónimas
+  // significaría una escritura por cada visita a una página pública que se
+  // reenvía a grupos enteros: cualquiera con el enlace podría llenar la tabla
+  // recargando. Aquí el número de filas lo acota el número de invitados.
+  //
+  // No se guarda ni la IP ni el navegador: para saber si un enlace funciona no
+  // hace falta saber desde dónde se abrió.
+  await prisma.invitationVisit
+    .create({ data: { eventId: guest.eventId, guestId: guest.id, via: 'personal' } })
+    .catch(() => undefined);
 
   const store = await cookies();
   store.set(guestCookieName(version.slug), token, {

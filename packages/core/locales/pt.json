@@ -764,6 +764,81 @@
         "lastOne": "O ato principal não se pode remover."
       }
     },
+    "gate": {
+      "heading": "Porta",
+      "link": "Porta do evento",
+      "back": "Voltar ao evento",
+      "intro": "Verifica-se o código do convidado e regista-se quem entra. O código é por ato: o da receção não serve para a henna.",
+      "actLabel": "Ato",
+      "codeLabel": "Código do convidado",
+      "peopleLabel": "Quantos entram",
+      "gateLabel": "Porta (opcional)",
+      "submit": "Registar entrada",
+      "inside": "{count} dentro · {seats} lugares ocupados",
+      "listIn": "Entraram",
+      "listPending": "Faltam",
+      "empty": "Ainda não entrou ninguém.",
+      "undo": "Desfazer",
+      "ok": "Entrou {name}, {people}.",
+      "errors": {
+        "bad_code": "Esse código não serve para este ato.",
+        "not_invited": "Não está convidado para este ato.",
+        "too_many": "Traz mais gente do que a autorizada para este ato.",
+        "already_checked_in": "Já entrou às {time}."
+      }
+    },
+    "campaigns": {
+      "heading": "Envios",
+      "link": "Envios deste evento",
+      "back": "Voltar ao evento",
+      "intro": "Um envio a um grupo, para um ato, com um texto. Antes de enviar vê-se a quem chega e a quem não, e porquê.",
+      "actLabel": "Para que ato",
+      "wholeEvent": "A celebração inteira",
+      "segmentLabel": "A que grupo",
+      "everyone": "Todos os que possam entrar",
+      "connectionLabel": "De que número",
+      "preview": "Ver a quem chegaria",
+      "send": "Enviar",
+      "willReach": "Chegaria a {count}",
+      "excluded": "Ficam de fora {count}",
+      "reasons": {
+        "not_authorized": "não entram nesse ato",
+        "no_phone": "sem telefone",
+        "no_consent": "sem permissão para lhes escrever",
+        "opted_out": "pediram para não receber nada",
+        "already_sent": "já lhes foi enviado"
+      },
+      "empty": "Ainda não se enviou nada.",
+      "results": "{sent} enviados · {failed} falhados · {excluded} fora"
+    },
+    "consent": {
+      "heading": "Permissões",
+      "link": "Permissão para escrever",
+      "back": "Voltar ao evento",
+      "intro": "Ter o telefone de alguém não é ter a sua permissão para lhe escrever. Aqui regista-se quem a deu, para quê e de onde saiu.",
+      "withConsent": "{count} com permissão",
+      "optedOut": "{count} em baixa",
+      "without": "{count} sem permissão nem baixa",
+      "grant": "Registar permissão",
+      "revoke": "Retirar a permissão",
+      "optOut": "Dar baixa",
+      "purposeLabel": "Para quê",
+      "channelLabel": "Por onde",
+      "sourceLabel": "De onde saiu",
+      "sourcePlaceholder": "«disse-o ao telefone», «formulário do site»…",
+      "purposes": {
+        "invitation": "O seu convite",
+        "reminder": "Lembretes",
+        "marketing": "Ofertas"
+      },
+      "channels": {
+        "whatsapp": "WhatsApp",
+        "email": "Correio",
+        "sms": "SMS"
+      },
+      "warning": "A baixa ganha sempre: à permissão, e a reimportar a lista.",
+      "empty": "Este evento ainda não tem convidados."
+    },
     "versions": {
       "heading": "Idiomas do convite",
       "hint": "Cada convidado abre a versão no seu idioma. Quem não tiver a sua vê a primeira.",

@@ -764,6 +764,81 @@
         "lastOne": "El acto principal no se puede quitar."
       }
     },
+    "gate": {
+      "heading": "Puerta",
+      "link": "Puerta del evento",
+      "back": "Volver al evento",
+      "intro": "Se comprueba el código del invitado y se anota quién entra. El código es por acto: el de la recepción no sirve para la henna.",
+      "actLabel": "Acto",
+      "codeLabel": "Código del invitado",
+      "peopleLabel": "Cuántos entran",
+      "gateLabel": "Puerta (opcional)",
+      "submit": "Anotar entrada",
+      "inside": "{count} dentro · {seats} sillas comprometidas",
+      "listIn": "Han entrado",
+      "listPending": "Faltan",
+      "empty": "Todavía no ha entrado nadie.",
+      "undo": "Deshacer",
+      "ok": "Entró {name}, {people}.",
+      "errors": {
+        "bad_code": "Ese código no vale para este acto.",
+        "not_invited": "No está invitado a este acto.",
+        "too_many": "Trae más gente de la autorizada para este acto.",
+        "already_checked_in": "Ya entró a las {time}."
+      }
+    },
+    "campaigns": {
+      "heading": "Envíos",
+      "link": "Envíos de este evento",
+      "back": "Volver al evento",
+      "intro": "Un envío a un grupo, para un acto, con un texto. Antes de mandar nada se ve a quién le llega y a quién no, y por qué.",
+      "actLabel": "Para qué acto",
+      "wholeEvent": "La celebración entera",
+      "segmentLabel": "A qué grupo",
+      "everyone": "Todos los que puedan entrar",
+      "connectionLabel": "Desde qué número",
+      "preview": "Ver a quién le llegaría",
+      "send": "Mandar",
+      "willReach": "Le llegaría a {count}",
+      "excluded": "Se quedan fuera {count}",
+      "reasons": {
+        "not_authorized": "no entran a ese acto",
+        "no_phone": "sin teléfono",
+        "no_consent": "sin permiso para escribirles",
+        "opted_out": "pidieron no recibir nada",
+        "already_sent": "ya se les mandó"
+      },
+      "empty": "Todavía no se ha mandado nada.",
+      "results": "{sent} mandados · {failed} fallidos · {excluded} fuera"
+    },
+    "consent": {
+      "heading": "Permisos",
+      "link": "Permisos para escribir",
+      "back": "Volver al evento",
+      "intro": "Tener el teléfono de alguien no es tener su permiso para escribirle. Aquí se anota quién lo dio, para qué y de dónde salió.",
+      "withConsent": "{count} con permiso",
+      "optedOut": "{count} de baja",
+      "without": "{count} sin permiso ni baja",
+      "grant": "Anotar permiso",
+      "revoke": "Quitar el permiso",
+      "optOut": "Dar de baja",
+      "purposeLabel": "Para qué",
+      "channelLabel": "Por dónde",
+      "sourceLabel": "De dónde salió",
+      "sourcePlaceholder": "«lo dijo por teléfono», «formulario de la web»…",
+      "purposes": {
+        "invitation": "Su invitación",
+        "reminder": "Recordatorios",
+        "marketing": "Ofertas"
+      },
+      "channels": {
+        "whatsapp": "WhatsApp",
+        "email": "Correo",
+        "sms": "SMS"
+      },
+      "warning": "La baja gana siempre: sobre el permiso, y sobre volver a importar la lista.",
+      "empty": "Este evento todavía no tiene invitados."
+    },
     "versions": {
       "heading": "Idiomas de la invitación",
       "hint": "Cada invitado abre la versión en su idioma. Quien no tenga la suya verá la primera.",

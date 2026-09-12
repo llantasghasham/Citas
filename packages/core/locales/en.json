@@ -764,6 +764,81 @@
         "lastOne": "The main act cannot be removed."
       }
     },
+    "gate": {
+      "heading": "Door",
+      "link": "Event door",
+      "back": "Back to the event",
+      "intro": "The guest's code is checked and who comes in is recorded. The code is per act: the reception one does not work for the henna.",
+      "actLabel": "Act",
+      "codeLabel": "Guest code",
+      "peopleLabel": "How many come in",
+      "gateLabel": "Door (optional)",
+      "submit": "Record entry",
+      "inside": "{count} inside · {seats} seats taken",
+      "listIn": "Came in",
+      "listPending": "Still to come",
+      "empty": "Nobody has come in yet.",
+      "undo": "Undo",
+      "ok": "{name} came in, {people}.",
+      "errors": {
+        "bad_code": "That code is not valid for this act.",
+        "not_invited": "Not invited to this act.",
+        "too_many": "More people than authorised for this act.",
+        "already_checked_in": "Already came in at {time}."
+      }
+    },
+    "campaigns": {
+      "heading": "Sends",
+      "link": "Sends for this event",
+      "back": "Back to the event",
+      "intro": "One send to one group, for one act, with one text. Before sending anything you see who it reaches and who it does not, and why.",
+      "actLabel": "For which act",
+      "wholeEvent": "The whole celebration",
+      "segmentLabel": "To which group",
+      "everyone": "Everyone who may come",
+      "connectionLabel": "From which number",
+      "preview": "See who it would reach",
+      "send": "Send",
+      "willReach": "Would reach {count}",
+      "excluded": "{count} left out",
+      "reasons": {
+        "not_authorized": "not in that act",
+        "no_phone": "no phone",
+        "no_consent": "no permission to write to them",
+        "opted_out": "asked not to receive anything",
+        "already_sent": "already sent"
+      },
+      "empty": "Nothing has been sent yet.",
+      "results": "{sent} sent · {failed} failed · {excluded} left out"
+    },
+    "consent": {
+      "heading": "Permissions",
+      "link": "Permission to write",
+      "back": "Back to the event",
+      "intro": "Having someone's phone number is not having their permission to write to them. Here you record who gave it, what for, and where it came from.",
+      "withConsent": "{count} with permission",
+      "optedOut": "{count} opted out",
+      "without": "{count} with neither",
+      "grant": "Record permission",
+      "revoke": "Remove the permission",
+      "optOut": "Opt out",
+      "purposeLabel": "What for",
+      "channelLabel": "Through what",
+      "sourceLabel": "Where it came from",
+      "sourcePlaceholder": "«said so on the phone», «website form»…",
+      "purposes": {
+        "invitation": "Their invitation",
+        "reminder": "Reminders",
+        "marketing": "Offers"
+      },
+      "channels": {
+        "whatsapp": "WhatsApp",
+        "email": "Email",
+        "sms": "SMS"
+      },
+      "warning": "The opt-out always wins: over the permission, and over importing the list again.",
+      "empty": "This event has no guests yet."
+    },
     "versions": {
       "heading": "Invitation languages",
       "hint": "Each guest opens the version in their own language. Anyone without one sees the first.",

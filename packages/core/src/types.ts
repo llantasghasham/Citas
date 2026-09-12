@@ -1011,6 +1011,81 @@ export interface Dictionary {
         lastOne: string;
       };
     };
+    gate: {
+      heading: string;
+      link: string;
+      back: string;
+      intro: string;
+      actLabel: string;
+      codeLabel: string;
+      peopleLabel: string;
+      gateLabel: string;
+      submit: string;
+      inside: string;
+      listIn: string;
+      listPending: string;
+      empty: string;
+      undo: string;
+      ok: string;
+      errors: {
+        bad_code: string;
+        not_invited: string;
+        too_many: string;
+        already_checked_in: string;
+      };
+    };
+    campaigns: {
+      heading: string;
+      link: string;
+      back: string;
+      intro: string;
+      actLabel: string;
+      wholeEvent: string;
+      segmentLabel: string;
+      everyone: string;
+      connectionLabel: string;
+      preview: string;
+      send: string;
+      willReach: string;
+      excluded: string;
+      reasons: {
+        not_authorized: string;
+        no_phone: string;
+        no_consent: string;
+        opted_out: string;
+        already_sent: string;
+      };
+      empty: string;
+      results: string;
+    };
+    consent: {
+      heading: string;
+      link: string;
+      back: string;
+      intro: string;
+      withConsent: string;
+      optedOut: string;
+      without: string;
+      grant: string;
+      revoke: string;
+      optOut: string;
+      purposeLabel: string;
+      channelLabel: string;
+      sourceLabel: string;
+      sourcePlaceholder: string;
+      purposes: {
+        invitation: string;
+        reminder: string;
+        marketing: string;
+      };
+      channels: {
+        whatsapp: string;
+        email: string;
+        sms: string;
+      };
+      warning: string;
+      empty: string;
+    };
     /** One invitation, written out in each language its guests read. */
     versions: {
       heading: string;
