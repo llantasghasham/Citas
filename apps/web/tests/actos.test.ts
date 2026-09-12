@@ -2,6 +2,16 @@ import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 
 import { agendaFor, publicActs } from '../src/lib/acts/access';
+import {
+  addAct,
+  editAct,
+  moveAct,
+  readActs,
+  removeAct,
+  setActAudience,
+  type ActInput,
+} from '../src/lib/acts/service';
+import { addSegment, fillSegment, readSegments, segmentKey } from '../src/lib/acts/segments';
 import { answerAct, summarise } from '../src/lib/acts/rsvp';
 import { controlDb } from '../src/lib/db/client';
 import { tenantScope } from '../src/lib/db/tenant';
@@ -346,5 +356,148 @@ describe('el resumen se calcula, no se escribe', () => {
       'declined',
     );
     assert.equal(summarise([]), null);
+  });
+});
+
+describe('el editor de actos', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+  const scope = () => tenantScope(fixture.get().tenantId);
+
+  let eventId = '';
+  let otroEvento = '';
+
+  const campos = (extra: Partial<ActInput> = {}): ActInput => ({
+    type: 'henna',
+    label: '',
+    date: '2026-07-02',
+    time: '20:00',
+    endTime: '',
+    timezone: 'Asia/Beirut',
+    venueName: 'Casa',
+    venueAddress: 'Beirut',
+    venueMapUrl: '',
+    capacity: '',
+    optional: false,
+    rsvpEnabled: true,
+    rsvpDeadline: '',
+    visibility: 'segmented',
+    ...extra,
+  });
+
+  beforeEach(async () => {
+    eventId = await makeEvent(fixture.get().tenantId);
+    otroEvento = await makeEvent(fixture.get().tenantId);
+  });
+
+  it('un 30 de febrero no pasa, aunque tenga forma de fecha', async () => {
+    const result = await addAct(scope(), eventId, campos({ date: '2026-02-30' }), fixture.get().userId);
+    assert.deepEqual(result, { ok: false, problems: ['date'] });
+    assert.equal((await readActs(scope(), eventId))?.length, 0);
+  });
+
+  it('un plazo que vence DESPUÉS de la fiesta no es un plazo', async () => {
+    const tarde = await addAct(
+      scope(), eventId, campos({ rsvpDeadline: '2026-07-03' }), fixture.get().userId,
+    );
+    assert.deepEqual(tarde, { ok: false, problems: ['deadline'] });
+
+    const bien = await addAct(
+      scope(), eventId, campos({ rsvpDeadline: '2026-06-25' }), fixture.get().userId,
+    );
+    assert.equal(bien.ok, true);
+  });
+
+  it('el acto de otra boda no se edita ni se mueve desde aquí', async () => {
+    const ajeno = await addAct(scope(), otroEvento, campos(), fixture.get().userId);
+    assert.equal(ajeno.ok, true);
+    const ajenoId = ajeno.ok ? ajeno.id : '';
+
+    // El id viaja en un campo oculto del formulario: es un dato del cliente.
+    const editado = await editAct(
+      scope(), eventId, ajenoId, campos({ venueName: 'Secuestrada' }), fixture.get().userId,
+    );
+    assert.deepEqual(editado, { ok: false, problems: ['notFound'] });
+    assert.equal(await moveAct(scope(), eventId, ajenoId, 'up'), false);
+
+    const sigueIgual = await readActs(scope(), otroEvento);
+    assert.equal(sigueIgual?.[0]?.venueName, 'Casa');
+  });
+
+  it('subir y bajar intercambia el orden, y no se sale por los extremos', async () => {
+    const uno = await addAct(scope(), eventId, campos({ type: 'henna' }), fixture.get().userId);
+    const dos = await addAct(scope(), eventId, campos({ type: 'ceremony' }), fixture.get().userId);
+    assert.ok(uno.ok && dos.ok);
+
+    assert.equal(await moveAct(scope(), eventId, dos.ok ? dos.id : '', 'up'), true);
+    const orden = (await readActs(scope(), eventId))?.map((act) => act.type);
+    assert.deepEqual(orden, ['ceremony', 'henna']);
+
+    // El primero ya no sube más: no hay con quién intercambiarse.
+    assert.equal(await moveAct(scope(), eventId, dos.ok ? dos.id : '', 'up'), false);
+  });
+
+  it('el acto principal no se quita', async () => {
+    const prisma = controlDb();
+    const principal = await prisma.eventAct.create({
+      data: {
+        eventId, type: 'reception', date: '2026-07-04', time: '20:00',
+        timezone: 'Asia/Beirut', venueName: 'Salon', venueAddress: 'Beirut',
+        venueMapUrl: 'https://m.example', isMain: true,
+      },
+      select: { id: true },
+    });
+    // Es de donde sale la respuesta que leen las mesas y la exportación.
+    assert.deepEqual(
+      await removeAct(scope(), eventId, principal.id, fixture.get().userId),
+      { ok: false, reason: 'main' },
+    );
+    assert.equal(await prisma.eventAct.count({ where: { id: principal.id } }), 1);
+  });
+
+  it('un grupo de otra boda no se puede colgar de este acto', async () => {
+    const acto = await addAct(scope(), eventId, campos(), fixture.get().userId);
+    const ajeno = await addSegment(scope(), otroEvento, 'Familia', fixture.get().userId);
+    assert.ok(acto.ok && ajeno.ok);
+
+    assert.equal(
+      await setActAudience(
+        scope(), eventId, acto.ok ? acto.id : '', ajeno.ok ? ajeno.id : '', 'allow', fixture.get().userId,
+      ),
+      false,
+    );
+    assert.equal(await controlDb().actAudience.count({ where: { eventId } }), 0);
+  });
+
+  it('«meter a todos» mete a todos y no duplica al repetirlo', async () => {
+    const prisma = controlDb();
+    for (const name of ['Rami', 'Nour', 'Layla']) {
+      await prisma.guest.create({
+        data: { eventId, name, locale: 'ar', token: `test-actos-f-${name}-${Date.now()}` },
+      });
+    }
+    const grupo = await addSegment(scope(), eventId, 'Todos', fixture.get().userId);
+    assert.ok(grupo.ok);
+    const id = grupo.ok ? grupo.id : '';
+
+    assert.equal(await fillSegment(scope(), eventId, id), 3);
+    // La segunda vez no añade ninguno: el índice único lo impide y
+    // `skipDuplicates` lo convierte en cero en vez de en un error.
+    assert.equal(await fillSegment(scope(), eventId, id), 0);
+    assert.equal((await readSegments(scope(), eventId))?.[0]?.members, 3);
+  });
+});
+
+describe('la clave de un grupo no translitera', () => {
+  it('un nombre en latín da una clave legible', () => {
+    assert.equal(segmentKey('Familia de la novia', []), 'familia-de-la-novia');
+    assert.equal(segmentKey('VIP', ['vip']), 'vip-2');
+  });
+
+  it('un nombre en árabe NO se translitera', () => {
+    // Transliterar un apellido árabe automáticamente es exactamente lo que este
+    // proyecto prohíbe en los slugs. No hay razón para hacerlo aquí y no allí.
+    const clave = segmentKey('عائلة العروس', []);
+    assert.equal(clave, 'grupo');
+    assert.match(segmentKey('عائلة العريس', ['grupo']), /^grupo-2$/);
   });
 });

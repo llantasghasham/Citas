@@ -442,6 +442,19 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   las mesas cortas.
 - Un solo acto PRINCIPAL por evento, y lo impide un índice único parcial: dos
   principales serían dos respuestas globales distintas y ninguna mandaría.
+- El editor vive en `/panel/eventos/[eventId]/actos`: los actos, su orden, sus
+  sedes y qué grupo entra a cada uno. Sin JavaScript de cliente, como el resto —
+  cada acto es un `<details>` con su formulario y cada regla de grupo es otro.
+  El id del acto y el del grupo viajan en campos ocultos, así que son datos del
+  cliente: `lib/acts/service.ts` resuelve oficina Y evento antes de tocar nada, y
+  un id de otra boda no encuentra fila en vez de encontrarla y escribirla.
+- Subir y bajar un acto INTERCAMBIA los dos `order` en una transacción, y por eso
+  `order` no lleva índice único: con él, el intercambio tendría que pasar por un
+  valor temporal para no chocar consigo mismo.
+- La clave de un grupo sale del nombre solo cuando el nombre tiene letras
+  latinas. «عائلة العروس» NO se translitera: sale `grupo-2`. Transliterar un
+  nombre árabe automáticamente es lo que este proyecto prohíbe en los slugs, y no
+  hay razón para hacerlo aquí y no allí.
 - La migración no rompe nada: cada evento que ya existía estrena su acto
   principal con su fecha y su sede, un grupo «todos» con todos sus invitados
   dentro, la regla que los deja pasar, y sus respuestas copiadas. Un evento de

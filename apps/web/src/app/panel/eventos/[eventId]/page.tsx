@@ -167,6 +167,14 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           <a className="text-sm underline text-[#8a6c22]" href={`/api/events/${eventId}/guests`}>
             {copy.exportCsv}
           </a>
+          {/* Los actos. Va antes que las mesas porque decide lo de antes: a qué
+              parte de la celebración está invitado cada uno. */}
+          <a
+            className="text-sm underline text-[#8a6c22]"
+            href={`/panel/eventos/${eventId}/actos`}
+          >
+            {dictionary.admin.acts.link}
+          </a>
           {/* El reparto del salón. Va junto a la lista de invitados porque es
               lo mismo mirado de otra manera: quién viene y dónde se sienta. */}
           <a
