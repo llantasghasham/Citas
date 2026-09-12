@@ -178,6 +178,38 @@
             "Publicar exige sesión y consume un evento de su plan. El límite se comprueba en el servidor al publicar."
           ]
         },
+        "acts": {
+          "title": "Los actos de la celebración",
+          "steps": [
+            "Una boda no es una fecha. Puede ser henna el jueves en casa, ceremonia el sábado y recepción esa noche en un salón, y a cada una va gente distinta. Eso son los ACTOS, y se editan en el evento, en «Actos de la celebración».",
+            "Cada evento que ya existía tiene un acto PRINCIPAL con su fecha y su sitio de siempre. Ese no se puede quitar: es de donde sale la respuesta que leen las mesas y la exportación. Los demás se añaden, se ordenan y se quitan cuando haga falta.",
+            "Cada acto lleva su día, su hora, su sitio y, si quiere, su aforo y su propio plazo para confirmar. Puede estar en otra zona horaria que el resto: una fiesta previa en Costa Rica y la boda en Beirut es el mismo evento.",
+            "El aforo es un AVISO, no una barrera. Quien monta el salón sabe cuándo cabe una silla más y el programa no.",
+            "«Quién lo ve» empieza en «solo los grupos que yo diga», y es a propósito: un acto íntimo puesto en público no se vuelve a esconder, porque el enlace ya se reenvió al grupo de WhatsApp.",
+            "El tipo del acto (henna, zaffe, ceremonia…) es solo una etiqueta para ordenar y elegir icono. «Cómo lo llaman» es el nombre de verdad: escriba ahí lo que diga su familia."
+          ]
+        },
+        "segments": {
+          "title": "Grupos de invitados",
+          "steps": [
+            "Un grupo es «la familia de la novia», «los del trabajo», «los VIP». Se crea en la misma pantalla de los actos.",
+            "Meter gente en un grupo es marcar casillas. Ojo: al guardar, el grupo queda con EXACTAMENTE los marcados. Desmarcar a alguien lo saca.",
+            "«Meter a todos» mete a todos los invitados del evento de una vez. Repetirlo no duplica a nadie.",
+            "Después, en cada acto, se dice qué grupo ENTRA y cuál NO. «No entra» gana sobre «entra»: así se dice «toda la familia menos los del pueblo» sin tener que enumerar a los demás.",
+            "Un invitado que no esté en ningún grupo permitido NO ve ese acto. Si no aparece en ninguno, no hay invitación que mandarle — y eso sale avisado arriba, en «Lo que falta por arreglar».",
+            "Para una excepción con nombre y apellido no hace falta inventarse un grupo de una persona: se invita a alguien a un acto suelto, y eso gana incluso sobre un «no entra» de grupo."
+          ]
+        },
+        "preview": {
+          "title": "Ver lo que verá cada invitado",
+          "steps": [
+            "En la pantalla de actos, abajo, está «Qué ve cada invitado». Elija a alguien y salga lo que le va a llegar.",
+            "No es una maqueta: es la misma cuenta que se hace cuando esa persona abre su enlace. Si aquí no aparece la henna, a esa persona no le va a aparecer.",
+            "Es la única forma de comprobar una regla sin preguntárselo a un invitado. Úselo SIEMPRE antes de mandar nada.",
+            "Sale también con cuántos acompañantes puede traer a cada acto y si ya contestó.",
+            "El enlace de esa pantalla se puede copiar y pasar: «mira lo que le llega a Rami»."
+          ]
+        },
         "languages": {
           "title": "Los idiomas",
           "steps": [
@@ -229,6 +261,17 @@
             "Empiece con pocos envíos y suba despacio, en semanas y no en horas. El tope diario se ajusta en la fila de cada número."
           ]
         },
+        "consent": {
+          "title": "Permiso para escribir, y bajas",
+          "steps": [
+            "Tener el teléfono de alguien NO es tener su permiso para escribirle. Importar una lista de un Excel tampoco. Son dos cosas distintas y el sistema las guarda separadas.",
+            "El permiso se anota por canal (WhatsApp, correo) y por PARA QUÉ: quien acepta recibir su invitación no ha aceptado recibir ofertas.",
+            "Se guarda de dónde salió el permiso y con qué texto se pidió. Un permiso que no se puede enseñar no sirve para defenderse de una queja.",
+            "La BAJA gana siempre. Si alguien pide que no se le escriba, no se le escribe — aunque haya un permiso apuntado y aunque se vuelva a importar la lista.",
+            "Una campaña no manda nada a quien no tiene permiso. Esos salen en la lista de excluidos, con el motivo, para que se vea a cuántos hay que pedírselo.",
+            "Recuerde lo que dice la pantalla de WhatsApp en rojo: mandar desde un número propio conectado por código QR va contra los términos de WhatsApp, y el número que pueden cerrar es el de su cliente."
+          ]
+        },
         "packages": {
           "title": "Vender paquetes y cobrar",
           "steps": [
@@ -261,6 +304,16 @@
             "Si alguien se sienta y luego dice que no viene, no se le levanta solo: queda señalado en su mesa y lo decide una persona.",
             "Hay dos listas para imprimir: por mesa, para el salón y el catering; y por invitado en orden alfabético, para quien está en la puerta.",
             "El invitado ve su mesa en su enlace personal, el mismo que ya tiene en el móvil."
+          ]
+        },
+        "gate": {
+          "title": "La puerta el día del evento",
+          "steps": [
+            "Cada invitado tiene un código por acto. El de la recepción no sirve para la henna: son actos distintos con listas distintas.",
+            "En la puerta se comprueba el código y se anota la entrada, con cuánta gente entra.",
+            "Si intenta entrar más gente de la que tenía autorizada para ESE acto, no pasa. El tope es por acto: quien trae acompañante a la recepción no lo trae por eso a la henna.",
+            "Un segundo intento con el mismo código dice «ya entró» y la hora de la primera vez. No dice nada más: en una puerta hay gente delante mirando la pantalla.",
+            "Una entrada apuntada por error se puede deshacer, y queda registrado quién la deshizo."
           ]
         },
         "image": {

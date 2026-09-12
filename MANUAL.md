@@ -460,6 +460,110 @@ mira cada cuarto de hora y encola cuando toca.
 
 Comprobar que corre: `systemctl status citas-recordatorios.timer`.
 
+## 4 quaterdecies. Una boda de varios días: los actos
+
+Una boda libanesa puede ser henna el jueves en casa, ceremonia el sábado y
+recepción esa noche en un salón — y a cada una va gente distinta. Eso son los
+**actos**, y se editan en el evento, en «Actos de la celebración».
+
+```
+/panel/eventos/<id>/actos
+```
+
+El evento que ya existía tiene un acto **principal** con su fecha y su sitio de
+siempre. Ese no se quita: es de donde sale la respuesta que leen las mesas y la
+exportación. Los demás se añaden, se ordenan con «subir» y «bajar», y se quitan.
+
+Cada acto lleva su día, su hora, su sitio, y si hace falta su aforo y su propio
+plazo para confirmar. Puede estar **en otra zona horaria** que el resto: una
+fiesta previa en Costa Rica y la boda en Beirut son el mismo evento.
+
+Dos cosas que conviene entender antes de tocar nada:
+
+- **El aforo es un aviso, no una barrera.** Quien monta el salón sabe cuándo cabe
+  una silla más y el programa no.
+- **«Quién lo ve» empieza cerrado**, y es a propósito. Un acto íntimo puesto en
+  público no se vuelve a esconder: el enlace ya se reenvió al grupo de WhatsApp.
+
+### Los grupos
+
+Un grupo es «la familia de la novia», «los del trabajo», «los VIP». Se crean en
+la misma pantalla, y meter gente es marcar casillas.
+
+> **Ojo.** Al guardar, el grupo queda con **exactamente** los marcados.
+> Desmarcar a alguien lo saca. Es así porque una casilla desmarcada no manda
+> nada: lo que llega es quién se queda dentro.
+
+Después, en cada acto, se dice qué grupo **entra** y cuál **no**. «No entra» gana
+sobre «entra», y eso es lo que permite decir «toda la familia menos los del
+pueblo» sin enumerar a los demás uno por uno.
+
+Para una excepción con nombre y apellido no hace falta inventarse un grupo de una
+persona: se invita a alguien a un acto suelto, y eso gana **incluso** sobre un
+«no entra» de su grupo — quien escribió el nombre sabía lo que había.
+
+### Comprobarlo antes de mandar nada
+
+Abajo del todo está **«Qué ve cada invitado»**. Se elige a alguien y sale la
+agenda que le va a llegar.
+
+No es una maqueta: es la misma cuenta que se hace cuando esa persona abre su
+enlace. Si aquí no aparece la henna, a esa persona no le va a aparecer. **Úselo
+siempre antes de mandar nada** — es la única forma de comprobar una regla sin
+preguntársela a un invitado.
+
+Y arriba, en **«Lo que falta por arreglar»**, salen los agujeros silenciosos: a
+quién no le corresponde ningún acto (no hay invitación que mandarle) y a quién no
+hay por dónde avisar. Con nombres, no solo con un número.
+
+### Lo que ve el invitado
+
+En su enlace personal ve **su** programa y contesta acto por acto, con el tope de
+acompañantes de cada acto. Quien llega por un reenvío —sin enlace personal— ve
+solo los actos públicos y contesta a la celebración entera, nunca a un acto
+privado.
+
+El calendario (`/api/calendar/<slug>`) devuelve **una cita por acto**, cada una
+con su zona horaria. Si el invitado abre el enlace con su cookie personal, baja
+las suyas; si no, las públicas.
+
+### La lista de cada acto
+
+Cada acto tiene su propia descarga: la cena y la henna no tienen la misma gente
+ni el mismo día, y eso es lo que se le manda al salón y al catering.
+
+## 4 quindecies. Permiso para escribir, y bajas
+
+Tener el teléfono de alguien **no** es tener su permiso para escribirle.
+Importar una lista de un Excel tampoco. El sistema guarda las dos cosas
+separadas, y esa separación es lo que permite hablar de cumplimiento y no solo de
+envío.
+
+- El permiso se anota **por canal** (WhatsApp, correo) y **por para qué**: quien
+  acepta recibir su invitación no ha aceptado recibir ofertas.
+- Se guarda **de dónde salió** y **con qué texto se pidió**. Un permiso que no se
+  puede enseñar no sirve para defenderse de una queja.
+- La **baja gana siempre**: sobre el permiso, y sobre volver a importar la lista.
+
+Una campaña no manda nada a quien no tiene permiso. Los excluidos salen en la
+lista **con su motivo**, para que se vea a cuántos hay que pedírselo.
+
+Y sigue en pie lo que la pantalla de WhatsApp dice en rojo: enviar desde un
+número propio conectado por código QR va contra los términos de WhatsApp, y el
+número que pueden cerrar es el de su cliente. Ver `docs/WHATSAPP-CLOUD.md`.
+
+## 4 sexdecies. La puerta, el día del evento
+
+Cada invitado tiene un código **por acto**. El de la recepción no sirve para la
+henna: son actos distintos con listas distintas.
+
+En la puerta se comprueba el código y se anota la entrada, con cuánta gente
+entra. Si intentan entrar más de los autorizados **para ese acto**, no pasan.
+
+Un segundo intento con el mismo código dice «ya entró» y la hora de la primera
+vez, y **nada más**: en una puerta hay gente delante mirando la pantalla. Una
+entrada apuntada por error se puede deshacer, y queda registrado quién lo hizo.
+
 ## 4 terdecies. Las pruebas
 
 ```bash

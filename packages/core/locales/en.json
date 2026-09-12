@@ -178,6 +178,38 @@
             "Publishing needs a session and uses one event of your plan. The limit is checked on the server as you publish."
           ]
         },
+        "acts": {
+          "title": "The acts of the celebration",
+          "steps": [
+            "A wedding is not a date. It can be henna on Thursday at home, the ceremony on Saturday and the reception that night, and different people go to each. Those are the ACTS, edited from the event under «Acts of the celebration».",
+            "Every event that already existed has a MAIN act with its usual date and place. That one cannot be removed: it is where the reply the tables and the export read comes from. The rest are added, reordered and removed as needed.",
+            "Each act has its own day, time and place, and optionally its own capacity and its own reply deadline. It can be in a different time zone from the rest: a party in Costa Rica and the wedding in Beirut are the same event.",
+            "Capacity is a WARNING, not a barrier. Whoever sets up the room knows when one more chair fits and the program does not.",
+            "«Who sees it» starts at «only the groups I say», on purpose: an intimate act made public cannot be hidden again, because the link has already been forwarded around WhatsApp.",
+            "The act type (henna, zaffe, ceremony…) is only a label for ordering and picking an icon. «What they call it» is the real name: write there whatever your family says."
+          ]
+        },
+        "segments": {
+          "title": "Guest groups",
+          "steps": [
+            "A group is «the bride’s family», «people from work», «the VIPs». You create it on the same acts screen.",
+            "Putting people in a group is ticking boxes. Careful: on save, the group ends up with EXACTLY the ticked ones. Unticking someone takes them out.",
+            "«Add everyone» puts every guest of the event in at once. Repeating it duplicates nobody.",
+            "Then, on each act, you say which group GETS IN and which does not. «Kept out» beats «gets in»: that is how you say «the whole family except the ones from the village» without listing the rest.",
+            "A guest in no allowed group does NOT see that act. If they are in none at all, there is no invitation to send them — and that is warned at the top, under «What is still to be fixed».",
+            "For a one-person exception you do not need to invent a one-person group: you invite someone to a single act, and that beats even a group-level «kept out»."
+          ]
+        },
+        "preview": {
+          "title": "Seeing what each guest will see",
+          "steps": [
+            "On the acts screen, at the bottom, there is «What each guest sees». Pick someone and out comes what will reach them.",
+            "It is not a mock-up: it is the same calculation made when that person opens their link. If the henna does not show here, it will not show for them.",
+            "It is the only way to check a rule without asking a guest. Use it ALWAYS before sending anything.",
+            "It also shows how many companions they may bring to each act and whether they have replied.",
+            "The link to that screen can be copied and passed around: «look at what reaches Rami»."
+          ]
+        },
         "languages": {
           "title": "The languages",
           "steps": [
@@ -229,6 +261,17 @@
             "Start with few messages and raise it slowly, over weeks not hours. The daily cap is on each number's row."
           ]
         },
+        "consent": {
+          "title": "Permission to write, and opt-outs",
+          "steps": [
+            "Having someone’s phone number is NOT having their permission to write to them. Importing a list from a spreadsheet is not either. They are two different things and the system keeps them apart.",
+            "Permission is recorded per channel (WhatsApp, email) and per WHAT FOR: someone who accepts their invitation has not accepted offers.",
+            "Where the permission came from and what text was shown are both stored. A permission you cannot show is no defence against a complaint.",
+            "The OPT-OUT always wins. If someone asks not to be written to, they are not written to — even if a permission is on file and even if the list is imported again.",
+            "A campaign sends nothing to anyone without permission. Those appear in the excluded list, with the reason, so you can see how many you still have to ask.",
+            "Remember what the WhatsApp screen says in red: sending from your own number connected by QR goes against WhatsApp’s terms, and the number they can shut down is your client’s."
+          ]
+        },
         "packages": {
           "title": "Selling packages and getting paid",
           "steps": [
@@ -261,6 +304,16 @@
             "If somebody is seated and later says they are not coming, nobody clears them automatically: they stay flagged at their table and a person decides.",
             "Two lists print: by table, for the venue and the caterer; and by guest in alphabetical order, for whoever is at the door.",
             "The guest sees their table on their own personal link — the one already on their phone."
+          ]
+        },
+        "gate": {
+          "title": "The door on the day",
+          "steps": [
+            "Each guest has a code per act. The reception one does not work for the henna: different acts, different lists.",
+            "At the door the code is checked and the entry recorded, with how many people come in.",
+            "If more people try to come in than were authorised for THAT act, they do not pass. The cap is per act: bringing a companion to the reception does not bring them to the henna.",
+            "A second attempt with the same code says «already checked in» and the time of the first one. It says nothing more: at a door there are people watching the screen.",
+            "An entry recorded by mistake can be undone, and who undid it is recorded."
           ]
         },
         "image": {

@@ -178,6 +178,38 @@
             "Publicar exige sessão e gasta um evento do seu plano. O limite é verificado no servidor ao publicar."
           ]
         },
+        "acts": {
+          "title": "Os atos da celebração",
+          "steps": [
+            "Um casamento não é uma data. Pode ser henna na quinta em casa, cerimónia no sábado e receção nessa noite, e a cada uma vai gente diferente. Isso são os ATOS, e editam-se no evento, em «Atos da celebração».",
+            "Cada evento que já existia tem um ato PRINCIPAL com a sua data e o seu lugar de sempre. Esse não se pode remover: é de onde sai a resposta que as mesas e a exportação leem.",
+            "Cada ato tem o seu dia, a sua hora e o seu lugar, e se quiser a sua lotação e o seu próprio prazo. Pode estar noutro fuso horário que o resto.",
+            "A lotação é um AVISO, não uma barreira: quem monta a sala sabe quando cabe mais uma cadeira e o programa não.",
+            "«Quem o vê» começa em «só os grupos que eu disser», e é de propósito: um ato íntimo tornado público não se volta a esconder, porque a ligação já foi reencaminhada.",
+            "O tipo do ato (henna, zaffe, cerimónia…) é só uma etiqueta. «Como lhe chamam» é o nome a sério: escreva aí o que a sua família disser."
+          ]
+        },
+        "segments": {
+          "title": "Grupos de convidados",
+          "steps": [
+            "Um grupo é «a família da noiva», «os do trabalho», «os VIP». Cria-se no mesmo ecrã dos atos.",
+            "Meter gente num grupo é marcar caixas. Atenção: ao guardar, o grupo fica com EXATAMENTE os marcados. Desmarcar alguém tira-o.",
+            "«Meter todos» mete todos os convidados do evento de uma vez. Repetir não duplica ninguém.",
+            "Depois, em cada ato, diz-se que grupo ENTRA e qual NÃO. «Não entra» ganha a «entra».",
+            "Um convidado sem nenhum grupo permitido NÃO vê esse ato. Se não estiver em nenhum, não há convite para lhe enviar — e isso é avisado em cima.",
+            "Para uma exceção com nome não é preciso inventar um grupo de uma pessoa: convida-se alguém a um ato solto, e isso ganha até a um «não entra» de grupo."
+          ]
+        },
+        "preview": {
+          "title": "Ver o que cada convidado verá",
+          "steps": [
+            "No ecrã dos atos, em baixo, está «O que cada convidado vê». Escolha alguém e sai o que lhe vai chegar.",
+            "Não é uma maqueta: é a mesma conta que se faz quando essa pessoa abre a sua ligação.",
+            "É a única forma de verificar uma regra sem perguntar a um convidado. Use-o SEMPRE antes de enviar seja o que for.",
+            "Sai também com quantos acompanhantes pode levar a cada ato e se já respondeu.",
+            "A ligação desse ecrã pode copiar-se e passar-se."
+          ]
+        },
         "languages": {
           "title": "Os idiomas",
           "steps": [
@@ -229,6 +261,17 @@
             "Comece com poucos envios e suba devagar, em semanas e não em horas. O limite diário ajusta-se na linha de cada número."
           ]
         },
+        "consent": {
+          "title": "Permissão para escrever, e baixas",
+          "steps": [
+            "Ter o telefone de alguém NÃO é ter a sua permissão para lhe escrever. Importar uma lista também não.",
+            "A permissão anota-se por canal (WhatsApp, correio) e por PARA QUÊ: quem aceita receber o convite não aceitou receber ofertas.",
+            "Guarda-se de onde saiu a permissão e com que texto se pediu. Uma permissão que não se pode mostrar não serve para defender-se de uma queixa.",
+            "A BAIXA ganha sempre, mesmo que haja permissão registada e mesmo que se reimporte a lista.",
+            "Uma campanha não envia nada a quem não tem permissão. Esses saem na lista de excluídos, com o motivo.",
+            "Lembre-se do que o ecrã de WhatsApp diz a vermelho: enviar a partir de um número próprio ligado por QR vai contra os termos do WhatsApp."
+          ]
+        },
         "packages": {
           "title": "Vender pacotes e cobrar",
           "steps": [
@@ -261,6 +304,16 @@
             "Se alguém se senta e depois diz que não vem, não se levanta sozinho: fica assinalado na sua mesa e decide uma pessoa.",
             "Há duas listas para imprimir: por mesa, para o salão e o catering; e por convidado em ordem alfabética, para quem está à porta.",
             "O convidado vê a sua mesa no seu link pessoal, o mesmo que já tem no telemóvel."
+          ]
+        },
+        "gate": {
+          "title": "A porta no dia do evento",
+          "steps": [
+            "Cada convidado tem um código por ato. O da receção não serve para a henna.",
+            "Na porta verifica-se o código e regista-se a entrada, com quanta gente entra.",
+            "Se tentar entrar mais gente do que a autorizada para ESSE ato, não passa. O limite é por ato.",
+            "Uma segunda tentativa com o mesmo código diz «já entrou» e a hora da primeira. Não diz mais nada.",
+            "Uma entrada registada por engano pode desfazer-se, e fica registado quem a desfez."
           ]
         },
         "image": {
