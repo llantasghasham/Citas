@@ -1,4 +1,3 @@
-import type { ObjectKey } from './key';
 import type { ObjectStore, StoredObject } from './types';
 
 /**
@@ -54,17 +53,5 @@ export function memoryObjectStore(): ObjectStore {
       );
     },
 
-    signedReadUrl(key: ObjectKey, seconds: number) {
-      // No hay nada que firmar, pero la forma se respeta: quien la use en
-      // desarrollo tiene que ver una dirección que caduca, no una eterna.
-      const until = Math.floor(Date.now() / 1000) + seconds;
-      return Promise.resolve(`memory://${key}?hasta=${until}`);
-    },
-
-    publicUrl() {
-      // En memoria no hay nada público: se sirve por nuestra ruta, que es
-      // además lo que se quiere en la Fase 1.
-      return null;
-    },
   };
 }

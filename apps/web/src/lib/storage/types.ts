@@ -17,11 +17,21 @@ export interface StoredObject {
  *     que en el resto del programa.
  *   · **No tiene `list()`.** No hace falta para nada de lo que se construye, y
  *     es la llamada que se paga caro el día que alguien la mete en un bucle.
- *   · **No firma subidas PARA EL NAVEGADOR.** Una subida firmada en el navegador
- *     significa que el servidor no ve los bytes, y entonces no puede quitar el
- *     EXIF, ni recodificar, ni comprobar que lo que llegó es una imagen. Lo que
- *     quedaría guardado es la foto del móvil tal cual, con las coordenadas de
- *     una casa dentro. No se puede usar mal lo que no existe.
+ *   · **No entrega NINGUNA dirección, ni de escritura ni de lectura.** La de
+ *     escritura, porque una subida firmada en el navegador significa que el
+ *     servidor no ve los bytes y entonces no puede quitar el EXIF, ni
+ *     recodificar, ni comprobar que lo que llegó es una imagen: quedaría
+ *     guardada la foto del móvil tal cual, con las coordenadas de una casa
+ *     dentro. Y la de LECTURA, porque una dirección firmada que ya se entregó
+ *     sigue valiendo hasta que caduque — así que una imagen retirada por una
+ *     reclamación de derechos seguiría viéndose, y la retirada inmediata es un
+ *     requisito, no una preferencia.
+ *
+ *     Todo se sirve por `/api/d/media/[mediaId]`, que mira el estado antes de
+ *     devolver un byte. El día que el tráfico pida un CDN se añadirán las dos
+ *     funciones, con purga explícita y la ventana residual escrita donde se vea.
+ *     Mientras tanto: no se puede usar mal lo que no existe, y esto lo prueba
+ *     `tests/almacen.test.ts`.
  */
 export interface ObjectStore {
   readonly id: 's3' | 'memory';
@@ -38,16 +48,4 @@ export interface ObjectStore {
   /** ¿Está, y cuánto mide? Para conciliar la base con el almacén. */
   head(key: ObjectKey): Promise<{ bytes: number; contentType: string } | null>;
 
-  /**
-   * Una dirección de LECTURA que caduca, para lo que no pasa por nuestra ruta:
-   * la descarga que pide quien modera, y el CDN del día que haya tráfico.
-   */
-  signedReadUrl(key: ObjectKey, seconds: number): Promise<string>;
-
-  /**
-   * La dirección pública de un objeto YA aprobado, si esta instalación tiene
-   * una configurada. `null` cuando no la hay — y entonces se sirve por nuestra
-   * ruta, que mira el estado antes de devolver un byte.
-   */
-  publicUrl(key: ObjectKey): string | null;
 }

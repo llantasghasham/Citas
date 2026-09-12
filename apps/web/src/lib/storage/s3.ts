@@ -20,7 +20,11 @@ export interface S3Config {
   bucket: string;
   accessKeyId: string;
   secretAccessKey: string;
-  /** La base pública, si esta instalación tiene una. Sin ella, `publicUrl` es nulo. */
+  /**
+   * La base pública, para el día que haya CDN. Hoy NO se usa: todo se sirve por
+   * `/api/d/media/[mediaId]`, que mira el estado. Se lee de todos modos para que
+   * una instalación que ya la tenga puesta no la pierda.
+   */
   publicBaseUrl: string | null;
 }
 
@@ -164,12 +168,5 @@ export function s3ObjectStore(config: S3Config): ObjectStore {
       };
     },
 
-    signedReadUrl(key, seconds) {
-      return Promise.resolve(sign('GET', key, seconds));
-    },
-
-    publicUrl(key) {
-      return config.publicBaseUrl === null ? null : `${config.publicBaseUrl}/${key}`;
-    },
   };
 }

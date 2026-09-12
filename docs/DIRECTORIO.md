@@ -429,20 +429,81 @@ Cada fase cierra con: `typecheck`, `lint:rtl`, `lint:planes`, `db:check`,
 - **Estrellas o valoraciones en los datos estructurados** sin reseñas reales.
 
 ---
+## Las decisiones, ya tomadas
 
-## Lo que hace falta decidir antes de empezar
+Aprobadas el 12 de septiembre de 2026. Lo que sigue **ya no se discute**: se
+construye.
 
-1. **¿Francés, sí o no?** Barato ahora, caro después. Mi recomendación: sí.
-2. **¿La publicación de una fiesta es una copia (§2.3) o una marca en el
-   evento?** Mi recomendación: copia, y con diferencia.
-3. **¿Dónde van las imágenes?** Una galería no cabe en PostgreSQL como caben
-   `Render` y `BrandAsset`. O se implementa el adaptador de almacenamiento de
-   objetos detrás del puerto `RenderStore` que ya existe, o la Fase 1 sale con un
-   tope duro de tres imágenes por proveedor.
-4. **¿Quién modera?** El modelo funciona con una persona; hay que saber quién es
-   y cuánto tarda, porque «pendiente de revisión» es un proveedor que no aparece.
-5. **¿Qué se hace con una denuncia de derechos de imagen?**
+| | Decisión | Dónde vive el detalle |
+|---|---|---|
+| 1 | **Francés ahora**, para el directorio, junto al árabe y al inglés. El producto actual conserva sus cuatro idiomas. | `DIRECTORIO-DISENO.md` §0 |
+| 2 | **`PublicListing` es una copia separada de `Event`.** Ninguna clave foránea a `Guest`, `Rsvp`, `GuestPreference`, `CheckIn`, mesas ni códigos. | `DIRECTORIO-DISENO.md` §1.8 |
+| 3 | **Cloudflare R2** por su API compatible con S3, detrás de un adaptador, para poder cambiar a Amazon, Backblaze o MinIO sin reescribir el producto. Las galerías NO van a PostgreSQL. | `DIRECTORIO-ALMACEN.md` §1 |
+| 4 | **Direcciones firmadas solo por el servidor**: diez minutos para escribir, una hora para leer en privado; el bucket sin escritura pública; las credenciales nunca al navegador. | `DIRECTORIO-ALMACEN.md` §3 y §4 |
+| 5 | **Nada público antes de `approved`**, moderación en 24 horas hábiles, una imagen nueva sobre un perfil aprobado vuelve a revisión, y las denuncias de copyright ocultan mientras se revisa. | `DIRECTORIO-ALMACEN.md` §7 |
+| 6 | **Fases 1 y 2 gratis**, para llenar el directorio y medir visitas. Sin comisiones, reservas, pagos divididos ni cobro por lead. | §8 de este documento |
 
-Y una cosa que no depende de este documento: **el correo saliente sigue en
-`console`**. Sin eso, un proveedor no puede recibir su código para entrar, así
-que la Fase 1 no se puede ni probar con alguien de fuera.
+### Lo que salió de esas decisiones y hay que saber
+
+**El francés no es un valor más de `Locale`.** Ese enum vive en Prisma, en
+`packages/core` y en cada `Record<Locale, …>` del repositorio, y el tipo
+`Dictionary` exige todas las claves de todos los idiomas: añadir `fr` obligaría a
+traducir el panel, el manual entero y la app móvil —unas mil cuatrocientas
+frases—, que es justo lo contrario de «conserva los idiomas actuales del producto
+existente». Así que son **dos conjuntos**: `LOCALES` sigue en cuatro para el
+producto y `DIRECTORY_LOCALES` va en cinco, con su propio diccionario y solo las
+frases del portal.
+
+**Una subida firmada en el navegador y «quitar el EXIF» se excluyen.** Si el
+navegador escribe directo en el bucket, el servidor no ve los bytes: no puede
+quitar las coordenadas GPS, ni recodificar, ni comprobar que lo que llegó es una
+imagen. Así que la subida va **navegador → servidor → almacén**, y el puerto **no
+tiene** ninguna función que firme una escritura. No se puede usar mal lo que no
+existe.
+
+**Con CDN, una retirada es inmediata en el origen y hasta el TTL en el borde.**
+En la Fase 1 todo se sirve por nuestra ruta, que mira el estado: la retirada por
+copyright es inmediata y de verdad. El CDN entra en la Fase 2, con una hora de
+caché y esa ventana escrita donde se vea.
+
+---
+
+## Los tres documentos, y qué hay ya construido
+
+```
+DIRECTORIO.md           este: el plan, el porqué y las decisiones tomadas
+DIRECTORIO-DISENO.md    el diseño: tablas, rutas, permisos, migraciones, SEO,
+                        traducciones, riesgos, fases y pruebas
+DIRECTORIO-ALMACEN.md   el almacén: el puerto, la firma y las políticas de
+                        expiración, archivos, eliminación y moderación
+```
+
+**Ya construido y probado** (`lib/storage/`, `tests/almacen.test.ts`, 23 pruebas
+que corren sin red y sin cuenta de nadie):
+
+- El puerto `ObjectStore` y sus dos adaptadores —S3 y memoria—, con el de
+  memoria negándose a arrancar en producción.
+- La firma AWS V4 con `node:crypto`, **comprobada contra el vector de prueba
+  oficial de AWS**.
+- `ObjectKey`, tipo marcado, acuñado por el servidor y validado en la frontera.
+- El procesado de imagen: recodificado a WEBP, sin metadatos, con miniatura, y
+  el rechazo de SVG, HTML, PDF y archivos rotos.
+
+**Lo siguiente:** la migración `provider_base`, sus comprobaciones en `db:check`
+y las pruebas de aislamiento **antes** de cualquier pantalla.
+
+## Lo que hace falta de fuera
+
+1. **Las seis variables del bucket R2.** Sin ellas se trabaja con el adaptador de
+   memoria y las pruebas corren igual; lo que no se puede es publicar galerías.
+   **No hay valores de mentira en ningún archivo, ni de ejemplo**: un
+   `STORAGE_ACCESS_KEY_ID="cambiame"` es exactamente cómo arranca algo en
+   producción con una credencial de relleno.
+2. **Quién modera, con nombre.** Las 24 horas hábiles son la promesa de una
+   persona, no una propiedad del código.
+3. **El texto de la autorización** que firma un organizador para publicar su
+   boda. Eso es del negocio.
+4. **El francés y el árabe del portal**, revisados por quien los hable.
+
+Y lo que no es de este módulo y lo bloquea igual: **el correo saliente sigue en
+`console`**, así que un proveedor no puede recibir su código para entrar.

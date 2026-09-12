@@ -253,14 +253,18 @@ Fase 1, siempre:      /api/d/media/[mediaId]
   → si moderationStatus ≠ 'approved' → 404. Sin excepción, ni con la
     dirección exacta, ni para el propio proveedor en la vista pública.
   → store.get(objectKey) y se devuelven los bytes
-  → Cache-Control público y largo, con la huella en ?v=, como los avatares
+  → Cache-Control: private, no-store  (§4.1: una caché de un año se come la
+    retirada inmediata por copyright, y el ?v= no la arregla)
 
 En el panel del proveedor y en moderación:
   → la misma ruta, pero con sesión: el dueño y quien modera SÍ ven las suyas
     en pending_review, rejected y hidden. Si no, no podrían revisarlas.
 
-signedReadUrl (1 hora) se usa solo cuando hace falta salir de nuestra ruta:
-la descarga que pide un moderador, y el CDN de la Fase 2.
+El puerto NO tiene `signedReadUrl` ni `publicUrl`, y eso es una decisión, no un
+olvido: una dirección firmada que ya se entregó sigue valiendo hasta que caduque,
+así que una imagen retirada se seguiría viendo con ella. Las dos funciones se
+añadirán en la Fase 2 junto con el CDN y su purga. No se puede usar mal lo que no
+existe.
 ```
 
 ### 3.3 Borrar
@@ -275,9 +279,43 @@ En §6.
 |---|---|---|
 | URL firmada de **subida** (servidor a R2) | **10 minutos** | lo pedido; y como no sale del servidor, sobra de largo |
 | URL firmada de **lectura privada** | **1 hora** | lo pedido; suficiente para una descarga de moderación |
-| Objeto **aprobado** por nuestra ruta | `max-age` un año, con la huella en la dirección | la llave y la huella cambian con la imagen |
-| Objeto **aprobado** por CDN (Fase 2) | **1 hora** | corto a propósito: acota la ventana de una retirada |
+| Objeto **aprobado** por nuestra ruta, Fase 1 | **`private, no-store`** | ver abajo: es lo que hace posible la retirada inmediata |
+| Objeto **aprobado** por CDN (Fase 2) | **1 hora**, con purga explícita | corto a propósito: acota la ventana de una retirada |
 | Objeto en **cuarentena** (si algún día se hace B) | 24 horas y se barre | un original con GPS no se queda en el bucket |
+
+### 4.1 Por qué NO se cachea largo, aunque duela
+
+La primera versión de este documento decía dos cosas que no pueden ser verdad a
+la vez: que una imagen retirada por copyright deja de servirse **al momento**, y
+que lo aprobado se sirve con `max-age` de un año. Lo encontró una revisión
+externa y tenía razón.
+
+El motivo es que una caché no pregunta. Si el navegador de alguien —o un proxy
+por el camino— se quedó la respuesta durante un año, la petición **no vuelve a
+llegar al servidor**: da igual lo bien que la ruta compruebe que la fila está en
+`hidden`. La imagen sigue apareciendo.
+
+Y el truco de la huella en la dirección (`?v=`) **no lo arregla**, que era el
+otro error. Sirve para que un cambio de imagen se vea, porque la dirección
+cambia. Pero al pasar de `approved` a `hidden` **el archivo es el mismo**, así
+que la huella es la misma; y aunque se le añadiera una versión de moderación,
+quien ya tenga guardada la dirección anterior la sigue teniendo. Cambiar la
+dirección nueva no caduca la vieja.
+
+Así que en la Fase 1 la ruta responde **`Cache-Control: private, no-store`**, y
+la retirada inmediata deja de ser una promesa para pasar a ser una propiedad. El
+coste es real —cada imagen se pide cada vez— y es asumible justo ahora, que es
+cuando hay pocos proveedores y poco tráfico. Si hiciera falta un respiro antes
+del CDN, el escalón intermedio es
+`public, max-age=300, must-revalidate`: cinco minutos de ventana, dicho a las
+claras, en vez de un año callado.
+
+**Fase 2, cuando el tráfico lo pida:** CDN, TTL de una hora como máximo, purga
+explícita al retirar, y la ventana residual escrita donde se vea —no enterrada en
+un comentario—.
+
+Esto vale para la imagen. La **miniatura** va igual: es el mismo archivo
+recortado, y una retirada que dejara la miniatura visible no sería una retirada.
 
 Una URL firmada **no se guarda** en la base ni en una caché. Se firma cuando se
 pide: guardarla es guardar un permiso con fecha, y el día que se filtre el
@@ -458,6 +496,43 @@ la única forma de hacer una, y valida con la misma idea que
 
 Las pruebas del almacén usan el adaptador de memoria: **no hacen red y no
 necesitan cuenta**, así que corren en integración continua como todo lo demás.
+
+---
+
+## 8.5 La sonda de cacheabilidad: hecha, y el resultado
+
+Era el paso 1 del orden de trabajo, y estaba antes que las pantallas por si
+cambiaba el diseño de rutas. Ya está medido, con una ruta de prueba y tres
+compilaciones:
+
+```
+/d/[locale] con `revalidate = 300`                 → ƒ  (dinámica)
+/d/[locale] con `dynamic = 'force-static'`         → ƒ  (dinámica)
+… y quitando el `force-dynamic` del layout raíz    →    (estática)
+```
+
+**Conclusión:** lo que impide cachear no es la cookie del idioma, es la línea
+`export const dynamic = 'force-dynamic'` del layout raíz, que se aplica a la
+aplicación entera y **gana sobre lo que declare un hijo**.
+
+Y esa línea no se toca. Está puesta por una razón escrita y cara: `/render/[slug]`
+se quedó estática una vez, y el fallo salió como vistas previas de WhatsApp
+devolviendo 500 — una página que no abre ningún invitado rompiendo lo único que
+ven todos.
+
+**Así que el diseño de rutas NO cambia**, y la caché se hace donde sí se puede,
+que además es donde importa: **en el proxy**. Las páginas de `/d/` no leen la
+sesión ni ninguna cookie, así que su respuesta solo depende de la dirección;
+nginx o Cloudflare pueden guardarla por URL con un TTL corto. Lo que hay que
+comprobar al montarlo —y es una comprobación, no una suposición— es que la
+respuesta **no** salga con `Vary: Cookie`, porque entonces no cachea nada.
+
+Y para la base de datos, que es el otro coste: las consultas del listado van
+detrás de una caché de datos con su propio plazo, de modo que renderizar cien
+veces no sean cien consultas.
+
+Nada de esto vale para `/api/d/media/[mediaId]`, que por §4.1 no se cachea en la
+Fase 1.
 
 ---
 

@@ -87,6 +87,65 @@ describe('la firma del almacén', () => {
     assert.equal(new URL(url).searchParams.get('X-Amz-Expires'), '600');
   });
 
+  it('cambiar UN dato cambia la firma entera', () => {
+    // Lo que de verdad protege una dirección firmada: que no se le pueda tocar
+    // nada. Si cambiando la llave del objeto la firma siguiera valiendo, quien
+    // consiguiera una dirección de su propia imagen podría leer la de otro.
+    const base = {
+      method: 'GET' as const,
+      endpoint: 'https://cuenta.r2.cloudflarestorage.com',
+      region: 'auto',
+      bucket: 'citas',
+      key: 'providers/' + A + '/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.webp',
+      accessKeyId: 'AKIA',
+      secretAccessKey: 'secreta',
+      expiresIn: 600,
+      now: new Date('2026-09-12T10:00:00Z'),
+    };
+    const firma = (url: string): string =>
+      new URL(url).searchParams.get('X-Amz-Signature') ?? '';
+
+    const original = firma(presignS3Url(base));
+
+    // La misma petición, firmada dos veces, da lo mismo: es determinista.
+    assert.equal(firma(presignS3Url(base)), original);
+
+    // Y cualquier cambio la rompe.
+    assert.notEqual(firma(presignS3Url({ ...base, key: 'providers/' + B + '/x.webp' })), original);
+    assert.notEqual(firma(presignS3Url({ ...base, method: 'DELETE' })), original);
+    assert.notEqual(firma(presignS3Url({ ...base, bucket: 'otro' })), original);
+    assert.notEqual(firma(presignS3Url({ ...base, expiresIn: 601 })), original);
+    assert.notEqual(firma(presignS3Url({ ...base, secretAccessKey: 'otra' })), original);
+    assert.notEqual(
+      firma(presignS3Url({ ...base, now: new Date('2026-09-13T10:00:00Z') })),
+      original,
+    );
+  });
+
+  it('la caducidad va DENTRO de la firma, así que no se puede alargar', () => {
+    // Una dirección firmada lleva su propio plazo. Cambiarlo en la barra del
+    // navegador no sirve: el plazo es uno de los datos firmados, así que la
+    // dirección alterada deja de cuadrar y el almacén la rechaza.
+    const base = {
+      method: 'GET' as const,
+      endpoint: 'https://cuenta.r2.cloudflarestorage.com',
+      region: 'auto',
+      bucket: 'citas',
+      key: 'providers/' + A + '/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.webp',
+      accessKeyId: 'AKIA',
+      secretAccessKey: 'secreta',
+      now: new Date('2026-09-12T10:00:00Z'),
+    };
+    const corta = new URL(presignS3Url({ ...base, expiresIn: 600 }));
+    const larga = new URL(presignS3Url({ ...base, expiresIn: 604800 }));
+
+    corta.searchParams.set('X-Amz-Expires', '604800');
+    assert.notEqual(
+      corta.searchParams.get('X-Amz-Signature'),
+      larga.searchParams.get('X-Amz-Signature'),
+    );
+  });
+
   it('una caducidad imposible se rechaza', () => {
     const base = {
       method: 'GET' as const,
@@ -199,15 +258,30 @@ describe('el almacén de memoria', () => {
     }
   });
 
-  it('no hay forma de pedirle una dirección de ESCRITURA', () => {
-    // El puerto no la tiene, y eso es la prueba: no se puede usar mal lo que
-    // no existe. Una subida firmada en el navegador significa que el servidor
-    // no ve los bytes y no puede quitarle el GPS a la foto.
+  it('el puerto no entrega NINGUNA dirección, ni de escritura ni de lectura', () => {
+    // Esto es la prueba de una decisión, no de una función: no se puede usar mal
+    // lo que no existe.
+    //
+    // La de ESCRITURA, porque una subida firmada en el navegador significa que
+    // el servidor no ve los bytes y no puede quitarle el GPS a la foto.
+    //
+    // La de LECTURA, porque una dirección firmada que ya se entregó sigue
+    // valiendo hasta que caduque: una imagen retirada por una reclamación de
+    // derechos se seguiría viendo con ella, y la retirada inmediata es un
+    // requisito. Todo pasa por `/api/d/media/[mediaId]`, que mira el estado.
     const store = memoryObjectStore();
-    assert.equal('signedUploadUrl' in store, false);
-    assert.equal('signedWriteUrl' in store, false);
-    // Y tampoco `list()`, que es la llamada que se paga caro en un bucle.
-    assert.equal('list' in store, false);
+    for (const prohibida of [
+      'signedUploadUrl',
+      'signedWriteUrl',
+      'createUploadUrl',
+      'signedReadUrl',
+      'createReadUrl',
+      'publicUrl',
+      // Y `list()`, que es la llamada que se paga caro en un bucle.
+      'list',
+    ]) {
+      assert.equal(prohibida in store, false, `el puerto tiene ${prohibida}`);
+    }
   });
 });
 
