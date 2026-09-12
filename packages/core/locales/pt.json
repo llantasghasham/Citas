@@ -122,6 +122,7 @@
     },
     "nav": {
       "events": "Eventos",
+      "create": "Criar",
       "offices": "Escritórios",
       "team": "Equipa",
       "billing": "Subscrição",
@@ -1162,6 +1163,8 @@
   },
   "create": {
     "title": "Criar convite",
+    "backToPanel": "Voltar ao painel",
+    "backHome": "Ir ao início",
     "stepOf": "Passo {step} de {total}",
     "next": "Seguinte",
     "back": "Voltar",

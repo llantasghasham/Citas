@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
+import Link from 'next/link';
 
 import { InvitationCard } from '@/components/invitation/InvitationCard';
 import { DetailsStep } from '@/components/create/DetailsStep';
@@ -14,11 +15,45 @@ import { DRAFT_COOKIE } from '@/lib/create/cookie';
 import { draftToInvitation, parseDraft } from '@/lib/create/draft';
 import { getDictionary } from '@/lib/dictionary';
 import { bodyFont, displayFont, latinOnly } from '@/lib/typography';
+import type { Dictionary, Locale } from '@citas/core';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 const TOTAL_STEPS = 6;
+
+/**
+ * La vuelta.
+ *
+ * `/crear` vive FUERA de `/panel` a propósito: se puede empezar un borrador sin
+ * sesión y lo que la exige es PUBLICAR. Pero eso tenía un precio que nadie
+ * había pagado hasta que alguien lo usó de verdad: esta pantalla no hereda la
+ * cabecera del panel, así que quien entraba desde el botón de la lista de
+ * eventos se quedaba sin menú, sin el nombre de su oficina y sin más manera de
+ * volver que el botón de atrás del navegador. Parecía que el sitio se había
+ * acabado.
+ *
+ * Así que la cabecera se pone aquí, corta: a dónde se vuelve y nada más. Con
+ * sesión, al panel; sin ella, a la portada — que es de donde se llegó.
+ */
+function BackLink({
+  copy,
+  signedIn,
+  locale,
+}: {
+  copy: Dictionary['create'];
+  signedIn: boolean;
+  locale: Locale;
+}) {
+  return (
+    <Link
+      href={signedIn ? '/panel' : '/'}
+      className={`${bodyFont(locale)} self-start text-sm text-[#8a6c22] hover:underline`}
+    >
+      {signedIn ? copy.backToPanel : copy.backHome}
+    </Link>
+  );
+}
 
 interface PageProps {
   searchParams: Promise<{ step?: string; published?: string; error?: string }>;
@@ -57,6 +92,7 @@ export default async function CreatePage({ searchParams }: PageProps) {
         lang={draft.locale}
         className={`${bodyFont(draft.locale)} mx-auto flex min-h-[100dvh] max-w-2xl flex-col items-start gap-6 bg-[#f4efe6] p-8`}
       >
+        <BackLink copy={copy} signedIn={session !== null} locale={draft.locale} />
         <h1 className={`${displayFont(draft.locale)} text-3xl text-[#23201a]`}>
           {copy.publishedTitle}
         </h1>
@@ -102,6 +138,7 @@ export default async function CreatePage({ searchParams }: PageProps) {
       lang={draft.locale}
       className={`${bodyFont(draft.locale)} mx-auto flex min-h-[100dvh] max-w-5xl flex-col gap-8 bg-[#f4efe6] p-6 sm:p-10`}
     >
+      <BackLink copy={copy} signedIn={session !== null} locale={draft.locale} />
       <h1 className={`${displayFont(draft.locale)} text-3xl text-[#23201a]`}>{copy.title}</h1>
 
       <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">

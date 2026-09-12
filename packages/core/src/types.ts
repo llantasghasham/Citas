@@ -327,6 +327,8 @@ export interface Dictionary {
   /** The creation flow. Reuses `labels` and `roles` rather than repeating them. */
   create: {
     title: string;
+    backToPanel: string;
+    backHome: string;
     stepOf: string;
     next: string;
     back: string;
@@ -498,6 +500,7 @@ export interface Dictionary {
     roles: Record<'SUPERADMIN' | 'TENANT_ADMIN' | 'OPERATOR' | 'ORGANIZER', string>;
     nav: Record<
       | 'events'
+      | 'create'
       | 'offices'
       | 'team'
       | 'billing'

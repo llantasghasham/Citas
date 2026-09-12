@@ -122,6 +122,7 @@
     },
     "nav": {
       "events": "Events",
+      "create": "Create",
       "offices": "Offices",
       "team": "Team",
       "billing": "Subscription",
@@ -1162,6 +1163,8 @@
   },
   "create": {
     "title": "Create an invitation",
+    "backToPanel": "Back to the panel",
+    "backHome": "Go to the home page",
     "stepOf": "Step {step} of {total}",
     "next": "Next",
     "back": "Back",

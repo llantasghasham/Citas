@@ -122,6 +122,7 @@
     },
     "nav": {
       "events": "Eventos",
+      "create": "Crear",
       "offices": "Oficinas",
       "team": "Equipo",
       "billing": "Suscripción",
@@ -1162,6 +1163,8 @@
   },
   "create": {
     "title": "Crear invitación",
+    "backToPanel": "Volver al panel",
+    "backHome": "Ir al inicio",
     "stepOf": "Paso {step} de {total}",
     "next": "Siguiente",
     "back": "Atrás",

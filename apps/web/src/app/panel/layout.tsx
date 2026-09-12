@@ -26,6 +26,12 @@ export default async function PanelLayout({ children }: { children: ReactNode })
 
   const links = [
     { href: '/panel', label: nav.events, visible: true },
+    // Crear vive FUERA de `/panel` —se puede empezar un borrador sin sesión y
+    // solo publicar la exige— pero es lo que una oficina entra a hacer, así que
+    // tiene que estar en el menú y no solo en un botón dentro de la lista de
+    // eventos. Sin esto, quien llegaba a `/crear` por el botón se quedaba sin
+    // cabecera y sin manera de volver que no fuera el botón de atrás.
+    { href: '/crear', label: nav.create, visible: sessionCan(session, 'event:write') },
     { href: '/panel/oficinas', label: nav.offices, visible: sessionCan(session, 'platform:manage') },
     { href: '/panel/equipo', label: nav.team, visible: sessionCan(session, 'tenant:staff') },
     { href: '/panel/facturacion', label: nav.billing, visible: sessionCan(session, 'billing:manage') },
