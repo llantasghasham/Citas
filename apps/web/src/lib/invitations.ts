@@ -29,7 +29,7 @@ import {
   asString,
   asTime,
 } from './validate';
-import { findVerse } from './verses';
+import { findVerse, verseExists } from './verses';
 
 function parseHosts(value: unknown, path: string): Host[] {
   return asArray(value, path).map((entry, index) => {
@@ -80,8 +80,16 @@ function parseRsvp(value: unknown, path: string): Rsvp {
 
 function parseQuote(quoteId: string | undefined, path: string): Quote | undefined {
   if (quoteId === undefined) return undefined;
+  // Un id que NO está en la lista es un archivo mal escrito y se dice a gritos.
+  if (!verseExists(quoteId)) {
+    throw new DataError(path, 'an id present in data/verses.json', quoteId);
+  }
+  // Pero uno que está y no se ha verificado no es un error del archivo: es una
+  // tarea pendiente de una persona. La invitación sale SIN versículo, que es
+  // exactamente lo que se decidió, en vez de tumbar el build o —peor— imprimir
+  // texto sagrado que nadie ha comprobado.
   const verse = findVerse(quoteId);
-  if (verse === undefined) throw new DataError(path, 'an id present in data/verses.json', quoteId);
+  if (verse === undefined) return undefined;
   return { text: verse.text, source: verse.source };
 }
 

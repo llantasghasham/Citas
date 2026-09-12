@@ -67,6 +67,21 @@ function isVerified(verse: Verse): boolean {
   return verse.verifiedBy !== null && verse.verifiedBy.trim().length > 0;
 }
 
+/**
+ * ¿Existe este id en la lista? Nada más — sin mirar si está verificado.
+ *
+ * «Existe» y «se puede enseñar» son dos preguntas distintas, y confundirlas
+ * rompió el build: los ejemplos de `data/invitations.json` citan un versículo
+ * real, el cargador comprobaba su existencia con `findVerse`, y al empezar a
+ * filtrar por verificado un archivo correcto pasó a ser un archivo inválido.
+ *
+ * Así que esta contesta la primera pregunta —la usa quien VALIDA— y `findVerse`
+ * la segunda, la que usa quien PINTA.
+ */
+export function verseExists(id: string): boolean {
+  return VERSES.has(id);
+}
+
 export function findVerse(id: string): Verse | undefined {
   const verse = VERSES.get(id);
   return verse !== undefined && isVerified(verse) ? verse : undefined;
