@@ -166,11 +166,14 @@ function migrationsDirectory(): string {
  * Sacred texts still carrying `verifiedBy: null`.
  *
  * The project's rule is that an entry is added only after a person checks it
- * against the cited edition and records their name. Until that happens the
- * platform is printing Qur'anic and biblical text on real wedding invitations
- * on nobody's authority, and no deploy fixes a verse that went out wrong.
+ * against the cited edition and records their name. Until that happens the verse
+ * is NOT offered and NOT rendered — `lib/verses.ts` keeps it out — because no
+ * deploy fixes a Qur'anic verse that already went out wrong in an invitation
+ * forwarded to a family's WhatsApp group.
  *
- * It is a person's job, not the code's — so the code's job is to keep saying so.
+ * So this is no longer "we are printing text on nobody's authority". It is "the
+ * platform is carrying verses it cannot use". Still a failure, and still a
+ * person's job and not the code's, so the code's job is to keep saying so.
  */
 function versesCheck(): HealthCheck {
   const pending = unverifiedVerses();
@@ -330,7 +333,15 @@ function mailerCheck(): HealthCheck {
 function paymentsCheck(): HealthCheck {
   const provider = env('PAYMENTS_PROVIDER') ?? 'mock';
   if (provider === 'mock') {
-    return { key: 'payments', level: inProduction() ? 'fail' : 'warn', detail: provider };
+    // En producción el adaptador de mentira se NIEGA a abrir una cobranza
+    // (`lib/payments/index.ts`), así que el sitio no puede cobrar nada. Eso está
+    // bien —falla cerrado, no inventa un cobro— pero leído como «mock» a secas
+    // parece un ajuste pendiente y no lo que es: el cobro apagado. Lo dice.
+    return {
+      key: 'payments',
+      level: inProduction() ? 'fail' : 'warn',
+      detail: inProduction() ? 'mock · el cobro está APAGADO: no se puede cobrar nada' : provider,
+    };
   }
   if (provider !== 'whish') return { key: 'payments', level: 'fail', detail: provider };
 

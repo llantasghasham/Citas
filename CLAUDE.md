@@ -36,6 +36,14 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   una lista fija y verificada.
 - NUNCA generar, completar, parafrasear ni corregir un versículo con IA.
 - Si un versículo no está en la lista, no se muestra (el loader lanza error).
+- Y SIN VERIFICAR tampoco se muestra. `verifiedBy` a nulo —o en blanco— hace que
+  el versículo no exista para el resto del programa: ni se ofrece al crear una
+  invitación ni se encuentra al pintarla. El filtro está en `lib/verses.ts`, en
+  la puerta, y no en cada sitio que los pinta, que es donde un día se olvidaría.
+  La regla existía desde el principio y no la aplicaba nadie: la pantalla de
+  salud los marcaba en rojo mientras el resto los servía igual. Un versículo
+  coránico mal citado no es una errata que arregle el despliegue siguiente: ya
+  se reenvió al grupo de WhatsApp de la familia.
 - Una entrada nueva solo se añade tras verificación humana contra la edición
   citada, anotando el nombre en `verifiedBy`.
 
@@ -709,7 +717,14 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   toca dinero.
 - Todo proveedor entra por el puerto `PaymentProvider`. La aplicación no sabe
   qué pasarela hay detrás.
-- El proveedor `mock` está prohibido en producción y el código lo impide.
+- El proveedor `mock` está prohibido en producción y el código lo impide: se
+  niega a abrir una cobranza y a preguntar por una. Eso es FALLAR CERRADO y está
+  bien —no inventa un cobro— pero significa que mientras la pasarela sea `mock`
+  el cobro está APAGADO y no se puede cobrar nada. `/panel/sistema` lo dice con
+  esas palabras: leer «mock» a secas parece un ajuste pendiente, y no lo es.
+- Hasta que haya especificación de Whish, el cobro en línea NO está disponible.
+  Lo que sí se puede vender es con EFECTIVO, que se enciende en
+  `/panel/configuracion?s=cobro` y lo marca una persona con su nombre.
 
 ### SINPE Móvil (Costa Rica)
 - NO es una pasarela: no hay a quién preguntarle si un pago entró. Lo único que

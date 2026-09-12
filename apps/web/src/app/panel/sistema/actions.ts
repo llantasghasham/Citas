@@ -132,3 +132,68 @@ export async function probePaymentsAction(): Promise<void> {
     `/panel/configuracion?pago=${ok ? 'ok' : 'failed'}&motivo=${encodeURIComponent(resultado.slice(0, 300))}`,
   );
 }
+
+/**
+ * Le quita el mando a un superadministrador que sobra.
+ *
+ * Existe porque no había ninguna forma de hacerlo. El instalador escribe un
+ * `SUPERADMIN_EMAIL` de relleno —`cambiame@ejemplo.com`—, `db:seed` lo convierte
+ * en superadministrador, y el día que el dueño pone el suyo de verdad la cuenta
+ * de relleno **se queda**: con mando sobre todas las oficinas, sobre el cobro y
+ * sobre la configuración, en una dirección que él no controla. La pantalla lo
+ * marcaba en ámbar y no ofrecía nada que pulsar, así que llevaba meses ahí.
+ *
+ * Le quita el mando, NO borra a la persona. Borrarla se llevaría por delante su
+ * historial —quién hizo qué y cuándo— que es justo lo que hay que conservar
+ * cuando se retira un acceso. Y se puede deshacer, que es lo que hace que
+ * alguien se atreva a pulsarlo.
+ *
+ * Tres cosas que no deja hacer, y las tres son la misma: cerrarse la puerta
+ * desde dentro.
+ *
+ *   1. A uno mismo. Es cómo se queda una instalación sin nadie que pueda entrar.
+ *   2. Al de `SUPERADMIN_EMAIL`, que es el que el servidor considera el dueño.
+ *   3. Al último que quede.
+ */
+export async function revokeSuperadminAction(formData: FormData): Promise<void> {
+  const session = await getSession();
+  if (session === null || !sessionCan(session, 'platform:manage')) redirect('/panel');
+
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
+  // El correo viaja en un formulario, así que es un dato del cliente: todo lo
+  // que decide se comprueba aquí contra la base, no contra lo que llegó.
+  if (email.length === 0) redirect('/panel/sistema?super=invalid');
+
+  const configured = (process.env['SUPERADMIN_EMAIL'] ?? '').trim().toLowerCase();
+  if (email === configured) redirect('/panel/sistema?super=configured');
+  if (email === session.email.toLowerCase()) redirect('/panel/sistema?super=self');
+
+  const prisma = controlDb();
+  const total = await prisma.user.count({ where: { isSuperadmin: true } });
+  if (total <= 1) redirect('/panel/sistema?super=last');
+
+  const target = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, isSuperadmin: true },
+  });
+  if (target === null || !target.isSuperadmin) redirect('/panel/sistema?super=notFound');
+
+  await prisma.user.update({ where: { id: target.id }, data: { isSuperadmin: false } });
+  // Y se cierran sus sesiones. Sin esto, quien estuviera dentro seguiría
+  // trabajando con los permisos que se le acaban de quitar hasta treinta días:
+  // es el mismo agujero que tenía suspender una oficina.
+  await prisma.session.deleteMany({ where: { userId: target.id } });
+
+  await recordAudit({
+    tenantId: session.tenantId,
+    actorId: session.userId,
+    action: 'system.superadmin.revoke',
+    entity: 'User',
+    entityId: target.id,
+    metadata: { email },
+  });
+
+  redirect('/panel/sistema?super=ok');
+}

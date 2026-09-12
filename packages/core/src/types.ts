@@ -655,6 +655,19 @@ export interface Dictionary {
         failed: string;
         tooSoon: string;
       };
+      /** Quién manda sobre TODAS las oficinas, y cómo quitárselo. */
+      superadmins: {
+        heading: string;
+        intro: string;
+        revoke: string;
+        ok: string;
+        self: string;
+        configured: string;
+        last: string;
+        notFound: string;
+        invalid: string;
+        note: string;
+      };
       updates: {
         heading: string;
         intro: string;

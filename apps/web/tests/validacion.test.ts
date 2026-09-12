@@ -7,6 +7,7 @@ import { displayName } from '../src/components/panel/UserMenu';
 import { renderOnce, renderingNow } from '../src/lib/render/once';
 import { allowedForCapture, captureUrl, renderOrigin } from '../src/lib/render/origin';
 import { isCalendarDate, isClockTime } from '../src/lib/time/zoned';
+import { findVerse, listVerses, unverifiedVerses } from '../src/lib/verses';
 
 /**
  * Lo que se comprueba ANTES de publicar, y lo que sale en una exportación.
@@ -236,5 +237,47 @@ describe('cómo se llama a quien está dentro', () => {
 
   it('un nombre que EMPIEZA por «admin» sí es un nombre', () => {
     assert.equal(displayName('Admina Salomé', 'x@example.com'), 'Admina Salomé');
+  });
+});
+
+/**
+ * Los textos sagrados.
+ *
+ * La regla del proyecto siempre dijo que un versículo solo se añade tras
+ * verificación humana contra la edición citada. Lo que no hacía nadie era
+ * aplicarla: la pantalla de salud los contaba en rojo y el resto del programa
+ * los ofrecía y los imprimía igual. Un versículo coránico mal citado en la
+ * invitación de una boda no es una errata que arregle el despliegue siguiente:
+ * ya se reenvió al grupo de la familia.
+ */
+describe('un versículo sin verificar no existe para el programa', () => {
+  it('no se ofrece al crear una invitación', () => {
+    for (const locale of ['ar', 'es', 'pt', 'en'] as const) {
+      for (const verse of listVerses(locale)) {
+        assert.ok(
+          verse.verifiedBy !== null && verse.verifiedBy.trim().length > 0,
+          `${verse.id} se está ofreciendo sin verificar`,
+        );
+      }
+    }
+  });
+
+  it('y no se encuentra para pintarlo', () => {
+    for (const verse of unverifiedVerses()) {
+      assert.equal(
+        findVerse(verse.id),
+        undefined,
+        `${verse.id} se pintaría en una invitación sin estar verificado`,
+      );
+    }
+  });
+
+  it('un nombre en blanco no cuenta como verificación', () => {
+    // «verifiedBy: "  "» es lo que escribe quien quiere quitarse el aviso de
+    // encima sin hacer el trabajo.
+    assert.equal(
+      unverifiedVerses().every((verse) => findVerse(verse.id) === undefined),
+      true,
+    );
   });
 });

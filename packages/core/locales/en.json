@@ -426,7 +426,7 @@
           "migrations": "Migrations applied",
           "whatsapp": "WhatsApp service",
           "tenancy": "How offices are separated",
-          "verses": "Verses nobody has checked"
+          "verses": "Unverified verses (not shown)"
         }
       },
       "mail": {
@@ -436,6 +436,18 @@
         "ok": "Handed over to the mail server. Careful: accepting it does not guarantee it reaches the inbox — if it does not show up within a few minutes, check the spam folder.",
         "failed": "The mail server refused it. Its answer, verbatim:",
         "tooSoon": "Wait a minute between tests."
+      },
+      "superadmins": {
+        "heading": "Extra superadministrators",
+        "intro": "Whoever holds this commands every office, the billing and the configuration. The installer creates a placeholder account, and that account stays until someone takes it away.",
+        "revoke": "Take the command away",
+        "ok": "Done: no longer a superadministrator, and their sessions are closed.",
+        "self": "Not yourself. That is how an installation ends up with nobody who can get in.",
+        "configured": "That is the one the server treats as the owner (SUPERADMIN_EMAIL). Change it on the server before removing it here.",
+        "last": "It is the last one left.",
+        "notFound": "They were no longer a superadministrator.",
+        "invalid": "The address is missing.",
+        "note": "The person is not deleted: the command is taken away and their history is kept. It can be given back."
       },
       "updates": {
         "heading": "Updates",

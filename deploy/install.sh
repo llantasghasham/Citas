@@ -169,6 +169,10 @@ DATA_SOURCE="database"
 CHROMIUM_PATH="$CHROME"
 NEXT_PUBLIC_SITE_URL="https://citas.posxml.com"
 PAYMENTS_PROVIDER="mock"
+# La dirección del dueño. MIENTRAS SIGA ASÍ no se crea ningún
+# superadministrador: `db:seed` se niega a darle el mando de todas las oficinas
+# a una dirección de relleno, que es como una instalación acababa con una cuenta
+# con todos los permisos en un dominio que nadie controla.
 SUPERADMIN_EMAIL="cambiame@ejemplo.com"
 CITAS_SECRET_KEY_FILE="$KEY_FILE"
 

@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation';
 
-import { sendTestMailAction } from '@/app/panel/sistema/actions';
+import { revokeSuperadminAction, sendTestMailAction } from '@/app/panel/sistema/actions';
 import { getAdminContext } from '@/lib/admin/context';
 import { getSession, sessionCan } from '@/lib/auth/session';
 import { readHealth, type HealthLevel } from '@/lib/system/health';
 import { readStack } from '@/lib/system/versions';
 import { displayFont } from '@/lib/typography';
+import type { Dictionary } from '@citas/core';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,17 +26,25 @@ const LEVEL_MARK: Record<HealthLevel, string> = { ok: '●', warn: '▲', fail: 
  * office's staff needs.
  */
 interface PageProps {
-  searchParams: Promise<{ mail?: string; reason?: string }>;
+  searchParams: Promise<{ mail?: string; reason?: string; super?: string }>;
 }
 
 export default async function SystemPage({ searchParams }: PageProps) {
-  const { mail, reason } = await searchParams;
+  const { mail, reason, super: superResult } = await searchParams;
   const session = await getSession();
   if (session === null || !sessionCan(session, 'platform:manage')) redirect('/panel');
 
   const { dictionary, locale } = await getAdminContext(session.tenantId);
   const copy = dictionary.admin.system;
   const [stack, health] = await Promise.all([readStack(), readHealth()]);
+  // Los de más salen de la comprobación que YA se hizo, no de otra consulta:
+  // dos lecturas de lo mismo en la misma pantalla es cómo acaban enseñando
+  // cosas distintas.
+  const extras = (health.find((check) => check.key === 'extraSuperadmins')?.detail ?? '')
+    .split('·')
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => email.includes('@'));
+
   const levelLabel: Record<HealthLevel, string> = {
     ok: copy.health.ok,
     warn: copy.health.warn,
@@ -68,6 +77,45 @@ export default async function SystemPage({ searchParams }: PageProps) {
           ))}
         </ul>
       </section>
+
+      {/* Los que sobran, con un botón. Iba en ámbar y sin nada que pulsar, así
+          que la cuenta de relleno del instalador llevaba meses mandando sobre
+          todas las oficinas. Solo sale cuando hay alguno. */}
+      {extras.length > 0 && (
+        <section className="flex flex-col gap-3 border-t border-[#ddd6c6] pt-6">
+          <h2 className={`${displayFont(locale)} text-xl`}>{copy.superadmins.heading}</h2>
+          <p className="max-w-2xl text-sm text-[#6a6456]">{copy.superadmins.intro}</p>
+
+          {superResult !== undefined && (
+            <p
+              role={superResult === 'ok' ? undefined : 'alert'}
+              className={`text-sm ${superResult === 'ok' ? 'text-[#2f6b3a]' : 'text-[#8c2f1e]'}`}
+            >
+              {superMessage(copy.superadmins, superResult)}
+            </p>
+          )}
+
+          <ul className="flex flex-col gap-2">
+            {extras.map((email) => (
+              <li key={email} className="flex flex-wrap items-center gap-3 text-sm">
+                <span dir="ltr" className="font-mono text-xs text-[#23201a]">
+                  {email}
+                </span>
+                <form action={revokeSuperadminAction}>
+                  <input type="hidden" name="email" value={email} />
+                  <button
+                    type="submit"
+                    className="border border-[#8c2f1e] px-3 py-1.5 text-sm text-[#8c2f1e] hover:opacity-70"
+                  >
+                    {copy.superadmins.revoke}
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+          <p className="max-w-2xl text-xs text-[#6a6456]">{copy.superadmins.note}</p>
+        </section>
+      )}
 
       <section className="flex flex-col gap-4 border-t border-[#ddd6c6] pt-6">
         <h2 className={`${displayFont(locale)} text-xl`}>{copy.mail.heading}</h2>
@@ -174,4 +222,17 @@ export default async function SystemPage({ searchParams }: PageProps) {
       </section>
     </>
   );
+}
+
+/** Qué pasó al intentar quitarle el mando a alguien. */
+function superMessage(copy: Dictionary['admin']['system']['superadmins'], result: string): string {
+  const messages: Record<string, string> = {
+    ok: copy.ok,
+    self: copy.self,
+    configured: copy.configured,
+    last: copy.last,
+    notFound: copy.notFound,
+    invalid: copy.invalid,
+  };
+  return messages[result] ?? copy.invalid;
 }

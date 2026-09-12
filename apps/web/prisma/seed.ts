@@ -5,6 +5,21 @@ import { PLAN_CATALOGUE } from '../src/lib/billing/plans';
 import { getAllInvitations } from '../src/lib/invitations';
 
 /**
+ * Las direcciones que escribe un instalador porque tiene que escribir algo.
+ *
+ * Ninguna de estas manda sobre nada. La lista es corta y explícita a propósito:
+ * adivinar cuáles son de relleno («¿lleva "test"? ¿"admin"?») acabaría negándole
+ * la cuenta a alguien que se llama así de verdad.
+ */
+const PLACEHOLDER_EMAILS = new Set([
+  'cambiame@ejemplo.com',
+  'admin@citas.local',
+  'admin@example.com',
+  'cambiame@example.com',
+  'changeme@example.com',
+]);
+
+/**
  * Loads data/invitations.json into PostgreSQL, through the same validation the
  * JSON data source uses — so anything the seed writes was already proven valid.
  *
@@ -65,7 +80,31 @@ async function main(): Promise<void> {
     const superadminEmail = (process.env['SUPERADMIN_EMAIL'] ?? 'admin@citas.local')
       .trim()
       .toLowerCase();
-    const superadmin = await prisma.user.upsert({
+
+    // Una dirección de RELLENO no se convierte en superadministrador.
+    //
+    // El instalador escribe `cambiame@ejemplo.com` en el `.env` porque tiene que
+    // escribir algo, y este guion la convertía en la cuenta que manda sobre
+    // todas las oficinas, sobre el cobro y sobre la configuración. Después el
+    // dueño pone la suya de verdad y la de relleno SE QUEDA: con todo el mando,
+    // en un dominio que no es suyo. Así llevaba meses una instalación en
+    // producción, marcada en ámbar en una pantalla y sin nada que pulsar.
+    //
+    // Se para aquí y no más adelante porque aquí es donde nace. Y no falla el
+    // sembrado entero: los ejemplos y los planes sí se cargan — lo que no se
+    // hace es repartir el mando a una dirección que nadie lee.
+    const placeholder = PLACEHOLDER_EMAILS.has(superadminEmail);
+    if (placeholder) {
+      console.error(
+        `\n  SUPERADMIN_EMAIL sigue siendo de relleno (${superadminEmail}).\n` +
+          '  NO se ha creado ningún superadministrador. Ponga la dirección de\n' +
+          '  verdad en apps/web/.env y vuelva a ejecutar `npm run db:seed`.\n',
+      );
+    }
+    // Y el resto del sembrado sigue: los planes, la oficina y los ejemplos no
+    // tienen la culpa de que falte una dirección, y dejar la base a medias haría
+    // que el siguiente intento empezara peor.
+    const superadmin = placeholder ? null : await prisma.user.upsert({
       where: { email: superadminEmail },
       update: { isSuperadmin: true },
       create: {
@@ -78,7 +117,7 @@ async function main(): Promise<void> {
         locale: 'ar',
       },
     });
-    console.log(`superadmin: ${superadmin.email}`);
+    if (superadmin !== null) console.log(`superadmin: ${superadmin.email}`);
 
     for (const invitation of getAllInvitations()) {
       const existing = await prisma.invitationVersion.findUnique({

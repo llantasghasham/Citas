@@ -44,22 +44,47 @@ function parseVerses(): Map<string, Verse> {
 
 const VERSES = parseVerses();
 
+/**
+ * Un versículo SIN verificar no existe para el resto del programa.
+ *
+ * La regla del proyecto siempre dijo que una entrada solo se añade tras
+ * verificación humana contra la edición citada, anotando el nombre en
+ * `verifiedBy`. Pero eso no lo aplicaba nadie: `unverifiedVerses()` los contaba
+ * para la pantalla de salud y los marcaba en rojo, mientras `findVerse` y
+ * `listVerses` los devolvían igual. O sea que se ofrecían al crear una
+ * invitación y se imprimían en la de un invitado, con un aviso en una pantalla
+ * que ve una sola persona.
+ *
+ * Un versículo coránico mal citado en la invitación de una boda no es una errata
+ * que arregle el despliegue siguiente: ya se reenvió al grupo de WhatsApp de la
+ * familia. Así que el filtro va aquí, en la puerta, y no en cada sitio que los
+ * pinta — que es donde un día se olvidaría.
+ *
+ * La comprobación de `/panel/sistema` sigue viéndolos, porque para eso existe:
+ * lee el mapa entero, no esta puerta.
+ */
+function isVerified(verse: Verse): boolean {
+  return verse.verifiedBy !== null && verse.verifiedBy.trim().length > 0;
+}
+
 export function findVerse(id: string): Verse | undefined {
-  return VERSES.get(id);
+  const verse = VERSES.get(id);
+  return verse !== undefined && isVerified(verse) ? verse : undefined;
 }
 
 /**
- * The sacred texts nobody has checked yet.
+ * Los textos sagrados que nadie ha comprobado todavía.
  *
- * They are still rendered — refusing to draw them would take down invitations
- * already sent — but the platform must not be quiet about it: a misquoted
- * Qur'anic verse on a wedding invitation is not something a later deploy fixes.
+ * No se muestran —eso lo impide `findVerse`— pero la plataforma tiene que
+ * decirlo en grande igualmente: mientras estén así, el proyecto tiene una lista
+ * de versículos que no puede usar, y eso es una tarea pendiente de una persona,
+ * no un estado en el que quedarse.
  */
 export function unverifiedVerses(): Verse[] {
-  return [...VERSES.values()].filter((verse) => verse.verifiedBy === null);
+  return [...VERSES.values()].filter((verse) => !isVerified(verse));
 }
 
 /** The verses offered for a language. Nothing outside this list can be chosen. */
 export function listVerses(locale: Locale): Verse[] {
-  return [...VERSES.values()].filter((verse) => verse.locale === locale);
+  return [...VERSES.values()].filter((verse) => verse.locale === locale && isVerified(verse));
 }

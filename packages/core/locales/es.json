@@ -426,7 +426,7 @@
           "migrations": "Migraciones aplicadas",
           "whatsapp": "Servicio de WhatsApp",
           "tenancy": "Reparto de oficinas",
-          "verses": "Versículos sin verificar"
+          "verses": "Versículos sin verificar (no se muestran)"
         }
       },
       "mail": {
@@ -436,6 +436,18 @@
         "ok": "Entregado al servidor de correo. Ojo: que lo acepte no garantiza que llegue a la bandeja — si no aparece en unos minutos, mire el correo no deseado.",
         "failed": "El servidor de correo lo rechazó. Su respuesta, tal cual:",
         "tooSoon": "Espere un minuto entre pruebas."
+      },
+      "superadmins": {
+        "heading": "Superadministradores de más",
+        "intro": "Quien tenga esto manda sobre todas las oficinas, sobre el cobro y sobre la configuración. El instalador crea una cuenta de relleno y esa cuenta se queda hasta que alguien la retira.",
+        "revoke": "Quitarle el mando",
+        "ok": "Listo: ya no es superadministrador y sus sesiones se cerraron.",
+        "self": "A usted mismo no. Es cómo se queda esta instalación sin nadie que pueda entrar.",
+        "configured": "Ese es el que el servidor considera el dueño (SUPERADMIN_EMAIL). Cámbielo en el servidor antes de quitarlo aquí.",
+        "last": "Es el último que queda.",
+        "notFound": "Ya no era superadministrador.",
+        "invalid": "Falta la dirección.",
+        "note": "No se borra a la persona: se le quita el mando y se conserva su historial. Se puede volver a dar."
       },
       "updates": {
         "heading": "Actualizaciones",
