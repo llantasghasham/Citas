@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import Link from 'next/link';
 
 import { InvitationCard } from '@/components/invitation/InvitationCard';
+import { PanelHeader } from '@/components/panel/PanelHeader';
 import { DetailsStep } from '@/components/create/DetailsStep';
 import { LanguageStep } from '@/components/create/LanguageStep';
 import { NamesStep } from '@/components/create/NamesStep';
@@ -23,34 +24,26 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 const TOTAL_STEPS = 6;
 
 /**
- * La vuelta.
+ * La vuelta, para quien NO ha entrado.
  *
- * `/crear` vive FUERA de `/panel` a propósito: se puede empezar un borrador sin
- * sesión y lo que la exige es PUBLICAR. Pero eso tenía un precio que nadie
- * había pagado hasta que alguien lo usó de verdad: esta pantalla no hereda la
- * cabecera del panel, así que quien entraba desde el botón de la lista de
- * eventos se quedaba sin menú, sin el nombre de su oficina y sin más manera de
- * volver que el botón de atrás del navegador. Parecía que el sitio se había
- * acabado.
- *
- * Así que la cabecera se pone aquí, corta: a dónde se vuelve y nada más. Con
- * sesión, al panel; sin ella, a la portada — que es de donde se llegó.
+ * Con sesión, esta pantalla lleva la cabecera del panel entera —el mismo menú,
+ * el nombre de su oficina y su cuenta—, así que no hace falta un enlace suelto.
+ * Sin sesión no hay panel al que volver: se llegó desde la portada y ahí es
+ * donde se vuelve.
  */
-function BackLink({
+function BackHome({
   copy,
-  signedIn,
   locale,
 }: {
   copy: Dictionary['create'];
-  signedIn: boolean;
   locale: Locale;
 }) {
   return (
     <Link
-      href={signedIn ? '/panel' : '/'}
+      href="/"
       className={`${bodyFont(locale)} self-start text-sm text-[#8a6c22] hover:underline`}
     >
-      {signedIn ? copy.backToPanel : copy.backHome}
+      {copy.backHome}
     </Link>
   );
 }
@@ -87,40 +80,46 @@ export default async function CreatePage({ searchParams }: PageProps) {
 
   if (published !== undefined && published.length > 0) {
     return (
-      <main
-        dir={direction}
-        lang={draft.locale}
-        className={`${bodyFont(draft.locale)} mx-auto flex min-h-[100dvh] max-w-2xl flex-col items-start gap-6 bg-[#f4efe6] p-8`}
-      >
-        <BackLink copy={copy} signedIn={session !== null} locale={draft.locale} />
-        <h1 className={`${displayFont(draft.locale)} text-3xl text-[#23201a]`}>
-          {copy.publishedTitle}
-        </h1>
-        <p className="text-[#6a6456]">{copy.publishedHint}</p>
-        <code className="w-full overflow-x-auto border border-[#ddd6c6] bg-white px-4 py-3 font-mono text-sm">
-          /i/{published}
-        </code>
-        <div className="flex flex-wrap gap-3">
-          <a
-            href={`/i/${published}`}
-            className="bg-[#23201a] px-6 py-3 text-base text-[#f4efe6] hover:opacity-90"
-          >
-            {copy.openInvitation}
-          </a>
-          <a
-            href={`/api/render/${published}?download=1`}
-            className="border border-[#23201a] px-6 py-3 text-base text-[#23201a] hover:opacity-70"
-          >
-            {copy.downloadImage}
-          </a>
-          <a
-            href="/crear?step=1"
-            className="border border-[#23201a] px-6 py-3 text-base text-[#23201a] hover:opacity-70"
-          >
-            {copy.startOver}
-          </a>
-        </div>
-      </main>
+      <div className="flex min-h-[100dvh] flex-col bg-[#f4efe6]">
+        {/* La cabecera del panel, la MISMA, para quien ha entrado. Sin ella esta
+            pantalla parecía otro sitio: sin menú, sin el nombre de su oficina y
+            sin manera de volver. */}
+        {session !== null && <PanelHeader session={session} />}
+        <main
+          dir={direction}
+          lang={draft.locale}
+          className={`${bodyFont(draft.locale)} mx-auto flex w-full max-w-2xl flex-1 flex-col items-start gap-6 p-8`}
+        >
+          {session === null && <BackHome copy={copy} locale={draft.locale} />}
+          <h1 className={`${displayFont(draft.locale)} text-3xl text-[#23201a]`}>
+            {copy.publishedTitle}
+          </h1>
+          <p className="text-[#6a6456]">{copy.publishedHint}</p>
+          <code className="w-full overflow-x-auto border border-[#ddd6c6] bg-white px-4 py-3 font-mono text-sm">
+            /i/{published}
+          </code>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href={`/i/${published}`}
+              className="bg-[#23201a] px-6 py-3 text-base text-[#f4efe6] hover:opacity-90"
+            >
+              {copy.openInvitation}
+            </a>
+            <a
+              href={`/api/render/${published}?download=1`}
+              className="border border-[#23201a] px-6 py-3 text-base text-[#23201a] hover:opacity-70"
+            >
+              {copy.downloadImage}
+            </a>
+            <a
+              href="/crear?step=1"
+              className="border border-[#23201a] px-6 py-3 text-base text-[#23201a] hover:opacity-70"
+            >
+              {copy.startOver}
+            </a>
+            </div>
+        </main>
+      </div>
     );
   }
 
@@ -133,48 +132,51 @@ export default async function CreatePage({ searchParams }: PageProps) {
   ];
 
   return (
-    <main
-      dir={direction}
-      lang={draft.locale}
-      className={`${bodyFont(draft.locale)} mx-auto flex min-h-[100dvh] max-w-5xl flex-col gap-8 bg-[#f4efe6] p-6 sm:p-10`}
-    >
-      <BackLink copy={copy} signedIn={session !== null} locale={draft.locale} />
-      <h1 className={`${displayFont(draft.locale)} text-3xl text-[#23201a]`}>{copy.title}</h1>
+    <div className="flex min-h-[100dvh] flex-col bg-[#f4efe6]">
+      {session !== null && <PanelHeader session={session} />}
+      <main
+        dir={direction}
+        lang={draft.locale}
+        className={`${bodyFont(draft.locale)} mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 p-6 sm:p-10`}
+      >
+        {session === null && <BackHome copy={copy} locale={draft.locale} />}
+        <h1 className={`${displayFont(draft.locale)} text-3xl text-[#23201a]`}>{copy.title}</h1>
 
-      <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div>
-          {step === 6 ? (
-            <ReviewStep
-              draft={draft}
-              dictionary={dictionary}
-              signedIn={canPublish}
-              failed={error === '1'}
+        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div>
+            {step === 6 ? (
+              <ReviewStep
+                draft={draft}
+                dictionary={dictionary}
+                signedIn={canPublish}
+                failed={error === '1'}
+              />
+            ) : (
+              <StepShell
+                step={step}
+                total={TOTAL_STEPS}
+                locale={draft.locale}
+                title={stepTitles[step - 1] ?? ''}
+                dictionary={dictionary}
+              >
+                {step === 1 ? <LanguageStep draft={draft} dictionary={dictionary} /> : null}
+                {step === 2 ? <NamesStep draft={draft} dictionary={dictionary} /> : null}
+                {step === 3 ? <WhenStep draft={draft} dictionary={dictionary} /> : null}
+                {step === 4 ? <DetailsStep draft={draft} dictionary={dictionary} /> : null}
+                {step === 5 ? <TranslationsStep draft={draft} dictionary={dictionary} /> : null}
+              </StepShell>
+            )}
+          </div>
+
+          <aside className="flex flex-col gap-3 lg:sticky lg:top-10">
+            <p className={`text-xs ${latinOnly(draft.locale, 'uppercase tracking-[0.16em]')} text-[#8a6c22]`}>{copy.preview}</p>
+            <InvitationCard
+              invitation={draftToInvitation(draft)}
+              className="w-full overflow-hidden shadow-[0_16px_40px_-22px_rgba(59,50,38,0.6)]"
             />
-          ) : (
-            <StepShell
-              step={step}
-              total={TOTAL_STEPS}
-              locale={draft.locale}
-              title={stepTitles[step - 1] ?? ''}
-              dictionary={dictionary}
-            >
-              {step === 1 ? <LanguageStep draft={draft} dictionary={dictionary} /> : null}
-              {step === 2 ? <NamesStep draft={draft} dictionary={dictionary} /> : null}
-              {step === 3 ? <WhenStep draft={draft} dictionary={dictionary} /> : null}
-              {step === 4 ? <DetailsStep draft={draft} dictionary={dictionary} /> : null}
-              {step === 5 ? <TranslationsStep draft={draft} dictionary={dictionary} /> : null}
-            </StepShell>
-          )}
+          </aside>
         </div>
-
-        <aside className="flex flex-col gap-3 lg:sticky lg:top-10">
-          <p className={`text-xs ${latinOnly(draft.locale, 'uppercase tracking-[0.16em]')} text-[#8a6c22]`}>{copy.preview}</p>
-          <InvitationCard
-            invitation={draftToInvitation(draft)}
-            className="w-full overflow-hidden shadow-[0_16px_40px_-22px_rgba(59,50,38,0.6)]"
-          />
-        </aside>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
