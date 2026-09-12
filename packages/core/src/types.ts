@@ -948,6 +948,19 @@ export interface Dictionary {
       segmentFill: string;
       segmentRemove: string;
       segmentEmpty: string;
+      membersOpen: string;
+      membersSave: string;
+      membersSaved: string;
+      membersEmpty: string;
+      previewHeading: string;
+      previewIntro: string;
+      previewGuest: string;
+      previewShow: string;
+      previewNothing: string;
+      previewMaxParty: string;
+      previewClosed: string;
+      previewReplied: string;
+      previewPending: string;
       problems: {
         type: string;
         date: string;

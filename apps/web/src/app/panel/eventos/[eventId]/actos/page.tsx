@@ -10,17 +10,30 @@ import {
   removeActAction,
   removeSegmentAction,
   setAudienceAction,
+  setMembersAction,
 } from '@/app/panel/eventos/[eventId]/actos/actions';
 import { getAdminContext } from '@/lib/admin/context';
 import { ACT_TYPES, readActs, type ActRow } from '@/lib/acts/service';
-import { readSegments, type SegmentRow } from '@/lib/acts/segments';
+import { agendaFor, type AuthorizedAct } from '@/lib/acts/access';
+import {
+  listGuestsForAssignment,
+  readSegments,
+  type AssignableGuest,
+  type SegmentRow,
+} from '@/lib/acts/segments';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { displayFont } from '@/lib/typography';
 import { interpolate, type Dictionary } from '@citas/core';
 
 interface PageProps {
   params: Promise<{ eventId: string }>;
-  searchParams: Promise<{ error?: string; metidos?: string; abierto?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    metidos?: string;
+    sacados?: string;
+    abierto?: string;
+    invitado?: string;
+  }>;
 }
 
 const CONTROL =
@@ -49,15 +62,24 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
   }
 
   const { eventId } = await params;
-  const { error, metidos, abierto } = await searchParams;
+  const { error, metidos, sacados, abierto, invitado } = await searchParams;
   const { dictionary } = await getAdminContext(session.tenantId);
   const copy = dictionary.admin.acts;
 
-  const [acts, segments] = await Promise.all([
+  const [acts, segments, guests] = await Promise.all([
     readActs(scopeOf(session), eventId),
     readSegments(scopeOf(session), eventId),
+    listGuestsForAssignment(scopeOf(session), eventId),
   ]);
-  if (acts === null || segments === null) redirect('/panel');
+  if (acts === null || segments === null || guests === null) redirect('/panel');
+
+  // La vista previa: la agenda REAL de un invitado, calculada con las mismas
+  // reglas que la calcularán cuando abra su enlace. No es una maqueta.
+  const chosen = guests.find((guest) => guest.id === invitado) ?? null;
+  const preview =
+    chosen === null
+      ? null
+      : await agendaFor(scopeOf(session), eventId, { id: chosen.id, maxParty: 1 });
 
   const canWrite = sessionCan(session, 'event:write');
   const problems = (error ?? '').split(',').filter((code) => code.length > 0);
@@ -82,7 +104,7 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
       )}
       {metidos !== undefined && (
         <p className="border border-[#ddd6c6] bg-[#f7f4ec] p-3 text-sm text-[#6b6455]">
-          {interpolate(copy.segmentMembers, { count: metidos })}
+          {interpolate(copy.membersSaved, { added: metidos, removed: sacados ?? '0' })}
         </p>
       )}
 
@@ -90,7 +112,15 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
         copy={copy}
         eventId={eventId}
         segments={segments}
+        guests={guests}
         canWrite={canWrite}
+      />
+
+      <Preview
+        copy={copy}
+        guests={guests}
+        chosen={chosen}
+        agenda={preview}
       />
 
       <section className="flex flex-col gap-4">
@@ -137,11 +167,13 @@ function Segments({
   copy,
   eventId,
   segments,
+  guests,
   canWrite,
 }: {
   copy: Copy;
   eventId: string;
   segments: SegmentRow[];
+  guests: AssignableGuest[];
   canWrite: boolean;
 }) {
   return (
@@ -178,6 +210,41 @@ function Segments({
                   </button>
                 </form>
               </span>
+            )}
+
+            {canWrite && (
+              <details className="w-full">
+                <summary className="cursor-pointer text-sm text-[#8a6c22]">
+                  {copy.membersOpen}
+                </summary>
+                {guests.length === 0 ? (
+                  <p className="mt-2 text-sm text-[#6b6455]">{copy.membersEmpty}</p>
+                ) : (
+                  <form action={setMembersAction} className="mt-3 flex flex-col gap-3">
+                    <input type="hidden" name="eventId" value={eventId} />
+                    <input type="hidden" name="segmentId" value={segment.id} />
+                    <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+                      {guests.map((guest) => (
+                        <label
+                          key={guest.id}
+                          className="flex items-center gap-2 text-sm text-[#23201a]"
+                        >
+                          <input
+                            type="checkbox"
+                            name="guestId"
+                            value={guest.id}
+                            defaultChecked={guest.segmentIds.includes(segment.id)}
+                          />
+                          {guest.name}
+                        </label>
+                      ))}
+                    </div>
+                    <button type="submit" className={`${BUTTON} self-start`}>
+                      {copy.membersSave}
+                    </button>
+                  </form>
+                )}
+              </details>
             )}
           </li>
         ))}
@@ -445,5 +512,89 @@ function ActFields({ copy, act }: { copy: Copy; act?: ActRow }) {
         {copy.optionalLabel}
       </label>
     </div>
+  );
+}
+
+/**
+ * Qué ve un invitado, con las reglas de verdad.
+ *
+ * Es la única forma de comprobar una regla sin preguntárselo a un invitado. Y no
+ * es una maqueta: llama a `agendaFor`, la MISMA función que decide lo que sale
+ * en su enlace. Una vista previa que calculara por su cuenta se desviaría el día
+ * que alguien cambiara una regla y solo se enteraría el invitado.
+ *
+ * El formulario es un GET, así que se puede compartir el enlace de «lo que ve
+ * Rami» con quien esté decidiendo las listas.
+ */
+function Preview({
+  copy,
+  guests,
+  chosen,
+  agenda,
+}: {
+  copy: Copy;
+  guests: AssignableGuest[];
+  chosen: AssignableGuest | null;
+  agenda: AuthorizedAct[] | null;
+}) {
+  const types = copy.types as unknown as Record<string, string | undefined>;
+
+  return (
+    <section className="flex flex-col gap-3 border border-[#ddd6c6] bg-white p-4">
+      <h2 className={`${displayFont} text-xl text-[#23201a]`}>{copy.previewHeading}</h2>
+      <p className="max-w-2xl text-sm text-[#6b6455]">{copy.previewIntro}</p>
+
+      {guests.length === 0 ? (
+        <p className="text-sm text-[#6b6455]">{copy.membersEmpty}</p>
+      ) : (
+        <form method="get" className="flex flex-wrap items-end gap-2">
+          <label className={`${LABEL} min-w-56`}>
+            {copy.previewGuest}
+            <select name="invitado" defaultValue={chosen?.id ?? ''} className={CONTROL}>
+              {guests.map((guest) => (
+                <option key={guest.id} value={guest.id}>
+                  {guest.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" className={BUTTON}>
+            {copy.previewShow}
+          </button>
+        </form>
+      )}
+
+      {agenda !== null && agenda.length === 0 && (
+        <p className="border border-[#b3261e] bg-[#fdf2f1] p-3 text-sm text-[#b3261e]">
+          {copy.previewNothing}
+        </p>
+      )}
+
+      {agenda !== null && agenda.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {agenda.map((act) => (
+            <li key={act.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-[#efeadd] pt-2">
+              <span className="text-sm text-[#23201a]">
+                {act.label ?? types[act.type] ?? act.type}
+              </span>
+              <span className="text-sm text-[#6b6455]">
+                {act.date} · {act.time}
+              </span>
+              <span className="text-xs text-[#6b6455]">{act.venueName}</span>
+              <span className="text-xs text-[#6b6455]">
+                {interpolate(copy.previewMaxParty, { count: String(act.maxParty) })}
+              </span>
+              <span className="text-xs text-[#6b6455] ms-auto">
+                {act.reply === null
+                  ? act.canRespond
+                    ? copy.previewPending
+                    : copy.previewClosed
+                  : interpolate(copy.previewReplied, { status: act.reply.status })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

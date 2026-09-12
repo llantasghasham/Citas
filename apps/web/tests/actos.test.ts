@@ -11,7 +11,13 @@ import {
   setActAudience,
   type ActInput,
 } from '../src/lib/acts/service';
-import { addSegment, fillSegment, readSegments, segmentKey } from '../src/lib/acts/segments';
+import {
+  addSegment,
+  fillSegment,
+  readSegments,
+  segmentKey,
+  setSegmentMembers,
+} from '../src/lib/acts/segments';
 import { answerAct, summarise } from '../src/lib/acts/rsvp';
 import { controlDb } from '../src/lib/db/client';
 import { tenantScope } from '../src/lib/db/tenant';
@@ -499,5 +505,85 @@ describe('la clave de un grupo no translitera', () => {
     const clave = segmentKey('عائلة العروس', []);
     assert.equal(clave, 'grupo');
     assert.match(segmentKey('عائلة العريس', ['grupo']), /^grupo-2$/);
+  });
+});
+
+describe('meter y sacar gente de un grupo', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+  const scope = () => tenantScope(fixture.get().tenantId);
+
+  it('guardar el grupo REEMPLAZA: lo que no viene marcado, sale', async () => {
+    const prisma = controlDb();
+    const eventId = await makeEvent(fixture.get().tenantId);
+    const ids: string[] = [];
+    for (const name of ['Rami', 'Nour', 'Layla']) {
+      const guest = await prisma.guest.create({
+        data: { eventId, name, locale: 'ar', token: `test-asig-${name}-${Date.now()}` },
+        select: { id: true },
+      });
+      ids.push(guest.id);
+    }
+    const grupo = await addSegment(scope(), eventId, 'Familia', fixture.get().userId);
+    assert.ok(grupo.ok);
+    const segmentId = grupo.ok ? grupo.id : '';
+
+    assert.deepEqual(await setSegmentMembers(scope(), eventId, segmentId, ids), {
+      added: 3,
+      removed: 0,
+    });
+
+    // Una casilla desmarcada no manda nada, así que lo que llega es la lista
+    // entera: quitar a uno es mandar los otros dos. Si esto añadiera sin quitar,
+    // desmarcar no serviría para nada.
+    assert.deepEqual(await setSegmentMembers(scope(), eventId, segmentId, ids.slice(0, 2)), {
+      added: 0,
+      removed: 1,
+    });
+    assert.equal((await readSegments(scope(), eventId))?.[0]?.members, 2);
+  });
+
+  it('un invitado de otra boda no entra aunque se mande su id', async () => {
+    const prisma = controlDb();
+    const eventId = await makeEvent(fixture.get().tenantId);
+    const otro = await makeEvent(fixture.get().tenantId);
+    const ajeno = await prisma.guest.create({
+      data: { eventId: otro, name: 'Ajeno', locale: 'ar', token: `test-asig-x-${Date.now()}` },
+      select: { id: true },
+    });
+    const grupo = await addSegment(scope(), eventId, 'Familia', fixture.get().userId);
+    assert.ok(grupo.ok);
+
+    // El id viaja en una casilla del formulario: es un dato del cliente.
+    const result = await setSegmentMembers(scope(), eventId, grupo.ok ? grupo.id : '', [ajeno.id]);
+    assert.deepEqual(result, { added: 0, removed: 0 });
+    assert.equal(await prisma.guestSegment.count({ where: { guestId: ajeno.id } }), 0);
+  });
+
+  it('lo que se guarda es lo que verá el invitado, con las mismas reglas', async () => {
+    const prisma = controlDb();
+    const eventId = await makeEvent(fixture.get().tenantId);
+    const guest = await prisma.guest.create({
+      data: { eventId, name: 'Rami', locale: 'ar', token: `test-asig-p-${Date.now()}`, maxParty: 2 },
+      select: { id: true, maxParty: true },
+    });
+    const acto = await prisma.eventAct.create({
+      data: {
+        eventId, type: 'henna', date: '2026-07-02', time: '20:00', timezone: 'Asia/Beirut',
+        venueName: 'Casa', venueAddress: 'Beirut', venueMapUrl: 'https://m.example',
+      },
+      select: { id: true },
+    });
+    const grupo = await addSegment(scope(), eventId, 'Familia', fixture.get().userId);
+    assert.ok(grupo.ok);
+    const segmentId = grupo.ok ? grupo.id : '';
+    await setActAudience(scope(), eventId, acto.id, segmentId, 'allow', fixture.get().userId);
+
+    // Antes de meterlo en el grupo no ve nada: el acto es segmentado.
+    assert.deepEqual(await agendaFor(scope(), eventId, guest), []);
+
+    await setSegmentMembers(scope(), eventId, segmentId, [guest.id]);
+    const agenda = await agendaFor(scope(), eventId, guest);
+    assert.deepEqual(agenda.map((act) => act.id), [acto.id]);
+    assert.equal(agenda[0]?.maxParty, 2);
   });
 });

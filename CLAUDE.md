@@ -455,6 +455,19 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   latinas. «عائلة العروس» NO se translitera: sale `grupo-2`. Transliterar un
   nombre árabe automáticamente es lo que este proyecto prohíbe en los slugs, y no
   hay razón para hacerlo aquí y no allí.
+- Meter gente en un grupo es un formulario de casillas, y por eso guardar
+  REEMPLAZA la lista entera en vez de añadir: una casilla desmarcada no manda
+  nada, así que lo que llega es quién se queda dentro y lo que falta es quién
+  salió. Añadiendo sin quitar, desmarcar no serviría para nada — que es peor que
+  no tener la casilla. Va en una transacción: entre quitar y poner, un grupo a
+  medias deja a gente fuera de actos a los que sí estaba invitada, y eso se
+  descubre cuando alguien no recibe su invitación.
+- La VISTA PREVIA de «qué ve este invitado» llama a `agendaFor`, la MISMA función
+  que decide lo que sale en su enlace. No es una maqueta: una que calculara por su
+  cuenta se desviaría el día que alguien cambiara una regla, y el único que se
+  enteraría sería el invitado. Es la única forma de comprobar una regla sin
+  preguntársela a un invitado, y por eso el formulario es un GET: el enlace de
+  «lo que ve Rami» se puede pasar a quien esté decidiendo las listas.
 - La migración no rompe nada: cada evento que ya existía estrena su acto
   principal con su fecha y su sede, un grupo «todos» con todos sus invitados
   dentro, la regla que los deja pasar, y sus respuestas copiadas. Un evento de

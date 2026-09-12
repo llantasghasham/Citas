@@ -189,3 +189,109 @@ export async function fillSegment(
   });
   return count;
 }
+
+export interface AssignableGuest {
+  id: string;
+  name: string;
+  phone: string | null;
+  locale: string;
+  /** Los grupos en los que ya está, para marcar las casillas. */
+  segmentIds: string[];
+}
+
+/**
+ * Los invitados del evento con los grupos en los que están.
+ *
+ * Dos consultas y no una por invitado: una boda de cuatrocientos serían
+ * cuatrocientas consultas para pintar una lista de casillas.
+ */
+export async function listGuestsForAssignment(
+  scope: TenantScope,
+  eventId: string,
+): Promise<AssignableGuest[] | null> {
+  const prisma = db(scope);
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, ...scopedWhere(scope) },
+    select: { id: true },
+  });
+  if (event === null) return null;
+
+  const [guests, memberships] = await Promise.all([
+    prisma.guest.findMany({
+      where: { eventId },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, phone: true, locale: true },
+    }),
+    prisma.guestSegment.findMany({ where: { eventId }, select: { guestId: true, segmentId: true } }),
+  ]);
+
+  const groupsOf = new Map<string, string[]>();
+  for (const row of memberships) {
+    const list = groupsOf.get(row.guestId) ?? [];
+    list.push(row.segmentId);
+    groupsOf.set(row.guestId, list);
+  }
+
+  return guests.map((guest) => ({
+    id: guest.id,
+    name: guest.name,
+    phone: guest.phone,
+    locale: guest.locale,
+    segmentIds: groupsOf.get(guest.id) ?? [],
+  }));
+}
+
+/**
+ * Deja el grupo con EXACTAMENTE estos invitados dentro.
+ *
+ * Reemplaza, no añade, porque eso es lo que hace un formulario de casillas: una
+ * casilla que se desmarca no manda nada, así que «lo que llega» es la lista
+ * entera y lo que falta es lo que se quitó. Añadir sin quitar haría que
+ * desmarcar no sirviera para nada, que es peor que no tener la casilla.
+ *
+ * Los ids llegan de un formulario, así que se cruzan contra los invitados DEL
+ * EVENTO antes de escribir: un id de la boda de otra oficina no sobrevive al
+ * filtro y no llega a la escritura.
+ */
+export async function setSegmentMembers(
+  scope: TenantScope,
+  eventId: string,
+  segmentId: string,
+  guestIds: readonly string[],
+): Promise<{ added: number; removed: number } | null> {
+  const prisma = db(scope);
+
+  const segment = await prisma.audienceSegment.findFirst({
+    where: { id: segmentId, eventId, event: scopedWhere(scope) },
+    select: { id: true },
+  });
+  if (segment === null) return null;
+
+  const wanted = await prisma.guest.findMany({
+    where: { eventId, id: { in: [...guestIds] } },
+    select: { id: true },
+  });
+  const keep = new Set(wanted.map((guest) => guest.id));
+
+  const current = await prisma.guestSegment.findMany({
+    where: { segmentId },
+    select: { guestId: true },
+  });
+  const have = new Set(current.map((row) => row.guestId));
+
+  const toAdd = [...keep].filter((id) => !have.has(id));
+  const toRemove = [...have].filter((id) => !keep.has(id));
+
+  // En una transacción: dejar el grupo a medias entre quitar y poner sería
+  // dejar a gente fuera de actos a los que sí estaba invitada, y eso se
+  // descubre cuando alguien no recibe su invitación.
+  await prisma.$transaction([
+    prisma.guestSegment.deleteMany({ where: { segmentId, guestId: { in: toRemove } } }),
+    prisma.guestSegment.createMany({
+      data: toAdd.map((guestId) => ({ guestId, segmentId, eventId })),
+      skipDuplicates: true,
+    }),
+  ]);
+
+  return { added: toAdd.length, removed: toRemove.length };
+}

@@ -10,7 +10,7 @@ import {
   setActAudience,
   type ActInput,
 } from '@/lib/acts/service';
-import { addSegment, fillSegment, removeSegment } from '@/lib/acts/segments';
+import { addSegment, fillSegment, removeSegment, setSegmentMembers } from '@/lib/acts/segments';
 import { getSession, scopeOf, sessionCan, type AuthenticatedSession } from '@/lib/auth/session';
 import type { AudienceMode } from '@/generated/prisma/enums';
 
@@ -136,4 +136,17 @@ export async function fillSegmentAction(formData: FormData): Promise<void> {
 
   const added = await fillSegment(scopeOf(session), eventId, segmentId);
   back(eventId, `?metidos=${added}`);
+}
+
+export async function setMembersAction(formData: FormData): Promise<void> {
+  const session = await guard();
+  const eventId = String(formData.get('eventId') ?? '');
+  const segmentId = String(formData.get('segmentId') ?? '');
+  // Una casilla desmarcada NO manda nada, así que lo que llega es la lista
+  // entera de los que quedan dentro y lo que falta es lo que se quitó.
+  const guestIds = formData.getAll('guestId').map((value) => String(value));
+
+  const result = await setSegmentMembers(scopeOf(session), eventId, segmentId, guestIds);
+  if (result === null) back(eventId, '?error=notFound');
+  back(eventId, `?metidos=${result.added}&sacados=${result.removed}`);
 }
