@@ -1002,6 +1002,10 @@ npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
 - `docs/COBRO-WHISH.md` — cobro en Líbano con Whish: qué pedirle al proveedor y
   las reglas de la integración.
 - `docs/DECISIONES-PENDIENTES.md` — lo que no es código y bloquea fases enteras.
+- `docs/DIRECTORIO.md` — el portal público de proveedores y celebraciones: el
+  PLAN, antes de escribir una migración. Dónde va cada tabla, por qué la
+  publicación de una fiesta es una COPIA y no una marca en el evento, y las
+  cinco cosas que hay que decidir antes de empezar.
 - `docs/DECISIONES-TOMADAS.md` — lo que YA está decidido, con su porqué y qué
   habría que hacer para cambiarlo. Manda sobre cualquier otro documento que diga
   otra cosa; existe porque el proyecto llegó a contradecirse a sí mismo.
