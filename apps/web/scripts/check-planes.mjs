@@ -39,6 +39,8 @@ const TENANT = new Set([
   'guest', 'table', 'rsvp', 'whatsappConnection', 'whatsappMessage',
   'eventAct', 'actTranslation', 'audienceSegment', 'guestSegment',
   'actAudience', 'guestActInvite', 'guestActRsvp',
+  'consent', 'optOut', 'messageCampaign', 'messageRecipient',
+  'checkIn', 'guestPreference', 'invitationVisit',
 ]);
 
 /**

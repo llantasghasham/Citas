@@ -174,16 +174,19 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships   Membership[]
-  events        Event[]
-  orders        Order[]
-  subscription  Subscription?
-  auditLogs     AuditLog[]
-  whatsapps     WhatsappConnection[]
-  sinpeAccounts SinpeAccount[]
-  sessions      Session[]
-  publicSlugs   PublicSlug[]
-  guestTokens   GuestToken[]
+  memberships      Membership[]
+  events           Event[]
+  orders           Order[]
+  subscription     Subscription?
+  auditLogs        AuditLog[]
+  whatsapps        WhatsappConnection[]
+  sinpeAccounts    SinpeAccount[]
+  sessions         Session[]
+  publicSlugs      PublicSlug[]
+  guestTokens      GuestToken[]
+  consents         Consent[]
+  optOuts          OptOut[]
+  messageCampaigns MessageCampaign[]
 
   @@index([status])
 }
@@ -330,16 +333,18 @@ model Event {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant   Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  owner    User?               @relation("EventOwner", fields: [ownerId], references: [id])
-  versions InvitationVersion[]
-  hosts    EventHost[]
-  honorees EventHonoree[]
-  guests   Guest[]
-  tables   Table[]
-  messages WhatsappMessage[]
-  acts     EventAct[]
-  segments AudienceSegment[]
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner     User?               @relation("EventOwner", fields: [ownerId], references: [id])
+  versions  InvitationVersion[]
+  hosts     EventHost[]
+  honorees  EventHonoree[]
+  guests    Guest[]
+  tables    Table[]
+  messages  WhatsappMessage[]
+  acts      EventAct[]
+  segments  AudienceSegment[]
+  campaigns MessageCampaign[]
+  visits    InvitationVisit[]
 
   /// Para que otras tablas puedan apuntar a (id, tenantId) a la vez y la BASE
   /// impida que una fila de una oficina cuelgue del evento de otra.
@@ -488,9 +493,12 @@ model Guest {
   rsvp     Rsvp?
   messages WhatsappMessage[]
 
-  segments   GuestSegment[]
-  actInvites GuestActInvite[]
-  actRsvps   GuestActRsvp[]
+  segments          GuestSegment[]
+  actInvites        GuestActInvite[]
+  actRsvps          GuestActRsvp[]
+  messageRecipients MessageRecipient[]
+  checkIns          CheckIn[]
+  guestPreferences  GuestPreference[]
 
   /// Misma razón que en `Event`: permite apuntar a (id, eventId) a la vez.
   /// El invitado no lleva `tenantId` —cuelga de su evento— así que la cadena se
@@ -567,6 +575,7 @@ model EventAct {
   audiences    ActAudience[]
   invites      GuestActInvite[]
   rsvps        GuestActRsvp[]
+  checkIns     CheckIn[]
 
   /// Para que las tablas de abajo apunten a (id, eventId) a la vez: la BASE
   /// impide que un invitado de una boda responda al acto de otra.
@@ -699,6 +708,234 @@ model GuestActRsvp {
 
   @@unique([guestId, actId])
   @@index([actId, status])
+}
+
+// ------------------------------------------------ permiso para escribirle
+
+/// Por qué canal se le puede escribir a alguien.
+enum ContactChannel {
+  whatsapp
+  email
+  sms
+}
+
+/// PARA QUÉ se le puede escribir. Separados porque no son lo mismo: quien
+/// acepta recibir su invitación no ha aceptado recibir ofertas, y meterlas en el
+/// mismo saco es lo que convierte un permiso en un pretexto.
+enum ConsentPurpose {
+  invitation
+  reminder
+  marketing
+}
+
+/// El permiso de una persona para que se le escriba, por canal y para qué.
+///
+/// No existía, y esa era la parte que faltaba para poder hablar de cumplimiento:
+/// tener un teléfono en una hoja de cálculo no es un permiso. Importar doscientos
+/// números de un Excel tampoco. Sin esta tabla, cualquier canal —el de ahora o el
+/// oficial— automatiza el mismo problema con mejor letra.
+///
+/// Se guarda de DÓNDE salió y con qué texto se pidió: un permiso que no se puede
+/// enseñar no sirve para defenderse de una queja, que es justo para lo que hace
+/// falta.
+model Consent {
+  id       String @id @default(cuid())
+  tenantId String
+
+  channel ContactChannel
+  purpose ConsentPurpose
+  /// El teléfono en E.164 o el correo en minúsculas. La PERSONA puede no tener
+  /// cuenta aquí: lo que consiente es un contacto, no un usuario.
+  contact String
+
+  /// De dónde salió: «lista importada», «formulario», «lo dijo por teléfono»…
+  source      String
+  /// Qué texto se le enseñó. Cambiar el texto es un permiso nuevo.
+  textVersion String?
+  /// Quién lo anotó. Nulo cuando lo dio la propia persona.
+  actorId     String?
+
+  grantedAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, channel, purpose, contact])
+  @@index([tenantId, contact])
+}
+
+/// La baja. Gana SIEMPRE sobre cualquier permiso.
+///
+/// Va en una tabla aparte y no como un campo del permiso a propósito: una baja
+/// tiene que poder existir sin que antes hubiera permiso —alguien escribe STOP
+/// sin haber dado nunca nada— y tiene que sobrevivir a que se vuelva a importar
+/// la lista. Un `revokedAt` en `Consent` lo borraría la siguiente importación.
+model OptOut {
+  id       String @id @default(cuid())
+  tenantId String
+
+  channel ContactChannel
+  contact String
+  /// Nulo = para todo. Con propósito = solo para eso.
+  purpose ConsentPurpose?
+
+  reason  String?
+  actorId String?
+
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, channel, contact, purpose])
+  @@index([tenantId, contact])
+}
+
+// --------------------------------------------------------------- campañas
+
+enum CampaignStatus {
+  draft
+  queued
+  sending
+  done
+  canceled
+}
+
+/// Un envío a un grupo, para un acto, con una plantilla.
+///
+/// Existe para que «mandar las invitaciones de la henna a la familia de la
+/// novia» sea UNA cosa con nombre, fecha, autor y resultado — y no doscientas
+/// filas sueltas en una cola de las que nadie sabe de dónde salieron.
+model MessageCampaign {
+  id       String @id @default(cuid())
+  tenantId String
+  eventId  String
+
+  /// A qué acto invita. Nulo = a la celebración entera (el acto principal).
+  actId     String?
+  /// A quién. Nulo = a todos los invitados autorizados a ese acto.
+  segmentId String?
+
+  kind     String         @default("invitation")
+  /// Qué plantilla y qué VERSIÓN: cambiar el texto es una plantilla nueva, y la
+  /// clave contra duplicados tiene que llevarlo dentro.
+  template String
+  version  String         @default("1")
+  status   CampaignStatus @default(draft)
+
+  connectionId String?
+  scheduledAt  DateTime?
+  actorId      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event      Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  recipients MessageRecipient[]
+
+  @@index([eventId, status])
+}
+
+enum RecipientStatus {
+  excluded
+  queued
+  sent
+  failed
+}
+
+/// A quién le tocaba de una campaña, y qué pasó.
+///
+/// Guarda también a los EXCLUIDOS y por qué. Una campaña que solo enseña a
+/// quién le llegó no deja ver lo que de verdad hay que mirar: los ochenta que se
+/// quedaron fuera porque nadie les pidió permiso.
+model MessageRecipient {
+  id         String @id @default(cuid())
+  campaignId String
+  guestId    String
+  eventId    String
+
+  status    RecipientStatus @default(queued)
+  /// Por qué se quedó fuera: `no_consent`, `opted_out`, `no_phone`,
+  /// `not_authorized`, `already_sent`.
+  reason    String?
+  /// La fila de la cola que se creó, si se creó.
+  messageId String?
+
+  createdAt DateTime @default(now())
+
+  campaign MessageCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  guest    Guest           @relation(fields: [guestId, eventId], references: [id, eventId], onDelete: Cascade)
+
+  @@unique([campaignId, guestId])
+  @@index([campaignId, status])
+}
+
+// ----------------------------------------------------------------- puerta
+
+/// Quién entró, a qué acto y cuándo.
+model CheckIn {
+  id      String @id @default(cuid())
+  eventId String
+  actId   String
+  guestId String
+
+  /// Cuántos entraron con él. Se comprueba contra lo que tenía autorizado.
+  people     Int     @default(1)
+  operatorId String?
+  gate       String?
+
+  createdAt DateTime @default(now())
+
+  act   EventAct @relation(fields: [actId, eventId], references: [id, eventId], onDelete: Cascade)
+  guest Guest    @relation(fields: [guestId, eventId], references: [id, eventId], onDelete: Cascade)
+
+  @@unique([actId, guestId])
+  @@index([actId, createdAt])
+}
+
+// ------------------------------------------------------------ preferencias
+
+/// Dieta, transporte, accesibilidad, fotos.
+///
+/// Clave y valor y no una columna por cosa: lo que hace falta preguntar cambia
+/// de una boda a otra, y una columna nueva por cada pregunta es una migración
+/// por cada boda. Lo que NO cambia es que se pregunta solo lo que hace falta.
+model GuestPreference {
+  id      String  @id @default(cuid())
+  guestId String
+  eventId String
+  /// Nulo = vale para toda la celebración.
+  actId   String?
+
+  key   String
+  value String
+
+  updatedAt DateTime @updatedAt
+
+  guest Guest @relation(fields: [guestId, eventId], references: [id, eventId], onDelete: Cascade)
+
+  @@unique([guestId, actId, key])
+  @@index([eventId, key])
+}
+
+/// Cada vez que alguien ABRE una invitación.
+///
+/// `Guest.openedAt` solo dice «la abrió alguna vez», y con eso no se puede
+/// distinguir a quien la abrió y no contestó de quien no la abrió nunca — que
+/// son dos conversaciones distintas. No se guarda el navegador entero ni la IP:
+/// para saber si un enlace funciona no hace falta saber desde dónde se abrió.
+model InvitationVisit {
+  id      String  @id @default(cuid())
+  eventId String
+  guestId String?
+  /// Desde qué enlace: `public` o `personal`.
+  via     String  @default("public")
+
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, createdAt])
 }
 
 model Table {
@@ -1045,6 +1282,16 @@ model WhatsappMessage {
   /// El invitado, cuando lo hay. Nulo en un mensaje suelto.
   guestId String?
   eventId String?
+
+  /// A qué acto invita este mensaje. Nulo = a la celebración entera.
+  ///
+  /// Entra en el índice que impide encolar dos veces al mismo invitado, y tiene
+  /// que entrar: el mismo invitado recibe la invitación de la henna Y la de la
+  /// recepción, y sin el acto lo que evita el doble envío impediría la segunda.
+  actId String?
+
+  /// De qué campaña salió, cuando salió de una.
+  campaignId String?
 
   /// Qué es este mensaje: `invitation` o `reminder`.
   ///

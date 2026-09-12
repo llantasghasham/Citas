@@ -70,6 +70,24 @@ const CHECKS: Check[] = [
     why: 'sin esto no se puede saber si la oficina sigue abierta al resolver la sesión',
   },
   {
+    what: 'una baja total no se puede apuntar dos veces',
+    sql: `SELECT indexdef FROM pg_indexes WHERE indexname = 'OptOut_all_key'`,
+    expect: (rows) => String(rows[0]?.['indexdef'] ?? '').includes('IS NULL'),
+    why: 'dos nulos no chocan en un índice único: sin el parcial, cien bajas del mismo contacto',
+  },
+  {
+    what: 'no se encola dos veces el mismo acto al mismo invitado',
+    sql: `SELECT indexdef FROM pg_indexes WHERE indexname = 'WhatsappMessage_live_guest_key'`,
+    expect: (rows) => String(rows[0]?.['indexdef'] ?? '').includes('actId'),
+    why: 'sin el acto, lo que evita el doble envío impediría la invitación del segundo acto',
+  },
+  {
+    what: 'una entrada por invitado y acto',
+    sql: `SELECT indexdef FROM pg_indexes WHERE indexname = 'CheckIn_actId_guestId_key'`,
+    expect: (rows) => String(rows[0]?.['indexdef'] ?? '').includes('UNIQUE'),
+    why: 'el segundo intento tiene que distinguirse de una entrada nueva',
+  },
+  {
     what: 'un solo acto principal por evento',
     sql: `SELECT indexdef FROM pg_indexes WHERE indexname = 'EventAct_main_key'`,
     expect: (rows) => {
