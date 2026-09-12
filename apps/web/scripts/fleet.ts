@@ -55,14 +55,38 @@ function deployTo(database: string): void {
 async function migrate(): Promise<void> {
   // La plantilla primero: es de la que se copian las nuevas, así que una
   // plantilla atrasada fabrica oficinas atrasadas.
+  const fleet = await listFleetDatabases();
+
   if (!(await databaseExists(TEMPLATE_DB))) {
     console.log(`[flota] creando la plantilla ${TEMPLATE_DB}`);
-    await controlDb().$executeRawUnsafe(`CREATE DATABASE "${TEMPLATE_DB}"`);
+    try {
+      await controlDb().$executeRawUnsafe(`CREATE DATABASE "${TEMPLATE_DB}"`);
+    } catch (error) {
+      // No poder crear la plantilla es grave si HAY oficinas con base propia:
+      // significa que la próxima no se va a poder dar de alta y que estas no se
+      // van a poder migrar. Pero si no hay ninguna —reparto `shared`, que es
+      // como está hoy la instalación— es una preparación que todavía no hace
+      // falta, y tumbar por eso el despliegue entero deja el sitio sin
+      // actualizar por algo que no afecta a nadie. Se dice fuerte y se sigue.
+      //
+      // El permiso se concede con `ALTER ROLE <usuario> CREATEDB` y el
+      // instalador ya lo hace; esto es la red por si se ejecuta en una máquina
+      // donde no se hizo.
+      const why = error instanceof Error ? error.message : String(error);
+      if (fleet.length > 0) throw error;
+      console.error(
+        `[flota] AVISO: no se pudo crear la plantilla ${TEMPLATE_DB}.\n` +
+          `        ${why.split('\n').slice(-1)[0]?.trim() ?? ''}\n` +
+          '        Hoy no hay ninguna oficina con base propia, así que nada deja\n' +
+          '        de funcionar — pero dar de alta una oficina fallará hasta que\n' +
+          `        el usuario de la base pueda crear bases (ALTER ROLE … CREATEDB).`,
+      );
+      return;
+    }
   }
   console.log(`[flota] migrando la plantilla`);
   deployTo(TEMPLATE_DB);
 
-  const fleet = await listFleetDatabases();
   if (fleet.length === 0) {
     console.log('[flota] todavía no hay ninguna oficina con base propia.');
     return;
