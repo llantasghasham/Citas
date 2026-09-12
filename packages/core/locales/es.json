@@ -10,6 +10,18 @@
     "baptism": "bautizo",
     "memorial": "ceremonia de recuerdo"
   },
+  "actTypes": {
+    "engagement": "Compromiso",
+    "family_party": "Fiesta familiar",
+    "henna": "Henna",
+    "preparation": "Preparación",
+    "zaffe": "Zaffe",
+    "ceremony": "Ceremonia",
+    "dinner": "Cena",
+    "reception": "Recepción",
+    "farewell": "Despedida",
+    "other": "Otro"
+  },
   "invite": {
     "wedding": {
       "kicker": "Invitación de boda",
@@ -656,6 +668,16 @@
       "audienceNone": "—",
       "audienceHint": "«No entra» gana sobre «entra». Un invitado sin ningún grupo permitido no ve el acto.",
       "counts": "{invited} pueden entrar · {attending} han dicho que sí · {seats} sillas",
+      "reportCounts": "{authorized} pueden entrar · {replied} han contestado · {attending} vienen · {seats} sillas",
+      "reportPending": "{count} sin contestar",
+      "reportOver": "Se pasa del aforo: {seats} sillas para {capacity}.",
+      "exportAct": "Descargar la lista de este acto",
+      "coverageHeading": "Lo que falta por arreglar",
+      "coverageNoAct": "{count} invitados no entran a ningún acto: tal como está, no hay invitación que mandarles.",
+      "coverageUnreachable": "{count} invitados sin teléfono ni correo: no hay por dónde avisarles.",
+      "coverageSilent": "{count} invitados no han contestado a ningún acto suyo.",
+      "coverageClean": "Todos los invitados entran a algo y tienen por dónde recibirlo.",
+      "coverageSample": "Por ejemplo:",
       "segmentsHeading": "Grupos",
       "segmentsIntro": "Un grupo se asigna al acto una vez y vale para todos los que estén dentro.",
       "segmentAdd": "Añadir un grupo",
@@ -687,18 +709,6 @@
         "deadline": "El plazo para confirmar tiene que acabar antes de que empiece el acto.",
         "notFound": "Ese acto no es de este evento.",
         "lastOne": "El acto principal no se puede quitar."
-      },
-      "types": {
-        "engagement": "Compromiso",
-        "family_party": "Fiesta familiar",
-        "henna": "Henna",
-        "preparation": "Preparación",
-        "zaffe": "Zaffe",
-        "ceremony": "Ceremonia",
-        "dinner": "Cena",
-        "reception": "Recepción",
-        "farewell": "Despedida",
-        "other": "Otro"
       }
     },
     "versions": {
@@ -931,6 +941,16 @@
     "closed": "El plazo para confirmar ha terminado.",
     "error": "No se pudo guardar su respuesta. Inténtelo de nuevo.",
     "yourTable": "Su mesa"
+  },
+  "agenda": {
+    "heading": "El programa",
+    "yours": "Esto es lo que le corresponde a usted: otros invitados reciben un programa distinto.",
+    "optional": "opcional",
+    "closed": "El plazo para confirmar este acto ha terminado.",
+    "replyTo": "Confirmar para {act}",
+    "noReplies": "En este acto no se confirma asistencia.",
+    "until": "hasta las {time}",
+    "saved": "Anotado."
   },
   "create": {
     "title": "Crear invitación",

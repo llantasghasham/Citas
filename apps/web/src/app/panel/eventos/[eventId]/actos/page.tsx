@@ -13,6 +13,7 @@ import {
   setMembersAction,
 } from '@/app/panel/eventos/[eventId]/actos/actions';
 import { getAdminContext } from '@/lib/admin/context';
+import { actReport, type ActMetrics, type Coverage } from '@/lib/acts/metrics';
 import { ACT_TYPES, readActs, type ActRow } from '@/lib/acts/service';
 import { agendaFor, type AuthorizedAct } from '@/lib/acts/access';
 import {
@@ -65,13 +66,20 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
   const { error, metidos, sacados, abierto, invitado } = await searchParams;
   const { dictionary } = await getAdminContext(session.tenantId);
   const copy = dictionary.admin.acts;
+  const types = dictionary.actTypes;
 
-  const [acts, segments, guests] = await Promise.all([
+  const [acts, segments, guests, report] = await Promise.all([
     readActs(scopeOf(session), eventId),
     readSegments(scopeOf(session), eventId),
     listGuestsForAssignment(scopeOf(session), eventId),
+    actReport(scopeOf(session), eventId),
   ]);
-  if (acts === null || segments === null || guests === null) redirect('/panel');
+  if (acts === null || segments === null || guests === null || report === null) redirect('/panel');
+
+  // Los recuentos EXACTOS salen de aquí y no del listado: `actReport` aplica
+  // invitado a invitado la misma regla que decide la agenda, así que quien esté
+  // en dos grupos permitidos se cuenta una vez.
+  const metricsOf = new Map(report.acts.map((metric) => [metric.actId, metric]));
 
   // La vista previa: la agenda REAL de un invitado, calculada con las mismas
   // reglas que la calcularán cuando abra su enlace. No es una maqueta.
@@ -108,6 +116,8 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
         </p>
       )}
 
+      <CoveragePanel copy={copy} coverage={report.coverage} />
+
       <Segments
         copy={copy}
         eventId={eventId}
@@ -118,6 +128,7 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
 
       <Preview
         copy={copy}
+        types={types}
         guests={guests}
         chosen={chosen}
         agenda={preview}
@@ -129,8 +140,10 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
           <ActCard
             key={act.id}
             copy={copy}
+            types={types}
             eventId={eventId}
             act={act}
+            metrics={metricsOf.get(act.id) ?? null}
             segments={segments}
             canWrite={canWrite}
             first={index === 0}
@@ -145,7 +158,7 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
           <summary className="cursor-pointer text-sm text-[#8a6c22]">{copy.add}</summary>
           <form action={addActAction} className="mt-4 flex flex-col gap-4">
             <input type="hidden" name="eventId" value={eventId} />
-            <ActFields copy={copy} />
+            <ActFields copy={copy} types={types} />
             <button type="submit" className={`${BUTTON} self-start`}>
               {copy.add}
             </button>
@@ -157,6 +170,7 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
 }
 
 type Copy = Dictionary['admin']['acts'];
+type Types = Dictionary['actTypes'];
 
 function problemText(copy: Copy, code: string): string {
   const problems = copy.problems as unknown as Record<string, string | undefined>;
@@ -268,8 +282,10 @@ function Segments({
 
 function ActCard({
   copy,
+  types,
   eventId,
   act,
+  metrics,
   segments,
   canWrite,
   first,
@@ -277,16 +293,17 @@ function ActCard({
   open,
 }: {
   copy: Copy;
+  types: Types;
   eventId: string;
   act: ActRow;
+  metrics: ActMetrics | null;
   segments: SegmentRow[];
   canWrite: boolean;
   first: boolean;
   last: boolean;
   open: boolean;
 }) {
-  const types = copy.types as unknown as Record<string, string | undefined>;
-  const name = act.label ?? types[act.type] ?? act.type;
+  const name = act.label ?? types[act.type];
 
   return (
     <article className="flex flex-col gap-3 border border-[#ddd6c6] bg-white p-4">
@@ -309,14 +326,32 @@ function ActCard({
       <p className="text-sm text-[#6b6455]">
         {act.venueName} · {act.venueAddress}
       </p>
-      <p className="text-xs text-[#6b6455]">
-        {interpolate(copy.counts, {
-          invited: String(act.invited),
-          attending: String(act.attending),
-          seats: String(act.seats),
-        })}
-        {act.capacity !== null && ` / ${act.capacity}`}
-      </p>
+      {metrics !== null && (
+        <p className="text-xs text-[#6b6455]">
+          {interpolate(copy.reportCounts, {
+            authorized: String(metrics.authorized),
+            replied: String(metrics.replied),
+            attending: String(metrics.attending),
+            seats: String(metrics.seats),
+          })}
+          {' · '}
+          {interpolate(copy.reportPending, { count: String(metrics.pending) })}
+        </p>
+      )}
+      {metrics?.overCapacity === true && act.capacity !== null && (
+        <p className="border border-[#b3261e] bg-[#fdf2f1] p-2 text-xs text-[#b3261e]">
+          {interpolate(copy.reportOver, {
+            seats: String(metrics.seats),
+            capacity: String(act.capacity),
+          })}
+        </p>
+      )}
+      <a
+        className="text-xs underline text-[#8a6c22]"
+        href={`/api/events/${eventId}/actos/${act.id}`}
+      >
+        {copy.exportAct}
+      </a>
       {act.isMain && <p className="text-xs text-[#6b6455]">{copy.mainHint}</p>}
 
       {segments.length > 0 && (
@@ -396,7 +431,7 @@ function ActCard({
           <form action={editActAction} className="mt-4 flex flex-col gap-4">
             <input type="hidden" name="eventId" value={eventId} />
             <input type="hidden" name="actId" value={act.id} />
-            <ActFields copy={copy} act={act} />
+            <ActFields copy={copy} types={types} act={act} />
             <button type="submit" className={`${BUTTON} self-start`}>
               {copy.edit}
             </button>
@@ -408,8 +443,7 @@ function ActCard({
 }
 
 /** Los campos de un acto. Los mismos al crear y al editar, a propósito. */
-function ActFields({ copy, act }: { copy: Copy; act?: ActRow }) {
-  const types = copy.types as unknown as Record<string, string | undefined>;
+function ActFields({ copy, types, act }: { copy: Copy; types: Types; act?: ActRow }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <label className={LABEL}>
@@ -417,7 +451,7 @@ function ActFields({ copy, act }: { copy: Copy; act?: ActRow }) {
         <select name="type" defaultValue={act?.type ?? 'other'} className={CONTROL}>
           {ACT_TYPES.map((type) => (
             <option key={type} value={type}>
-              {types[type] ?? type}
+              {types[type]}
             </option>
           ))}
         </select>
@@ -528,17 +562,17 @@ function ActFields({ copy, act }: { copy: Copy; act?: ActRow }) {
  */
 function Preview({
   copy,
+  types,
   guests,
   chosen,
   agenda,
 }: {
   copy: Copy;
+  types: Types;
   guests: AssignableGuest[];
   chosen: AssignableGuest | null;
   agenda: AuthorizedAct[] | null;
 }) {
-  const types = copy.types as unknown as Record<string, string | undefined>;
-
   return (
     <section className="flex flex-col gap-3 border border-[#ddd6c6] bg-white p-4">
       <h2 className={`${displayFont} text-xl text-[#23201a]`}>{copy.previewHeading}</h2>
@@ -575,7 +609,7 @@ function Preview({
           {agenda.map((act) => (
             <li key={act.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-[#efeadd] pt-2">
               <span className="text-sm text-[#23201a]">
-                {act.label ?? types[act.type] ?? act.type}
+                {act.label ?? types[act.type]}
               </span>
               <span className="text-sm text-[#6b6455]">
                 {act.date} · {act.time}
@@ -591,6 +625,50 @@ function Preview({
                     : copy.previewClosed
                   : interpolate(copy.previewReplied, { status: act.reply.status })}
               </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Lo que falta por arreglar, arriba y antes que nada.
+ *
+ * Un invitado que no entra a ningún acto no da error en ninguna parte: la
+ * pantalla de invitados lo enseña, el editor de actos lo enseña, y aun así nadie
+ * le va a mandar nada. Lo mismo con quien no tiene ni teléfono ni correo. Son
+ * agujeros silenciosos, que es la peor clase, y por eso van en rojo y con
+ * nombres: un número preocupa y no deja hacer nada — la misma razón por la que
+ * los envíos fallidos de WhatsApp salen con nombre y motivo.
+ */
+function CoveragePanel({ copy, coverage }: { copy: Copy; coverage: Coverage }) {
+  const cases = [
+    { key: 'noAct', text: copy.coverageNoAct, data: coverage.inNoAct },
+    { key: 'unreachable', text: copy.coverageUnreachable, data: coverage.unreachable },
+    { key: 'silent', text: copy.coverageSilent, data: coverage.silent },
+  ].filter((entry) => entry.data.count > 0);
+
+  return (
+    <section className="flex flex-col gap-3 border border-[#ddd6c6] bg-white p-4">
+      <h2 className={`${displayFont} text-xl text-[#23201a]`}>{copy.coverageHeading}</h2>
+
+      {cases.length === 0 ? (
+        <p className="text-sm text-[#6b6455]">{copy.coverageClean}</p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {cases.map((entry) => (
+            <li key={entry.key} className="flex flex-col gap-1">
+              <p className="text-sm text-[#b3261e]">
+                {interpolate(entry.text, { count: String(entry.data.count) })}
+              </p>
+              {entry.data.sample.length > 0 && (
+                <p className="text-xs text-[#6b6455]">
+                  {copy.coverageSample}{' '}
+                  {entry.data.sample.map((guest) => guest.name).join(' · ')}
+                </p>
+              )}
             </li>
           ))}
         </ul>

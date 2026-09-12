@@ -10,6 +10,18 @@
     "baptism": "batizado",
     "memorial": "cerimónia de homenagem"
   },
+  "actTypes": {
+    "engagement": "Noivado",
+    "family_party": "Festa familiar",
+    "henna": "Henna",
+    "preparation": "Preparação",
+    "zaffe": "Zaffe",
+    "ceremony": "Cerimónia",
+    "dinner": "Jantar",
+    "reception": "Receção",
+    "farewell": "Despedida",
+    "other": "Outro"
+  },
   "invite": {
     "wedding": {
       "kicker": "Convite de casamento",
@@ -656,6 +668,16 @@
       "audienceNone": "—",
       "audienceHint": "«Não entra» ganha a «entra». Um convidado sem nenhum grupo permitido não vê o ato.",
       "counts": "{invited} podem entrar · {attending} disseram que sim · {seats} lugares",
+      "reportCounts": "{authorized} podem entrar · {replied} responderam · {attending} vêm · {seats} lugares",
+      "reportPending": "{count} sem resposta",
+      "reportOver": "Passa da lotação: {seats} lugares para {capacity}.",
+      "exportAct": "Descarregar a lista deste ato",
+      "coverageHeading": "O que falta resolver",
+      "coverageNoAct": "{count} convidados não entram em nenhum ato: assim como está, não há convite para lhes enviar.",
+      "coverageUnreachable": "{count} convidados sem telefone nem correio: não há por onde avisá-los.",
+      "coverageSilent": "{count} convidados não responderam a nenhum ato seu.",
+      "coverageClean": "Todos os convidados entram em algo e têm por onde receber.",
+      "coverageSample": "Por exemplo:",
       "segmentsHeading": "Grupos",
       "segmentsIntro": "Um grupo atribui-se ao ato uma vez e vale para todos os que estão dentro.",
       "segmentAdd": "Adicionar um grupo",
@@ -687,18 +709,6 @@
         "deadline": "O prazo para confirmar tem de acabar antes de o ato começar.",
         "notFound": "Esse ato não é deste evento.",
         "lastOne": "O ato principal não se pode remover."
-      },
-      "types": {
-        "engagement": "Noivado",
-        "family_party": "Festa familiar",
-        "henna": "Henna",
-        "preparation": "Preparação",
-        "zaffe": "Zaffe",
-        "ceremony": "Cerimónia",
-        "dinner": "Jantar",
-        "reception": "Receção",
-        "farewell": "Despedida",
-        "other": "Outro"
       }
     },
     "versions": {
@@ -931,6 +941,16 @@
     "closed": "O prazo para confirmar terminou.",
     "error": "Não foi possível guardar a sua resposta. Tente de novo.",
     "yourTable": "A sua mesa"
+  },
+  "agenda": {
+    "heading": "O programa",
+    "yours": "Isto é o que lhe corresponde: outros convidados recebem um programa diferente.",
+    "optional": "opcional",
+    "closed": "O prazo para confirmar este ato terminou.",
+    "replyTo": "Confirmar para {act}",
+    "noReplies": "Neste ato não se confirma presença.",
+    "until": "até às {time}",
+    "saved": "Registado."
   },
   "create": {
     "title": "Criar convite",

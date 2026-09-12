@@ -4,10 +4,12 @@ import { notFound } from 'next/navigation';
 
 import { CalendarLink } from '@/components/invitation/CalendarLink';
 import { InvitationCard } from '@/components/invitation/InvitationCard';
+import { ActAgenda } from '@/components/rsvp/ActAgenda';
 import { RsvpForm } from '@/components/rsvp/RsvpForm';
 import { getDictionary, interpolate } from '@/lib/dictionary';
 import { getInvitationRepository } from '@/lib/repositories';
 import { guestCookieName } from '@/lib/rsvp/cookie';
+import { visitorAgenda } from '@/lib/rsvp/agenda';
 import { findGuestByToken } from '@/lib/rsvp/service';
 
 interface PageProps {
@@ -69,6 +71,10 @@ export default async function InvitationPage({ params, searchParams }: PageProps
     : undefined;
   const guest = guestToken === undefined ? null : await findGuestByToken(slug, guestToken);
 
+  // El programa: lo público para quien llega por un reenvío, y la agenda suya
+  // para quien abrió su enlace personal. Lo decide el servidor de una vez.
+  const agenda = canCollectReplies ? await visitorAgenda(slug, guestToken) : null;
+
   return (
     <main
       dir={invitation.direction}
@@ -88,6 +94,14 @@ export default async function InvitationPage({ params, searchParams }: PageProps
 
       <div className="flex w-[min(92vw,560px)] flex-col items-center gap-8 pb-8">
         <CalendarLink invitation={invitation} dictionary={dictionary} />
+        {agenda !== null && (
+          <ActAgenda
+            slug={slug}
+            acts={agenda.acts}
+            personal={agenda.guest !== null}
+            dictionary={dictionary}
+          />
+        )}
         {canCollectReplies ? (
           <div className="w-full">
             <RsvpForm

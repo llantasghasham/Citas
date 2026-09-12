@@ -45,11 +45,18 @@ export interface ActRow {
   isMain: boolean;
   /** Los grupos que entran y los que no, para pintarlos sin otra consulta. */
   audiences: { segmentId: string; mode: AudienceMode }[];
-  /** Cuánta gente puede entrar y cuánta ha dicho que viene. */
-  invited: number;
-  attending: number;
-  seats: number;
 }
+
+/*
+ * Los RECUENTOS no están aquí a propósito.
+ *
+ * Estuvieron, y eran una aproximación: sumaban la gente de cada grupo permitido,
+ * así que quien estuviera en dos se contaba dos veces y una exclusión con nombre
+ * no restaba. Al lado, `lib/acts/metrics.ts` los calcula EXACTOS aplicando la
+ * misma regla que decide la agenda. Dos cifras para lo mismo, una de ellas
+ * mentirosa, es como se pierde la confianza en una pantalla entera — así que la
+ * aproximada se fue y queda una.
+ */
 
 export interface ActInput {
   type: string;
@@ -100,69 +107,26 @@ export async function readActs(scope: TenantScope, eventId: string): Promise<Act
   });
   if (acts.length === 0) return [];
 
-  // Los recuentos en DOS consultas y no en dos por acto: una boda con ocho
-  // actos serían dieciséis consultas para pintar una pantalla.
-  const ids = acts.map((act) => act.id);
-  const [invites, replies] = await Promise.all([
-    prisma.guestActInvite.groupBy({
-      by: ['actId'],
-      where: { actId: { in: ids }, excluded: false },
-      _count: { _all: true },
-    }),
-    prisma.guestActRsvp.findMany({
-      where: { actId: { in: ids }, status: 'attending' },
-      select: { actId: true, party: true },
-    }),
-  ]);
-  const namedOf = new Map(invites.map((row) => [row.actId, row._count._all]));
-
-  const seatsOf = new Map<string, { people: number; seats: number }>();
-  for (const reply of replies) {
-    const current = seatsOf.get(reply.actId) ?? { people: 0, seats: 0 };
-    seatsOf.set(reply.actId, { people: current.people + 1, seats: current.seats + reply.party });
-  }
-
-  // Cuánta gente alcanza cada acto por sus GRUPOS. Una consulta para todos.
-  const reach = await prisma.guestSegment.groupBy({
-    by: ['segmentId'],
-    where: { eventId },
-    _count: { _all: true },
-  });
-  const inSegment = new Map(reach.map((row) => [row.segmentId, row._count._all]));
-
-  return acts.map((act) => {
-    const allowed = act.audiences
-      .filter((rule) => rule.mode === 'allow')
-      .reduce((total, rule) => total + (inSegment.get(rule.segmentId) ?? 0), 0);
-    const counted = seatsOf.get(act.id) ?? { people: 0, seats: 0 };
-    return {
-      id: act.id,
-      type: act.type,
-      label: act.label,
-      order: act.order,
-      date: act.date,
-      time: act.time,
-      endTime: act.endTime,
-      timezone: act.timezone,
-      venueName: act.venueName,
-      venueAddress: act.venueAddress,
-      venueMapUrl: act.venueMapUrl,
-      capacity: act.capacity,
-      optional: act.optional,
-      rsvpEnabled: act.rsvpEnabled,
-      rsvpDeadline: act.rsvpDeadline,
-      visibility: act.visibility,
-      isMain: act.isMain,
-      audiences: act.audiences,
-      // Aproximado y dicho como tal: son los que alcanzan sus grupos más los
-      // invitados con nombre. Quien esté en dos grupos permitidos se cuenta dos
-      // veces, y contarlo exacto costaría una consulta por acto para una cifra
-      // que se mira de reojo.
-      invited: allowed + (namedOf.get(act.id) ?? 0),
-      attending: counted.people,
-      seats: counted.seats,
-    };
-  });
+  return acts.map((act) => ({
+    id: act.id,
+    type: act.type,
+    label: act.label,
+    order: act.order,
+    date: act.date,
+    time: act.time,
+    endTime: act.endTime,
+    timezone: act.timezone,
+    venueName: act.venueName,
+    venueAddress: act.venueAddress,
+    venueMapUrl: act.venueMapUrl,
+    capacity: act.capacity,
+    optional: act.optional,
+    rsvpEnabled: act.rsvpEnabled,
+    rsvpDeadline: act.rsvpDeadline,
+    visibility: act.visibility,
+    isMain: act.isMain,
+    audiences: act.audiences,
+  }));
 }
 
 /**

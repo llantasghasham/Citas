@@ -1,6 +1,6 @@
 import { db } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
-import type { ActType, ActVisibility, RsvpStatus } from '@/generated/prisma/enums';
+import type { ActType, ActVisibility, AudienceMode, RsvpStatus } from '@/generated/prisma/enums';
 
 /**
  * Quién puede ver y responder a qué acto. TODO se resuelve en el servidor.
@@ -44,10 +44,52 @@ export interface AuthorizedAct {
   isMain: boolean;
   /** Cuántos puede traer A ESTE acto, ya resuelto. */
   maxParty: number;
-  /** Si todavía se puede contestar: depende del acto y de su fecha límite. */
+  /** Si este acto admite respuesta EN ABSOLUTO. */
+  repliesEnabled: boolean;
+  /**
+   * Si todavía se puede contestar: `repliesEnabled` Y dentro de plazo.
+   *
+   * Van separados porque no dicen lo mismo y la pantalla tiene que distinguir:
+   * «aquí no se confirma» es una nota del programa, y «se te pasó el plazo» es
+   * un aviso a quien iba a contestar.
+   */
   canRespond: boolean;
   /** Lo que ya contestó a ESTE acto, si contestó. */
   reply: { status: RsvpStatus; party: number; message: string | null } | null;
+}
+
+/**
+ * La regla, y el ÚNICO sitio donde vive.
+ *
+ * La usan la agenda de un invitado y los recuentos del panel. Estaba escrita dos
+ * veces —una en cada sitio, idénticas— y eso es como empiezan a decir cosas
+ * distintas: alguien arregla un caso raro en una y la otra sigue como estaba, y
+ * lo que queda es un panel que promete una lista y una invitación que enseña
+ * otra. Aquí pasa lo mismo que con la liquidación de un cobro: se decide en un
+ * sitio o no se decide.
+ *
+ * El orden importa:
+ *   1. Una EXCLUSIÓN con nombre gana sobre todo.
+ *   2. Una INVITACIÓN con nombre invita aunque no esté en ningún grupo, y un
+ *      `deny` de grupo no la tumba: quien escribió el nombre sabía lo que había.
+ *   3. Un `deny` de grupo cierra el paso; gana sobre `allow`.
+ *   4. Un `allow` de grupo abre.
+ *   5. Un acto PÚBLICO lo ve cualquiera con el enlace.
+ *   6. Y si nada dice que sí, es que NO. Falla cerrado.
+ */
+export function authorizes(
+  act: { visibility: ActVisibility; audiences: { segmentId: string; mode: AudienceMode }[] },
+  invite: { excluded: boolean } | undefined,
+  mine: ReadonlySet<string>,
+): boolean {
+  if (invite?.excluded === true) return false;
+  if (invite !== undefined) return true;
+
+  const denied = act.audiences.some((rule) => rule.mode === 'deny' && mine.has(rule.segmentId));
+  if (denied) return false;
+
+  const allowed = act.audiences.some((rule) => rule.mode === 'allow' && mine.has(rule.segmentId));
+  return allowed || act.visibility === 'public';
 }
 
 const ACT_FIELDS = {
@@ -117,15 +159,7 @@ export async function agendaFor(
   const authorized: AuthorizedAct[] = [];
   for (const act of acts) {
     const invite = inviteOf.get(act.id);
-    if (invite?.excluded === true) continue;
-
-    const named = invite !== undefined;
-    const denied = act.audiences.some((rule) => rule.mode === 'deny' && mine.has(rule.segmentId));
-    const allowed = act.audiences.some((rule) => rule.mode === 'allow' && mine.has(rule.segmentId));
-
-    // Una exclusión de grupo no puede tumbar una invitación con nombre: quien
-    // escribió el nombre lo escribió sabiendo lo que había.
-    if (!named && (denied || (!allowed && act.visibility !== 'public'))) continue;
+    if (!authorizes(act, invite, mine)) continue;
 
     const reply = replyOf.get(act.id);
     authorized.push({
@@ -144,6 +178,7 @@ export async function agendaFor(
       visibility: act.visibility,
       isMain: act.isMain,
       maxParty: invite?.maxParty ?? guest.maxParty,
+      repliesEnabled: act.rsvpEnabled,
       canRespond: stillOpen(act, now),
       reply:
         reply === undefined
@@ -164,7 +199,7 @@ export async function agendaFor(
 export async function publicActs(
   scope: TenantScope,
   eventId: string,
-): Promise<Omit<AuthorizedAct, 'maxParty' | 'canRespond' | 'reply'>[]> {
+): Promise<Omit<AuthorizedAct, 'maxParty' | 'canRespond' | 'repliesEnabled' | 'reply'>[]> {
   const acts = await db(scope).eventAct.findMany({
     where: { eventId, visibility: 'public', event: scopedWhere(scope) },
     orderBy: [{ order: 'asc' }, { date: 'asc' }, { time: 'asc' }],

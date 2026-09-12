@@ -10,6 +10,18 @@
     "baptism": "baptism",
     "memorial": "memorial"
   },
+  "actTypes": {
+    "engagement": "Engagement",
+    "family_party": "Family party",
+    "henna": "Henna",
+    "preparation": "Preparation",
+    "zaffe": "Zaffe",
+    "ceremony": "Ceremony",
+    "dinner": "Dinner",
+    "reception": "Reception",
+    "farewell": "Farewell",
+    "other": "Other"
+  },
   "invite": {
     "wedding": {
       "kicker": "Wedding Invitation",
@@ -656,6 +668,16 @@
       "audienceNone": "—",
       "audienceHint": "«Kept out» beats «gets in». A guest in no allowed group does not see the act.",
       "counts": "{invited} may come · {attending} said yes · {seats} seats",
+      "reportCounts": "{authorized} may come · {replied} have replied · {attending} are coming · {seats} seats",
+      "reportPending": "{count} with no reply",
+      "reportOver": "Over capacity: {seats} seats for {capacity}.",
+      "exportAct": "Download this act's list",
+      "coverageHeading": "What is still to be fixed",
+      "coverageNoAct": "{count} guests get into no act: as things stand, there is no invitation to send them.",
+      "coverageUnreachable": "{count} guests with no phone and no email: there is no way to reach them.",
+      "coverageSilent": "{count} guests have not replied to any of their acts.",
+      "coverageClean": "Every guest gets into something and has a way to receive it.",
+      "coverageSample": "For instance:",
       "segmentsHeading": "Groups",
       "segmentsIntro": "A group is assigned to an act once and covers everyone inside it.",
       "segmentAdd": "Add a group",
@@ -687,18 +709,6 @@
         "deadline": "The reply deadline has to close before the act starts.",
         "notFound": "That act does not belong to this event.",
         "lastOne": "The main act cannot be removed."
-      },
-      "types": {
-        "engagement": "Engagement",
-        "family_party": "Family party",
-        "henna": "Henna",
-        "preparation": "Preparation",
-        "zaffe": "Zaffe",
-        "ceremony": "Ceremony",
-        "dinner": "Dinner",
-        "reception": "Reception",
-        "farewell": "Farewell",
-        "other": "Other"
       }
     },
     "versions": {
@@ -931,6 +941,16 @@
     "closed": "The deadline to confirm has passed.",
     "error": "Your reply could not be saved. Please try again.",
     "yourTable": "Your table"
+  },
+  "agenda": {
+    "heading": "The programme",
+    "yours": "This is what is yours: other guests get a different programme.",
+    "optional": "optional",
+    "closed": "The deadline to reply to this act has passed.",
+    "replyTo": "Reply for {act}",
+    "noReplies": "This act takes no replies.",
+    "until": "until {time}",
+    "saved": "Noted."
   },
   "create": {
     "title": "Create an invitation",

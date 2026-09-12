@@ -131,15 +131,41 @@ export async function submitRsvp(input: SubmitRsvpInput): Promise<SubmitRsvpResu
     });
   }
 
-  await prisma.rsvp.upsert({
-    where: { guestId: guest.id },
-    update: { status, party, message: message.length === 0 ? null : message },
-    create: {
-      guestId: guest.id,
-      status,
-      party,
-      message: message.length === 0 ? null : message,
-    },
+  const clean = message.length === 0 ? null : message;
+
+  // El formulario abierto contesta a LA BODA, y «la boda» es el acto principal:
+  // el que heredó lo que el evento era antes de que existieran los actos. Se
+  // escriben los dos en la misma transacción para que no puedan decir cosas
+  // distintas — el resumen es lo que cuentan las mesas, y la respuesta por acto
+  // es lo que ve el invitado en su programa.
+  //
+  // Y solo el principal: quien llega por un reenvío no se apunta a una henna
+  // privada porque conozca el enlace público. Para contestar a un acto concreto
+  // hace falta el enlace personal.
+  const main = await prisma.eventAct.findFirst({
+    where: { eventId: event.id, isMain: true },
+    select: { id: true },
+  });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.rsvp.upsert({
+      where: { guestId: guest.id },
+      update: { status, party, message: clean },
+      create: { guestId: guest.id, status, party, message: clean },
+    });
+    if (main === null) return;
+    await tx.guestActRsvp.upsert({
+      where: { guestId_actId: { guestId: guest.id, actId: main.id } },
+      update: { status, party, message: clean, respondedAt: new Date() },
+      create: {
+        guestId: guest.id,
+        actId: main.id,
+        eventId: event.id,
+        status,
+        party,
+        message: clean,
+      },
+    });
   });
 
   return { outcome: 'ok', guestToken: guest.token, status };

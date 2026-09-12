@@ -473,6 +473,48 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   dentro, la regla que los deja pasar, y sus respuestas copiadas. Un evento de
   ayer se comporta hoy igual que ayer y ya puede tener un segundo acto mañana.
 
+- El programa que ve quien abre la invitación lo decide `visitorAgenda` en el
+  SERVIDOR: sin enlace personal, los actos públicos y nada más —la invitación se
+  reenvía a grupos enteros—; con enlace personal, su agenda. Un token de otra
+  boda se trata como si no hubiera ninguno: se enseña lo público y no se dice
+  más, porque decir «ese token no es de aquí» ya es contar que existe en otro
+  sitio.
+- El formulario abierto de siempre contesta al acto PRINCIPAL y solo a ese, y
+  escribe las dos filas —el resumen y la respuesta por acto— en la misma
+  transacción. Quien llega por un reenvío no se apunta a una henna privada porque
+  conozca el enlace público: para contestar a un acto concreto hace falta el
+  enlace personal. Un auto-registrado no pertenece a ningún grupo, así que su
+  agenda son los actos públicos y ya.
+- `repliesEnabled` y `canRespond` son cosas distintas y van separados: «aquí no
+  se confirma» es una nota del programa y «se te pasó el plazo» es un aviso a
+  quien iba a contestar.
+- El calendario devuelve un `VEVENT` POR ACTO, con la zona de cada uno. El `UID`
+  sale de `(tenantId, eventId, actId)` por huella, estable entre llamadas: si
+  mañana el mismo acto saliera con otro UID, el móvil de cada invitado tendría
+  dos citas en vez de una corregida. `SEQUENCE` se deriva de `updatedAt` —en
+  segundos desde 2024, no milisegundos desde 1970, que desbordan a los clientes
+  de 32 bits— y el evento sin actos conserva su UID de siempre. El enlace que va
+  DENTRO del archivo sale de `canonicalOrigin()`, y si no hay dirección
+  configurada el archivo sale SIN enlace en vez de fallar: una cita con su hora y
+  su sitio sigue sirviendo, y caer a la cabecera sería meterle a un invitado un
+  enlace a un dominio ajeno en su propia agenda.
+- Los recuentos por acto (`lib/acts/metrics.ts`) son EXACTOS, no una
+  aproximación por grupos: aplican invitado a invitado la MISMA regla que decide
+  la agenda, así que quien está en dos grupos permitidos se cuenta una vez y una
+  exclusión con nombre resta de verdad. Y esa regla vive en UN solo sitio
+  (`authorizes`, en `lib/acts/access.ts`): estuvo escrita dos veces, idénticas, y
+  así es como empiezan a decir cosas distintas — alguien arregla un caso raro en
+  una y queda un panel que promete una lista y una invitación que enseña otra.
+- La vista de cobertura enseña los agujeros SILENCIOSOS, que son los peores:
+  quien no entra a ningún acto —no hay invitación que mandarle— y quien no tiene
+  ni teléfono ni correo. Con NOMBRES y no solo con un número, por la misma razón
+  que los envíos fallidos de WhatsApp: «12 fallidos» preocupa y no deja hacer
+  nada.
+- La lista de un acto se exporta aparte (`/api/events/<id>/actos/<actId>`):
+  la cena y la henna no tienen la misma gente ni el mismo día, y eso es lo que se
+  le manda al salón y al catering. Usa el MISMO `buildCsv` que la exportación de
+  invitados, con su marca de orden de bytes y su neutralización de fórmulas.
+
 ### Mesas
 - Solo se sienta a quien CONFIRMÓ. Un invitado sin respuesta no ocupa silla:
   repartir doscientas sillas entre gente que a lo mejor no viene es la hoja de
@@ -813,6 +855,11 @@ npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
 - `docs/COBRO-WHISH.md` — cobro en Líbano con Whish: qué pedirle al proveedor y
   las reglas de la integración.
 - `docs/DECISIONES-PENDIENTES.md` — lo que no es código y bloquea fases enteras.
+- `docs/DECISIONES-TOMADAS.md` — lo que YA está decidido, con su porqué y qué
+  habría que hacer para cambiarlo. Manda sobre cualquier otro documento que diga
+  otra cosa; existe porque el proyecto llegó a contradecirse a sí mismo.
+- `docs/WHATSAPP-CLOUD.md` — la transición del número por QR al canal oficial:
+  qué cambia, en qué orden y las cuatro cosas que no puede hacer el código.
 - `docs/DESPLIEGUE.md` — cómo verlo en local y cómo publicarlo (Docker incluido).
 - `docs/WINDOWS.md` — levantarlo en Windows.
 - `docs/DESPLIEGUE-VPS.md` — desplegar en un VPS con aaPanel, paso a paso. XAMPP no sirve: esto es Node y

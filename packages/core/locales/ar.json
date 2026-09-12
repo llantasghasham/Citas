@@ -10,6 +10,18 @@
     "baptism": "معمودية",
     "memorial": "ذكرى"
   },
+  "actTypes": {
+    "engagement": "الخطوبة",
+    "family_party": "سهرة العائلة",
+    "henna": "الحنة",
+    "preparation": "التحضير",
+    "zaffe": "الزفة",
+    "ceremony": "العقد",
+    "dinner": "العشاء",
+    "reception": "الاستقبال",
+    "farewell": "الوداع",
+    "other": "أخرى"
+  },
   "invite": {
     "wedding": {
       "kicker": "دعوة زفاف",
@@ -674,6 +686,16 @@
       "audienceNone": "—",
       "audienceHint": "«لا يدخل» تغلب «يدخل». الضيف الذي لا ينتمي إلى مجموعة مسموح لها لا يرى المناسبة.",
       "counts": "{invited} يمكنهم الحضور · {attending} أكّدوا · {seats} مقعدًا",
+      "reportCounts": "{authorized} يمكنهم الحضور · {replied} أجابوا · {attending} سيأتون · {seats} مقعدًا",
+      "reportPending": "{count} بلا إجابة",
+      "reportOver": "تجاوز السعة: {seats} مقعدًا لسعة {capacity}.",
+      "exportAct": "تنزيل قائمة هذه المناسبة",
+      "coverageHeading": "ما بقي إصلاحه",
+      "coverageNoAct": "{count} ضيفًا لا يدخلون أي مناسبة: بالوضع الحالي لا توجد دعوة تُرسل إليهم.",
+      "coverageUnreachable": "{count} ضيفًا بلا هاتف ولا بريد: لا سبيل لإبلاغهم.",
+      "coverageSilent": "{count} ضيفًا لم يجيبوا عن أي من مناسباتهم.",
+      "coverageClean": "كل الضيوف يدخلون شيئًا ولديهم سبيل لتلقّيه.",
+      "coverageSample": "مثلًا:",
       "segmentsHeading": "المجموعات",
       "segmentsIntro": "تُسنَد المجموعة إلى المناسبة مرة واحدة وتشمل كل من فيها.",
       "segmentAdd": "إضافة مجموعة",
@@ -705,18 +727,6 @@
         "deadline": "مهلة التأكيد يجب أن تنتهي قبل بداية المناسبة.",
         "notFound": "هذه المناسبة ليست من هذا الحدث.",
         "lastOne": "المناسبة الرئيسية لا يمكن إزالتها."
-      },
-      "types": {
-        "engagement": "الخطوبة",
-        "family_party": "سهرة العائلة",
-        "henna": "الحنة",
-        "preparation": "التحضير",
-        "zaffe": "الزفة",
-        "ceremony": "العقد",
-        "dinner": "العشاء",
-        "reception": "الاستقبال",
-        "farewell": "الوداع",
-        "other": "أخرى"
       }
     },
     "versions": {
@@ -969,6 +979,16 @@
     "closed": "انتهت مهلة تأكيد الحضور.",
     "error": "تعذّر حفظ ردّك. حاول مرة أخرى.",
     "yourTable": "طاولتك"
+  },
+  "agenda": {
+    "heading": "البرنامج",
+    "yours": "هذا ما يخصّك: ضيوف آخرون يصلهم برنامج مختلف.",
+    "optional": "اختيارية",
+    "closed": "انتهت مهلة تأكيد الحضور لهذه المناسبة.",
+    "replyTo": "تأكيد الحضور لـ{act}",
+    "noReplies": "هذه المناسبة لا تتطلّب تأكيد حضور.",
+    "until": "حتى {time}",
+    "saved": "سُجّل."
   },
   "create": {
     "title": "إنشاء دعوة",

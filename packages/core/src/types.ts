@@ -207,6 +207,19 @@ export interface Dictionary {
     pageDescription: string;
   };
   eventTypes: Record<EventType, string>;
+  /** Cómo se llama cada acto. Un solo sitio: lo leen el panel y la invitación. */
+  actTypes: {
+    engagement: string;
+    family_party: string;
+    henna: string;
+    preparation: string;
+    zaffe: string;
+    ceremony: string;
+    dinner: string;
+    reception: string;
+    farewell: string;
+    other: string;
+  };
   invite: Record<EventType, { kicker: string; intro: string }>;
   roles: Record<HostRole, string>;
   labels: {
@@ -243,6 +256,16 @@ export interface Dictionary {
     error: string;
     /** En qué mesa se sienta, cuando la oficina ya ha repartido el salón. */
     yourTable: string;
+  };
+  agenda: {
+    heading: string;
+    yours: string;
+    optional: string;
+    closed: string;
+    replyTo: string;
+    noReplies: string;
+    until: string;
+    saved: string;
   };
   aria: {
     invitationCard: string;
@@ -940,6 +963,16 @@ export interface Dictionary {
       audienceNone: string;
       audienceHint: string;
       counts: string;
+      reportCounts: string;
+      reportPending: string;
+      reportOver: string;
+      exportAct: string;
+      coverageHeading: string;
+      coverageNoAct: string;
+      coverageUnreachable: string;
+      coverageSilent: string;
+      coverageClean: string;
+      coverageSample: string;
       segmentsHeading: string;
       segmentsIntro: string;
       segmentAdd: string;
@@ -971,18 +1004,6 @@ export interface Dictionary {
         deadline: string;
         notFound: string;
         lastOne: string;
-      };
-      types: {
-        engagement: string;
-        family_party: string;
-        henna: string;
-        preparation: string;
-        zaffe: string;
-        ceremony: string;
-        dinner: string;
-        reception: string;
-        farewell: string;
-        other: string;
       };
     };
     /** One invitation, written out in each language its guests read. */
