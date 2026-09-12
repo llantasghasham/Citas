@@ -12,3 +12,8 @@ export * from './datetime';
 export * from './presets';
 export * from './plural';
 export * from './countries';
+// El portal público del directorio: su propio conjunto de idiomas —con
+// francés— y su propio diccionario, para no obligar a traducir el producto
+// entero. Ver `directory-types.ts`.
+export * from './directory-types';
+export * from './directory-dictionary';

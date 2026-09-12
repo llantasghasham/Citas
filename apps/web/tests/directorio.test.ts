@@ -16,7 +16,108 @@ import {
 } from '../src/lib/directory/service';
 import { providerSlug } from '../src/lib/directory/slug';
 
+import {
+  CATEGORIES,
+  CATEGORY_GROUPS,
+  CONTACT_CHANNELS,
+  GOVERNORATES,
+  GOVERNORATE_KEYS,
+} from '../src/lib/directory/categories';
+import {
+  DIRECTORY_LOCALES,
+  directoryDirection,
+  getDirectoryDictionary,
+  isDirectoryLocale,
+} from '@citas/core';
+
 import { HAS_DB, withDatabase } from './helpers';
+
+/**
+ * Los cinco idiomas del portal contra las listas cerradas del servidor.
+ *
+ * Esto NO necesita base de datos y por eso no se salta nunca: es la comprobación
+ * que impide que alguien añada una categoría en el código y la deje sin traducir
+ * en alguno de los cinco. El fallo sin esta prueba es una tarjeta que dice
+ * «undefined» en el portal de un negocio real.
+ */
+describe('los cinco idiomas del portal', () => {
+  it('traducen TODAS las categorías, en los cinco', () => {
+    for (const locale of DIRECTORY_LOCALES) {
+      const copy = getDirectoryDictionary(locale);
+      for (const category of CATEGORIES) {
+        const name = copy.categories[category];
+        assert.ok(
+          name !== undefined && name.trim().length > 0,
+          `falta la categoría «${category}» en ${locale}`,
+        );
+      }
+      // Y al revés: una traducción de una categoría que ya no existe es una
+      // frase que nadie va a ver y que alguien mantendrá por error.
+      for (const key of Object.keys(copy.categories)) {
+        assert.ok(
+          (CATEGORIES as readonly string[]).includes(key),
+          `sobra la categoría «${key}» en ${locale}`,
+        );
+      }
+    }
+  });
+
+  it('traducen las ocho gobernaciones y todos sus distritos', () => {
+    const districts = Object.values(GOVERNORATES).flat();
+    for (const locale of DIRECTORY_LOCALES) {
+      const copy = getDirectoryDictionary(locale);
+      for (const governorate of GOVERNORATE_KEYS) {
+        assert.ok(
+          (copy.governorates[governorate] ?? '').length > 0,
+          `falta la gobernación «${governorate}» en ${locale}`,
+        );
+      }
+      for (const district of districts) {
+        assert.ok(
+          (copy.districts[district] ?? '').length > 0,
+          `falta el distrito «${district}» en ${locale}`,
+        );
+      }
+    }
+  });
+
+  it('traducen los grupos y los canales de contacto', () => {
+    for (const locale of DIRECTORY_LOCALES) {
+      const copy = getDirectoryDictionary(locale);
+      for (const group of Object.keys(CATEGORY_GROUPS)) {
+        assert.ok(
+          (copy.groups[group as keyof typeof copy.groups] ?? '').length > 0,
+          `falta el grupo «${group}» en ${locale}`,
+        );
+      }
+      for (const channel of CONTACT_CHANNELS) {
+        assert.ok((copy.channels[channel] ?? '').length > 0, `falta «${channel}» en ${locale}`);
+      }
+    }
+  });
+
+  it('el francés está, y el árabe sigue siendo el único de derecha a izquierda', () => {
+    assert.deepEqual([...DIRECTORY_LOCALES], ['ar', 'en', 'fr', 'es', 'pt']);
+    assert.equal(isDirectoryLocale('fr'), true);
+    assert.equal(isDirectoryLocale('de'), false);
+
+    assert.equal(directoryDirection('ar'), 'rtl');
+    for (const locale of DIRECTORY_LOCALES.filter((one) => one !== 'ar')) {
+      assert.equal(directoryDirection(locale), 'ltr');
+    }
+  });
+
+  it('ninguna traducción se dejó a medias copiando del inglés', () => {
+    // Una comprobación tonta y que sirve: si el francés y el inglés tienen el
+    // mismo título de portada, alguien copió el archivo y no lo tradujo.
+    const en = getDirectoryDictionary('en');
+    for (const locale of ['fr', 'es', 'pt', 'ar'] as const) {
+      const copy = getDirectoryDictionary(locale);
+      assert.notEqual(copy.home.title, en.home.title, `${locale} parece copiado del inglés`);
+      assert.notEqual(copy.search.submit, en.search.submit, `${locale} parece copiado del inglés`);
+    }
+  });
+});
 
 /**
  * El directorio: que un proveedor no pueda tocar a otro, y que nada suyo llegue

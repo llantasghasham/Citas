@@ -881,6 +881,19 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   orden. Prisma no sabe declararlo, así que vive en el SQL.
 
 ### El directorio de proveedores
+- El portal habla CINCO idiomas y el producto sigue hablando cuatro, y son dos
+  conjuntos separados a propósito: `LOCALES` (`ar es pt en`) para el producto y
+  `DIRECTORY_LOCALES` (`ar en fr es pt`) para el portal, con su propio
+  `DirectoryDictionary` en `packages/core/directory/`. Meter `fr` en el `Locale`
+  del producto obligaría a traducir al francés el panel entero, el manual de
+  veintidós capítulos, los correos y la app móvil —unas mil cuatrocientas
+  frases— para poder publicar un salón.
+- Las CLAVES de las categorías y las regiones viven en el servidor
+  (`lib/directory/categories.ts`) y los NOMBRES en el diccionario. Una prueba
+  que no necesita base de datos comprueba que los cinco idiomas traducen las
+  cincuenta categorías, las ocho gobernaciones y los veintiséis distritos —y que
+  no sobra ninguna—. Sin ella, el fallo es una tarjeta que dice «undefined» en
+  el portal de un negocio real.
 - Vive ENTERO en el plano de CONTROL. Es global —se busca por región, no por
   oficina— y con `TENANCY=fleet` ninguna base de oficina podría servir un
   listado que las cruza a todas.
