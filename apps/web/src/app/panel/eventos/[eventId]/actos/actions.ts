@@ -11,7 +11,9 @@ import {
   type ActInput,
 } from '@/lib/acts/service';
 import { addSegment, fillSegment, removeSegment, setSegmentMembers } from '@/lib/acts/segments';
+import { setTranslation } from '@/lib/acts/translations';
 import { getSession, scopeOf, sessionCan, type AuthenticatedSession } from '@/lib/auth/session';
+import { LOCALES } from '@/lib/types';
 import type { AudienceMode } from '@/generated/prisma/enums';
 
 /**
@@ -149,4 +151,43 @@ export async function setMembersAction(formData: FormData): Promise<void> {
   const result = await setSegmentMembers(scopeOf(session), eventId, segmentId, guestIds);
   if (result === null) back(eventId, '?error=notFound');
   back(eventId, `?metidos=${result.added}&sacados=${result.removed}`);
+}
+
+/**
+ * Escribir un acto en otro idioma.
+ *
+ * TRADUCIR NO CONCEDE PERMISOS, y por eso esta acción pide exactamente lo mismo
+ * que las demás —`event:write` sobre la oficina de la sesión— y ni un permiso
+ * menos. El idioma es CÓMO se lee un acto, nunca QUIÉN entra en él: aquí no se
+ * toca ninguna audiencia, ninguna invitación con nombre y ninguna exclusión.
+ * Quien no viera la henna sigue sin verla en los cuatro idiomas.
+ *
+ * El `actId` y el `locale` vienen del formulario, así que son datos del
+ * cliente: el idioma se comprueba contra la lista cerrada y el acto lo resuelve
+ * `lib/acts/translations.ts` contra la oficina Y el evento antes de escribir.
+ */
+export async function setActTranslationAction(formData: FormData): Promise<void> {
+  const session = await guard();
+  const text = (name: string): string => String(formData.get(name) ?? '');
+  const eventId = text('eventId');
+  const actId = text('actId');
+
+  const locale = LOCALES.find((candidate) => candidate === text('locale'));
+  if (locale === undefined) back(eventId, '?error=notFound');
+
+  const result = await setTranslation(
+    scopeOf(session),
+    eventId,
+    actId,
+    locale,
+    {
+      label: text('label'),
+      description: text('description'),
+      venueName: text('venueName'),
+      venueAddress: text('venueAddress'),
+    },
+    session.userId,
+  );
+  if (!result.ok) back(eventId, `?error=notFound&idiomas=${actId}`);
+  back(eventId, `?idiomas=${actId}`);
 }

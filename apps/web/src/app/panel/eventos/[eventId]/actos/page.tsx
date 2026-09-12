@@ -9,6 +9,7 @@ import {
   moveActAction,
   removeActAction,
   removeSegmentAction,
+  setActTranslationAction,
   setAudienceAction,
   setMembersAction,
 } from '@/app/panel/eventos/[eventId]/actos/actions';
@@ -22,9 +23,14 @@ import {
   type AssignableGuest,
   type SegmentRow,
 } from '@/lib/acts/segments';
+import {
+  readEventTranslations,
+  type ActTranslationRow,
+} from '@/lib/acts/translations';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
+import { LOCALE_NAMES } from '@/lib/create/options';
 import { displayFont } from '@/lib/typography';
-import { interpolate, type Dictionary } from '@citas/core';
+import { interpolate, LOCALES, type Dictionary, type Locale } from '@citas/core';
 
 interface PageProps {
   params: Promise<{ eventId: string }>;
@@ -33,6 +39,7 @@ interface PageProps {
     metidos?: string;
     sacados?: string;
     abierto?: string;
+    idiomas?: string;
     invitado?: string;
   }>;
 }
@@ -63,18 +70,22 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
   }
 
   const { eventId } = await params;
-  const { error, metidos, sacados, abierto, invitado } = await searchParams;
-  const { dictionary } = await getAdminContext(session.tenantId);
+  const { error, metidos, sacados, abierto, idiomas, invitado } = await searchParams;
+  const { dictionary, locale } = await getAdminContext(session.tenantId);
   const copy = dictionary.admin.acts;
   const types = dictionary.actTypes;
 
-  const [acts, segments, guests, report] = await Promise.all([
+  const [acts, segments, guests, report, translations] = await Promise.all([
     readActs(scopeOf(session), eventId),
     readSegments(scopeOf(session), eventId),
     listGuestsForAssignment(scopeOf(session), eventId),
     actReport(scopeOf(session), eventId),
+    // Las de los ocho actos en UNA consulta: pedirlas acto por acto serían ocho
+    // para dibujar una pantalla.
+    readEventTranslations(scopeOf(session), eventId),
   ]);
   if (acts === null || segments === null || guests === null || report === null) redirect('/panel');
+  if (translations === null) redirect('/panel');
 
   // Los recuentos EXACTOS salen de aquí y no del listado: `actReport` aplica
   // invitado a invitado la misma regla que decide la agenda, así que quien esté
@@ -98,7 +109,7 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
         <Link href={`/panel/eventos/${eventId}`} className="text-sm text-[#8a6c22] hover:underline">
           {copy.back}
         </Link>
-        <h1 className={`${displayFont} text-3xl text-[#23201a]`}>{copy.heading}</h1>
+        <h1 className={`${displayFont(locale)} text-3xl text-[#23201a]`}>{copy.heading}</h1>
         <p className="max-w-2xl text-sm text-[#6b6455]">{copy.intro}</p>
       </header>
 
@@ -116,9 +127,10 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
         </p>
       )}
 
-      <CoveragePanel copy={copy} coverage={report.coverage} />
+      <CoveragePanel copy={copy} locale={locale} coverage={report.coverage} />
 
       <Segments
+        locale={locale}
         copy={copy}
         eventId={eventId}
         segments={segments}
@@ -127,6 +139,7 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
       />
 
       <Preview
+        locale={locale}
         copy={copy}
         types={types}
         guests={guests}
@@ -140,6 +153,7 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
           <ActCard
             key={act.id}
             copy={copy}
+            locale={locale}
             types={types}
             eventId={eventId}
             act={act}
@@ -149,6 +163,8 @@ export default async function ActsPage({ params, searchParams }: PageProps) {
             first={index === 0}
             last={index === acts.length - 1}
             open={abierto === act.id}
+            translations={translations.get(act.id) ?? new Map()}
+            translationsOpen={idiomas === act.id}
           />
         ))}
       </section>
@@ -179,12 +195,14 @@ function problemText(copy: Copy, code: string): string {
 
 function Segments({
   copy,
+  locale,
   eventId,
   segments,
   guests,
   canWrite,
 }: {
   copy: Copy;
+  locale: Locale;
   eventId: string;
   segments: SegmentRow[];
   guests: AssignableGuest[];
@@ -192,7 +210,7 @@ function Segments({
 }) {
   return (
     <section className="flex flex-col gap-3 border border-[#ddd6c6] bg-white p-4">
-      <h2 className={`${displayFont} text-xl text-[#23201a]`}>{copy.segmentsHeading}</h2>
+      <h2 className={`${displayFont(locale)} text-xl text-[#23201a]`}>{copy.segmentsHeading}</h2>
       <p className="max-w-2xl text-sm text-[#6b6455]">{copy.segmentsIntro}</p>
 
       {segments.length === 0 && <p className="text-sm text-[#6b6455]">{copy.segmentEmpty}</p>}
@@ -282,6 +300,7 @@ function Segments({
 
 function ActCard({
   copy,
+  locale,
   types,
   eventId,
   act,
@@ -291,8 +310,11 @@ function ActCard({
   first,
   last,
   open,
+  translations,
+  translationsOpen,
 }: {
   copy: Copy;
+  locale: Locale;
   types: Types;
   eventId: string;
   act: ActRow;
@@ -302,13 +324,15 @@ function ActCard({
   first: boolean;
   last: boolean;
   open: boolean;
+  translations: ReadonlyMap<Locale, ActTranslationRow>;
+  translationsOpen: boolean;
 }) {
   const name = act.label ?? types[act.type];
 
   return (
     <article className="flex flex-col gap-3 border border-[#ddd6c6] bg-white p-4">
       <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className={`${displayFont} text-xl text-[#23201a]`}>{name}</h2>
+        <h2 className={`${displayFont(locale)} text-xl text-[#23201a]`}>{name}</h2>
         {act.isMain && (
           <span className="border border-[#c9a227] px-2 py-0.5 text-xs text-[#8a6c22]">
             {copy.main}
@@ -438,7 +462,125 @@ function ActCard({
           </form>
         </details>
       )}
+
+      {canWrite && (
+        <Translations
+          copy={copy}
+          eventId={eventId}
+          act={act}
+          translations={translations}
+          open={translationsOpen}
+        />
+      )}
     </article>
+  );
+}
+
+/**
+ * El mismo acto, escrito en los cuatro idiomas.
+ *
+ * Una boda de Beirut tiene invitados que leen árabe y primos que leen inglés, y
+ * hasta aquí los dos recibían el mismo texto: `label` es uno solo. Cada idioma
+ * es su propio formulario —sin JavaScript de cliente, como el resto del panel—
+ * y se escribe A MANO: aquí no traduce nadie por nadie.
+ *
+ * TRADUCIR NO CONCEDE PERMISOS. Está escrito arriba de la caja, en la pantalla,
+ * porque es lo primero que alguien va a suponer mal: que escribir la henna en
+ * inglés se la enseña a quien lee inglés. No. Quién entra sigue decidiéndolo
+ * «Quién entra», ahí arriba; el idioma es CÓMO se lee.
+ *
+ * Un nombre vacío BORRA la traducción y devuelve el acto a su `label`. Guardar
+ * una fila en blanco taparía el nombre bueno, que es justo lo contrario de lo
+ * que quiere quien vacía el campo.
+ */
+function Translations({
+  copy,
+  eventId,
+  act,
+  translations,
+  open,
+}: {
+  copy: Copy;
+  eventId: string;
+  act: ActRow;
+  translations: ReadonlyMap<Locale, ActTranslationRow>;
+  open: boolean;
+}) {
+  return (
+    <details open={open} className="border-t border-[#efeadd] pt-3">
+      <summary className="cursor-pointer text-sm text-[#8a6c22]">{copy.translationsOpen}</summary>
+      <p className="mt-2 max-w-2xl text-xs text-[#6b6455]">{copy.translationsHint}</p>
+
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        {LOCALES.map((locale) => {
+          const written = translations.get(locale);
+          return (
+            <form
+              key={locale}
+              action={setActTranslationAction}
+              lang={locale}
+              dir={locale === 'ar' ? 'rtl' : 'ltr'}
+              className="flex flex-col gap-2 border border-[#efeadd] p-3"
+            >
+              <input type="hidden" name="eventId" value={eventId} />
+              <input type="hidden" name="actId" value={act.id} />
+              <input type="hidden" name="locale" value={locale} />
+
+              <h4 className="text-sm text-[#23201a]">{LOCALE_NAMES[locale]}</h4>
+              {written === undefined && (
+                <p className="text-xs text-[#6b6455]">{copy.translationEmpty}</p>
+              )}
+
+              <label className={LABEL}>
+                {copy.translationLabel}
+                <input
+                  name="label"
+                  defaultValue={written?.label ?? ''}
+                  placeholder={act.label ?? ''}
+                  maxLength={60}
+                  className={CONTROL}
+                />
+              </label>
+
+              <label className={LABEL}>
+                {copy.translationDescription}
+                <textarea
+                  name="description"
+                  defaultValue={written?.description ?? ''}
+                  maxLength={300}
+                  className={`${CONTROL} h-20 py-2`}
+                />
+              </label>
+
+              {/* Los dos campos de la sede bajo una sola etiqueta, y con el
+                  original de marca de agua: es lo que dice cuál es cuál sin
+                  inventar un texto que no está en los cuatro diccionarios. */}
+              <div className={LABEL}>
+                <span>{copy.translationVenue}</span>
+                <input
+                  name="venueName"
+                  defaultValue={written?.venueName ?? ''}
+                  placeholder={act.venueName}
+                  maxLength={80}
+                  className={CONTROL}
+                />
+                <input
+                  name="venueAddress"
+                  defaultValue={written?.venueAddress ?? ''}
+                  placeholder={act.venueAddress}
+                  maxLength={120}
+                  className={CONTROL}
+                />
+              </div>
+
+              <button type="submit" className={`${BUTTON_SOFT} self-start`}>
+                {copy.translationSave}
+              </button>
+            </form>
+          );
+        })}
+      </div>
+    </details>
   );
 }
 
@@ -562,12 +704,14 @@ function ActFields({ copy, types, act }: { copy: Copy; types: Types; act?: ActRo
  */
 function Preview({
   copy,
+  locale,
   types,
   guests,
   chosen,
   agenda,
 }: {
   copy: Copy;
+  locale: Locale;
   types: Types;
   guests: AssignableGuest[];
   chosen: AssignableGuest | null;
@@ -575,7 +719,7 @@ function Preview({
 }) {
   return (
     <section className="flex flex-col gap-3 border border-[#ddd6c6] bg-white p-4">
-      <h2 className={`${displayFont} text-xl text-[#23201a]`}>{copy.previewHeading}</h2>
+      <h2 className={`${displayFont(locale)} text-xl text-[#23201a]`}>{copy.previewHeading}</h2>
       <p className="max-w-2xl text-sm text-[#6b6455]">{copy.previewIntro}</p>
 
       {guests.length === 0 ? (
@@ -643,16 +787,30 @@ function Preview({
  * nombres: un número preocupa y no deja hacer nada — la misma razón por la que
  * los envíos fallidos de WhatsApp salen con nombre y motivo.
  */
-function CoveragePanel({ copy, coverage }: { copy: Copy; coverage: Coverage }) {
+function CoveragePanel({
+  copy,
+  locale,
+  coverage,
+}: {
+  copy: Copy;
+  locale: Locale;
+  coverage: Coverage;
+}) {
   const cases = [
     { key: 'noAct', text: copy.coverageNoAct, data: coverage.inNoAct },
     { key: 'unreachable', text: copy.coverageUnreachable, data: coverage.unreachable },
     { key: 'silent', text: copy.coverageSilent, data: coverage.silent },
+    // Los que la abrieron y no contestaron van los ÚLTIMOS a propósito: es el
+    // único caso de esta lista que no es una avería. Los otros tres hay que
+    // arreglarlos —falta un acto, falta un teléfono—; a estos hay que
+    // insistirles, y saber que la vieron es justo lo que hace que insistir
+    // valga la pena en vez de ser ruido.
+    { key: 'opened', text: copy.coverageOpened, data: coverage.openedNoReply },
   ].filter((entry) => entry.data.count > 0);
 
   return (
     <section className="flex flex-col gap-3 border border-[#ddd6c6] bg-white p-4">
-      <h2 className={`${displayFont} text-xl text-[#23201a]`}>{copy.coverageHeading}</h2>
+      <h2 className={`${displayFont(locale)} text-xl text-[#23201a]`}>{copy.coverageHeading}</h2>
 
       {cases.length === 0 ? (
         <p className="text-sm text-[#6b6455]">{copy.coverageClean}</p>
@@ -660,7 +818,16 @@ function CoveragePanel({ copy, coverage }: { copy: Copy; coverage: Coverage }) {
         <ul className="flex flex-col gap-3">
           {cases.map((entry) => (
             <li key={entry.key} className="flex flex-col gap-1">
-              <p className="text-sm text-[#b3261e]">
+              {/* En rojo lo que hay que ARREGLAR. Lo de «la abrieron y no
+                  contestaron» no lo es, y pintarlo igual haría que una lista
+                  sana pareciera una lista rota. */}
+              <p
+                className={
+                  entry.key === 'opened'
+                    ? 'text-sm text-[#6b6455]'
+                    : 'text-sm text-[#b3261e]'
+                }
+              >
                 {interpolate(entry.text, { count: String(entry.data.count) })}
               </p>
               {entry.data.sample.length > 0 && (

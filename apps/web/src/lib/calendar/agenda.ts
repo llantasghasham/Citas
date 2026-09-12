@@ -1,9 +1,11 @@
 import type { ActType } from '@/generated/prisma/enums';
 import { agendaFor, publicActs, type AuthorizedAct } from '@/lib/acts/access';
+import { resolveActNames, type ResolvedActName } from '@/lib/acts/translations';
 import { actUid, buildCalendar, sequenceFrom, type CalendarEvent } from '@/lib/calendar/ics';
 import { db } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { zonedToUtc } from '@/lib/time/zoned';
+import type { Locale } from '@/lib/types';
 
 /**
  * De los actos que ESTA persona puede ver al archivo de calendario.
@@ -22,6 +24,15 @@ import { zonedToUtc } from '@/lib/time/zoned';
 
 /** Lo que hace falta para titular y describir las citas, ya en su idioma. */
 export interface CalendarSubject {
+  /**
+   * El idioma de QUIEN se lleva el archivo.
+   *
+   * Es el de esta versión de la invitación, que es la que abre el invitado por
+   * su enlace personal. De él sale el nombre de cada acto: la cita que se le
+   * queda meses en el móvil tiene que estar escrita en su idioma, no en el de
+   * la oficina.
+   */
+  locale: Locale;
   /** «Boda», «Memorial»: el tipo de evento escrito en el idioma de la invitación. */
   eventName: string;
   /** Quiénes se casan o a quién se recuerda, ya unidos en una línea. */
@@ -103,8 +114,20 @@ function endsAt(act: ActForCalendar, start: Date): Date | undefined {
   return zonedToUtc(`${nextDay(act.date)}T${act.endTime}`, act.timezone) ?? undefined;
 }
 
-/** El nombre del acto: como lo llama esa familia, y si no, el de su tipo. */
-function nameOf(act: ActForCalendar, subject: CalendarSubject): string {
+/**
+ * El nombre del acto, ya en el idioma del invitado.
+ *
+ * La prioridad la decide `resolveActNames` y vive en un solo sitio: traducción
+ * de ESE idioma → `label` del acto → nombre del tipo. Aquí solo se usa lo que
+ * devuelve, con el respaldo de siempre por si un acto no viniera en el mapa.
+ */
+function nameOf(
+  act: ActForCalendar,
+  subject: CalendarSubject,
+  names: ReadonlyMap<string, ResolvedActName>,
+): string {
+  const written = names.get(act.id)?.name.trim() ?? '';
+  if (written.length > 0) return written;
   const own = act.label?.trim() ?? '';
   return own.length > 0 ? own : subject.actTypeNames[act.type];
 }
@@ -173,6 +196,10 @@ export async function calendarFor(
   });
   const changedAt = new Map(marks.map((mark) => [mark.id, mark.updatedAt]));
 
+  // Los nombres, en el idioma de esta versión. Se piden para la lista YA
+  // autorizada: traducir no mete un acto en este archivo ni saca ninguno.
+  const names = await resolveActNames(scope, acts, subject.locale);
+
   const events: CalendarEvent[] = [];
   for (const act of acts) {
     // Cada acto con SU zona: una boda de Beirut puede tener la fiesta previa en
@@ -187,9 +214,11 @@ export async function calendarFor(
       start,
       ...(end === undefined ? {} : { end }),
       ...(changed === undefined ? {} : { sequence: sequenceFrom(changed) }),
-      summary: `${nameOf(act, subject)} — ${subject.honorees}`,
+      summary: `${nameOf(act, subject, names)} — ${subject.honorees}`,
       description: `${subject.message}\n\n${subject.url}`,
-      location: `${act.venueName}, ${act.venueAddress}`,
+      location: `${names.get(act.id)?.venueName ?? act.venueName}, ${
+        names.get(act.id)?.venueAddress ?? act.venueAddress
+      }`,
       url: subject.url,
     });
   }

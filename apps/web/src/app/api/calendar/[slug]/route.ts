@@ -50,6 +50,9 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
     .then((origin) => `${origin}/i/${invitation.slug}`)
     .catch(() => '');
   const subject: CalendarSubject = {
+    // El idioma de ESTA versión, que es la que abrió el invitado: el nombre de
+    // cada acto se escribe en el suyo, no en el de la oficina.
+    locale: invitation.locale,
     eventName: dictionary.eventTypes[invitation.eventType],
     honorees: invitation.honorees.map((honoree) => honoree.name).join(' · '),
     actTypeNames: dictionary.actTypes,

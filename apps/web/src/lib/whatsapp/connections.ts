@@ -1,5 +1,6 @@
 import type { WhatsappStatus } from '@/generated/prisma/enums';
 import { recordAudit } from '@/lib/audit';
+import { setting } from '@/lib/settings';
 import { db } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { toE164 } from '@/lib/guests/phone';
@@ -62,9 +63,15 @@ export async function createConnection(
   scope: TenantScope,
   name: string,
   actorId: string,
-): Promise<{ id: string } | { error: 'duplicate' | 'empty' }> {
+): Promise<{ id: string } | { error: 'duplicate' | 'empty' | 'frozen' }> {
   const clean = name.trim().slice(0, 60);
   if (clean.length === 0) return { error: 'empty' };
+
+  // El candado del canal por QR. No apaga los números que ya están —esos siguen
+  // mandando— pero impide que entre uno más. Es lo PRIMERO que hay que hacer el
+  // día que empiece la migración al canal oficial: cada número que se conecte
+  // después es uno más que habrá que migrar, o perder.
+  if ((await setting('WHATSAPP_QR_FROZEN')) === '1') return { error: 'frozen' };
 
   const prisma = db(scope);
   const existing = await prisma.whatsappConnection.count({ where: scopedWhere(scope) });

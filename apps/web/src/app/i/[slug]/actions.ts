@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 
 import { answerAct } from '@/lib/acts/rsvp';
 import { clientIp } from '@/lib/admin/context';
+import { PREFERENCE_KEYS, setPreference } from '@/lib/checkin/preferences';
 import { visitorAgenda } from '@/lib/rsvp/agenda';
 import { guestCookieName } from '@/lib/rsvp/cookie';
 import { submitRsvp } from '@/lib/rsvp/service';
@@ -94,4 +95,48 @@ export async function answerActAction(formData: FormData): Promise<void> {
   );
 
   redirect(`/i/${slug}?r=${result.ok ? 'ok' : result.reason}#acto-${actId}`);
+}
+
+/**
+ * Lo que el invitado necesita, guardado de una vez.
+ *
+ * Las cuatro preguntas van en el mismo envío porque son el mismo formulario, y
+ * una clave que no venga no se toca: eso permite que mañana haya una pantalla
+ * con menos preguntas sin que borre lo que no enseña.
+ *
+ * Quién es sale de la cookie del enlace personal y el acto se comprueba contra
+ * SU agenda, igual que la respuesta por acto. Un `actId` que no esté en ella no
+ * encuentra nada. Y el valor lo comprueba el servicio contra su lista cerrada:
+ * aquí no se adivina nada.
+ */
+export async function savePreferencesAction(formData: FormData): Promise<void> {
+  const slug = String(formData.get('slug') ?? '');
+  if (!SLUG_SHAPE.test(slug)) redirect('/');
+
+  const store = await cookies();
+  const token = store.get(guestCookieName(slug))?.value;
+  if (token === undefined) redirect(`/i/${slug}?p=invalid`);
+
+  const agenda = await visitorAgenda(slug, token);
+  if (agenda === null || agenda.guest === null) redirect(`/i/${slug}?p=invalid`);
+
+  const raw = formData.get('actId');
+  const actId = raw === null || String(raw).length === 0 ? null : String(raw);
+  if (actId !== null && !agenda.acts.some((act) => act.id === actId)) {
+    redirect(`/i/${slug}?p=invalid`);
+  }
+
+  let failed = false;
+  for (const key of PREFERENCE_KEYS) {
+    const value = formData.get(key);
+    if (value === null) continue;
+    const result = await setPreference(agenda.scope, agenda.eventId, agenda.guest.id, {
+      actId,
+      key,
+      value: String(value),
+    });
+    if (!result.ok) failed = true;
+  }
+
+  redirect(`/i/${slug}?p=${failed ? 'invalid' : 'ok'}#preferencias`);
 }

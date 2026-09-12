@@ -316,6 +316,17 @@
             "Una entrada apuntada por error se puede deshacer, y queda registrado quién la deshizo."
           ]
         },
+        "preferences": {
+          "title": "Lo que necesita cada invitado",
+          "steps": [
+            "Quien abre su enlace personal ve, debajo del programa, cuatro preguntas: qué come, cómo llega, qué necesita para moverse y si quiere salir en las fotos.",
+            "Las respuestas son una lista cerrada, no un campo de texto. Es a propósito: son datos de salud de gente que no tiene cuenta aquí, y un campo libre acabaría guardando un diagnóstico.",
+            "«Sin indicar» es una opción de verdad y elegirla BORRA lo dicho. Retirar algo tiene que poder hacerse desde la misma pantalla donde se dijo.",
+            "Si la boda tiene varios actos, se puede decir una cosa distinta para uno: vegetariano para toda la boda y sin gluten en la cena. Lo del acto manda sobre lo general.",
+            "En «Lo que necesitan», dentro del evento, salen los recuentos para el catering y para quien monta el salón: doce sin gluten, cuatro en silla de ruedas. Cada invitado cuenta una vez.",
+            "Son recuentos y no una lista de nombres a propósito. Para comprar hace falta el número; el nombre está en la ficha del invitado para quien de verdad lo necesite."
+          ]
+        },
         "image": {
           "title": "La imagen",
           "steps": [
@@ -484,7 +495,8 @@
         "WHATSAPP_GATEWAY_URL": "Dirección del servicio de WhatsApp",
         "WHATSAPP_DELAY_MIN": "Segundos de espera, mínimo",
         "WHATSAPP_DELAY_MAX": "Segundos de espera, máximo",
-        "WHATSAPP_WARMUP_CAP": "Envíos el primer día de un número nuevo"
+        "WHATSAPP_WARMUP_CAP": "Envíos el primer día de un número nuevo",
+        "WHATSAPP_QR_FROZEN": "Congelar los números nuevos por QR"
       },
       "sections": {
         "mail": "Correo",
@@ -548,8 +560,9 @@
         "WHATSAPP_DELAY_MIN": "Entre 3 y 300. El retardo real es al azar entre el mínimo y el máximo: un intervalo exacto es una firma de máquina. No se puede poner a cero — se puede acortar el freno, no quitarlo.",
         "WHATSAPP_DELAY_MAX": "Entre 3 y 600. Si queda por debajo del mínimo, se usa el mínimo.",
         "WHATSAPP_WARMUP_CAP": "Entre 1 y 100. Un número recién conectado manda esto el primer día, aunque su tope diario sea mayor. Suba despacio: en semanas, no en horas.",
-        "SINPE_PHONE": "El que ven las oficinas cuando van a pagar. En E.164: +50687021496.",
-        "CRC_PER_USD": "Los planes están escritos en dólares; esto los pasa a colones para el SINPE. Cámbielo cuando cambie el tipo. El importe se redondea a los cien colones más cercanos para que se pueda teclear."
+        "SINPE_PHONE": "El que ven las oficinas cuando van a pagar. En E.164: +50600000000.",
+        "CRC_PER_USD": "Los planes están escritos en dólares; esto los pasa a colones para el SINPE. Cámbielo cuando cambie el tipo. El importe se redondea a los cien colones más cercanos para que se pueda teclear.",
+        "WHATSAPP_QR_FROZEN": "No apaga los que ya están conectados: impide que entre uno más. Es lo primero que hay que poner el día que se empiece a pasar al canal oficial de WhatsApp."
       },
       "brandLogo": "Logo",
       "brandLogoHint": "Se sube desde su ordenador, hasta {mb} MB. Sale en la portada y en la cabecera del panel, sobre fondo oscuro.",
@@ -729,6 +742,7 @@
       "coverageNoAct": "{count} invitados no entran a ningún acto: tal como está, no hay invitación que mandarles.",
       "coverageUnreachable": "{count} invitados sin teléfono ni correo: no hay por dónde avisarles.",
       "coverageSilent": "{count} invitados no han contestado a ningún acto suyo.",
+      "coverageOpened": "{count} invitados abrieron su invitación y no han contestado: ya la vieron, así que insistir es lo que falta.",
       "coverageClean": "Todos los invitados entran a algo y tienen por dónde recibirlo.",
       "coverageSample": "Por ejemplo:",
       "segmentsHeading": "Grupos",
@@ -762,7 +776,14 @@
         "deadline": "El plazo para confirmar tiene que acabar antes de que empiece el acto.",
         "notFound": "Ese acto no es de este evento.",
         "lastOne": "El acto principal no se puede quitar."
-      }
+      },
+      "translationsOpen": "Escribirlo en otro idioma",
+      "translationsHint": "Traducir NO cambia quién entra: el idioma es cómo se lee, no un permiso.",
+      "translationLabel": "Cómo se llama",
+      "translationDescription": "Descripción (opcional)",
+      "translationVenue": "El sitio, en ese idioma (opcional)",
+      "translationSave": "Guardar la traducción",
+      "translationEmpty": "Sin traducir: se usa el nombre del tipo."
     },
     "gate": {
       "heading": "Puerta",
@@ -785,7 +806,23 @@
         "not_invited": "No está invitado a este acto.",
         "too_many": "Trae más gente de la autorizada para este acto.",
         "already_checked_in": "Ya entró a las {time}."
-      }
+      },
+      "codes": "Códigos para imprimir",
+      "codesHint": "Un código por invitado y acto. El de la recepción no abre la henna.",
+      "print": "Imprimir los códigos",
+      "codesNobody": "Ningún invitado está autorizado a este acto todavía."
+    },
+    "preferences": {
+      "heading": "Lo que necesitan",
+      "link": "Lo que necesitan",
+      "back": "Volver al evento",
+      "intro": "Lo que hay que preparar. Cada invitado cuenta una vez, y lo que dijo para un acto manda sobre lo que dijo para toda la celebración.",
+      "actLabel": "Acto",
+      "wholeEvent": "Toda la celebración",
+      "show": "Ver",
+      "answered": "{answered} de {guests} han contestado",
+      "empty": "Nadie ha contestado todavía.",
+      "people": "{count} personas"
     },
     "campaigns": {
       "heading": "Envíos",
@@ -910,6 +947,7 @@
       "noConnection": "Conecte un número primero.",
       "noOffice": "Esta cuenta no está asignada a ninguna oficina, así que no hay dónde guardar el número. Créela en «Oficinas» y vuelva.",
       "duplicate": "Ya hay un número con ese nombre.",
+      "frozen": "Los números nuevos por QR están congelados. Los que ya están siguen funcionando; para conectar uno más hay que quitar el candado en Configuración.",
       "waiting": "Pidiendo el código a WhatsApp… esta pantalla se actualiza sola.",
       "stepsTitle": "Cómo se conecta un número",
       "step1": "Escriba un nombre para el número —por ejemplo «Mostrador Hamra»— y pulse Añadir.",
@@ -1079,6 +1117,47 @@
     "noReplies": "En este acto no se confirma asistencia.",
     "until": "hasta las {time}",
     "saved": "Anotado."
+  },
+  "preferences": {
+    "heading": "Lo que necesita",
+    "hint": "Solo lo que hace falta para servir la cena y montar el salón. Puede cambiarlo o dejarlo sin indicar cuando quiera.",
+    "none": "Sin indicar",
+    "save": "Guardar",
+    "saved": "Anotado.",
+    "forAct": "Solo para {act}",
+    "keys": {
+      "diet": "En la mesa",
+      "transport": "Cómo llega",
+      "accessibility": "Para moverse",
+      "photos": "Fotos"
+    },
+    "options": {
+      "diet": {
+        "vegetarian": "Vegetariano",
+        "vegan": "Vegano",
+        "gluten_free": "Sin gluten",
+        "lactose_free": "Sin lactosa",
+        "nut_allergy": "Alergia a los frutos secos",
+        "no_pork": "Sin cerdo",
+        "no_alcohol": "Sin alcohol"
+      },
+      "transport": {
+        "own_car": "Voy en mi coche",
+        "needs_parking": "Necesito aparcamiento",
+        "shuttle": "Voy en el autobús",
+        "needs_ride": "Necesito que me lleven"
+      },
+      "accessibility": {
+        "wheelchair": "Silla de ruedas",
+        "step_free": "Sin escaleras",
+        "reserved_seat": "Asiento reservado",
+        "hearing": "Oigo mal"
+      },
+      "photos": {
+        "ok": "Pueden sacarme",
+        "no": "Prefiero no salir"
+      }
+    }
   },
   "create": {
     "title": "Crear invitación",

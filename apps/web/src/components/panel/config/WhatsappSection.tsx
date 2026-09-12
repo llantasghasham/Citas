@@ -82,7 +82,13 @@ export function WhatsappSection({
           palabra, y desde fuera se ve igual que una pantalla rota. */}
       {error === undefined ? null : (
         <p role="alert" className="border border-[#8c2f1e] bg-[#fdf4f2] p-4 text-sm text-[#8c2f1e]">
-          {error === 'sinOficina' ? copy.noOffice : error === 'duplicate' ? copy.duplicate : copy.gatewayDown}
+          {error === 'sinOficina'
+            ? copy.noOffice
+            : error === 'duplicate'
+              ? copy.duplicate
+              : error === 'frozen'
+                ? copy.frozen
+                : copy.gatewayDown}
         </p>
       )}
 

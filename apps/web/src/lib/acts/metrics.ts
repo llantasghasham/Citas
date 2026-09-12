@@ -100,6 +100,15 @@ export interface Coverage {
   unreachable: CoverageCase;
   /** Están en algún acto y no han contestado a ninguno. */
   silent: CoverageCase;
+  /**
+   * Los que ABRIERON su invitación y aun así no contestaron a nada.
+   *
+   * Es un subconjunto de `silent`, y va aparte porque son dos conversaciones
+   * distintas: a quien no la abrió hay que MANDÁRSELA otra vez —quizá el enlace
+   * no le llegó—, y a quien la abrió y no contestó hay que ESCRIBIRLE. Con
+   * `Guest.openedAt` esto no se podía distinguir: solo decía «alguna vez».
+   */
+  openedNoReply: CoverageCase;
 }
 
 export interface ActReport {
@@ -212,10 +221,27 @@ export async function actMetrics(
   return data === null ? null : metricsFrom(data.acts, resolve(data));
 }
 
+/**
+ * Quién ha ABIERTO su invitación alguna vez.
+ *
+ * Sale de `InvitationVisit` y no de `Guest.openedAt`: aquel solo dice «alguna
+ * vez» y no distingue a quien la abrió y no contestó —a ese hay que escribirle—
+ * de quien no la abrió nunca —a ese hay que mandársela otra vez—. Se pide
+ * agrupado para traer un id por invitado y no una fila por apertura: una
+ * invitación que se reenvía se abre muchas veces.
+ */
+async function openedBy(scope: TenantScope, eventId: string): Promise<Set<string>> {
+  const rows = await db(scope).invitationVisit.groupBy({
+    by: ['guestId'],
+    where: { eventId, guestId: { not: null } },
+  });
+  return new Set(rows.flatMap((row) => (row.guestId === null ? [] : [row.guestId])));
+}
+
 /** La cobertura: a quién no se puede invitar, a quién no se puede avisar. */
 export async function coverage(scope: TenantScope, eventId: string): Promise<Coverage | null> {
-  const data = await roster(scope, eventId);
-  return data === null ? null : coverageFrom(resolve(data));
+  const [data, opened] = await Promise.all([roster(scope, eventId), openedBy(scope, eventId)]);
+  return data === null ? null : coverageFrom(resolve(data), opened);
 }
 
 /**
@@ -225,10 +251,10 @@ export async function coverage(scope: TenantScope, eventId: string): Promise<Cov
  * leer dos veces las mismas filas para pintar la misma página.
  */
 export async function actReport(scope: TenantScope, eventId: string): Promise<ActReport | null> {
-  const data = await roster(scope, eventId);
+  const [data, opened] = await Promise.all([roster(scope, eventId), openedBy(scope, eventId)]);
   if (data === null) return null;
   const resolved = resolve(data);
-  return { acts: metricsFrom(data.acts, resolved), coverage: coverageFrom(resolved) };
+  return { acts: metricsFrom(data.acts, resolved), coverage: coverageFrom(resolved, opened) };
 }
 
 function metricsFrom(acts: RosterAct[], resolved: Resolved[]): ActMetrics[] {
@@ -295,13 +321,15 @@ function metricsFrom(acts: RosterAct[], resolved: Resolved[]): ActMetrics[] {
   });
 }
 
-function coverageFrom(resolved: Resolved[]): Coverage {
+function coverageFrom(resolved: Resolved[], opened: ReadonlySet<string>): Coverage {
   const inNoAct: CoverageGuest[] = [];
   const unreachable: CoverageGuest[] = [];
   const silent: CoverageGuest[] = [];
+  const openedNoReply: CoverageGuest[] = [];
   let inNoActCount = 0;
   let unreachableCount = 0;
   let silentCount = 0;
+  let openedNoReplyCount = 0;
 
   const sampleOf = (guest: RosterGuest): CoverageGuest => ({
     id: guest.id,
@@ -319,6 +347,10 @@ function coverageFrom(resolved: Resolved[]): Coverage {
     } else if (entries.every((entry) => entry.reply === null)) {
       silentCount += 1;
       if (silent.length < SAMPLE_LIMIT) silent.push(sampleOf(guest));
+      if (opened.has(guest.id)) {
+        openedNoReplyCount += 1;
+        if (openedNoReply.length < SAMPLE_LIMIT) openedNoReply.push(sampleOf(guest));
+      }
     }
 
     const phone = guest.phone ?? '';
@@ -334,6 +366,7 @@ function coverageFrom(resolved: Resolved[]): Coverage {
     inNoAct: { count: inNoActCount, sample: inNoAct },
     unreachable: { count: unreachableCount, sample: unreachable },
     silent: { count: silentCount, sample: silent },
+    openedNoReply: { count: openedNoReplyCount, sample: openedNoReply },
   };
 }
 

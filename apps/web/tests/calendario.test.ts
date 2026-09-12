@@ -29,6 +29,7 @@ describe('el calendario de varios actos', { skip: HAS_DB ? false : 'sin DATABASE
   let familia = '';
 
   const subject = (): CalendarSubject => ({
+    locale: 'es',
     eventName: 'Boda',
     honorees: 'Karim · Layla',
     actTypeNames: getDictionary('es').actTypes,

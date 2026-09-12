@@ -564,6 +564,40 @@ Un segundo intento con el mismo código dice «ya entró» y la hora de la prime
 vez, y **nada más**: en una puerta hay gente delante mirando la pantalla. Una
 entrada apuntada por error se puede deshacer, y queda registrado quién lo hizo.
 
+Los códigos se pueden **imprimir**: en la pantalla de la puerta, «Códigos para
+imprimir» saca una hoja con un recuadro por invitado autorizado a ese acto, con
+su nombre, su QR y el nombre del acto. Se recorta y se reparte, o se pega en la
+tarjeta. Lleva el nombre del acto en cada recuadro porque el código también es
+por acto, y cien papeles iguales sin decir de cuál son es exactamente cómo se
+reparten mal.
+
+## 4 septendecies. Lo que necesita cada invitado
+
+Quien abre su enlace personal ve, **debajo del programa**, cuatro preguntas: qué
+come, cómo llega, qué necesita para moverse y si quiere salir en las fotos.
+
+Las respuestas son una **lista cerrada**, no un campo de texto, y eso es una
+decisión de producto y no un descuido: son datos de salud de gente que no tiene
+cuenta aquí, que no ha aceptado ningún aviso de privacidad y que lo único que
+hizo fue abrir un enlace que le reenviaron. Un campo libre acabaría guardando un
+diagnóstico o una medicación, para siempre, en una base que se exporta a CSV.
+
+No están `halal` ni `kosher`, y no por olvido: son etiquetas de credo, y aquí no
+se guarda ni religión ni rito. Lo que la cocina necesita saber son hechos —sin
+cerdo, sin alcohol— y esos sí están. Se compra lo mismo sin apuntar quién reza
+qué en la lista de invitados de una boda.
+
+«Sin indicar» es una opción de verdad y elegirla **borra** lo dicho: retirar algo
+tiene que poder hacerse desde la misma pantalla donde se dijo. Y si la boda tiene
+varios actos, se puede decir una cosa distinta para uno —vegetariano para toda la
+boda, sin gluten en la cena—: **lo del acto manda sobre lo general**.
+
+En el evento, «Lo que necesitan» enseña los recuentos para el catering y para
+quien monta el salón: doce sin gluten, cuatro en silla de ruedas. Cada invitado
+cuenta **una vez**. Son recuentos y no una lista de nombres a propósito: para
+comprar hace falta el número, y el nombre está en la ficha del invitado para
+quien de verdad lo necesite.
+
 ## 4 terdecies. Las pruebas
 
 ```bash

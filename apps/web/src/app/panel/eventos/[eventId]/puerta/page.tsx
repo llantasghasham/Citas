@@ -71,7 +71,7 @@ export default async function GatePage({ params, searchParams }: PageProps) {
         <Link href={`/panel/eventos/${eventId}`} className="text-sm text-[#8a6c22] hover:underline">
           {copy.back}
         </Link>
-        <h1 className={`${displayFont} text-3xl text-[#23201a]`}>{copy.heading}</h1>
+        <h1 className={`${displayFont(locale)} text-3xl text-[#23201a]`}>{copy.heading}</h1>
         <p className="max-w-2xl text-sm text-[#6b6455]">{copy.intro}</p>
       </header>
 
@@ -101,6 +101,14 @@ export default async function GatePage({ params, searchParams }: PageProps) {
         <button type="submit" className={BUTTON_SOFT}>
           {copy.actLabel}
         </button>
+        {/* La hoja de códigos es de ESTE acto: el de la recepción no abre la
+            henna, así que el enlace lleva el acto elegido arriba. */}
+        <Link
+          href={`/panel/eventos/${eventId}/actos/${chosen.id}/codigos`}
+          className="text-sm text-[#8a6c22] hover:underline"
+        >
+          {copy.codes}
+        </Link>
       </form>
 
       {canWrite && (
@@ -135,7 +143,7 @@ export default async function GatePage({ params, searchParams }: PageProps) {
       </p>
 
       <section className="flex flex-col gap-2">
-        <h2 className={`${displayFont} text-xl text-[#23201a]`}>{copy.listIn}</h2>
+        <h2 className={`${displayFont(locale)} text-xl text-[#23201a]`}>{copy.listIn}</h2>
         {list.inside.length === 0 ? (
           <p className="text-sm text-[#6b6455]">{copy.empty}</p>
         ) : (
@@ -172,7 +180,7 @@ export default async function GatePage({ params, searchParams }: PageProps) {
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className={`${displayFont} text-xl text-[#23201a]`}>{copy.listPending}</h2>
+        <h2 className={`${displayFont(locale)} text-xl text-[#23201a]`}>{copy.listPending}</h2>
         <ul className="flex flex-col">
           {list.pending.map((entry) => (
             <li

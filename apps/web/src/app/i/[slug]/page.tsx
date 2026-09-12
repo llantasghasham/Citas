@@ -5,10 +5,12 @@ import { notFound } from 'next/navigation';
 import { CalendarLink } from '@/components/invitation/CalendarLink';
 import { InvitationCard } from '@/components/invitation/InvitationCard';
 import { ActAgenda } from '@/components/rsvp/ActAgenda';
+import { GuestPreferences } from '@/components/rsvp/GuestPreferences';
 import { RsvpForm } from '@/components/rsvp/RsvpForm';
 import { getDictionary, interpolate } from '@/lib/dictionary';
 import { getInvitationRepository } from '@/lib/repositories';
 import { guestCookieName } from '@/lib/rsvp/cookie';
+import { readPreferences } from '@/lib/checkin/preferences';
 import { visitorAgenda } from '@/lib/rsvp/agenda';
 import { findGuestByToken } from '@/lib/rsvp/service';
 
@@ -75,6 +77,13 @@ export default async function InvitationPage({ params, searchParams }: PageProps
   // para quien abrió su enlace personal. Lo decide el servidor de una vez.
   const agenda = canCollectReplies ? await visitorAgenda(slug, guestToken) : null;
 
+  // Lo que necesita: solo para quien trae enlace personal, porque cuelga de un
+  // invitado concreto. Quien llega por un reenvío no tiene a quién colgárselo.
+  const preferences =
+    agenda === null || agenda.guest === null
+      ? null
+      : await readPreferences(agenda.scope, agenda.eventId, agenda.guest.id);
+
   return (
     <main
       dir={invitation.direction}
@@ -100,6 +109,18 @@ export default async function InvitationPage({ params, searchParams }: PageProps
             acts={agenda.acts}
             personal={agenda.guest !== null}
             dictionary={dictionary}
+            scope={agenda.scope}
+            locale={invitation.locale}
+          />
+        )}
+        {agenda !== null && preferences !== null && (
+          <GuestPreferences
+            slug={slug}
+            acts={agenda.acts}
+            saved={preferences}
+            dictionary={dictionary}
+            scope={agenda.scope}
+            locale={invitation.locale}
           />
         )}
         {canCollectReplies ? (

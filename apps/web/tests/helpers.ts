@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { after, before } from 'node:test';
 
 import { controlDb } from '../src/lib/db/client';
@@ -19,6 +20,46 @@ import { controlDb } from '../src/lib/db/client';
  * ellos y lo que falla no es el código sino quién llegó antes.
  */
 export const HAS_DB = (process.env['DATABASE_URL'] ?? '').length > 0;
+
+/**
+ * La llave de cifrado, para la suite y solo para la suite.
+ *
+ * Hay pruebas que firman o cifran —el código de la puerta, la sesión de
+ * WhatsApp, las contraseñas de servicio— y sin llave revientan con «No
+ * encryption key», que es lo CORRECTO en producción: la llave vive fuera de la
+ * base y no puede haber un valor de respaldo, porque un respaldo lo tendría
+ * todo el mundo.
+ *
+ * En una suite, en cambio, esa misma excepción son veinte fallos rojos que no
+ * dicen «te falta una variable» sino que parecen código roto — y quien los mira
+ * se pone a buscar en el sitio equivocado. Así que aquí se acuña una llave AL
+ * VUELO, distinta en cada ejecución y que no se guarda en ningún sitio: no
+ * puede descifrar nada de nadie, y firmar con ella y comprobar con ella dentro
+ * del mismo proceso es exactamente lo que estas pruebas necesitan.
+ *
+ * Si el entorno trae una, manda la del entorno: correr la suite contra la
+ * llave de verdad tiene que seguir siendo posible.
+ */
+if (
+  (process.env['CITAS_SECRET_KEY'] ?? '').length === 0 &&
+  (process.env['CITAS_SECRET_KEY_FILE'] ?? '').length === 0
+) {
+  process.env['CITAS_SECRET_KEY'] = randomBytes(32).toString('base64');
+}
+
+/**
+ * Y lo mismo con el token que comparten la web y el servicio de WhatsApp.
+ *
+ * La cola se prueba entera —reclamar con `SKIP LOCKED`, el cupo diario, el
+ * arriendo— y nada de eso sale del proceso: ninguna prueba llama al servicio.
+ * Pero el módulo se niega a cargarse sin el token, con razón: un servicio que
+ * arranca sin él es un servicio que manda desde el WhatsApp de un cliente sin
+ * pedirle nada a nadie. En la suite eso eran nueve fallos rojos que decían
+ * «falta una variable» en un sitio donde nadie la busca.
+ */
+if ((process.env['WHATSAPP_GATEWAY_TOKEN'] ?? '').length === 0) {
+  process.env['WHATSAPP_GATEWAY_TOKEN'] = randomBytes(24).toString('hex');
+}
 
 /**
  * Y si no la hay, se DICE, en grande.

@@ -157,18 +157,29 @@ function psql(database: string, sql: string): string {
   });
 }
 
+/**
+ * `DATABASE_URL`, comprobada.
+ *
+ * Vacía es lo mismo que sin poner, y hay que decirlo igual: un `.env` con la
+ * línea escrita y el valor en blanco reventaba con «Invalid URL» y diez líneas
+ * de pila de Node, que no le dicen a nadie qué le falta.
+ */
+function databaseUrl(): string {
+  const raw = process.env['DATABASE_URL'];
+  if (raw === undefined || raw.length === 0) throw new Error('DATABASE_URL no está puesta.');
+  return raw;
+}
+
 /** La misma máquina y credenciales de `DATABASE_URL`, con otra base. */
 function adminUrl(database: string): string {
-  const raw = process.env['DATABASE_URL'];
-  if (raw === undefined) throw new Error('DATABASE_URL no está puesta.');
-  const url = new URL(raw);
+  const url = new URL(databaseUrl());
   url.pathname = `/${database}`;
   url.search = '';
   return url.toString();
 }
 
 function main(): void {
-  const base = new URL(process.env['DATABASE_URL'] ?? '').pathname.slice(1) || 'postgres';
+  const base = new URL(databaseUrl()).pathname.slice(1) || 'postgres';
   console.log(`[migraciones] base temporal ${TEMP_DB}`);
 
   psql(base, `CREATE DATABASE "${TEMP_DB}"`);

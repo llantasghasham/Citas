@@ -172,6 +172,7 @@ export default async function ConfigPage({ searchParams }: PageProps) {
             campo('WHATSAPP_DELAY_MIN'),
             campo('WHATSAPP_DELAY_MAX'),
             campo('WHATSAPP_WARMUP_CAP'),
+            campo('WHATSAPP_QR_FROZEN'),
           ])}
           canEditGateway={platform}
           {...(params.servicio === undefined ? {} : { gatewayError: params.servicio })}

@@ -450,6 +450,33 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   de la última lectura arriba y grande, y el foco de vuelta en el código para
   encadenar lecturas sin tocar la pantalla.
 
+### Lo que necesita el invitado
+- Las PREGUNTAS son una lista cerrada (`PREFERENCE_KEYS`) y las RESPUESTAS
+  TAMBIÉN (`PREFERENCE_OPTIONS`). Una pregunta cerrada con respuesta libre no es
+  una pregunta cerrada: el campo de la dieta acabaría guardando «celíaca
+  diagnosticada en 2019» porque alguien lo escribió creyendo que ayudaba, y esto
+  son datos de salud de gente que no tiene cuenta aquí, que no aceptó ningún
+  aviso de privacidad y que solo abrió un enlace reenviado. Es la misma decisión
+  que la del versículo: una lista fija vale más que un campo libre cuando lo que
+  se guarda no se puede desguardar.
+- Lo que hay en la base es un CÓDIGO (`gluten_free`), no una frase. Es además lo
+  único que hace que el informe sume: «sin gluten», «Sin Gluten» y «sin  gluten»
+  son tres filas distintas de lo mismo, y el catering compra por la suma.
+- NO están `halal` ni `kosher`, y la ausencia es la regla: son etiquetas de
+  credo, y este proyecto no guarda ni religión ni rito
+  (`docs/DECISIONES-TOMADAS.md` §5). Lo que la cocina necesita son hechos —sin
+  cerdo, sin alcohol— y esos sí están. Tampoco hay «otro» con una casilla al
+  lado: es el campo libre por la puerta de atrás.
+- Vaciar BORRA la fila. Guardar una cadena vacía dejaría en la base el rastro de
+  que alguna vez se contestó algo sobre la dieta de alguien, que es justo lo que
+  no hay que guardar; y retirar lo dicho tiene que poder hacerse desde la misma
+  pantalla donde se dijo.
+- Lo del ACTO manda sobre lo general, y cada invitado cuenta UNA vez. Contar las
+  dos filas daría más comidas que comensales; ignorar la general dejaría sin
+  cenar a quien solo contestó una vez.
+- El panel enseña RECUENTOS, no nombres. Para comprar hace falta el número, y el
+  nombre está en la ficha del invitado para quien de verdad lo necesite.
+
 ### Confirmaciones
 - El formulario de confirmación es PÚBLICO a propósito: la invitación se reenvía
   por WhatsApp y pedir cuenta al invitado cuesta más respuestas que el spam que
@@ -980,6 +1007,8 @@ de los versículos.
   faltan, importar y enviar por WhatsApp).
 - `/panel/eventos/[eventId]/mesas` — el reparto del salón, y
   `/mesas/imprimir?vista=mesa|invitado` las dos listas de papel.
+- `/panel/eventos/[eventId]/preferencias` — lo que hay que preparar: cocina,
+  traslados, accesibilidad y fotos, en recuentos y por acto.
 - `/panel/manual` — el manual de uso, en los cuatro idiomas.
 - `/panel/sistema` — SOLO superadministrador: once comprobaciones de salud,
   las versiones leídas en vivo y un botón que envía un correo de prueba y

@@ -316,6 +316,17 @@
             "Uma entrada registada por engano pode desfazer-se, e fica registado quem a desfez."
           ]
         },
+        "preferences": {
+          "title": "O que cada convidado precisa",
+          "steps": [
+            "Quem abre o seu link pessoal vê, abaixo do programa, quatro perguntas: o que come, como chega, o que precisa para se locomover e se quer aparecer nas fotos.",
+            "As respostas são uma lista fechada, não um campo de texto. É de propósito: são dados de saúde de gente que não tem conta aqui, e um campo livre acabaria guardando um diagnóstico.",
+            "«Não informado» é uma opção de verdade e escolhê-la APAGA o que foi dito. Retirar algo tem de poder ser feito na mesma tela onde foi dito.",
+            "Se o casamento tem vários atos, dá para dizer algo diferente para um: vegetariano para o casamento inteiro e sem glúten no jantar. O do ato manda sobre o geral.",
+            "Em «O que eles precisam», dentro do evento, saem as contagens para o bufê e para quem monta o salão: doze sem glúten, quatro em cadeira de rodas. Cada convidado conta uma vez.",
+            "São contagens e não uma lista de nomes, de propósito. Para comprar é preciso o número; o nome está na ficha do convidado para quem realmente precisar."
+          ]
+        },
         "image": {
           "title": "A imagem",
           "steps": [
@@ -484,7 +495,8 @@
         "WHATSAPP_GATEWAY_URL": "Endereço do serviço de WhatsApp",
         "WHATSAPP_DELAY_MIN": "Segundos de espera, mínimo",
         "WHATSAPP_DELAY_MAX": "Segundos de espera, máximo",
-        "WHATSAPP_WARMUP_CAP": "Envios no primeiro dia de um número novo"
+        "WHATSAPP_WARMUP_CAP": "Envios no primeiro dia de um número novo",
+        "WHATSAPP_QR_FROZEN": "Congelar os números novos por QR"
       },
       "sections": {
         "mail": "Correio",
@@ -548,8 +560,9 @@
         "WHATSAPP_DELAY_MIN": "Entre 3 e 300. O atraso real é aleatório entre o mínimo e o máximo: um intervalo exato é uma assinatura de máquina. Não pode ser zero — o travão encurta-se, não se retira.",
         "WHATSAPP_DELAY_MAX": "Entre 3 e 600. Se ficar abaixo do mínimo, usa-se o mínimo.",
         "WHATSAPP_WARMUP_CAP": "Entre 1 e 100. Um número recém-ligado envia isto no primeiro dia, mesmo que o limite diário seja maior. Suba devagar: em semanas, não em horas.",
-        "SINPE_PHONE": "O que os escritórios veem ao ir pagar. Em E.164: +50687021496.",
-        "CRC_PER_USD": "Os planos estão escritos em dólares; isto passa-os a colones para o SINPE. Mude-o quando mudar o câmbio. O montante é arredondado à centena de colones mais próxima para se poder escrever."
+        "SINPE_PHONE": "O que os escritórios veem ao ir pagar. Em E.164: +50600000000.",
+        "CRC_PER_USD": "Os planos estão escritos em dólares; isto passa-os a colones para o SINPE. Mude-o quando mudar o câmbio. O montante é arredondado à centena de colones mais próxima para se poder escrever.",
+        "WHATSAPP_QR_FROZEN": "Não desliga os que já estão ligados: impede que entre mais um. É a primeira coisa a activar no dia em que se comece a passar para o canal oficial do WhatsApp."
       },
       "brandLogo": "Logótipo",
       "brandLogoHint": "Envia-se do seu computador, até {mb} MB. Sai na página inicial e no cabeçalho do painel, sobre fundo escuro.",
@@ -729,6 +742,7 @@
       "coverageNoAct": "{count} convidados não entram em nenhum ato: assim como está, não há convite para lhes enviar.",
       "coverageUnreachable": "{count} convidados sem telefone nem correio: não há por onde avisá-los.",
       "coverageSilent": "{count} convidados não responderam a nenhum ato seu.",
+      "coverageOpened": "{count} convidados abriram o convite e não responderam: já o viram, então falta insistir.",
       "coverageClean": "Todos os convidados entram em algo e têm por onde receber.",
       "coverageSample": "Por exemplo:",
       "segmentsHeading": "Grupos",
@@ -762,7 +776,14 @@
         "deadline": "O prazo para confirmar tem de acabar antes de o ato começar.",
         "notFound": "Esse ato não é deste evento.",
         "lastOne": "O ato principal não se pode remover."
-      }
+      },
+      "translationsOpen": "Escrevê-lo noutro idioma",
+      "translationsHint": "Traduzir NÃO muda quem entra: o idioma é como se lê, não uma permissão.",
+      "translationLabel": "Como se chama",
+      "translationDescription": "Descrição (opcional)",
+      "translationVenue": "O local, nesse idioma (opcional)",
+      "translationSave": "Guardar a tradução",
+      "translationEmpty": "Sem tradução: usa-se o nome do tipo."
     },
     "gate": {
       "heading": "Porta",
@@ -785,7 +806,23 @@
         "not_invited": "Não está convidado para este ato.",
         "too_many": "Traz mais gente do que a autorizada para este ato.",
         "already_checked_in": "Já entrou às {time}."
-      }
+      },
+      "codes": "Códigos para imprimir",
+      "codesHint": "Um código por convidado e ato. O da receção não abre a henna.",
+      "print": "Imprimir os códigos",
+      "codesNobody": "Nenhum convidado está autorizado a este ato ainda."
+    },
+    "preferences": {
+      "heading": "O que eles precisam",
+      "link": "O que eles precisam",
+      "back": "Voltar ao evento",
+      "intro": "O que há para preparar. Cada convidado conta uma vez, e o que disse para um ato manda sobre o que disse para a celebração inteira.",
+      "actLabel": "Ato",
+      "wholeEvent": "A celebração inteira",
+      "show": "Ver",
+      "answered": "{answered} de {guests} responderam",
+      "empty": "Ninguém respondeu ainda.",
+      "people": "{count} pessoas"
     },
     "campaigns": {
       "heading": "Envios",
@@ -910,6 +947,7 @@
       "noConnection": "Ligue primeiro um número.",
       "noOffice": "Esta conta não está atribuída a nenhum escritório, por isso não há onde guardar o número. Crie um em «Escritórios» e volte.",
       "duplicate": "Já existe um número com esse nome.",
+      "frozen": "Os números novos por QR estão congelados. Os que já estão continuam a funcionar; para ligar mais um há que tirar o cadeado em Configuração.",
       "waiting": "A pedir o código ao WhatsApp… este ecrã atualiza-se sozinho.",
       "stepsTitle": "Como se liga um número",
       "step1": "Escreva um nome para o número — por exemplo «Balcão Hamra» — e carregue em Adicionar.",
@@ -1079,6 +1117,47 @@
     "noReplies": "Neste ato não se confirma presença.",
     "until": "até às {time}",
     "saved": "Registado."
+  },
+  "preferences": {
+    "heading": "O que você precisa",
+    "hint": "Só o necessário para servir o jantar e montar o salão. Pode mudar ou deixar em branco quando quiser.",
+    "none": "Não informado",
+    "save": "Guardar",
+    "saved": "Anotado.",
+    "forAct": "Só para {act}",
+    "keys": {
+      "diet": "À mesa",
+      "transport": "Como chega",
+      "accessibility": "Para se locomover",
+      "photos": "Fotos"
+    },
+    "options": {
+      "diet": {
+        "vegetarian": "Vegetariano",
+        "vegan": "Vegano",
+        "gluten_free": "Sem glúten",
+        "lactose_free": "Sem lactose",
+        "nut_allergy": "Alergia a oleaginosas",
+        "no_pork": "Sem carne de porco",
+        "no_alcohol": "Sem álcool"
+      },
+      "transport": {
+        "own_car": "Vou no meu carro",
+        "needs_parking": "Preciso de estacionamento",
+        "shuttle": "Vou no ônibus",
+        "needs_ride": "Preciso de carona"
+      },
+      "accessibility": {
+        "wheelchair": "Cadeira de rodas",
+        "step_free": "Sem escadas",
+        "reserved_seat": "Lugar reservado",
+        "hearing": "Ouço mal"
+      },
+      "photos": {
+        "ok": "Podem me fotografar",
+        "no": "Prefiro não aparecer"
+      }
+    }
   },
   "create": {
     "title": "Criar convite",

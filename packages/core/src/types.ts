@@ -69,6 +69,7 @@ export const MANUAL_CHAPTERS = [
   'rsvp',
   'tables',
   'gate',
+  'preferences',
   'image',
   'team',
   'roles',
@@ -271,6 +272,52 @@ export interface Dictionary {
     noReplies: string;
     until: string;
     saved: string;
+  };
+  /**
+   * Lo que el invitado dice que necesita. Las CLAVES y los VALORES son listas
+   * cerradas en el servidor (`lib/checkin/preferences.ts`); esto es solo cómo
+   * se leen en cada idioma. Añadir una opción es tocar los dos sitios.
+   */
+  preferences: {
+    heading: string;
+    hint: string;
+    none: string;
+    save: string;
+    saved: string;
+    forAct: string;
+    keys: {
+      diet: string;
+      transport: string;
+      accessibility: string;
+      photos: string;
+    };
+    options: {
+      diet: {
+        vegetarian: string;
+        vegan: string;
+        gluten_free: string;
+        lactose_free: string;
+        nut_allergy: string;
+        no_pork: string;
+        no_alcohol: string;
+      };
+      transport: {
+        own_car: string;
+        needs_parking: string;
+        shuttle: string;
+        needs_ride: string;
+      };
+      accessibility: {
+        wheelchair: string;
+        step_free: string;
+        reserved_seat: string;
+        hearing: string;
+      };
+      photos: {
+        ok: string;
+        no: string;
+      };
+    };
   };
   aria: {
     invitationCard: string;
@@ -529,7 +576,8 @@ export interface Dictionary {
           | 'WHATSAPP_GATEWAY_URL'
           | 'WHATSAPP_DELAY_MIN'
           | 'WHATSAPP_DELAY_MAX'
-          | 'WHATSAPP_WARMUP_CAP',
+          | 'WHATSAPP_WARMUP_CAP'
+          | 'WHATSAPP_QR_FROZEN',
           string
         >
       >;
@@ -565,6 +613,7 @@ export interface Dictionary {
         | 'WHATSAPP_DELAY_MIN'
         | 'WHATSAPP_DELAY_MAX'
         | 'WHATSAPP_WARMUP_CAP'
+        | 'WHATSAPP_QR_FROZEN'
         | 'NEXT_PUBLIC_SITE_URL',
         string
       >;
@@ -749,6 +798,7 @@ export interface Dictionary {
       /** La cuenta no pertenece a ninguna oficina: no hay dónde guardar nada. */
       noOffice: string;
       duplicate: string;
+      frozen: string;
       /** Se pulsó conectar y el código todavía no ha llegado de WhatsApp. */
       waiting: string;
       /** Se pidió el código y nadie lo escaneó: la espera se da por muerta. */
@@ -976,6 +1026,7 @@ export interface Dictionary {
       coverageNoAct: string;
       coverageUnreachable: string;
       coverageSilent: string;
+      coverageOpened: string;
       coverageClean: string;
       coverageSample: string;
       segmentsHeading: string;
@@ -986,6 +1037,13 @@ export interface Dictionary {
       segmentFill: string;
       segmentRemove: string;
       segmentEmpty: string;
+      translationsOpen: string;
+      translationsHint: string;
+      translationLabel: string;
+      translationDescription: string;
+      translationVenue: string;
+      translationSave: string;
+      translationEmpty: string;
       membersOpen: string;
       membersSave: string;
       membersSaved: string;
@@ -1026,6 +1084,10 @@ export interface Dictionary {
       listPending: string;
       empty: string;
       undo: string;
+      codes: string;
+      codesHint: string;
+      codesNobody: string;
+      print: string;
       ok: string;
       errors: {
         bad_code: string;
@@ -1033,6 +1095,18 @@ export interface Dictionary {
         too_many: string;
         already_checked_in: string;
       };
+    };
+    preferences: {
+      heading: string;
+      link: string;
+      back: string;
+      intro: string;
+      actLabel: string;
+      wholeEvent: string;
+      show: string;
+      answered: string;
+      empty: string;
+      people: string;
     };
     campaigns: {
       heading: string;

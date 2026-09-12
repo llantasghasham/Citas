@@ -37,7 +37,7 @@ export default async function ConsentPage({ params, searchParams }: PageProps) {
 
   const { eventId } = await params;
   const { error } = await searchParams;
-  const { dictionary } = await getAdminContext(session.tenantId);
+  const { dictionary, locale } = await getAdminContext(session.tenantId);
   const copy = dictionary.admin.consent;
 
   const summary = await consentSummary(scopeOf(session), eventId);
@@ -51,7 +51,7 @@ export default async function ConsentPage({ params, searchParams }: PageProps) {
         <Link href={`/panel/eventos/${eventId}`} className="text-sm text-[#8a6c22] hover:underline">
           {copy.back}
         </Link>
-        <h1 className={`${displayFont} text-3xl text-[#23201a]`}>{copy.heading}</h1>
+        <h1 className={`${displayFont(locale)} text-3xl text-[#23201a]`}>{copy.heading}</h1>
         <p className="max-w-2xl text-sm text-[#6b6455]">{copy.intro}</p>
         <p className="max-w-2xl border border-[#c9a227] bg-[#fdfaf0] p-3 text-sm text-[#6b5a20]">
           {copy.warning}
@@ -78,7 +78,7 @@ export default async function ConsentPage({ params, searchParams }: PageProps) {
 
       {summary.sample.length > 0 && (
         <section className="flex flex-col gap-2 border border-[#ddd6c6] bg-white p-4">
-          <h2 className={`${displayFont} text-xl text-[#23201a]`}>{copy.without.split('{')[0]}</h2>
+          <h2 className={`${displayFont(locale)} text-xl text-[#23201a]`}>{copy.without.split('{')[0]}</h2>
           <p className="text-sm text-[#6b6455]">
             {summary.sample.map((guest) => guest.name).join(' · ')}
           </p>

@@ -50,7 +50,7 @@ export default async function CampaignsPage({ params, searchParams }: PageProps)
 
   const { eventId } = await params;
   const query = await searchParams;
-  const { dictionary } = await getAdminContext(session.tenantId);
+  const { dictionary, locale } = await getAdminContext(session.tenantId);
   const copy = dictionary.admin.campaigns;
   const types = dictionary.actTypes;
 
@@ -86,7 +86,7 @@ export default async function CampaignsPage({ params, searchParams }: PageProps)
         <Link href={`/panel/eventos/${eventId}`} className="text-sm text-[#8a6c22] hover:underline">
           {copy.back}
         </Link>
-        <h1 className={`${displayFont} text-3xl text-[#23201a]`}>{copy.heading}</h1>
+        <h1 className={`${displayFont(locale)} text-3xl text-[#23201a]`}>{copy.heading}</h1>
         <p className="max-w-2xl text-sm text-[#6b6455]">{copy.intro}</p>
       </header>
 

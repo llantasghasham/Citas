@@ -36,14 +36,46 @@ export function isPreferenceKey(value: string): value is PreferenceKey {
 }
 
 /**
- * Cuánto puede medir un valor.
+ * Y las RESPUESTAS también son una lista cerrada, no solo las preguntas.
  *
- * Corto a propósito: el valor lo elige una pantalla de opciones («sin gluten»,
- * «vegetariano», «autobús»), no lo redacta nadie. El tope es lo que impide que
- * un formulario a mano convierta este campo en el texto libre que la lista
- * cerrada de arriba existe para evitar.
+ * Una pregunta cerrada con respuesta libre no es una pregunta cerrada: el campo
+ * de la dieta acabaría guardando «celíaca diagnosticada en 2019» porque alguien
+ * lo escribió en el móvil creyendo que ayudaba. Con códigos, lo que hay en la
+ * base es `gluten_free`, y lo que lee una persona lo pone el diccionario en SU
+ * idioma — que además es lo único que hace que el informe del catering sume:
+ * «sin gluten», «Sin Gluten» y «sin  gluten» son tres filas distintas de lo
+ * mismo, y el catering compra por la suma.
+ *
+ * Dos que no están, y no están a propósito:
+ *
+ *   - **`halal` y `kosher`.** Son etiquetas de credo, y este proyecto no guarda
+ *     ni religión ni rito (`docs/DECISIONES-TOMADAS.md` §5). Lo que el catering
+ *     necesita saber son hechos de cocina —sin cerdo, sin alcohol— y esos sí
+ *     están. Se compra lo mismo sin apuntar en la lista de invitados de una
+ *     boda quién reza qué.
+ *   - **«otro», con una casilla al lado.** Es el campo libre por la puerta de
+ *     atrás. Si falta una respuesta de verdad, se añade aquí y se traduce.
  */
-const MAX_VALUE_LENGTH = 80;
+export const PREFERENCE_OPTIONS = {
+  diet: [
+    'vegetarian',
+    'vegan',
+    'gluten_free',
+    'lactose_free',
+    'nut_allergy',
+    'no_pork',
+    'no_alcohol',
+  ],
+  transport: ['own_car', 'needs_parking', 'shuttle', 'needs_ride'],
+  accessibility: ['wheelchair', 'step_free', 'reserved_seat', 'hearing'],
+  photos: ['ok', 'no'],
+} as const satisfies Record<PreferenceKey, readonly string[]>;
+
+/** Un valor vale para SU clave: `shuttle` no es una dieta. */
+export function isPreferenceValue(key: PreferenceKey, value: string): boolean {
+  return (PREFERENCE_OPTIONS[key] as readonly string[]).includes(value);
+}
+
 
 export interface PreferenceInput {
   /** Nulo o ausente: vale para toda la celebración. */
@@ -110,8 +142,13 @@ export async function setPreference(
     if (act === null) return { ok: false, reason: 'not_found' };
   }
 
-  const value = input.value.trim().replace(/\s+/g, ' ');
-  if (value.length > MAX_VALUE_LENGTH) return { ok: false, reason: 'bad_value' };
+  // Se recorta antes de comprobar porque un `<select>` no manda espacios pero
+  // un envío a mano sí, y « vegetarian » es `vegetarian`. Lo que no se hace es
+  // adivinar: cualquier otra cosa se rechaza, no se aproxima.
+  const value = input.value.trim();
+  if (value.length > 0 && !isPreferenceValue(input.key, value)) {
+    return { ok: false, reason: 'bad_value' };
+  }
 
   const where = { guestId, eventId, actId, key: input.key };
 

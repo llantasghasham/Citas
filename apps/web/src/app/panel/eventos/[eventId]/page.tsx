@@ -199,6 +199,14 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           >
             {dictionary.admin.gate.link}
           </a>
+          {/* Lo que hay que preparar. Va pegado a la puerta porque las dos son
+              del día del evento: una dice quién entra y la otra qué come. */}
+          <a
+            className="text-sm underline text-[#8a6c22]"
+            href={`/panel/eventos/${eventId}/preferencias`}
+          >
+            {dictionary.admin.preferences.link}
+          </a>
           {/* El reparto del salón. Va junto a la lista de invitados porque es
               lo mismo mirado de otra manera: quién viene y dónde se sienta. */}
           <a

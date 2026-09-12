@@ -58,6 +58,19 @@ export const SETTING_KEYS = [
   'WHATSAPP_DELAY_MIN',
   'WHATSAPP_DELAY_MAX',
   'WHATSAPP_WARMUP_CAP',
+  /**
+   * Cierra la puerta a conectar números NUEVOS por código QR.
+   *
+   * No apaga los que ya están: los que están siguen mandando. Lo que impide es
+   * que entre uno más — que es lo primero que hay que hacer el día que se
+   * empiece a migrar al canal oficial, porque cada número que se conecte a
+   * partir de entonces es un número más que habrá que migrar o perder.
+   *
+   * Por defecto NO está puesto, y eso es deliberado: congelarlo hoy, sin canal
+   * oficial montado, dejaría a una oficina sin poder conectar su número y sin
+   * alternativa. Es un interruptor para cuando haya adónde ir.
+   */
+  'WHATSAPP_QR_FROZEN',
   // El sitio
   'NEXT_PUBLIC_SITE_URL',
 ] as const;

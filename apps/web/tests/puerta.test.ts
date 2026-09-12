@@ -372,6 +372,28 @@ describe('las preferencias', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () =
     assert.equal(await controlDb().guestPreference.count({ where: { eventId } }), 0);
   });
 
+  it('la lista de RESPUESTAS también es cerrada', async () => {
+    const rami = await invitado('Rami');
+
+    // Lo que el catering suma es el código, no lo que alguien escribió en el
+    // móvil: «celíaca desde 2019» no es una respuesta, es un diagnóstico.
+    assert.deepEqual(
+      await setPreference(scope(), eventId, rami.id, {
+        key: 'diet',
+        value: 'celiaca desde 2019',
+      }),
+      { ok: false, reason: 'bad_value' },
+    );
+
+    // Y un valor de otra clave tampoco: «shuttle» no es una dieta.
+    assert.deepEqual(
+      await setPreference(scope(), eventId, rami.id, { key: 'diet', value: 'shuttle' }),
+      { ok: false, reason: 'bad_value' },
+    );
+
+    assert.equal(await controlDb().guestPreference.count({ where: { guestId: rami.id } }), 0);
+  });
+
   it('el invitado de otra boda no guarda nada', async () => {
     const otroEvento = await makeEvent(fixture.get().tenantId);
     const ajeno = await controlDb().guest.create({
@@ -380,7 +402,7 @@ describe('las preferencias', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () =
     });
 
     assert.deepEqual(
-      await setPreference(scope(), eventId, ajeno.id, { key: 'diet', value: 'sin gluten' }),
+      await setPreference(scope(), eventId, ajeno.id, { key: 'diet', value: 'gluten_free' }),
       { ok: false, reason: 'not_found' },
     );
     assert.equal(await readPreferences(scope(), eventId, ajeno.id), null);
@@ -390,18 +412,18 @@ describe('las preferencias', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () =
     const nour = await invitado('Nour');
 
     assert.deepEqual(
-      await setPreference(scope(), eventId, nour.id, { key: 'diet', value: '  sin   gluten ' }),
+      await setPreference(scope(), eventId, nour.id, { key: 'diet', value: '  gluten_free ' }),
       { ok: true },
     );
-    // El espacio de más se normaliza: «sin  gluten» y «sin gluten» no pueden ser
-    // dos filas del informe del catering.
+    // El espacio de sobra de un envío a mano se recorta: el valor es el código,
+    // no lo que rodea al código.
     assert.deepEqual(
       (await readPreferences(scope(), eventId, nour.id))?.map((row) => [row.key, row.value]),
-      [['diet', 'sin gluten']],
+      [['diet', 'gluten_free']],
     );
 
     // La segunda vez actualiza, no crea otra: la clave es (invitado, acto, clave).
-    await setPreference(scope(), eventId, nour.id, { key: 'diet', value: 'vegetariano' });
+    await setPreference(scope(), eventId, nour.id, { key: 'diet', value: 'vegetarian' });
     assert.equal(await controlDb().guestPreference.count({ where: { guestId: nour.id } }), 1);
 
     // Vaciar RETIRA lo dicho: no deja una fila vacía diciendo que un día se
@@ -412,8 +434,8 @@ describe('las preferencias', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () =
 
   it('lo del acto convive con lo general y no es la misma fila', async () => {
     const layla = await invitado('Layla');
-    await setPreference(scope(), eventId, layla.id, { key: 'diet', value: 'vegetariano' });
-    await setPreference(scope(), eventId, layla.id, { actId: cena, key: 'diet', value: 'sin gluten' });
+    await setPreference(scope(), eventId, layla.id, { key: 'diet', value: 'vegetarian' });
+    await setPreference(scope(), eventId, layla.id, { actId: cena, key: 'diet', value: 'gluten_free' });
 
     const suyas = await readPreferences(scope(), eventId, layla.id);
     assert.equal(suyas?.length, 2);
@@ -430,7 +452,7 @@ describe('las preferencias', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () =
     });
     assert.deepEqual(
       await setPreference(scope(), eventId, layla.id, {
-        actId: ajeno.id, key: 'diet', value: 'sin gluten',
+        actId: ajeno.id, key: 'diet', value: 'gluten_free',
       }),
       { ok: false, reason: 'not_found' },
     );
@@ -443,12 +465,12 @@ describe('las preferencias', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () =
     // Este no entra a la cena: su dieta no la compra el catering de la cena.
     const colega = await invitado('Colega', false);
 
-    await setPreference(scope(), eventId, rami.id, { key: 'diet', value: 'sin gluten' });
+    await setPreference(scope(), eventId, rami.id, { key: 'diet', value: 'gluten_free' });
     // Vegetariana para toda la boda, sin gluten EN LA CENA: cuenta una vez, y
     // en la cena cuenta como sin gluten.
-    await setPreference(scope(), eventId, layla.id, { key: 'diet', value: 'vegetariano' });
-    await setPreference(scope(), eventId, layla.id, { actId: cena, key: 'diet', value: 'sin gluten' });
-    await setPreference(scope(), eventId, colega.id, { key: 'diet', value: 'sin lactosa' });
+    await setPreference(scope(), eventId, layla.id, { key: 'diet', value: 'vegetarian' });
+    await setPreference(scope(), eventId, layla.id, { actId: cena, key: 'diet', value: 'gluten_free' });
+    await setPreference(scope(), eventId, colega.id, { key: 'diet', value: 'lactose_free' });
 
     const deLaCena = await preferenceReport(scope(), eventId, cena, 'diet');
     assert.deepEqual(deLaCena, {
@@ -456,7 +478,7 @@ describe('las preferencias', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () =
       actId: cena,
       guests: 3,
       answered: 2,
-      values: [{ value: 'sin gluten', count: 2 }],
+      values: [{ value: 'gluten_free', count: 2 }],
     });
     // Nour está invitado y no ha dicho nada: cuenta como invitado, no como
     // respuesta. Un informe que solo contara a los que contestaron no le diría
@@ -468,9 +490,9 @@ describe('las preferencias', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () =
     const general = await preferenceReport(scope(), eventId, null, 'diet');
     assert.equal(general?.guests, 4);
     assert.deepEqual(general?.values, [
-      { value: 'sin gluten', count: 1 },
-      { value: 'sin lactosa', count: 1 },
-      { value: 'vegetariano', count: 1 },
+      { value: 'gluten_free', count: 1 },
+      { value: 'lactose_free', count: 1 },
+      { value: 'vegetarian', count: 1 },
     ]);
 
     // Una clave que no está en la lista no tiene informe.
