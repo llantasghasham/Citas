@@ -149,6 +149,25 @@ jobs:
             *) echo "::error::/d no negocio el idioma: fue a $destino"; exit 1 ;;
           esac
 
+      - name: Contar lo que hay publicado en el directorio
+        continue-on-error: true
+        run: |
+          # NO tumba el despliegue: un directorio vacio es un directorio vacio,
+          # no una averia. Pero desde fuera se ve igual que si la pagina
+          # estuviera rota, asi que se DICE — que es lo mismo que se hace con
+          # los buzones de SINPE caidos.
+          #
+          # Las diez fichas de ejemplo las escribe `npm run db:seed`. Si aqui
+          # sale cero, es que el guion de despliegue del servidor no lo llama y
+          # hay que ejecutarlo una vez a mano.
+          cuenta="$(curl -s --max-time 60 'https://citas.posxml.com/d/es/proveedores' \
+            | grep -o 'Resultados: [0-9]*' | head -1)"
+          echo "portal /d/es/proveedores -> ${cuenta:-sin contador}"
+          case "$cuenta" in
+            'Resultados: 0'|'') echo "::warning::el directorio esta VACIO — falta ejecutar npm run db:seed en el servidor" ;;
+            *) echo "OK: el directorio tiene fichas publicadas" ;;
+          esac
+
       - name: Comprobar que el arabe se declara arabe
         run: |
           # Un idioma equivocado no cambia el codigo HTTP: se lee en el documento.
