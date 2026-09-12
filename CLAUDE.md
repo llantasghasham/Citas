@@ -1017,6 +1017,10 @@ npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
 - `docs/COBRO-WHISH.md` — cobro en Líbano con Whish: qué pedirle al proveedor y
   las reglas de la integración.
 - `docs/DECISIONES-PENDIENTES.md` — lo que no es código y bloquea fases enteras.
+- `docs/DIRECTORIO-ALMACEN.md` — el almacén de imágenes del directorio: el
+  puerto, la firma, y las políticas de expiración, archivos, eliminación y
+  moderación. Incluye las dos cosas del encargo que no se podían cumplir a la
+  vez y cómo se resuelven.
 - `docs/DIRECTORIO-DISENO.md` — el DISEÑO final del directorio, con las siete
   decisiones aprobadas dentro: tablas, rutas, permisos, migraciones, SEO,
   almacenamiento y pruebas. Es lo que se construye.
