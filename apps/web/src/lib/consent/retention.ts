@@ -1,6 +1,7 @@
 import { recordAudit } from '@/lib/audit';
 import { db } from '@/lib/db/client';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
+import { signWithSecretKey } from '@/lib/secrets';
 
 /**
  * Lo que se tira cuando la boda ya pasó.
@@ -50,7 +51,15 @@ export interface RetentionCandidate {
 }
 
 export type PurgeResult =
-  | { ok: true; lastDay: string; visits: number; preferences: number; guests: number }
+  | {
+      ok: true;
+      lastDay: string;
+      visits: number;
+      preferences: number;
+      guests: number;
+      /** Mensajes cuyo teléfono se sustituyó por su huella. */
+      messages: number;
+    }
   | { ok: false; reason: 'notFound' }
   | { ok: false; reason: 'tooSoon'; lastDay: string };
 
@@ -121,6 +130,25 @@ export async function retentionCandidates(
 }
 
 /**
+ * La huella de un teléfono: `#` y doce caracteres de la firma con la llave.
+ *
+ * No es un hash pelado a propósito. Un `sha256` de un número de teléfono se
+ * rompe en segundos —hay pocos miles de millones y se prueban todos—, así que
+ * sin llave «anonimizar» sería un adorno. Con la llave, quien se lleve solo la
+ * base no puede recorrer el espacio: le falta el secreto, que vive fuera.
+ *
+ * El prefijo está para poder reconocer lo ya sustituido y no volver a firmar una
+ * firma, que es lo que haría que pasar la purga dos veces destruyera el dato
+ * bueno de la primera.
+ */
+const PHONE_DIGEST_PREFIX = '#';
+
+function phoneDigest(phone: string): string {
+  if (phone.length === 0) return phone;
+  return `${PHONE_DIGEST_PREFIX}${signWithSecretKey('phone-digest', phone).slice(0, 12)}`;
+}
+
+/**
  * Tira lo que ya no hace falta de un evento pasado.
  *
  * Todo en una transacción: a medias dejaría un evento con los teléfonos
@@ -157,7 +185,48 @@ export async function purgeAfterEvent(
       where: { eventId, OR: [{ phone: { not: null } }, { email: { not: null } }] },
       data: { phone: null, email: null },
     });
-    return { visits: visits.count, preferences: preferences.count, guests: guests.count };
+
+    // Y EL TELÉFONO DEL MENSAJE TAMBIÉN.
+    //
+    // Estaba fuera, y era la mitad del trabajo: se quitaba el número de la ficha
+    // del invitado y se quedaba escrito en `WhatsappMessage.toPhone`, donde hay
+    // una fila por cada vez que se le escribió. Un volcado de la base seguía
+    // teniendo el número entero de los doscientos invitados de una boda de hace
+    // dos años. La razón para conservarlo —que el registro de lo que se mandó no
+    // se pierda— es buena, pero no exige el número: exige poder responder «¿a
+    // este número le escribimos?».
+    //
+    // Así que no se borra ni se conserva: se sustituye por su HUELLA con la
+    // llave de la instalación. Lo que queda es la fila entera —fecha, acto,
+    // campaña, estado, proveedor, identificador externo— con un valor que no se
+    // puede leer del revés y que sigue casando si alguien recalcula la huella
+    // del número que trae. Es la misma idea que guardar los secretos cifrados:
+    // el volcado por sí solo no revela nada.
+    //
+    // Solo lo terminal. Una fila `queued` o `processing` todavía tiene que poder
+    // salir, y su teléfono es POR DONDE sale; para un evento pasado no debería
+    // quedar ninguna, pero el filtro va en el WHERE y no en la confianza.
+    const live = await tx.whatsappMessage.findMany({
+      where: {
+        eventId,
+        status: { notIn: ['queued', 'processing'] },
+        NOT: { toPhone: { startsWith: PHONE_DIGEST_PREFIX } },
+      },
+      select: { id: true, toPhone: true },
+    });
+    for (const row of live) {
+      await tx.whatsappMessage.update({
+        where: { id: row.id },
+        data: { toPhone: phoneDigest(row.toPhone) },
+      });
+    }
+
+    return {
+      visits: visits.count,
+      preferences: preferences.count,
+      guests: guests.count,
+      messages: live.length,
+    };
   });
 
   await recordAudit({
@@ -172,6 +241,7 @@ export async function purgeAfterEvent(
       visits: done.visits,
       preferences: done.preferences,
       guests: done.guests,
+      messages: done.messages,
     },
   });
 

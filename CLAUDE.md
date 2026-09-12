@@ -397,6 +397,25 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - El registro de auditoría anota el permiso, la revocación y la baja, pero NUNCA
   el contacto entero: los últimos dígitos bastan para reconocerlo y no repiten el
   dato personal en otra tabla.
+- Purgar un evento pasado se lleva TAMBIÉN el teléfono del mensaje, no solo el
+  de la ficha. Quitarlo de `Guest` y dejarlo en `WhatsappMessage.toPhone` era la
+  mitad del trabajo: hay una fila por cada vez que se escribió, así que un
+  volcado seguía teniendo el número entero de los doscientos invitados de una
+  boda de hace dos años.
+- Y no se borra: se sustituye por su HUELLA con la llave de la instalación
+  (`#` + doce caracteres). La razón para conservarlo —que no se pierda el
+  registro de lo que se mandó— es buena, pero no exige el número: exige poder
+  responder «¿a este número le escribimos?», y eso lo contesta recalcular la
+  huella. Queda la fila entera: fecha, acto, campaña, estado e identificador del
+  proveedor.
+- Con LLAVE y no un hash pelado. Un `sha256` de un teléfono se rompe en
+  segundos —hay pocos miles de millones y se prueban todos—, así que sin llave
+  «anonimizar» sería un adorno.
+- Solo lo TERMINAL. Una fila `queued` o `processing` todavía tiene que poder
+  salir y su teléfono es por donde sale. El filtro va en el WHERE, no en la
+  confianza de que a un evento pasado no le queda nada vivo.
+- El prefijo `#` está para no firmar una firma: sin él, cada pasada de la purga
+  destruiría la huella de la anterior.
 
 ### Envíos
 - Una campaña es UN envío con nombre: a un grupo, para un acto, con una plantilla
@@ -919,6 +938,8 @@ npm run brand:build # redibuja el logo, los iconos y los de la app móvil
 npm run db:check   # aplica las migraciones en una base nueva y comprueba el esquema
 npm run verify:e2e # el recorrido entero contra la base: evento, actos, invitados,
                    # QR, puerta, exportación y el aislamiento entre dos oficinas
+npm run test:unit  # solo lo que NO necesita base (62)
+npm run test:integration # la suite entera, y se NIEGA a correr sin DATABASE_URL
 npm run db:fleet   # la flota: -- migrar | estado | crear <subdominio>
 npm run db:split   # mueve cada oficina a su base: -- copiar | limpiar
 npm run sinpe:check # revisa los buzones de SINPE (lo llama el temporizador)
@@ -932,6 +953,13 @@ npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
   compuestas— lo hace la base, no el código: un doble que no las implemente daría
   verde a los mismos fallos que estas pruebas existen para atrapar.
 - **En serie** (`--test-concurrency=1`): comparten una sola base.
+- Hay TRES órdenes y la diferencia importa: `npm test` lo corre todo y se salta
+  lo que necesita base; `npm run test:unit` es solo lo que no la necesita; y
+  `npm run test:integration` se NIEGA a correr sin `DATABASE_URL` en vez de
+  saltarse nada. Esa última es la que corre en integración continua
+  (`.github/workflows/pruebas.yml`, con PostgreSQL 16 de verdad), porque un
+  trabajo verde que no tocó la base es exactamente el fallo que describe el
+  punto siguiente.
 - Sin `DATABASE_URL` se saltan, pero lo DICEN en grande. Saltarse una prueba en
   silencio es peor que no tenerla: quien la ejecuta ve «0 fallos» y se queda
   tranquilo sin enterarse de que lo que protege el dinero no llegó a correr. Una

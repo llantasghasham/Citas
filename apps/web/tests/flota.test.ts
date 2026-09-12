@@ -64,7 +64,16 @@ describe('el nombre de la base no se puede escribir desde fuera', () => {
   });
 });
 
-describe('el reparto se elige a propósito, y falla cerrado', () => {
+// Se salta sin base, como las demás, y no por pereza: la primera comprobación
+// compara el encaminamiento con `controlDb()`, y construir ese cliente ya exige
+// `DATABASE_URL`. Sin el salto, quien clonara el repositorio y ejecutara la
+// suite sin PostgreSQL veía UN fallo rojo en medio de decenas de saltos, con un
+// mensaje —«DATABASE_URL no está puesta»— que parece un fallo del código y no lo
+// es. Lo encontró una revisión externa, y tenía razón: un fallo que solo
+// significa «te falta una variable» gasta el tiempo de quien lo lee.
+describe('el reparto se elige a propósito, y falla cerrado', {
+  skip: HAS_DB ? false : 'sin DATABASE_URL',
+}, () => {
   it('sin TENANCY, todo sigue como estaba', () => {
     assert.equal(tenancyMode(), 'shared');
     // En el reparto de siempre un ámbito encamina a la base común, que es donde

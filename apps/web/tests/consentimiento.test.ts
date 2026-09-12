@@ -348,6 +348,85 @@ describe('a quién se le puede escribir', { skip: HAS_DB ? false : 'sin DATABASE
     assert.equal(otraVez.ok && otraVez.guests, 0);
   });
 
+  it('purgar también se lleva el teléfono del MENSAJE, sin perder el registro', async () => {
+    // Quitarlo de la ficha del invitado y dejarlo escrito en cada mensaje era la
+    // mitad del trabajo: hay una fila por cada vez que se le escribió, así que un
+    // volcado seguía teniendo el número entero de los doscientos invitados de una
+    // boda de hace dos años. Lo encontró una revisión externa.
+    const prisma = controlDb();
+    const tenantId = fixture.get().tenantId;
+    const eventId = await makeEvent(tenantId, [{ name: 'Rami', phone: '+96170555099' }], -400);
+    const invitado = await prisma.guest.findFirstOrThrow({ where: { eventId } });
+    const conexion = await prisma.whatsappConnection.create({
+      data: { tenantId, name: `N-${Math.random().toString(36).slice(2, 8)}`, status: 'connected' },
+      select: { id: true },
+    });
+
+    const comun = {
+      tenantId,
+      connectionId: conexion.id,
+      eventId,
+      guestId: invitado.id,
+      toPhone: '+96170555099',
+      body: 'la invitación',
+      providerMessageId: 'wamid.PRUEBA',
+    };
+    const enviado = await prisma.whatsappMessage.create({
+      data: { ...comun, status: 'sent', kind: 'invitation' },
+      select: { id: true },
+    });
+    // Una que todavía puede salir: su teléfono es POR DONDE sale, así que no se
+    // toca aunque el evento haya pasado.
+    const enCola = await prisma.whatsappMessage.create({
+      data: { ...comun, status: 'queued', kind: 'reminder' },
+      select: { id: true },
+    });
+
+    const done = await purgeAfterEvent(scope(), eventId, { keepDays: 90 });
+    assert.equal(done.ok, true);
+    if (!done.ok) return;
+    assert.equal(done.messages, 1);
+
+    const despues = await prisma.whatsappMessage.findFirstOrThrow({
+      where: { id: enviado.id },
+      select: { toPhone: true, status: true, kind: true, providerMessageId: true, createdAt: true },
+    });
+    // El número ya no está…
+    assert.equal(despues.toPhone.includes('70555099'), false);
+    assert.equal(despues.toPhone.startsWith('#'), true);
+    // …y el registro de lo que se mandó, entero.
+    assert.equal(despues.status, 'sent');
+    assert.equal(despues.kind, 'invitation');
+    assert.equal(despues.providerMessageId, 'wamid.PRUEBA');
+    assert.ok(despues.createdAt instanceof Date);
+
+    // La que seguía en cola conserva su teléfono.
+    const viva = await prisma.whatsappMessage.findFirstOrThrow({
+      where: { id: enCola.id },
+      select: { toPhone: true },
+    });
+    assert.equal(viva.toPhone, '+96170555099');
+
+    // La huella es ESTABLE: sirve para responder «¿a este número le escribimos?»
+    // recalculándola, que es lo único que había que conservar.
+    const otroMensaje = await prisma.whatsappMessage.create({
+      data: { ...comun, status: 'failed', kind: 'invitation', actId: null },
+      select: { id: true },
+    });
+    const segunda = await purgeAfterEvent(scope(), eventId, { keepDays: 90 });
+    assert.equal(segunda.ok && segunda.messages, 1);
+    const dos = await prisma.whatsappMessage.findFirstOrThrow({
+      where: { id: otroMensaje.id },
+      select: { toPhone: true },
+    });
+    assert.equal(dos.toPhone, despues.toPhone);
+
+    // Y pasarla una tercera vez no vuelve a firmar la firma: sin el prefijo,
+    // cada pasada destruiría la huella de la anterior.
+    const tercera = await purgeAfterEvent(scope(), eventId, { keepDays: 90 });
+    assert.equal(tercera.ok && tercera.messages, 0);
+  });
+
   it('no purga una boda que todavía no ha cumplido el plazo', async () => {
     const eventId = await makeEvent(
       fixture.get().tenantId,

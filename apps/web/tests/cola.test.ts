@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 
+import type { ActType } from '../src/generated/prisma/enums';
 import { controlDb } from '../src/lib/db/client';
 import { tenantScope } from '../src/lib/db/tenant';
 import {
@@ -388,5 +389,72 @@ describe('encolar sin duplicar', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, 
 
     // Pero una segunda invitación en cola, no.
     await assert.rejects(prisma.whatsappMessage.create({ data: { ...base, kind: 'invitation' } }));
+  });
+
+  it('el ACTO entra en la clave, y son DOS índices porque dos nulos no chocan', async () => {
+    // Una revisión externa leyó la migración de `queue_no_duplicates` —donde el
+    // índice todavía era `(eventId, guestId, kind)`— y avisó de que el mismo
+    // invitado no podría recibir la henna Y la recepción. Tenía razón sobre ese
+    // índice; lo que no vio es que una migración posterior lo sustituye. Esta
+    // prueba existe para que eso se responda con la BASE y no con un archivo:
+    // escribe directamente en la tabla, así que quien acepta o rechaza es el
+    // índice, no una lectura previa del código.
+    const prisma = controlDb();
+    const tenantId = fixture.get().tenantId;
+    const eventId = await makeEvent(tenantId, [{ name: 'Rami', phone: '+96170222222' }]);
+    const conexion = await prisma.whatsappConnection.create({
+      data: { tenantId, name: `N-${Math.random().toString(36).slice(2, 8)}`, status: 'connected' },
+      select: { id: true },
+    });
+    const invitado = await prisma.guest.findFirstOrThrow({ where: { eventId } });
+
+    const acto = async (type: ActType, date: string): Promise<string> => {
+      const row = await prisma.eventAct.create({
+        data: {
+          eventId, type, date, time: '20:00', timezone: 'Asia/Beirut',
+          venueName: 'Prueba', venueAddress: 'Beirut', venueMapUrl: 'https://m.example',
+        },
+        select: { id: true },
+      });
+      return row.id;
+    };
+    const henna = await acto('henna', '2026-11-13');
+    const recepcion = await acto('reception', '2026-11-14');
+
+    const base = {
+      tenantId,
+      connectionId: conexion.id,
+      eventId,
+      guestId: invitado.id,
+      toPhone: '+96170222222',
+      body: 'hola',
+      status: 'queued',
+      kind: 'invitation',
+    };
+
+    // 1. Dos actos distintos, el mismo invitado y el mismo `kind`: los dos pasan.
+    await prisma.whatsappMessage.create({ data: { ...base, actId: henna } });
+    await prisma.whatsappMessage.create({ data: { ...base, actId: recepcion } });
+
+    // 2. El mismo acto dos veces, no.
+    await assert.rejects(prisma.whatsappMessage.create({ data: { ...base, actId: henna } }));
+
+    // 3. Y el recordatorio de ese mismo acto sí, porque `kind` sigue en la clave.
+    await prisma.whatsappMessage.create({ data: { ...base, actId: henna, kind: 'reminder' } });
+
+    // 4. «La celebración entera» es `actId` nulo, y NO choca con los de acto:
+    //    en PostgreSQL dos nulos no son iguales, así que ese caso lo cubre el
+    //    SEGUNDO índice parcial. Sin él, se podrían encolar cien.
+    await prisma.whatsappMessage.create({ data: { ...base, actId: null } });
+    await assert.rejects(prisma.whatsappMessage.create({ data: { ...base, actId: null } }));
+
+    assert.equal(await prisma.whatsappMessage.count({ where: { eventId } }), 4);
+
+    // 5. Y el freno es solo para lo que sigue VIVO: lo que ya salió no impide
+    //    volver a escribirle. Si lo impidiera, un reenvío después de una boda
+    //    sería imposible para siempre.
+    await prisma.whatsappMessage.updateMany({ where: { eventId }, data: { status: 'sent' } });
+    await prisma.whatsappMessage.create({ data: { ...base, actId: henna } });
+    assert.equal(await prisma.whatsappMessage.count({ where: { eventId } }), 5);
   });
 });

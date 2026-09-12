@@ -1,0 +1,74 @@
+# Las pruebas, contra PostgreSQL de verdad.
+#
+# Va APARTE del despliegue a propósito. El de despliegue comprueba que compila y
+# que el sitio responde; eso no es lo mismo que comprobar el producto, y
+# mezclarlos tenía dos costes: una base que tarda en levantar retrasaría cada
+# despliegue, y —peor— la tentación de quitar las pruebas el día que estorben.
+#
+# Lo que NO puede pasar es que esto salga verde sin haber tocado la base. Por
+# eso llama a `test:integration`, que se niega a correr sin `DATABASE_URL` en vez
+# de saltarse lo que necesita base. Una revisión externa contó ochenta y tres
+# pruebas donde hay casi trescientas, y la diferencia era exactamente esa.
+name: Pruebas
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        # La misma familia que produccion. Una prueba que pasa en 17 y falla en
+        # 16 no sirve para nada aqui.
+        image: postgres:16
+        env:
+          POSTGRES_USER: citas
+          POSTGRES_PASSWORD: citas
+          POSTGRES_DB: citas
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U citas"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://citas:citas@127.0.0.1:5432/citas?schema=public
+      DATA_SOURCE: database
+      SUPERADMIN_EMAIL: pruebas@example.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar
+        run: npm ci
+
+      - name: El esquema, aplicado desde cero
+        # Antes que las pruebas: si las migraciones no se aplican, lo que falla
+        # despues no dice nada util.
+        run: npm run db:check
+
+      - name: Migrar la base de las pruebas
+        run: npm run db:deploy --workspace @citas/web
+
+      - name: Sembrar
+        # `withDatabase()` busca la oficina raiz y el superadministrador.
+        run: npm run db:seed --workspace @citas/web
+
+      - name: Las pruebas, contra PostgreSQL
+        run: npm run test:integration
+
+      - name: El recorrido completo de producto
+        # Evento, actos, invitados, RSVP, QR, puerta, exportacion, y que la
+        # oficina de al lado no vea nada.
+        run: npm run verify:e2e
