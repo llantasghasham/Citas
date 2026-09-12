@@ -8,8 +8,9 @@ móviles. Este documento define el destino; el código todavía no lo implementa
 
 ## 1. Tres formas de que alguien lo use
 
-Las tres conviven en la misma base de datos y en el mismo código. Lo único que
-cambia es **de quién es el evento** y **quién lo compone**.
+Las tres conviven en el mismo código. Lo único que cambia es **de quién es el
+evento** y **quién lo compone**. Dónde viven los datos lo decide el reparto de
+inquilinos, que se explica en el apartado 2.
 
 ### A. Autoservicio
 
@@ -55,8 +56,24 @@ nada.
 
 ## 2. Multiempresa: cómo se aísla cada oficina
 
-El modelo es de **inquilinos compartiendo base de datos** (*shared database,
-row-level tenancy*):
+El modelo tiene **dos repartos**, y el interruptor es `TENANCY`. No conviven en
+una misma instalación: se elige uno y se enciende (ver *Una base de datos por
+oficina* en `CLAUDE.md`).
+
+- **`shared`** — todas las oficinas en la misma base, separadas por `tenantId`.
+  Es lo que había, y sigue siendo válido para una instalación de una sola
+  oficina o para desarrollo.
+- **`fleet`** — **una base de datos por oficina**. Alquilarle esto a una oficina
+  es darle una empresa nueva: su propia base, vacía, sin una sola fila de nadie
+  más. Lo que impide que una vea a otra deja de ser el filtro que el código no
+  se olvida de poner y pasa a ser que dos bases de PostgreSQL no se consultan
+  entre sí. La base de CONTROL guarda lo del arrendador —registro de oficinas,
+  personas, planes, cobros, SINPE, configuración e historial— y cada oficina
+  guarda su trabajo. `npm run lint:planes` vigila esa frontera en cada
+  despliegue.
+
+Lo de abajo vale en los DOS repartos: en `fleet` es la red de dentro, y la de
+fuera es la base.
 
 - Toda entidad de negocio cuelga de un `tenantId`.
 - Existe un tenant raíz, el tuyo, para el autoservicio y el concierge.

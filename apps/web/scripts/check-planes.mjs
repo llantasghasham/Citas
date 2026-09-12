@@ -37,6 +37,8 @@ const CONTROL = new Set([
 const TENANT = new Set([
   'event', 'eventHost', 'eventHonoree', 'invitationVersion', 'render',
   'guest', 'table', 'rsvp', 'whatsappConnection', 'whatsappMessage',
+  'eventAct', 'actTranslation', 'audienceSegment', 'guestSegment',
+  'actAudience', 'guestActInvite', 'guestActRsvp',
 ]);
 
 /**

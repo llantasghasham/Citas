@@ -70,6 +70,31 @@ const CHECKS: Check[] = [
     why: 'sin esto no se puede saber si la oficina sigue abierta al resolver la sesión',
   },
   {
+    what: 'un solo acto principal por evento',
+    sql: `SELECT indexdef FROM pg_indexes WHERE indexname = 'EventAct_main_key'`,
+    expect: (rows) => {
+      const def = String(rows[0]?.['indexdef'] ?? '');
+      return def.includes('UNIQUE') && def.includes('WHERE');
+    },
+    why: 'dos principales serían dos respuestas globales distintas y ninguna mandaría',
+  },
+  {
+    what: 'un invitado no puede responder al acto de otra boda',
+    sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname IN ('GuestActRsvp_actId_eventId_fkey', 'GuestActRsvp_guestId_eventId_fkey')`,
+    expect: (rows) =>
+      rows.length === 2 && rows.every((row) => String(row['def']).includes('"eventId"')),
+    why: 'sin el evento en las dos claves, lo único que separa dos bodas es el cuidado de la consulta',
+  },
+  {
+    what: 'un invitado no puede entrar en el grupo de otra boda',
+    sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname IN ('GuestSegment_guestId_eventId_fkey', 'GuestSegment_segmentId_eventId_fkey')`,
+    expect: (rows) =>
+      rows.length === 2 && rows.every((row) => String(row['def']).includes('"eventId"')),
+    why: 'la misma razón, del otro lado: los grupos también son de UNA boda',
+  },
+  {
     what: 'quitar el número no se lleva el histórico de mensajes',
     sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
            WHERE conname = 'WhatsappMessage_connectionId_tenantId_fkey'`,

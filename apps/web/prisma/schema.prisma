@@ -85,6 +85,48 @@ enum EventStatus {
   archived
 }
 
+/// Qué parte de la celebración es un acto.
+///
+/// Una boda libanesa no es una fecha: puede ser compromiso, fiesta familiar,
+/// henna, preparación en casa, zaffe, ceremonia, cena y despedida, repartidos en
+/// varios días, en sedes distintas y con gente distinta en cada uno. El tipo es
+/// una ETIQUETA NORMALIZADA para ordenar y elegir icono, nunca una obligación:
+/// `label` lo llama como lo llama esa familia, y `other` existe para que ninguna
+/// celebración tenga que caber en esta lista. No se infiere de nada — ni del
+/// idioma, ni de los nombres, ni de la lista de invitados.
+enum ActType {
+  engagement
+  family_party
+  henna
+  preparation
+  zaffe
+  ceremony
+  dinner
+  reception
+  farewell
+  other
+}
+
+/// Quién puede ver un acto en la invitación pública.
+///
+/// `public` sale en `/i/<slug>` para cualquiera. `segmented` NO sale: solo lo ve
+/// quien tiene enlace personal y está autorizado. Por defecto es `segmented`,
+/// porque el fallo caro es enseñar de más: una henna íntima listada en una página
+/// pública no se puede volver a esconder.
+enum ActVisibility {
+  public
+  segmented
+}
+
+/// Una regla de audiencia deja pasar o cierra el paso.
+///
+/// `deny` gana siempre sobre `allow`. Es la única forma de decir «toda la familia
+/// de la novia menos este grupo» sin tener que enumerar a mano a los demás.
+enum AudienceMode {
+  allow
+  deny
+}
+
 enum RsvpStatus {
   attending
   declined
@@ -108,11 +150,11 @@ enum PlanTier {
 /// Una oficina que alquila la plataforma. El tenant raíz (isRoot) es la
 /// plataforma misma: autoservicio y trabajos concierge cuelgan de él.
 model Tenant {
-  id        String       @id @default(cuid())
-  slug      String       @unique
-  name      String
-  isRoot    Boolean      @default(false)
-  status    TenantStatus @default(trial)
+  id     String       @id @default(cuid())
+  slug   String       @unique
+  name   String
+  isRoot Boolean      @default(false)
+  status TenantStatus @default(trial)
 
   /// Subdominio propio (agenciax) o dominio completo aportado por la oficina.
   subdomain    String  @unique
@@ -132,16 +174,16 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships  Membership[]
-  events       Event[]
-  orders       Order[]
-  subscription Subscription?
-  auditLogs    AuditLog[]
-  whatsapps    WhatsappConnection[]
+  memberships   Membership[]
+  events        Event[]
+  orders        Order[]
+  subscription  Subscription?
+  auditLogs     AuditLog[]
+  whatsapps     WhatsappConnection[]
   sinpeAccounts SinpeAccount[]
-  sessions     Session[]
-  publicSlugs  PublicSlug[]
-  guestTokens  GuestToken[]
+  sessions      Session[]
+  publicSlugs   PublicSlug[]
+  guestTokens   GuestToken[]
 
   @@index([status])
 }
@@ -178,14 +220,14 @@ model GuestToken {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String  @id @default(cuid())
+  email        String  @unique
   name         String?
   phone        String?
   /// Solo para superadmin y admins de oficina. El cliente final entra con OTP.
   passwordHash String?
-  isSuperadmin Boolean  @default(false)
-  locale       Locale   @default(ar)
+  isSuperadmin Boolean @default(false)
+  locale       Locale  @default(ar)
 
   /// El país que maneja esta persona: ISO 3166-1 alfa-2.
   ///
@@ -221,14 +263,14 @@ model User {
   ///
   /// El país da una por defecto, pero no siempre acierta: quien maneja Costa
   /// Rica desde Beirut quiere leer las horas en la suya.
-  timezone String?
-  lastLoginAt  DateTime?
-  createdAt    DateTime @default(now())
+  timezone    String?
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
 
-  memberships  Membership[]
-  ownedEvents  Event[]      @relation("EventOwner")
-  auditLogs    AuditLog[]
-  sessions     Session[]
+  memberships Membership[]
+  ownedEvents Event[]      @relation("EventOwner")
+  auditLogs   AuditLog[]
+  sessions    Session[]
 }
 
 /// Un usuario puede pertenecer a más de una oficina con roles distintos.
@@ -250,7 +292,7 @@ model Membership {
 // ---------------------------------------------------------------- eventos
 
 model Event {
-  id       String @id @default(cuid())
+  id       String  @id @default(cuid())
   tenantId String
   /// El organizador. Nulo en un trabajo concierge sin cuenta de cliente.
   ownerId  String?
@@ -296,6 +338,8 @@ model Event {
   guests   Guest[]
   tables   Table[]
   messages WhatsappMessage[]
+  acts     EventAct[]
+  segments AudienceSegment[]
 
   /// Para que otras tablas puedan apuntar a (id, tenantId) a la vez y la BASE
   /// impida que una fila de una oficina cuelgue del evento de otra.
@@ -372,22 +416,22 @@ model InvitationVersion {
 /// PNG o PDF ya generado y archivado. Regenerar con Chromium en cada visita
 /// sería caro y lento.
 model Render {
-  id        String     @id @default(cuid())
-  versionId String
-  kind      RenderKind
+  id          String     @id @default(cuid())
+  versionId   String
+  kind        RenderKind
   /// Dónde vive el archivo cuando está en almacenamiento de objetos. Vacío
   /// mientras los bytes se guardan aquí mismo.
-  url       String?
+  url         String?
   /// El archivo. Guardarlo en la base de datos es lo que funciona en cualquier
   /// despliegue sin configurar nada; cuando haya almacenamiento de objetos, el
   /// puerto `RenderStore` se cambia por otro y esto queda a null.
-  data      Bytes?
-  width     Int
-  height    Int
-  bytes     Int
+  data        Bytes?
+  width       Int
+  height      Int
+  bytes       Int
   /// Huella del contenido que produjo este archivo: si cambia, se regenera.
   contentHash String
-  createdAt   DateTime @default(now())
+  createdAt   DateTime   @default(now())
 
   version InvitationVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
 
@@ -410,10 +454,10 @@ model Guest {
   locale Locale
 
   /// Token del enlace personal. No adivinable y revocable.
-  token     String    @unique
-  maxParty  Int       @default(1)
-  invitedAt DateTime?
-  openedAt  DateTime?
+  token      String    @unique
+  maxParty   Int       @default(1)
+  invitedAt  DateTime?
+  openedAt   DateTime?
   /// Cuándo se le encoló el recordatorio. Se escribe UNA vez: recordar dos
   /// veces lo mismo deja de ser un recordatorio y pasa a ser spam.
   remindedAt DateTime?
@@ -444,6 +488,10 @@ model Guest {
   rsvp     Rsvp?
   messages WhatsappMessage[]
 
+  segments   GuestSegment[]
+  actInvites GuestActInvite[]
+  actRsvps   GuestActRsvp[]
+
   /// Misma razón que en `Event`: permite apuntar a (id, eventId) a la vez.
   /// El invitado no lleva `tenantId` —cuelga de su evento— así que la cadena se
   /// cierra por ahí: mensaje → evento (con oficina) → invitado (con evento).
@@ -457,18 +505,214 @@ model Guest {
 ///
 /// Cuelga del evento, como los invitados: la oficina se resuelve por el evento
 /// antes de tocar nada, que es como funciona todo lo demás de esta boda.
+// ------------------------------------------------------------------ los actos
+
+/// Un acto: una parte de la celebración, con su hora, su sitio y su gente.
+///
+/// `Event` deja de ser «una tarjeta con una fecha» y pasa a ser el CONTENEDOR.
+/// Lo que tiene hora y sede es el acto, no la boda: una henna el jueves en casa,
+/// la ceremonia el sábado en la iglesia y la recepción esa noche en un salón son
+/// tres actos del mismo evento, con tres listas distintas de invitados.
+///
+/// El evento conserva sus columnas de fecha y sede, y NO son un duplicado: son
+/// lo que leen las pantallas que todavía no saben de actos, y lo que se copió al
+/// acto principal en la migración. Mientras existan, la verdad de «cuándo y
+/// dónde» es el acto.
+model EventAct {
+  id      String @id @default(cuid())
+  eventId String
+
+  type  ActType @default(other)
+  /// Cómo lo llama ESTA familia. Vacío usa el nombre del tipo.
+  label String?
+  /// En qué orden se cuenta la agenda. No es único: reordenar con un índice
+  /// único obliga a pasar por valores temporales para no chocar consigo mismo.
+  order Int     @default(0)
+
+  /// Igual que en `Event`: hora local del lugar, como texto, y la zona aparte.
+  /// Un acto puede estar en otra zona que el resto — una boda de Beirut con la
+  /// fiesta previa en Costa Rica no es raro en este mercado.
+  date     String
+  time     String
+  endTime  String?
+  timezone String
+
+  venueName    String
+  venueAddress String
+  venueMapUrl  String
+  venueLat     Float?
+  venueLng     Float?
+
+  /// Aforo. Es un AVISO para quien monta el salón, no una barrera: la misma
+  /// regla que el tope de plazas de una mesa.
+  capacity Int?
+  /// Un acto opcional se ofrece; uno no opcional se da por hecho para quien
+  /// está invitado.
+  optional Boolean @default(false)
+
+  rsvpEnabled  Boolean       @default(true)
+  rsvpDeadline DateTime?
+  visibility   ActVisibility @default(segmented)
+
+  /// El acto que heredó lo que el evento traía antes de que existieran los
+  /// actos. Uno por evento, y lo impide un índice parcial en la migración:
+  /// dos principales serían dos respuestas «globales» distintas.
+  isMain Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event        Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  translations ActTranslation[]
+  audiences    ActAudience[]
+  invites      GuestActInvite[]
+  rsvps        GuestActRsvp[]
+
+  /// Para que las tablas de abajo apunten a (id, eventId) a la vez: la BASE
+  /// impide que un invitado de una boda responda al acto de otra.
+  @@unique([id, eventId])
+  @@index([eventId, order])
+}
+
+/// El acto escrito en cada idioma. Traducir NO concede permisos.
+model ActTranslation {
+  id     String @id @default(cuid())
+  actId  String
+  locale Locale
+
+  label        String
+  description  String?
+  /// La sede escrita en ese idioma. Nula usa la del acto.
+  venueName    String?
+  venueAddress String?
+
+  act EventAct @relation(fields: [actId], references: [id], onDelete: Cascade)
+
+  @@unique([actId, locale])
+}
+
+/// Un grupo de invitados con nombre: «familia de la novia», «trabajo», «VIP».
+///
+/// Es lo que hace que asignar cuatrocientas personas a cinco actos no sea
+/// cuatrocientas decisiones: se asigna el grupo al acto, y las excepciones se
+/// escriben una a una con `GuestActInvite`.
+model AudienceSegment {
+  id      String @id @default(cuid())
+  eventId String
+
+  /// Estable y en minúsculas, para poder importarlo desde un CSV.
+  key  String
+  name String
+
+  createdAt DateTime @default(now())
+
+  event    Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  members  GuestSegment[]
+  actRules ActAudience[]
+
+  @@unique([eventId, key])
+  @@unique([id, eventId])
+}
+
+/// A qué grupos pertenece un invitado. Puede pertenecer a varios.
+model GuestSegment {
+  id        String @id @default(cuid())
+  guestId   String
+  segmentId String
+  /// Repetido a propósito: es lo que ata las dos claves foráneas al MISMO
+  /// evento. Sin él, la base admitiría meter al invitado de una boda en el
+  /// grupo de otra y solo lo impediría el cuidado de quien escribe la consulta.
+  eventId   String
+
+  createdAt DateTime @default(now())
+
+  guest   Guest           @relation(fields: [guestId, eventId], references: [id, eventId], onDelete: Cascade)
+  segment AudienceSegment @relation(fields: [segmentId, eventId], references: [id, eventId], onDelete: Cascade)
+
+  @@unique([guestId, segmentId])
+  @@index([segmentId])
+}
+
+/// Qué grupos entran a un acto, y cuáles no.
+model ActAudience {
+  id        String @id @default(cuid())
+  actId     String
+  segmentId String
+  eventId   String
+
+  mode AudienceMode @default(allow)
+
+  act     EventAct        @relation(fields: [actId, eventId], references: [id, eventId], onDelete: Cascade)
+  segment AudienceSegment @relation(fields: [segmentId, eventId], references: [id, eventId], onDelete: Cascade)
+
+  @@unique([actId, segmentId])
+  @@index([actId])
+}
+
+/// La excepción con nombre y apellido: este invitado a este acto.
+///
+/// Los grupos cubren el caso normal; esto cubre el que no se puede escribir con
+/// un grupo sin inventarse un grupo de una persona. Vale en los dos sentidos
+/// (`excluded`), y manda sobre los grupos.
+model GuestActInvite {
+  id      String @id @default(cuid())
+  guestId String
+  actId   String
+  eventId String
+
+  /// Cuántos puede traer A ESTE ACTO. Nulo usa el del invitado: quien trae
+  /// acompañante a la recepción no lo trae por eso a la henna.
+  maxParty Int?
+  excluded Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  guest Guest    @relation(fields: [guestId, eventId], references: [id, eventId], onDelete: Cascade)
+  act   EventAct @relation(fields: [actId, eventId], references: [id, eventId], onDelete: Cascade)
+
+  @@unique([guestId, actId])
+  @@index([actId])
+}
+
+/// La respuesta, POR ACTO. Es la fuente de verdad.
+///
+/// `Rsvp` sigue existiendo y se mantiene al día como RESUMEN —«viene a la boda»—
+/// porque lo leen las mesas, la exportación y las pantallas de hoy. Pero un
+/// resumen no puede decir «a la ceremonia sí y a la recepción no», y eso es
+/// justo lo que una familia necesita saber para contar sillas.
+model GuestActRsvp {
+  id      String @id @default(cuid())
+  guestId String
+  actId   String
+  eventId String
+
+  status  RsvpStatus
+  /// Incluyéndose. Se comprueba contra el tope de ESTE acto.
+  party   Int        @default(1)
+  message String?
+
+  respondedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  guest Guest    @relation(fields: [guestId, eventId], references: [id, eventId], onDelete: Cascade)
+  act   EventAct @relation(fields: [actId, eventId], references: [id, eventId], onDelete: Cascade)
+
+  @@unique([guestId, actId])
+  @@index([actId, status])
+}
+
 model Table {
   id      String @id @default(cuid())
   eventId String
 
   /// Como la llama el salón: «Mesa 1», «Familia del novio», «Novios».
-  name  String
+  name     String
   /// Cuántas personas caben. Es un aviso, no una barrera: quien monta el salón
   /// sabe cuándo puede meter una silla más, y el programa no.
-  seats Int    @default(10)
+  seats    Int    @default(10)
   /// El orden en que se enseña y se imprime. Ordenar por nombre pondría la
   /// «Mesa 10» delante de la «Mesa 2».
-  position Int @default(0)
+  position Int    @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -545,8 +789,8 @@ model BrandAsset {
   /// `logo` o `icon`.
   kind String @id
 
-  data Bytes
-  type String
+  data    Bytes
+  type    String
   /// La huella de la imagen de hoy. Va en la dirección (`?v=`) para que el
   /// navegador pueda quedársela para siempre y aun así ver el cambio.
   version String
@@ -639,26 +883,26 @@ model SinpeAccount {
   /// El número al que se le hace el SINPE, en E.164 como todos los demás.
   phone String
 
-  imapHost String
-  imapPort Int    @default(993)
-  imapUser String
+  imapHost          String
+  imapPort          Int     @default(993)
+  imapUser          String
   /// Cifrada con AES-256-GCM y la llave fuera de la base, como la del SMTP.
   /// Quien tiene este buzón ve todo el correo de quien cobra.
-  imapPasswordEnc String
-  folder          String @default("INBOX")
+  imapPasswordEnc   String
+  folder            String  @default("INBOX")
   /// Comprobar el certificado del servidor. Se apaga SOLO con un certificado
   /// propio que no valide; apagarlo deja que alguien en medio lea la contraseña
   /// y todo el correo, así que viene encendido.
   verifyCertificate Boolean @default(true)
 
-  active Boolean @default(true)
+  active           Boolean @default(true)
   /// Verdadero cuando este buzón cobra las MENSUALIDADES de la plataforma.
   forSubscriptions Boolean @default(false)
 
   lastCheckedAt DateTime?
   /// Lo último que falló al conectar. Sale en el panel a propósito: un buzón que
   /// dejó de conectar es plata que deja de entrar sin que nadie se entere.
-  lastError String?
+  lastError     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -680,8 +924,8 @@ model SinpeMovement {
   senderName  String?
   senderPhone String?
   /// Céntimos enteros, como `Payment.amount`. Ningún decimal toca dinero.
-  amount   Int
-  currency Currency @default(CRC)
+  amount      Int
+  currency    Currency @default(CRC)
 
   /// El comprobante del banco. ÚNICO por cuenta: leer el mismo correo dos veces
   /// no puede crear dos movimientos, y eso no lo garantiza el código sino la
@@ -694,14 +938,14 @@ model SinpeMovement {
   movementType      String
   destinationNumber String?
 
-  status SinpeMovementStatus @default(pending)
+  status    SinpeMovementStatus @default(pending)
   /// El cobro al que se aplicó. Uno por movimiento y movimiento por cobro.
-  paymentId String? @unique
+  paymentId String?             @unique
 
   receivedAt DateTime  @default(now())
   settledAt  DateTime?
   /// El correo tal cual llegó. Cuando se discute un cobro, es lo único que sirve.
-  raw String
+  raw        String
 
   account SinpeAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
@@ -731,14 +975,14 @@ model WhatsappConnection {
   tenantId String
 
   /// Cómo lo llama la oficina: «Mostrador Hamra», «Ventas».
-  name String
+  name  String
   /// El número, en E.164, tal como lo dice WhatsApp al conectar. Antes, nulo.
   phone String?
 
   status WhatsappStatus @default(pending)
   /// El código que hay que escanear AHORA. Caduca en segundos y se borra al
   /// conectar: no es un secreto duradero, pero tampoco se deja tirado.
-  qrCode String? @db.Text
+  qrCode String?        @db.Text
 
   /// Las credenciales de la sesión, CIFRADAS con la llave de fuera de la base.
   /// Sin cifrar, un volcado de la base dejaría escribir desde el WhatsApp del
@@ -757,7 +1001,7 @@ model WhatsappConnection {
 
   lastSeenAt DateTime?
   /// Lo último que falló, para que la pantalla diga por qué y no solo que no.
-  lastError String?
+  lastError  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -960,7 +1204,7 @@ model Payment {
   id      String @id @default(cuid())
   orderId String
 
-  provider PaymentProviderId
+  provider    PaymentProviderId
   /// Identificador del cobro en el proveedor. Único junto al proveedor: es lo
   /// que impide procesar dos veces la misma notificación.
   providerRef String
@@ -985,15 +1229,15 @@ model Payment {
 
   order  Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   events PaymentEvent[]
-
-  @@unique([provider, providerRef])
-  @@index([orderId])
-  @@index([status, lastCheckedAt])
   // Además, en la migración: un índice único PARCIAL sobre (orderId, provider)
   // limitado a `status = 'pending'`. Prisma no sabe declarar índices parciales,
   // así que vive solo en el SQL — y ahí es donde tiene que estar, porque es la
   // base la que impide que existan dos cobros abiertos para el mismo pedido
   // aunque dos peticiones lleguen a la vez.
+
+  @@unique([provider, providerRef])
+  @@index([orderId])
+  @@index([status, lastCheckedAt])
 }
 
 /// Todo lo que llega del proveedor se guarda crudo. Cuando un cobro se discute
@@ -1023,8 +1267,8 @@ model LoginCode {
   tenantId String?
 
   /// Nunca se guarda el código en claro.
-  codeHash  String
-  expiresAt DateTime
+  codeHash   String
+  expiresAt  DateTime
   /// Marcado en cuanto se usa: un código vale exactamente una vez.
   consumedAt DateTime?
   /// Intentos fallidos. Pasado el límite el código queda muerto.
@@ -1040,8 +1284,8 @@ model LoginCode {
 /// Sesión activa. En la cookie viaja el token; aquí solo vive su hash, de forma
 /// que un volcado de la base de datos no permite suplantar a nadie.
 model Session {
-  id     String  @id @default(cuid())
-  userId String
+  id       String  @id @default(cuid())
+  userId   String
   /// Oficina en la que se está trabajando. Nulo para el superadmin fuera de una.
   tenantId String?
 
@@ -1054,7 +1298,7 @@ model Session {
   createdAt  DateTime @default(now())
   lastSeenAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// La oficina, para poder mirar si sigue abierta al resolver la sesión.
   ///
   /// Sin esta relación, suspender una oficina no suspendía nada: las sesiones

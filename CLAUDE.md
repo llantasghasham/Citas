@@ -397,6 +397,56 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   idiomas — una oficina de Costa Rica veía sus ventas de la tarde fechadas al día
   siguiente.
 
+### Los actos
+- Un `Event` NO es una fecha: es el CONTENEDOR. Lo que tiene hora y sede es el
+  `EventAct`. Una boda libanesa puede ser compromiso, fiesta familiar, henna,
+  preparación, zaffe, ceremonia, cena y despedida, repartidos en varios días, en
+  sedes distintas y CON GENTE DISTINTA en cada uno. Con una sola fecha, una sola
+  sede y una sola respuesta por invitado eso no se podía representar, y lo que
+  faltaba no era otra plantilla.
+- El `ActType` es una ETIQUETA para ordenar y elegir icono, jamás una
+  obligación: `label` lo llama como lo llama esa familia y `other` existe para
+  que ninguna celebración tenga que caber en la lista. No se infiere de nada —
+  ni del idioma, ni de los nombres, ni de la lista de invitados. La religión, el
+  rito y la denominación NO son campos de este modelo.
+- NO se duplica al invitado por acto. Se duplican las relaciones, las respuestas
+  y los mensajes; la persona es una. Un `Guest` por persona, y `GuestSegment`,
+  `GuestActInvite` y `GuestActRsvp` para lo demás.
+- `eventId` se repite en `GuestSegment`, `ActAudience`, `GuestActInvite` y
+  `GuestActRsvp` A PROPÓSITO: es lo que ata las DOS claves foráneas al mismo
+  evento. Sin él, la base admitiría meter al invitado de una boda en el grupo de
+  otra, y lo único que lo impediría sería el cuidado de quien escribe la
+  consulta — que aquí no vale como garantía.
+- El orden de decisión de quién ve qué, y el orden importa: una EXCLUSIÓN con
+  nombre gana sobre todo; una INVITACIÓN con nombre invita aunque no esté en
+  ningún grupo y un `deny` no la tumba —quien escribió el nombre sabía lo que
+  había—; un `deny` de grupo gana sobre un `allow`; un `allow` de grupo abre; un
+  acto PÚBLICO lo ve cualquiera con el enlace; y si nada dice que sí, es que NO.
+  Falla cerrado: no enseñar de menos se arregla con una llamada, enseñar de más
+  no se arregla.
+- `visibility` es `segmented` POR DEFECTO. Una henna íntima listada en la página
+  pública no se puede volver a esconder: el enlace ya se reenvió al grupo.
+- El tope de acompañantes es POR ACTO (`GuestActInvite.maxParty`, y el del
+  invitado como respaldo). Quien trae acompañante a la recepción no lo trae por
+  eso a la henna.
+- Responder se comprueba OTRA VEZ al enviar (`mayRespondTo`), no solo al pintar
+  la pantalla: entre abrirla y mandarla pueden pasar días, y en esos días el
+  organizador puede haber quitado el acto o cerrado el plazo. Una pantalla
+  pintada no es un permiso, igual que ocultar un botón no es un permiso.
+- `Rsvp` sigue existiendo como RESUMEN y se mantiene al día en la MISMA
+  transacción que la respuesta por acto —fuera, un proceso que muriera en medio
+  dejaría las dos diciendo cosas distintas, y el resumen es lo que cuenta las
+  sillas—. Se CALCULA y no se escribe desde fuera: manda el acto principal
+  cuando hay respuesta suya, y si no la hay viene quien viene a algo, con el
+  grupo MÁS GRANDE que haya confirmado a algún acto. Contar el último dejaría
+  las mesas cortas.
+- Un solo acto PRINCIPAL por evento, y lo impide un índice único parcial: dos
+  principales serían dos respuestas globales distintas y ninguna mandaría.
+- La migración no rompe nada: cada evento que ya existía estrena su acto
+  principal con su fecha y su sede, un grupo «todos» con todos sus invitados
+  dentro, la regla que los deja pasar, y sus respuestas copiadas. Un evento de
+  ayer se comporta hoy igual que ayer y ya puede tener un segundo acto mañana.
+
 ### Mesas
 - Solo se sienta a quien CONFIRMÓ. Un invitado sin respuesta no ocupa silla:
   repartir doscientas sillas entre gente que a lo mejor no viene es la hoja de
