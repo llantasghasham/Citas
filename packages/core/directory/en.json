@@ -26,7 +26,7 @@
     "anyCategory": "Any category",
     "anyRegion": "Any region",
     "submit": "Search",
-    "results": "{count} results",
+    "results": "Results: {count}",
     "none": "Nothing matches. Try another region or another category."
   },
   "provider": {

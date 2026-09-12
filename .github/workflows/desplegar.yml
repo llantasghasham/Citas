@@ -99,7 +99,7 @@ jobs:
           # captura, NO pasa por la tabla `Render`, y es justo lo que se rompio
           # sin que nadie lo viera. Un 200 en /api/render/... servido desde la
           # cache no prueba nada; este si.
-          for ruta in / /ejemplos /entrar /i/ejemplo-ar /render/ejemplo-ar /api/render/ejemplo-ar; do
+          for ruta in / /ejemplos /entrar /i/ejemplo-ar /render/ejemplo-ar /api/render/ejemplo-ar /d/ar /d/ar/proveedores; do
             codigo="$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "https://citas.posxml.com$ruta")"
             echo "$ruta -> $codigo"
             [ "$codigo" = "200" ] || { echo "::error::$ruta devolvio $codigo"; exit 1; }
@@ -133,6 +133,22 @@ jobs:
           echo "/og/home.png -> $codigo"
           [ "$codigo" = "200" ] || { echo "::error::la tarjeta de vista previa no existe"; exit 1; }
 
+      - name: Comprobar la puerta del directorio
+        run: |
+          # /d no es una pagina: negocia el idioma y redirige. Un 200 aqui seria
+          # que alguien la convirtio en una pagina, y entonces hay cinco idiomas
+          # bajo la misma direccion.
+          codigo="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
+            -H 'Accept-Language: fr-LB,fr;q=0.9' 'https://citas.posxml.com/d')"
+          destino="$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 30 \
+            -H 'Accept-Language: fr-LB,fr;q=0.9' 'https://citas.posxml.com/d')"
+          echo "/d -> $codigo $destino"
+          [ "$codigo" = "307" ] || { echo "::error::/d deberia redirigir, devolvio $codigo"; exit 1; }
+          case "$destino" in
+            *'/d/fr') ;;
+            *) echo "::error::/d no negocio el idioma: fue a $destino"; exit 1 ;;
+          esac
+
       - name: Comprobar que el arabe se declara arabe
         run: |
           # Un idioma equivocado no cambia el codigo HTTP: se lee en el documento.
@@ -142,4 +158,16 @@ jobs:
           case "$etiqueta" in
             *'lang="ar"'*'dir="rtl"'*) ;;
             *) echo "::error::la invitacion arabe no se declara ar/rtl"; exit 1 ;;
+          esac
+
+          # Y el portal, PIDIENDOLO EN INGLES: el idioma sale del segmento de la
+          # direccion, no de la cabecera del que mira. Sin esta comprobacion, un
+          # documento declarado `en` con arabe dentro pasa desapercibido — se ve
+          # bien y solo lo lee mal un lector de pantalla y un buscador.
+          portal="$(curl -s --max-time 60 -H 'Accept-Language: en-US,en;q=0.9' \
+            'https://citas.posxml.com/d/ar' | grep -o '<html[^>]*>' | head -1)"
+          echo "$portal"
+          case "$portal" in
+            *'lang="ar"'*'dir="rtl"'*) ;;
+            *) echo "::error::el portal arabe no se declara ar/rtl"; exit 1 ;;
           esac

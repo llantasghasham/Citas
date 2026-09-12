@@ -21,6 +21,11 @@ export function SiteFooter({ dictionary, locale, site }: { dictionary: Dictionar
           <div className="flex max-w-sm flex-col gap-2">
             <span className={`${displayFont(locale)} text-lg text-[#F4EFE6]`}>{site.brand}</span>
             <p className="text-sm text-[#786F5D]">{copy.tagline}</p>
+            {/* Tambien abajo: el pie es donde mira quien ya bajo la portada
+                entera y no encontro lo que venia a buscar. */}
+            <a href="/d" className="text-sm text-[#A79C86] hover:text-[#F4EFE6]">
+              {dictionary.home.nav.directory}
+            </a>
           </div>
 
           <nav className="flex flex-col gap-2">

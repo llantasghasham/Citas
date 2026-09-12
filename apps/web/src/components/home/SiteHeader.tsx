@@ -40,6 +40,12 @@ export function SiteHeader({ dictionary, locale, site }: { dictionary: Dictionar
               {link.label}
             </a>
           ))}
+          {/* El directorio no es un ancla de esta pagina: es otro sitio. Va con
+              los demas porque es lo que busca quien entra a organizar una boda
+              y todavia no quiere una invitacion. */}
+          <a href="/d" className="hover:text-[#F4EFE6]">
+            {nav.directory}
+          </a>
         </nav>
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3 ms-auto">

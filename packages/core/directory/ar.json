@@ -26,7 +26,7 @@
     "anyCategory": "كل الفئات",
     "anyRegion": "كل المناطق",
     "submit": "ابحث",
-    "results": "{count} نتيجة",
+    "results": "النتائج: {count}",
     "none": "لا نتائج. جرّب منطقة أخرى أو فئة أخرى."
   },
   "provider": {

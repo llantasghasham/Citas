@@ -26,7 +26,7 @@
     "anyCategory": "Cualquier categoría",
     "anyRegion": "Cualquier región",
     "submit": "Buscar",
-    "results": "{count} resultados",
+    "results": "Resultados: {count}",
     "none": "No hay nada que encaje. Pruebe con otra región o otra categoría."
   },
   "provider": {

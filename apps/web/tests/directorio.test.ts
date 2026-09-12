@@ -14,6 +14,14 @@ import {
   submitForReview,
   updateProvider,
 } from '../src/lib/directory/service';
+import { contactHref } from '../src/lib/directory/contacts';
+import { directoryLocaleFrom } from '../src/lib/directory/locale';
+import {
+  categoryCounts,
+  governorateCounts,
+  listProviders,
+  providerBySlug,
+} from '../src/lib/directory/public';
 import { providerSlug } from '../src/lib/directory/slug';
 
 import {
@@ -488,5 +496,181 @@ describe('el directorio', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     // entonces la moderación deja de existir.
     assert.ok(NEVER_GRANTABLE.includes('directory:moderate'));
     assert.ok(NEVER_GRANTABLE.includes('platform:manage'));
+  });
+});
+
+/**
+ * Lo que ve la calle.
+ *
+ * La regla que sostiene el directorio entero es que `status` decide, y decide en
+ * la CONSULTA: si el filtro viviera en cada pantalla, la pantalla número seis se
+ * escribiría sin él y un negocio en revisión —o suspendido por una denuncia—
+ * volvería a la calle sin que nadie tocara nada.
+ */
+describe('el portal público', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  let enRevision = '';
+  let publicado = '';
+  let duenoPublicado = '';
+
+  const alta = async (nombre: string, email: string): Promise<{ id: string; userId: string }> => {
+    const user = await controlDb().user.create({ data: { email, locale: 'ar' }, select: { id: true } });
+    const result = await createProvider(user.id, {
+      legalName: nombre,
+      governorate: 'mount_lebanon',
+      district: 'jbeil',
+      city: 'Jbeil',
+      mainLocale: 'ar',
+    });
+    assert.ok(result.ok, 'no se pudo dar de alta');
+    await setTranslation(unsafeProviderScope(result.id), user.id, 'ar', {
+      name: nombre,
+      tagline: '',
+      description: '',
+      services: [],
+    });
+    await setCategories(unsafeProviderScope(result.id), user.id, ['wedding_hall'], 'wedding_hall');
+    return { id: result.id, userId: user.id };
+  };
+
+  beforeEach(async () => {
+    const prisma = controlDb();
+    await prisma.provider.deleteMany({});
+    await prisma.user.deleteMany({ where: { email: { startsWith: 'pub-' } } });
+
+    enRevision = (await alta('En revision', 'pub-uno@example.com')).id;
+    const dos = await alta('Publicado', 'pub-dos@example.com');
+    publicado = dos.id;
+    duenoPublicado = dos.userId;
+
+    await prisma.provider.update({
+      where: { id: enRevision },
+      data: { status: 'pending_review', submittedAt: new Date() },
+    });
+    await prisma.provider.update({
+      where: { id: publicado },
+      data: { status: 'approved', publishedAt: new Date() },
+    });
+  });
+
+  it('solo sale lo aprobado, y lo demás no existe ni por su dirección', async () => {
+    const prisma = controlDb();
+    const enRevisionSlug = (await prisma.provider.findUniqueOrThrow({
+      where: { id: enRevision },
+      select: { slug: true },
+    })).slug;
+    const publicadoSlug = (await prisma.provider.findUniqueOrThrow({
+      where: { id: publicado },
+      select: { slug: true },
+    })).slug;
+
+    const lista = await listProviders('ar');
+    assert.deepEqual(lista.map((uno) => uno.slug), [publicadoSlug]);
+
+    // Y por su dirección tampoco. «Todavía no publicado» y «no existe» se
+    // contestan igual: decir lo primero ya es contar algo de un negocio que no
+    // ha decidido publicarse.
+    assert.notEqual(await providerBySlug(publicadoSlug, 'ar'), null);
+    assert.equal(await providerBySlug(enRevisionSlug, 'ar'), null);
+
+    // Suspender lo saca de la calle inmediatamente, sin borrar nada.
+    await prisma.provider.update({ where: { id: publicado }, data: { status: 'suspended' } });
+    assert.equal(await providerBySlug(publicadoSlug, 'ar'), null);
+    assert.deepEqual(await listProviders('ar'), []);
+  });
+
+  it('los recuentos cuentan lo aprobado y nada más', async () => {
+    assert.equal((await categoryCounts()).get('wedding_hall'), 1);
+    assert.equal((await governorateCounts()).get('mount_lebanon'), 1);
+
+    await controlDb().provider.update({
+      where: { id: enRevision },
+      data: { status: 'approved', publishedAt: new Date() },
+    });
+    assert.equal((await categoryCounts()).get('wedding_hall'), 2);
+    assert.equal((await governorateCounts()).get('mount_lebanon'), 2);
+  });
+
+  it('sin nombre en ningún idioma no hay ficha, en vez de una tarjeta vacía', async () => {
+    await controlDb().providerTranslation.deleteMany({ where: { providerId: publicado } });
+    assert.deepEqual(await listProviders('ar'), []);
+  });
+
+  it('el idioma cae al del negocio antes que a nada', async () => {
+    // Escrito en árabe y leído en francés: sale el árabe, porque el respaldo es
+    // `mainLocale`. No se traduce solo.
+    const enFrances = await listProviders('fr');
+    assert.equal(enFrances.length, 1);
+    assert.equal(enFrances[0]?.name, 'Publicado');
+
+    await setTranslation(unsafeProviderScope(publicado), duenoPublicado, 'fr', {
+      name: 'Publié',
+      tagline: '',
+      description: '',
+      services: [],
+    });
+    assert.equal((await listProviders('fr'))[0]?.name, 'Publié');
+    // Y el árabe sigue siendo el árabe.
+    assert.equal((await listProviders('ar'))[0]?.name, 'Publicado');
+  });
+
+  it('un contacto que no es público no sale', async () => {
+    const scope = unsafeProviderScope(publicado);
+    await setContact(scope, duenoPublicado, 'phone', '+96181000000', false);
+    const slug = (await controlDb().provider.findUniqueOrThrow({
+      where: { id: publicado },
+      select: { slug: true },
+    })).slug;
+
+    assert.deepEqual((await providerBySlug(slug, 'ar'))?.contacts, []);
+
+    await setContact(scope, duenoPublicado, 'phone', '+96181000000', true);
+    assert.deepEqual((await providerBySlug(slug, 'ar'))?.contacts, [
+      { channel: 'phone', value: '+96181000000' },
+    ]);
+  });
+
+  it('los filtros filtran, y un distrito de otra región no encuentra nada', async () => {
+    assert.equal((await listProviders('ar', { governorate: 'mount_lebanon' })).length, 1);
+    assert.equal((await listProviders('ar', { governorate: 'beirut' })).length, 0);
+    assert.equal((await listProviders('ar', { district: 'jbeil' })).length, 1);
+    assert.equal((await listProviders('ar', { category: 'wedding_hall' })).length, 1);
+    assert.equal((await listProviders('ar', { category: 'dj' })).length, 0);
+    assert.equal((await listProviders('ar', { query: 'Public' })).length, 1);
+    assert.equal((await listProviders('ar', { query: 'no existe eso' })).length, 0);
+  });
+
+  void fixture;
+});
+
+/**
+ * El idioma de quien llega a `/d` sin decir cuál, y a dónde lleva cada contacto.
+ *
+ * Sin base de datos: son dos funciones puras y se comprueban siempre.
+ */
+describe('la puerta del portal', () => {
+  it('negocia el idioma, y el francés cuenta aquí aunque no en el producto', () => {
+    assert.equal(directoryLocaleFrom('fr-LB,fr;q=0.9,ar;q=0.8'), 'fr');
+    assert.equal(directoryLocaleFrom('ar-LB,ar;q=0.9'), 'ar');
+    assert.equal(directoryLocaleFrom('pt-BR'), 'pt');
+    // El peso manda sobre el orden de escritura.
+    assert.equal(directoryLocaleFrom('de;q=1.0,es;q=0.9,en;q=0.95'), 'en');
+    // Nada conocido, y nada escrito: árabe, que es el idioma del mercado.
+    assert.equal(directoryLocaleFrom('de-DE,ja;q=0.8'), 'ar');
+    assert.equal(directoryLocaleFrom(''), 'ar');
+  });
+
+  it('cada canal lleva a donde tiene que llevar', () => {
+    assert.equal(contactHref('phone', '+9611234567'), 'tel:+9611234567');
+    // `wa.me` quiere el número sin el «+»: con él, el enlace no abre nada.
+    assert.equal(contactHref('whatsapp', '+961 81 000 000'), 'https://wa.me/96181000000');
+    assert.equal(contactHref('email', 'hola@example.com'), 'mailto:hola@example.com');
+    assert.equal(contactHref('website', 'example.com'), 'https://example.com');
+    assert.equal(contactHref('website', 'https://example.com'), 'https://example.com');
+    assert.equal(contactHref('instagram', '@salon'), 'https://instagram.com/salon');
+    assert.equal(contactHref('tiktok', 'salon'), 'https://tiktok.com/@salon');
+    // Un canal que no está en la lista no se convierte en un enlace roto.
+    assert.equal(contactHref('telegrama', 'algo'), null);
   });
 });

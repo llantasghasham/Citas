@@ -3,6 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PLAN_CATALOGUE } from '../src/lib/billing/plans';
 import { getAllInvitations } from '../src/lib/invitations';
+import { seedDirectoryExamples } from './seed-directory';
 
 /**
  * Las direcciones que escribe un instalador porque tiene que escribir algo.
@@ -183,6 +184,12 @@ async function main(): Promise<void> {
 
       console.log(`seeded ${invitation.slug} (${invitation.locale})`);
     }
+
+    // Las fichas de ejemplo del directorio. Van aquí y no en un guion aparte
+    // porque un guion que hay que acordarse de ejecutar es un directorio vacío
+    // en producción: el despliegue ya llama a este.
+    const providers = await seedDirectoryExamples(prisma);
+    console.log(`directorio: ${providers} fichas de ejemplo`);
 
     const versions = await prisma.invitationVersion.count();
     console.log(`done — tenant "${tenant.slug}", ${versions} invitation versions`);

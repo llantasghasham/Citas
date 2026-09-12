@@ -379,6 +379,8 @@ export interface Dictionary {
       templates: string;
       pricing: string;
       faq: string;
+      /** El directorio de proveedores: salones, música, flores, catering. */
+      directory: string;
       signIn: string;
       cta: string;
     };

@@ -489,8 +489,41 @@ que corren sin red y sin cuenta de nadie):
 - El procesado de imagen: recodificado a WEBP, sin metadatos, con miniatura, y
   el rechazo de SVG, HTML, PDF y archivos rotos.
 
-**Lo siguiente:** la migración `provider_base`, sus comprobaciones en `db:check`
-y las pruebas de aislamiento **antes** de cualquier pantalla.
+**El modelo y el aislamiento** (`prisma/migrations/20260921100000_provider_base`,
+`lib/directory/`, `tests/directorio.test.ts`): ocho tablas, seis restricciones
+`CHECK`, el ámbito `ProviderScope` que solo se acuña con la membresía de verdad,
+y la comprobación en `db:check` de que **ninguna clave foránea del directorio
+llega a nada privado de una boda**.
+
+**El portal, ya en la calle:**
+
+```
+/d                       la puerta: negocia el idioma y redirige (307)
+/d/<idioma>              la portada: las categorías por grupo y las ocho regiones
+/d/<idioma>/proveedores  el listado, con sus casillas (categoría, región,
+                         distrito y texto libre) — un GET, sin JavaScript
+/d/<idioma>/p/<slug>     la ficha
+```
+
+Cinco idiomas —`ar`, `en`, `fr`, `es`, `pt`—, cada uno en su dirección, con
+canónica y `hreflang`. El idioma sale **del segmento de la dirección** y no de
+una cookie ni de la cabecera del navegador: es lo que permite una dirección por
+idioma y lo que hace que la respuesta dependa solo de la URL. `documentLanguage`
+lo respeta, así que `/d/ar` se declara `lang="ar" dir="rtl"` aunque quien la pida
+tenga el navegador en inglés — y eso lo comprueba el despliegue en cada empujón.
+
+**Diez fichas de EJEMPLO** (`prisma/seed-directory.ts`), por lo mismo que
+`ejemplo-ar`: un directorio vacío no se puede enseñar ni vender. Cubren lo que
+hay que vender —salón, restaurante que cocina, pastelería, DJ, cantante, alquiler
+de mesas y sillas, flores, organización, vídeo y catering— repartidas por
+gobernación. Se marcan como lo que son: «(ejemplo)» **en el nombre**, y **ni un
+solo contacto público** — una ficha inventada con un teléfono dentro es alguien
+recibiendo llamadas para una boda que no organiza.
+
+**Lo siguiente:** las imágenes (`provider_media`, la subida con el tope de diez
+dentro de la transacción y `/api/d/media/<id>` con `no-store`), el panel del
+proveedor, la moderación con su reloj de 24 horas hábiles, y el SEO —mapas del
+sitio por idioma y datos estructurados—.
 
 ## Lo que hace falta de fuera
 
