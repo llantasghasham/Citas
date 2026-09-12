@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHmac, randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
 /**
@@ -38,6 +38,28 @@ function readKey(): Buffer {
     throw new Error('The encryption key must be 32 bytes, base64 encoded (openssl rand -base64 32).');
   }
   return key;
+}
+
+/**
+ * Firma con la MISMA llave que cifra los secretos, separando por PROPÓSITO.
+ *
+ * Existe para poder derivar un código verificable —el del QR de la puerta— de
+ * algo que ya existe, en vez de inventar otra tabla de tokens que caduquen mal
+ * y que haya que purgar. Quien no tenga la llave no puede fabricar uno.
+ *
+ * La llave NO sale de este módulo: se entra el propósito y el dato y se sale
+ * con la firma. Devolverla en crudo sería repartir por el código la única cosa
+ * que hay que guardar en un sitio.
+ *
+ * El `purpose` va DENTRO del mensaje y con un separador que no puede aparecer
+ * en él: sin eso, dos usos distintos de la misma llave firman el mismo texto y
+ * una firma hecha para una cosa vale para la otra.
+ */
+export function signWithSecretKey(purpose: string, payload: string): string {
+  if (purpose.includes('\u0000')) throw new Error('El propósito de una firma no lleva NUL.');
+  return createHmac('sha256', readKey())
+    .update(`${purpose}\u0000${payload}`, 'utf8')
+    .digest('base64url');
 }
 
 /** `v1.<iv>.<tag>.<ciphertext>`, all base64. */

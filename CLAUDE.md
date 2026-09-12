@@ -375,6 +375,81 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Los teléfonos se guardan normalizados a E.164. Una línea sin nombre se
   descarta y se cuenta; no se importa un invitado vacío.
 
+### Permiso para escribir
+- Tener el teléfono de alguien NO es tener su permiso para escribirle, e importar
+  doscientos números de un Excel tampoco. Son dos cosas distintas y se guardan
+  separadas (`Consent`), por canal y por PARA QUÉ: quien acepta recibir su
+  invitación no ha aceptado recibir ofertas, y meterlas en el mismo saco es lo
+  que convierte un permiso en un pretexto.
+- Se guarda DE DÓNDE salió el permiso y CON QUÉ TEXTO se pidió. Un permiso que no
+  se puede enseñar no sirve para defenderse de una queja, que es justo para lo
+  que hace falta. Cambiar el texto es un permiso nuevo.
+- La BAJA (`OptOut`) gana SIEMPRE, y va en su tabla aparte por dos razones que
+  importan las dos: tiene que poder existir sin que antes hubiera permiso —
+  alguien escribe STOP sin haber dado nunca nada— y tiene que sobrevivir a que se
+  reimporte la lista, cosa que un `revokedAt` dentro de `Consent` no hace. Su
+  unicidad necesita DOS índices parciales, porque en PostgreSQL dos nulos no
+  chocan: sin el segundo se podrían apuntar cien bajas totales del mismo
+  contacto.
+- Sin permiso vigente es que NO. Falla cerrado, como el lector del SINPE: un
+  mensaje que no sale se arregla pidiendo el permiso; uno que sale sin permiso ya
+  salió.
+- El registro de auditoría anota el permiso, la revocación y la baja, pero NUNCA
+  el contacto entero: los últimos dígitos bastan para reconocerlo y no repiten el
+  dato personal en otra tabla.
+
+### Envíos
+- Una campaña es UN envío con nombre: a un grupo, para un acto, con una plantilla
+  y su VERSIÓN. Existe para que «mandar las invitaciones de la henna a la familia
+  de la novia» sea una cosa con autor, fecha y resultado, y no doscientas filas
+  sueltas en una cola de las que nadie sabe de dónde salieron.
+- Se guarda a los EXCLUIDOS y por qué (`MessageRecipient` con su motivo). Una
+  campaña que solo enseña a quién le llegó esconde justo lo que hay que mirar:
+  los ochenta que se quedaron fuera porque nadie les pidió permiso.
+- La clave contra duplicados lleva el ACTO y la VERSIÓN de la plantilla dentro, y
+  la impide la BASE con un índice único parcial, no una lectura previa. El mismo
+  invitado recibe la invitación de la henna Y la de la recepción: sin el acto, lo
+  que evita el doble envío impediría la segunda — el mismo fallo que ya obligó a
+  meter `kind` en ese índice, otra vez y por otro lado.
+- Nadie sin permiso entra en la cola. Es la regla que hace que esto valga.
+
+### La puerta
+- El código del QR se DERIVA del token que el invitado ya tiene más el id del
+  acto, firmado con la llave. No hay una tabla más de códigos que caduquen mal, y
+  uno fabricado a mano no pasa la firma.
+- Es POR ACTO: el de la recepción no sirve para la henna. Y el tope de
+  acompañantes también es por acto, no el del invitado.
+- El segundo intento dice «ya entró» y la hora de la primera vez, y nada más: en
+  una puerta hay gente delante mirando la pantalla.
+- Una entrada por invitado y acto, y lo impide un índice único — no la lectura
+  previa: dos operadores escaneando a la vez comprueban los dos que no había
+  ninguna.
+- Una entrada apuntada por error se DESHACE, con su registro de quién lo hizo.
+
+### Preferencias
+- Dieta, transporte, accesibilidad y fotos, en clave y valor y no una columna por
+  cosa: lo que hace falta preguntar cambia de una boda a otra, y una columna
+  nueva por pregunta es una migración por boda.
+- Las claves son una LISTA CERRADA. Un campo libre acabaría guardando lo que a
+  nadie se le ocurrió limitar, y esto son datos de salud de gente que no tiene
+  cuenta aquí.
+
+### Las tres pantallas nuevas
+- **`/panel/eventos/<id>/envios`** está partida en dos a propósito: elegir y VER
+  a quién le llegaría es un GET que no escribe nada; mandar es lo único que
+  escribe. Pulsar «mandar» sobre doscientas personas no se deshace, así que quien
+  lo pulsa tiene que haber visto antes a cuántos les llega, a cuántos no y por
+  qué. Lo que se enseña sale de `previewCampaign`, la MISMA función que usa el
+  envío por dentro.
+- **`/panel/eventos/<id>/permisos`** enseña la diferencia entre «tengo su
+  teléfono» y «me dio permiso», que no se ve en ninguna otra pantalla y es la que
+  decide si un envío es una invitación o es spam. Los que faltan salen CON
+  NOMBRE.
+- **`/panel/eventos/<id>/puerta`** es la única pantalla del panel pensada para
+  usarse DE PIE y con una cola delante: campos y botones más altos, el resultado
+  de la última lectura arriba y grande, y el foco de vuelta en el código para
+  encadenar lecturas sin tocar la pantalla.
+
 ### Confirmaciones
 - El formulario de confirmación es PÚBLICO a propósito: la invitación se reenvía
   por WhatsApp y pedir cuenta al invitado cuesta más respuestas que el spam que

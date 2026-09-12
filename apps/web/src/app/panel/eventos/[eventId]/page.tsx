@@ -175,6 +175,30 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
           >
             {dictionary.admin.acts.link}
           </a>
+          {/* Los envíos. Va antes que los permisos porque es lo que se quiere
+              hacer; los permisos son lo que hay que tener para poder hacerlo. */}
+          <a
+            className="text-sm underline text-[#8a6c22]"
+            href={`/panel/eventos/${eventId}/envios`}
+          >
+            {dictionary.admin.campaigns.link}
+          </a>
+          {/* Los permisos. Va al lado de los invitados porque es la misma lista
+              mirada por otro lado: a cuántos de estos se les puede escribir. */}
+          <a
+            className="text-sm underline text-[#8a6c22]"
+            href={`/panel/eventos/${eventId}/permisos`}
+          >
+            {dictionary.admin.consent.link}
+          </a>
+          {/* La puerta. Va aquí y no escondida en otro sitio porque se abre el
+              día del evento, con prisa y a veces desde un móvil. */}
+          <a
+            className="text-sm underline text-[#8a6c22]"
+            href={`/panel/eventos/${eventId}/puerta`}
+          >
+            {dictionary.admin.gate.link}
+          </a>
           {/* El reparto del salón. Va junto a la lista de invitados porque es
               lo mismo mirado de otra manera: quién viene y dónde se sienta. */}
           <a

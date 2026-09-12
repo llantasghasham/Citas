@@ -194,6 +194,7 @@ sudo -u "$APP_USER" bash -lc "
   npm ci --ignore-scripts --include-workspace-root --workspace @citas/web --workspace @citas/core --workspace @citas/whatsapp &&
   npm run db:generate --workspace @citas/web &&
   npm run db:deploy   --workspace @citas/web &&
+  npm run db:fleet    --workspace @citas/web -- migrar &&
   npm run db:seed     --workspace @citas/web &&
   npm run build       --workspace @citas/web
 " || alto "falló la compilación — mira el error de arriba"

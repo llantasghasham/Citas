@@ -307,9 +307,20 @@ sudo -u www bash -lc '
     --workspace @citas/web --workspace @citas/core &&
   npm run db:generate --workspace @citas/web &&
   npm run db:deploy   --workspace @citas/web &&
+  npm run db:fleet    --workspace @citas/web -- migrar &&
   npm run build       --workspace @citas/web
 '
 systemctl restart citas
 ```
+
+> **`db:deploy` NO basta cuando hay una base por oficina.** Migra la de control y
+> ninguna más, así que las oficinas se quedarían con el esquema viejo — y eso no
+> falla al arrancar: falla la primera vez que alguien usa lo nuevo, que es cuando
+> peor viene enterarse. Por eso va detrás `db:fleet -- migrar`, que pone al día la
+> plantilla y todas las oficinas. En reparto `shared` no hay nada que migrar y la
+> orden no hace daño.
+>
+> Después, `npm run db:fleet -- estado` dice si alguna se quedó atrás, con las
+> atrasadas arriba y en rojo.
 
 `db:deploy` solo aplica migraciones nuevas; nunca borra datos.
