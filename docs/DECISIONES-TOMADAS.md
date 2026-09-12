@@ -116,3 +116,51 @@ nadie sabría cuál creer.
 externos (29–59 por evento, 99–199 por boda, etc.) son hipótesis de quien los
 escribió, no tarifas de Citas. No están en el código, no están en los planes y no
 se le han dicho a ningún cliente. Se validan vendiendo, no discutiéndolas.
+
+## 9. Qué cuenta como «el mismo mensaje»
+
+**Decidido.** Lo pregunta toda revisión que mira las campañas, y la respuesta
+está repartida entre una migración, un servicio y cuatro pruebas. Aquí junta.
+
+Hay **dos frenos y hacen cosas distintas**, y confundirlos es de donde sale la
+sospecha de que algo está mal:
+
+**El de la BASE**, que es el que no se puede saltar. Un índice único parcial
+sobre `(eventId, guestId, kind, actId)` mientras el mensaje está `queued` o
+`processing` — y un segundo índice sobre `(eventId, guestId, kind)` para cuando
+`actId` es nulo, porque en PostgreSQL dos nulos no chocan y sin él se podrían
+encolar cien «celebración entera» al mismo invitado. Impide exactamente una
+cosa: **dos mensajes vivos del mismo tipo, al mismo invitado, para el mismo
+acto**. No es una lectura previa del código: entre leer qué hay en cola y
+escribir cabe otra petición, y dos operadores pulsando «Enviar» a la vez pasaban
+los dos.
+
+Con eso, esto SÍ se puede, y hay una prueba de cada uno escribiendo directo en
+la tabla (`tests/cola.test.ts`, «el ACTO entra en la clave»):
+
+| | |
+|---|---|
+| invitación de la henna + invitación de la recepción | sí, son actos distintos |
+| invitación de la henna + recordatorio de la henna | sí, `kind` está en la clave |
+| «la celebración entera» + cualquiera de acto | sí, son claves distintas |
+| dos invitaciones vivas de la henna | **no** |
+| dos «celebración entera» vivas | **no** |
+| volver a escribir después de que el anterior SALIÓ | sí, el freno es solo para lo vivo |
+
+**El del SERVICIO**, que decide qué se vuelve a mandar y qué no. Ese sí mira la
+plantilla y su versión: `previewCampaign` marca `already_sent` a quien ya recibió
+**esa plantilla en esa versión**, aunque el mensaje anterior ya se enviara y por
+tanto la base no lo impidiera. Una **versión nueva** de la plantilla sí vuelve a
+escribir, y eso es lo que hace que corregir una falta de ortografía y reenviar
+sea posible sin trucos.
+
+**Y `campaignId` NO está en ninguno de los dos, a propósito.** Meterlo en el
+índice haría que crear una campaña nueva bastara para volver a escribirle a
+doscientas personas, que es justo el accidente que estos frenos existen para
+evitar: la campaña es el nombre de un envío, no un permiso para repetirlo. Lo
+que autoriza repetir es una plantilla distinta, una versión nueva, un acto
+distinto o que el anterior ya saliera.
+
+Dicho en una frase: **la base impide duplicar lo que está en el aire; el
+servicio impide repetir lo que ya se dijo.** Quien quiera cambiar esto, que
+cambie las dos cosas a la vez y las pruebas que las cubren.

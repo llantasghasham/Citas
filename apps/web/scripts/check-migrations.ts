@@ -17,6 +17,19 @@ import { execFileSync } from 'node:child_process';
  */
 const TEMP_DB = `citas_check_${Date.now()}`;
 
+/**
+ * Los índices que deciden si un invitado recibe la invitación de su segundo
+ * acto, y si entra dos veces por la puerta. Se imprimen enteros al final.
+ */
+const SHOW_INDEXES = `
+  SELECT indexname, indexdef FROM pg_indexes
+   WHERE indexname IN (
+     'WhatsappMessage_live_guest_key',
+     'WhatsappMessage_live_guest_whole_key',
+     'CheckIn_actId_guestId_key'
+   )
+   ORDER BY indexname`;
+
 interface Check {
   what: string;
   sql: string;
@@ -207,7 +220,24 @@ function main(): void {
       process.exitCode = 1;
       return;
     }
-    console.log('\n[migraciones] el esquema salió como dice el código.');
+    // Y además se ENSEÑA el esquema final de lo que más se lee mal.
+    //
+    // Dos revisiones externas seguidas leyeron la migración donde el índice de
+    // la cola todavía era `(eventId, guestId, kind)`, no vieron que una
+    // posterior lo sustituye, y avisaron de un fallo que no existe. La culpa no
+    // es suya: veintiséis migraciones leídas en orden son veintiséis
+    // oportunidades de parar en la equivocada. Lo que falta es enseñar cómo
+    // queda, no solo decir que está bien — así que la definición va al registro
+    // y quien audite la lee en vez de reconstruirla.
+    console.log('\n[migraciones] así queda el esquema de lo que más se lee mal:\n');
+    const shown = psql(TEMP_DB, `SELECT row_to_json(t) FROM (${SHOW_INDEXES}) t`);
+    for (const line of shown.split('\n').filter((l) => l.length > 0)) {
+      const row = JSON.parse(line) as { indexname: string; indexdef: string };
+      console.log(`  ${row.indexname}`);
+      console.log(`      ${row.indexdef}\n`);
+    }
+
+    console.log('[migraciones] el esquema salió como dice el código.');
   } finally {
     psql(base, `DROP DATABASE IF EXISTS "${TEMP_DB}"`);
   }

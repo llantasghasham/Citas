@@ -425,8 +425,15 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Se guarda a los EXCLUIDOS y por qué (`MessageRecipient` con su motivo). Una
   campaña que solo enseña a quién le llegó esconde justo lo que hay que mirar:
   los ochenta que se quedaron fuera porque nadie les pidió permiso.
-- La clave contra duplicados lleva el ACTO y la VERSIÓN de la plantilla dentro, y
-  la impide la BASE con un índice único parcial, no una lectura previa. El mismo
+- Hay DOS frenos y hacen cosas distintas. La BASE impide dos mensajes VIVOS del
+  mismo tipo, al mismo invitado y para el mismo acto —índice único parcial sobre
+  `(eventId, guestId, kind, actId)`, y otro sobre `(eventId, guestId, kind)` para
+  cuando el acto es nulo, porque dos nulos no chocan—. El SERVICIO impide
+  repetir lo ya dicho: mira la plantilla y su VERSIÓN, y por eso una versión
+  nueva sí vuelve a escribir. `campaignId` no está en ninguno de los dos a
+  propósito: si estuviera, crear una campaña nueva bastaría para reescribirle a
+  doscientas personas. La razón entera, en `docs/DECISIONES-TOMADAS.md` §9.
+- La de la base no es una lectura previa. El mismo
   invitado recibe la invitación de la henna Y la de la recepción: sin el acto, lo
   que evita el doble envío impediría la segunda — el mismo fallo que ya obligó a
   meter `kind` en ese índice, otra vez y por otro lado.
