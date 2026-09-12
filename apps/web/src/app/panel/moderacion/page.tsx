@@ -38,7 +38,12 @@ export default async function ModerationQueuePage() {
 
   return (
     <>
-      <h1 className="text-2xl">{copy.moderation.title}</h1>
+      <header className="flex flex-wrap items-baseline gap-x-4">
+        <h1 className="text-2xl">{copy.moderation.title}</h1>
+        <Link href="/panel/moderacion/denuncias" className="text-sm underline">
+          {copy.report.title}
+        </Link>
+      </header>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg">

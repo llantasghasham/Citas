@@ -25,6 +25,12 @@ import {
 } from '../src/lib/directory/clock';
 import { contactHref } from '../src/lib/directory/contacts';
 import {
+  fileReport,
+  openReports,
+  purgeReportIps,
+  resolveReport,
+} from '../src/lib/directory/reports';
+import {
   approveProvider,
   rejectProvider,
   restoreProvider,
@@ -1291,6 +1297,220 @@ describe('la moderación', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => 
       ok: false,
       problems: ['notFound'],
     });
+  });
+
+  void fixture;
+});
+
+/**
+ * Las denuncias.
+ *
+ * Un formulario público y sin cuenta es una puerta abierta, así que lo que se
+ * comprueba aquí es qué NO puede hacer: no puede cerrar el negocio de nadie, no
+ * puede tumbar la foto de un tercero, y no puede dejar una galería escondida
+ * para siempre con una reclamación falsa.
+ */
+describe('las denuncias', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  let providerId = '';
+  let otroId = '';
+  let slug = '';
+  let duenoId = '';
+  let moderadorId = '';
+  let fotoId = '';
+  let fotoAjenaId = '';
+
+  const publicar = async (nombre: string, email: string): Promise<{ id: string; slug: string; userId: string }> => {
+    const prisma = controlDb();
+    const user = await prisma.user.create({ data: { email, locale: 'ar' }, select: { id: true } });
+    const result = await createProvider(user.id, {
+      legalName: nombre, governorate: 'beirut', district: 'beirut', city: 'Beirut', mainLocale: 'ar',
+    });
+    assert.ok(result.ok);
+    await setTranslation(unsafeProviderScope(result.id), user.id, 'ar', {
+      name: nombre, tagline: '', description: '', services: [],
+    });
+    await setCategories(unsafeProviderScope(result.id), user.id, ['wedding_hall'], 'wedding_hall');
+    await prisma.provider.update({
+      where: { id: result.id },
+      data: { status: 'approved', publishedAt: new Date() },
+    });
+    const row = await prisma.provider.findUniqueOrThrow({
+      where: { id: result.id }, select: { slug: true },
+    });
+    return { id: result.id, slug: row.slug, userId: user.id };
+  };
+
+  const foto = async (id: string): Promise<string> => {
+    const png = await sharp({ create: { width: 600, height: 600, channels: 3, background: '#8a6c22' } })
+      .png()
+      .toBuffer();
+    const subida = await addImage(
+      unsafeProviderScope(id),
+      duenoId,
+      new File([new Uint8Array(png)], 'f.png', { type: 'image/png' }),
+    );
+    assert.ok(subida.ok);
+    await controlDb().providerMedia.update({
+      where: { id: subida.id },
+      data: { status: 'approved', publishedAt: new Date() },
+    });
+    return subida.id;
+  };
+
+  beforeEach(async () => {
+    const prisma = controlDb();
+    forgetStore();
+    await prisma.provider.deleteMany({});
+    await prisma.user.deleteMany({ where: { email: { startsWith: 'den-' } } });
+
+    const uno = await publicar('Salon denunciado', 'den-uno@example.com');
+    const dos = await publicar('Salon de al lado', 'den-dos@example.com');
+    providerId = uno.id;
+    slug = uno.slug;
+    duenoId = uno.userId;
+    otroId = dos.id;
+
+    const mod = await prisma.user.create({
+      data: { email: 'den-mod@example.com', locale: 'es', isSuperadmin: true },
+      select: { id: true },
+    });
+    moderadorId = mod.id;
+
+    fotoId = await foto(providerId);
+    fotoAjenaId = await foto(otroId);
+  });
+
+  it('una reclamación de derechos oculta las fotos AL MOMENTO, y solo las fotos', async () => {
+    const antes = await controlDb().provider.findUniqueOrThrow({
+      where: { id: providerId }, select: { status: true },
+    });
+    assert.equal(antes.status, 'approved');
+
+    const result = await fileReport({
+      slug, reason: 'copyright', message: 'Esa foto es mía.',
+      reporterEmail: 'fotografo@example.com', ip: '203.0.113.7',
+    });
+    assert.ok(result.ok);
+    assert.equal(result.hiddenImages, 1);
+
+    // La foto deja de verse YA.
+    const nadie = { userId: null, isSuperadmin: false, canModerate: false };
+    assert.equal(await readableMedia(fotoId, nadie, 'full'), null);
+
+    // Y el NEGOCIO sigue publicado. No se cierra el negocio de nadie con un
+    // formulario anónimo.
+    const despues = await controlDb().provider.findUniqueOrThrow({
+      where: { id: providerId }, select: { status: true },
+    });
+    assert.equal(despues.status, 'approved');
+    assert.equal((await listProviders('ar')).length, 2);
+  });
+
+  it('sin correo no hay reclamación de derechos', async () => {
+    assert.deepEqual(
+      await fileReport({ slug, reason: 'copyright', message: 'mía', reporterEmail: '' }),
+      { ok: false, problems: ['email'] },
+    );
+    // Y no ocultó nada: un intento fallido no toca la galería.
+    const nadie = { userId: null, isSuperadmin: false, canModerate: false };
+    assert.notEqual(await readableMedia(fotoId, nadie, 'full'), null);
+
+    // Los demás motivos no lo piden: quien avisa de un número equivocado no
+    // tiene por qué dejar su correo.
+    const otra = await fileReport({ slug, reason: 'wrong_number', message: 'No contestan', reporterEmail: '' });
+    assert.ok(otra.ok);
+    assert.equal(otra.hiddenImages, 0);
+  });
+
+  it('la foto de OTRO negocio no se puede tumbar desde esta ficha', async () => {
+    const result = await fileReport({
+      slug, reason: 'copyright', message: 'esa', reporterEmail: 'a@example.com',
+      mediaId: fotoAjenaId,
+    });
+    assert.ok(result.ok);
+    // El `mediaId` ajeno se ignora, así que la denuncia queda contra la ficha
+    // entera — y lo que se oculta son las fotos de ESTA, no la del vecino.
+    const nadie = { userId: null, isSuperadmin: false, canModerate: false };
+    assert.notEqual(await readableMedia(fotoAjenaId, nadie, 'full'), null);
+    assert.equal(await readableMedia(fotoId, nadie, 'full'), null);
+  });
+
+  it('una ficha que no está publicada no se puede denunciar', async () => {
+    await controlDb().provider.update({
+      where: { id: providerId }, data: { status: 'pending_review' },
+    });
+    assert.deepEqual(
+      await fileReport({ slug, reason: 'scam', message: '', reporterEmail: '' }),
+      { ok: false, problems: ['notFound'] },
+    );
+    assert.deepEqual(
+      await fileReport({ slug: 'no-existe', reason: 'scam', message: '', reporterEmail: '' }),
+      { ok: false, problems: ['notFound'] },
+    );
+  });
+
+  it('el mismo origen no puede mandar cien', async () => {
+    for (let i = 0; i < 5; i += 1) {
+      const one = await fileReport({ slug, reason: 'scam', message: `n${i}`, reporterEmail: '', ip: '198.51.100.4' });
+      assert.ok(one.ok, `la ${i + 1} deberia pasar`);
+    }
+    assert.deepEqual(
+      await fileReport({ slug, reason: 'scam', message: 'seis', reporterEmail: '', ip: '198.51.100.4' }),
+      { ok: false, problems: ['tooMany'] },
+    );
+    // Desde otro sitio sí: el freno es por dirección, no global.
+    assert.ok((await fileReport({ slug, reason: 'scam', message: 'otra', reporterEmail: '', ip: '198.51.100.5' })).ok);
+  });
+
+  it('desestimarla devuelve la foto a la calle; darle la razón la borra de verdad', async () => {
+    const store = storeFor();
+    const nadie = { userId: null, isSuperadmin: false, canModerate: false };
+
+    // Primera: falsa. Se oculta, se desestima, y la foto vuelve.
+    await fileReport({ slug, reason: 'copyright', message: 'mía', reporterEmail: 'a@example.com', mediaId: fotoId });
+    assert.equal(await readableMedia(fotoId, nadie, 'full'), null);
+
+    const abiertas = await openReports();
+    assert.equal(abiertas.length, 1);
+    assert.deepEqual(
+      await resolveReport(abiertas[0]?.id ?? '', moderadorId, 'dismissed', 'No aportó nada.'),
+      { ok: true },
+    );
+    // Sin esto, una reclamación falsa deja la galería escondida para siempre.
+    assert.notEqual(await readableMedia(fotoId, nadie, 'full'), null);
+
+    // Segunda: buena. Se le da la razón y la foto se va, bytes incluidos.
+    const fila = await controlDb().providerMedia.findUniqueOrThrow({
+      where: { id: fotoId }, select: { objectKey: true },
+    });
+    const key = asObjectKey(fila.objectKey ?? '');
+    assert.ok(key !== null && (await store.head(key)) !== null);
+
+    await fileReport({ slug, reason: 'copyright', message: 'de verdad', reporterEmail: 'b@example.com', mediaId: fotoId });
+    const segunda = await openReports();
+    assert.deepEqual(
+      await resolveReport(segunda[0]?.id ?? '', moderadorId, 'upheld', 'Enseñó el original.'),
+      { ok: true },
+    );
+
+    assert.equal(await controlDb().providerMedia.count({ where: { id: fotoId } }), 0);
+    assert.equal(await store.head(key), null);
+    assert.deepEqual(await openReports(), []);
+  });
+
+  it('la dirección de quien denunció se borra a los treinta días', async () => {
+    await fileReport({ slug, reason: 'scam', message: 'x', reporterEmail: '', ip: '203.0.113.9' });
+    const vieja = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000);
+    await controlDb().providerReport.updateMany({ data: { createdAt: vieja } });
+
+    assert.equal(await purgeReportIps(), 1);
+    const filas = await controlDb().providerReport.findMany({ select: { ip: true, reason: true } });
+    // Se va la dirección; la denuncia SE QUEDA — es el registro de lo que pasó.
+    assert.equal(filas.length, 1);
+    assert.equal(filas[0]?.ip, null);
+    assert.equal(filas[0]?.reason, 'scam');
   });
 
   void fixture;

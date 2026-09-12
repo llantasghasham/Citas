@@ -157,9 +157,18 @@ export default async function ProviderPage({ params }: Props) {
         </section>
       )}
 
-      <nav className="border-t border-[#ddd6c6] pt-4 text-sm">
+      <nav className="flex flex-wrap gap-x-6 border-t border-[#ddd6c6] pt-4 text-sm">
         <Link href={`/d/${locale}/proveedores`} className="underline hover:no-underline">
           {copy.nav.providers}
+        </Link>
+        {/* Discreto y presente. Sin un sitio donde decirlo, lo que llega es una
+            llamada o nada — y «nada» quiere decir una ficha con un número
+            equivocado publicada para siempre. */}
+        <Link
+          href={`/d/${locale}/p/${slug}/denunciar`}
+          className="text-xs text-[#6a6456] underline hover:no-underline"
+        >
+          {copy.provider.report}
         </Link>
       </nav>
     </article>

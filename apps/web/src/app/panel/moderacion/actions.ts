@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 
 import { getSession, sessionCan } from '@/lib/auth/session';
+import { resolveReport } from '@/lib/directory/reports';
 import {
   approveProvider,
   decideMedia,
@@ -94,4 +95,27 @@ export async function mediaAction(formData: FormData): Promise<void> {
     status === 'hidden' ? 'moderation' : null,
   );
   volver(providerId, result.ok ? 'guardado=1' : `error=${result.problems.join(',')}`);
+}
+
+/**
+ * Resolver una denuncia.
+ *
+ * `upheld` borra la imagen señalada de verdad, bytes incluidos; `dismissed`
+ * devuelve a la calle lo que la denuncia había ocultado — sin eso, una
+ * reclamación falsa deja la galería de alguien escondida para siempre.
+ */
+export async function resolveReportAction(formData: FormData): Promise<void> {
+  const actorId = await guard();
+  const reportId = String(formData.get('reportId') ?? '');
+  const outcome = formData.get('outcome') === 'upheld' ? 'upheld' : 'dismissed';
+
+  const result = await resolveReport(
+    reportId,
+    actorId,
+    outcome,
+    String(formData.get('note') ?? ''),
+  );
+  redirect(
+    `/panel/moderacion/denuncias?${result.ok ? 'guardado=1' : `error=${result.problems.join(',')}`}`,
+  );
 }

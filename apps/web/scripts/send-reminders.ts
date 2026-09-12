@@ -37,6 +37,16 @@ async function main(): Promise<void> {
     console.log(`[limpieza] ${purged.sessions} sesión(es) y ${purged.codes} código(s) caducados`);
   }
 
+  // Y la dirección de quien puso una denuncia, por lo mismo: se guarda para
+  // frenar a quien las manda en bucle, y pasados treinta días ya no frena nada
+  // — lo único que sigue haciendo es guardar desde dónde se conectó alguien que
+  // ni siquiera tiene cuenta aquí.
+  const { purgeReportIps } = await import('../src/lib/directory/reports');
+  const anonimizadas = await purgeReportIps();
+  if (anonimizadas > 0) {
+    console.log(`[limpieza] ${anonimizadas} denuncia(s) sin su dirección`);
+  }
+
   const { queueDueReminders } = await import('../src/lib/whatsapp/reminders');
   const outcome = await queueDueReminders();
 
