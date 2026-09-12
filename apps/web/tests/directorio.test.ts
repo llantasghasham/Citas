@@ -36,6 +36,11 @@ import {
   listProviders,
   providerBySlug,
 } from '../src/lib/directory/public';
+import {
+  currentProviderScope,
+  myProviders,
+  panelLocale,
+} from '../src/lib/directory/session';
 import { providerSlug } from '../src/lib/directory/slug';
 
 import {
@@ -984,6 +989,87 @@ describe('las imágenes del directorio', { skip: HAS_DB ? false : 'sin DATABASE_
     const texto = JSON.stringify(linea?.metadata ?? {});
     assert.match(texto, /bytes/);
     assert.doesNotMatch(texto, /foto\.png/);
+  });
+
+  void fixture;
+});
+
+/**
+ * Quién administra qué, resuelto para una pantalla.
+ *
+ * El `providerId` viaja en la dirección y en un campo oculto —tiene que viajar,
+ * hay quien administra dos— así que es un dato del cliente. Esto es lo que hace
+ * que no sea además un permiso.
+ */
+describe('el panel del proveedor', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  let unoId = '';
+  let dosId = '';
+  let usuario = '';
+  let otro = '';
+
+  beforeEach(async () => {
+    const prisma = controlDb();
+    await prisma.provider.deleteMany({});
+    await prisma.user.deleteMany({ where: { email: { startsWith: 'pan-' } } });
+
+    const a = await prisma.user.create({ data: { email: 'pan-a@example.com', locale: 'ar' }, select: { id: true } });
+    const b = await prisma.user.create({ data: { email: 'pan-b@example.com', locale: 'es' }, select: { id: true } });
+    usuario = a.id;
+    otro = b.id;
+
+    const uno = await createProvider(a.id, {
+      legalName: 'Negocio de A', governorate: 'beirut', district: 'beirut', city: 'Beirut', mainLocale: 'ar',
+    });
+    const dos = await createProvider(b.id, {
+      legalName: 'Negocio de B', governorate: 'north', district: 'tripoli', city: 'Tripoli', mainLocale: 'ar',
+    });
+    assert.ok(uno.ok && dos.ok);
+    unoId = uno.id;
+    dosId = dos.id;
+  });
+
+  it('con uno solo no hay que elegir; con el de otro no hay ámbito', async () => {
+    const solo = await currentProviderScope(usuario, undefined);
+    assert.equal(solo?.providerId, unoId);
+
+    // El id de OTRO en la dirección no abre nada. Es el caso entero: sin esta
+    // comprobación, cambiar un parámetro edita el perfil de un competidor.
+    assert.equal(await currentProviderScope(usuario, dosId), null);
+    assert.equal(await currentProviderScope(otro, unoId), null);
+    // Uno inventado tampoco.
+    assert.equal(await currentProviderScope(usuario, 'cmtyinventadoinventado00'), null);
+  });
+
+  it('con dos, NO se adivina cuál', async () => {
+    // Se le añade a A un segundo negocio.
+    const tres = await createProvider(usuario, {
+      legalName: 'Segundo de A', governorate: 'bekaa', district: 'zahle', city: 'Zahle', mainLocale: 'ar',
+    });
+    assert.ok(tres.ok);
+
+    // Sin pedir cuál, ninguno: adivinar es publicar una foto en el negocio
+    // equivocado.
+    assert.equal(await currentProviderScope(usuario, undefined), null);
+    // Pidiéndolo, el suyo.
+    assert.equal((await currentProviderScope(usuario, tres.id))?.providerId, tres.id);
+    assert.equal((await currentProviderScope(usuario, unoId))?.providerId, unoId);
+
+    const mios = await myProviders(usuario);
+    assert.deepEqual(mios.map((one) => one.legalName).sort(), ['Negocio de A', 'Segundo de A']);
+  });
+
+  it('el idioma del panel sale del perfil, y el francés solo si se pide', () => {
+    assert.equal(panelLocale(undefined, 'ar'), 'ar');
+    assert.equal(panelLocale(undefined, 'es'), 'es');
+    // El francés no está en el perfil de nadie —el producto habla cuatro— así
+    // que solo puede llegar por la dirección.
+    assert.equal(panelLocale('fr', 'es'), 'fr');
+    // Basura en la dirección no cambia nada.
+    assert.equal(panelLocale('de', 'es'), 'es');
+    // Y sin nada, árabe.
+    assert.equal(panelLocale(undefined, null), 'ar');
   });
 
   void fixture;

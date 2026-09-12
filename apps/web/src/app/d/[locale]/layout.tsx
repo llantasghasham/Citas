@@ -51,6 +51,13 @@ export default async function DirectoryLayout({ children, params }: Props) {
             <Link href={`/d/${locale}/proveedores`} className="hover:underline">
               {copy.nav.providers}
             </Link>
+            {/* La puerta de entrada de quien viene a PAGAR por estar aquí. Sin
+                un enlace visible desde la calle, el directorio solo lo puede
+                rellenar quien ya sabe que existe. Lleva a `/entrar` si no hay
+                sesión, que es lo correcto: publicar exige cuenta. */}
+            <Link href="/panel/proveedor/nuevo" className="hover:underline">
+              {copy.panel.newTitle}
+            </Link>
           </nav>
 
           {/* Los cinco idiomas, cada uno a SU dirección. No es un conmutador que

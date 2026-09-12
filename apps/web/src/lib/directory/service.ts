@@ -1,5 +1,6 @@
 import { recordAudit } from '@/lib/audit';
 import { controlDb } from '@/lib/db/client';
+import { DIRECTORY_LOCALES } from '@citas/core';
 
 import {
   isCategory,
@@ -133,7 +134,11 @@ export async function readProvider(scope: ProviderScope): Promise<ProviderRow | 
 export async function updateProvider(
   scope: ProviderScope,
   userId: string,
-  input: Partial<ProviderInput> & { capacity?: number | null; since?: number | null },
+  input: Partial<ProviderInput> & {
+    capacity?: number | null;
+    since?: number | null;
+    addressPublic?: string;
+  },
 ): Promise<{ ok: true } | { ok: false; problems: ProviderProblem[] }> {
   const problems: ProviderProblem[] = [];
   const data: Record<string, unknown> = {};
@@ -161,6 +166,21 @@ export async function updateProvider(
     const city = clean(input.city, 80);
     if (city.length < 2) problems.push('city');
     else data['city'] = city;
+  }
+  if (input.mainLocale !== undefined && DIRECTORY_LOCALES.includes(input.mainLocale as never)) {
+    data['mainLocale'] = input.mainLocale;
+  }
+  if (input.addressPublic !== undefined) {
+    const address = clean(input.addressPublic, 200);
+    data['addressPublic'] = address.length === 0 ? null : address;
+    // Quitar la dirección quita también el mapa, y no por orden: la base lo
+    // EXIGE (`Provider_map_needs_address`). Sin esto, borrar la dirección de
+    // quien tuviera coordenadas puestas reventaría con un error de restricción
+    // en vez de guardar.
+    if (address.length === 0) {
+      data['lat'] = null;
+      data['lng'] = null;
+    }
   }
   if (input.capacity !== undefined) data['capacity'] = input.capacity;
   if (input.since !== undefined) data['since'] = input.since;
@@ -353,4 +373,54 @@ export async function submitForReview(
     metadata: {},
   });
   return { ok: true };
+}
+
+/**
+ * Todo lo que hace falta para pintar el panel del proveedor, de una vez.
+ *
+ * Cuatro consultas separadas serían cuatro sitios donde olvidarse el ámbito. Va
+ * con `ownWhere`, así que un `providerId` que no sea suyo no encuentra fila.
+ */
+export interface ProviderDetail extends ProviderRow {
+  mainLocale: string;
+  addressPublic: string | null;
+  capacity: number | null;
+  since: number | null;
+  translations: {
+    locale: string;
+    name: string;
+    tagline: string | null;
+    description: string | null;
+    services: string[];
+  }[];
+  categories: { category: string; isPrimary: boolean }[];
+  contacts: { channel: string; value: string; isPublic: boolean }[];
+}
+
+export async function readProviderDetail(scope: ProviderScope): Promise<ProviderDetail | null> {
+  return controlDb().provider.findFirst({
+    where: ownWhere(scope),
+    select: {
+      id: true,
+      slug: true,
+      legalName: true,
+      status: true,
+      governorate: true,
+      district: true,
+      city: true,
+      submittedAt: true,
+      publishedAt: true,
+      verifiedAt: true,
+      rejectedNote: true,
+      mainLocale: true,
+      addressPublic: true,
+      capacity: true,
+      since: true,
+      translations: {
+        select: { locale: true, name: true, tagline: true, description: true, services: true },
+      },
+      categories: { select: { category: true, isPrimary: true } },
+      contacts: { select: { channel: true, value: true, isPublic: true } },
+    },
+  });
 }

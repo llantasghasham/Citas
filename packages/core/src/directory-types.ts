@@ -117,4 +117,90 @@ export interface DirectoryDictionary {
   categories: Record<string, string>;
   governorates: Record<string, string>;
   districts: Record<string, string>;
+  /**
+   * El panel del proveedor.
+   *
+   * Va en el diccionario del PORTAL y no en el del producto por la misma razón
+   * que el portal: quien administra un salón en Líbano puede querer el francés,
+   * y el panel de una oficina no lo habla. Las etiquetas de las categorías, las
+   * regiones y los canales se reutilizan de arriba — son las mismas palabras y
+   * traducirlas dos veces es como acaban diciendo cosas distintas.
+   */
+  panel: {
+    title: string;
+    profile: string;
+    media: string;
+    state: string;
+    signOut: string;
+
+    legalName: string;
+    legalNameHelp: string;
+    mainLocale: string;
+    city: string;
+    address: string;
+    addressHelp: string;
+    capacity: string;
+    year: string;
+    save: string;
+    saved: string;
+
+    translationsTitle: string;
+    translationsHelp: string;
+    name: string;
+    tagline: string;
+    description: string;
+    servicesHelp: string;
+
+    categoriesTitle: string;
+    categoriesHelp: string;
+    primary: string;
+
+    contactsTitle: string;
+    contactsHelp: string;
+    public: string;
+
+    mediaHelp: string;
+    upload: string;
+    remove: string;
+    up: string;
+    down: string;
+    altText: string;
+    videoUrl: string;
+    videoHelp: string;
+    slotsLeft: string;
+
+    statusDraft: string;
+    statusPending: string;
+    statusApproved: string;
+    statusRejected: string;
+    statusSuspended: string;
+    statusHidden: string;
+    submit: string;
+    submitHelp: string;
+    rejectedNote: string;
+    reviewClock: string;
+
+    newTitle: string;
+    newHelp: string;
+    create: string;
+    noProvider: string;
+
+    errors: {
+      name: string;
+      governorate: string;
+      district: string;
+      city: string;
+      category: string;
+      tooManyCategories: string;
+      channel: string;
+      notFound: string;
+      notDraft: string;
+      tooMany: string;
+      tooBig: string;
+      notAnImage: string;
+      tooSmall: string;
+      tooManyPixels: string;
+      badVideo: string;
+    };
+  };
 }
