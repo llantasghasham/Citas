@@ -189,6 +189,34 @@ const CHECKS: Check[] = [
     why: 'sin alguien a quien responder no hay reclamación: hay un botón anónimo para tumbar las fotos de un competidor',
   },
   {
+    what: 'el tope de diez imágenes lo impide la BASE',
+    /**
+     * Un tope de filas no lo expresa un índice único... salvo que cada fila
+     * ocupe un HUECO numerado. `slot` va del cero al nueve y es único por
+     * proveedor, así que la undécima imagen no tiene dónde ponerse.
+     *
+     * Esto está aquí porque la prueba de concurrencia NO servía: pasaba igual
+     * con el bloqueo quitado, porque Prisma resulta que serializa hoy esas
+     * transacciones. Lo que sí se puede comprobar sin depender de ganar una
+     * carrera es que el índice EXISTE — que es lo que se hace con los demás
+     * índices parciales de este proyecto.
+     */
+    sql: `SELECT indexdef FROM pg_indexes
+           WHERE tablename = 'ProviderMedia' AND indexname = 'ProviderMedia_slot_key'`,
+    expect: (rows) => {
+      const def = String(rows[0]?.['indexdef'] ?? '');
+      return def.includes('UNIQUE') && def.includes('slot') && def.includes("kind = 'image'");
+    },
+    why: 'con una cuenta previa, dos subidas a la vez leen las dos «van nueve» y dejan once',
+  },
+  {
+    what: 'una imagen ocupa un hueco del 0 al 9 y un vídeo ninguno',
+    sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname = 'ProviderMedia_slot_shape'`,
+    expect: (rows) => String(rows[0]?.['def'] ?? '').includes('CHECK'),
+    why: 'sin el rango, «hueco once» sería un hueco válido y el tope no sería un tope',
+  },
+  {
     what: 'el mapa de un proveedor exige dirección pública',
     sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
            WHERE conname = 'Provider_map_needs_address'`,

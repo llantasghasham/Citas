@@ -1804,6 +1804,11 @@ model ProviderMedia {
   hiddenReason MediaHiddenReason?
   /// El orden que decide el proveedor: qué foto va primera es media portada.
   sortOrder Int @default(0)
+  /// El HUECO, del 0 al 9, único por proveedor. Es el tope de diez, y lo impide
+  /// la base: la undécima imagen no tiene dónde ponerse. No es el orden —eso es
+  /// `sortOrder`, que se intercambia y por eso no puede llevar índice único—.
+  /// Nulo en un vídeo, que no ocupa hueco.
+  slot Int?
 
   createdAt   DateTime  @default(now())
   publishedAt DateTime?

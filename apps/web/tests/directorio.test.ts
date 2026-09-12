@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 
+import { randomUUID } from 'node:crypto';
+
+import sharp from 'sharp';
+
 import { NEVER_GRANTABLE } from '../src/lib/auth/role-config';
 import { controlDb } from '../src/lib/db/client';
 import { isDistrictOf, isGovernorate } from '../src/lib/directory/categories';
@@ -15,6 +19,16 @@ import {
   updateProvider,
 } from '../src/lib/directory/service';
 import { contactHref } from '../src/lib/directory/contacts';
+import {
+  addImage,
+  listMedia,
+  moveMedia,
+  readableMedia,
+  removeMedia,
+  setVideo,
+  MAX_IMAGES,
+} from '../src/lib/directory/media';
+import { asObjectKey, forgetStore, storeFor } from '../src/lib/storage';
 import { directoryLocaleFrom } from '../src/lib/directory/locale';
 import {
   categoryCounts,
@@ -358,6 +372,9 @@ describe('el directorio', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
       data: {
         providerId: unoId,
         kind: 'image',
+        // Una imagen ocupa un hueco; sin él la base la rechaza, que es el tope
+        // de diez visto desde abajo.
+        slot: 0,
         objectKey: `providers/${unoId}/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.webp`,
         status: 'approved',
       },
@@ -673,4 +690,301 @@ describe('la puerta del portal', () => {
     // Un canal que no está en la lista no se convierte en un enlace roto.
     assert.equal(contactHref('telegrama', 'algo'), null);
   });
+});
+
+/**
+ * Las imágenes: el tope de diez, y quién puede ver qué.
+ *
+ * Sobre el tope hay que ser preciso, porque aquí ya se contó una mentira una
+ * vez: la prueba de las doce subidas a la vez comprueba el COMPORTAMIENTO —que
+ * de doce entren diez— pero NO demuestra por sí sola que aguante una carrera.
+ * Se escribió creyendo que sí, y pasaba igual con el bloqueo quitado, porque
+ * Prisma serializa hoy esas transacciones. Una prueba que pasa con el candado
+ * puesto y quitado no está probando el candado.
+ *
+ * Lo que sostiene el tope es el índice único parcial sobre `(providerId, slot)`,
+ * y eso se comprueba donde se puede comprobar de verdad: en `npm run db:check`,
+ * mirando que el índice EXISTE sobre una base migrada desde cero. Aquí abajo se
+ * comprueba lo otro que sí es determinista — que la base RECHAZA dos imágenes
+ * en el mismo hueco— sin depender de ganar ninguna carrera.
+ */
+describe('las imágenes del directorio', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  let providerId = '';
+  let duenoId = '';
+  let ajenoId = '';
+
+  /** Una imagen de verdad, del tamaño mínimo que acepta el procesado. */
+  const foto = async (): Promise<File> => {
+    const png = await sharp({
+      create: { width: 600, height: 600, channels: 3, background: '#c9a227' },
+    })
+      .png()
+      .toBuffer();
+    return new File([new Uint8Array(png)], 'foto.png', { type: 'image/png' });
+  };
+
+  beforeEach(async () => {
+    const prisma = controlDb();
+    forgetStore();
+    await prisma.provider.deleteMany({});
+    await prisma.user.deleteMany({ where: { email: { startsWith: 'med-' } } });
+
+    const dueno = await prisma.user.create({
+      data: { email: 'med-dueno@example.com', locale: 'ar' },
+      select: { id: true },
+    });
+    const ajeno = await prisma.user.create({
+      data: { email: 'med-ajeno@example.com', locale: 'ar' },
+      select: { id: true },
+    });
+    const result = await createProvider(dueno.id, {
+      legalName: 'Salon con fotos',
+      governorate: 'beirut',
+      district: 'beirut',
+      city: 'Beirut',
+      mainLocale: 'ar',
+    });
+    assert.ok(result.ok, 'no se pudo dar de alta');
+
+    providerId = result.id;
+    duenoId = dueno.id;
+    ajenoId = ajeno.id;
+  });
+
+  it('la BASE rechaza dos imágenes en el mismo hueco', async () => {
+    // Esta es la prueba del tope, y no depende de ninguna carrera: se intenta a
+    // mano lo que haría una segunda subida que eligiera un hueco ya ocupado.
+    const prisma = controlDb();
+    const comun = {
+      providerId,
+      kind: 'image' as const,
+      mimeType: 'image/webp',
+      status: 'pending_review' as const,
+    };
+
+    await prisma.providerMedia.create({
+      data: { ...comun, slot: 0, objectKey: `providers/${providerId}/${randomUUID()}.webp` },
+    });
+
+    await assert.rejects(
+      prisma.providerMedia.create({
+        data: { ...comun, slot: 0, objectKey: `providers/${providerId}/${randomUUID()}.webp` },
+      }),
+      'la base admitió dos imágenes en el hueco 0',
+    );
+
+    // Y un hueco fuera de rango tampoco: sin eso, «hueco once» sería válido y el
+    // tope no sería un tope.
+    await assert.rejects(
+      prisma.providerMedia.create({
+        data: { ...comun, slot: 10, objectKey: `providers/${providerId}/${randomUUID()}.webp` },
+      }),
+      'la base admitió el hueco 10',
+    );
+  });
+
+  it('de doce subidas a la vez entran diez', async () => {
+    const scope = unsafeProviderScope(providerId);
+    const archivos = await Promise.all(Array.from({ length: 12 }, () => foto()));
+
+    const resultados = await Promise.all(
+      archivos.map((file) => addImage(scope, duenoId, file)),
+    );
+
+    const aceptadas = resultados.filter((one) => one.ok).length;
+    const rechazadas = resultados.filter((one) => !one.ok).length;
+    assert.equal(aceptadas, MAX_IMAGES, `se aceptaron ${aceptadas}`);
+    assert.equal(rechazadas, 12 - MAX_IMAGES);
+
+    // Y la base dice lo mismo, que es lo que de verdad se cuenta.
+    const enBase = await controlDb().providerMedia.count({
+      where: { providerId, kind: 'image' },
+    });
+    assert.equal(enBase, MAX_IMAGES);
+
+    // Las que perdieron la carrera no dejan bytes detrás: se retiran del almacén
+    // en el mismo camino que las rechaza.
+    const filas = await controlDb().providerMedia.findMany({
+      where: { providerId },
+      select: { objectKey: true },
+    });
+    const store = storeFor();
+    for (const fila of filas) {
+      const key = asObjectKey(fila.objectKey ?? '');
+      assert.ok(key !== null && (await store.head(key)) !== null, 'falta el objeto de una fila');
+    }
+  });
+
+  it('lo subido nace EN REVISIÓN y no lo ve la calle', async () => {
+    const scope = unsafeProviderScope(providerId);
+    const subida = await addImage(scope, duenoId, await foto());
+    assert.ok(subida.ok);
+
+    const fila = await controlDb().providerMedia.findUniqueOrThrow({
+      where: { id: subida.id },
+      select: { status: true, mimeType: true, width: true, height: true },
+    });
+    assert.equal(fila.status, 'pending_review');
+    // Recodificada: entró un PNG y se guarda WEBP.
+    assert.equal(fila.mimeType, 'image/webp');
+    assert.equal(fila.width, 600);
+    assert.equal(fila.height, 600);
+
+    const nadie = { userId: null, isSuperadmin: false, canModerate: false };
+    assert.equal(await readableMedia(subida.id, nadie, 'full'), null);
+    // Su dueño sí la ve: es la suya y la tiene que poder mirar antes de que la
+    // aprueben.
+    assert.notEqual(
+      await readableMedia(subida.id, { ...nadie, userId: duenoId }, 'full'),
+      null,
+    );
+    // Quien modera también, que es de lo que va moderar.
+    assert.notEqual(await readableMedia(subida.id, { ...nadie, canModerate: true }, 'full'), null);
+    // Y alguien de fuera con cuenta, no.
+    assert.equal(await readableMedia(subida.id, { ...nadie, userId: ajenoId }, 'full'), null);
+  });
+
+  it('suspender el negocio saca sus fotos de la calle, aunque estén aprobadas', async () => {
+    const prisma = controlDb();
+    const scope = unsafeProviderScope(providerId);
+    const subida = await addImage(scope, duenoId, await foto());
+    assert.ok(subida.ok);
+
+    await prisma.providerMedia.update({
+      where: { id: subida.id },
+      data: { status: 'approved', publishedAt: new Date() },
+    });
+    await prisma.provider.update({
+      where: { id: providerId },
+      data: { status: 'approved', publishedAt: new Date() },
+    });
+
+    const nadie = { userId: null, isSuperadmin: false, canModerate: false };
+    assert.notEqual(await readableMedia(subida.id, nadie, 'full'), null);
+
+    // Las DOS cosas tienen que estar aprobadas. Con solo la imagen, suspender un
+    // negocio le dejaría la galería sirviéndose.
+    await prisma.provider.update({ where: { id: providerId }, data: { status: 'suspended' } });
+    assert.equal(await readableMedia(subida.id, nadie, 'full'), null);
+  });
+
+  it('la miniatura es otro objeto, y existe', async () => {
+    const scope = unsafeProviderScope(providerId);
+    const subida = await addImage(scope, duenoId, await foto());
+    assert.ok(subida.ok);
+
+    const conModerador = { userId: null, isSuperadmin: false, canModerate: true };
+    const grande = await readableMedia(subida.id, conModerador, 'full');
+    const chica = await readableMedia(subida.id, conModerador, 'thumb');
+    assert.ok(grande !== null && chica !== null);
+    assert.notEqual(grande.key, chica.key);
+
+    const store = storeFor();
+    const bytesGrande = await store.get(grande.key);
+    const bytesChica = await store.get(chica.key);
+    assert.ok(bytesGrande !== null && bytesChica !== null);
+    assert.ok(bytesChica.body.byteLength < bytesGrande.body.byteLength);
+  });
+
+  it('quitar una borra la fila Y el objeto, y una de otro negocio no se toca', async () => {
+    const scope = unsafeProviderScope(providerId);
+    const subida = await addImage(scope, duenoId, await foto());
+    assert.ok(subida.ok);
+
+    const fila = await controlDb().providerMedia.findUniqueOrThrow({
+      where: { id: subida.id },
+      select: { objectKey: true, thumbKey: true },
+    });
+    const store = storeFor();
+    const key = asObjectKey(fila.objectKey ?? '');
+    const thumb = asObjectKey(fila.thumbKey ?? '');
+    assert.ok(key !== null && thumb !== null);
+
+    // Con el ámbito de OTRO negocio no encuentra fila, en vez de encontrarla y
+    // borrarla.
+    const otro = await createProvider(ajenoId, {
+      legalName: 'Otro salon',
+      governorate: 'beirut',
+      district: 'beirut',
+      city: 'Beirut',
+      mainLocale: 'ar',
+    });
+    assert.ok(otro.ok);
+    assert.deepEqual(await removeMedia(unsafeProviderScope(otro.id), ajenoId, subida.id), {
+      ok: false,
+      problems: ['notFound'],
+    });
+    assert.notEqual(await store.head(key), null);
+
+    assert.deepEqual(await removeMedia(scope, duenoId, subida.id), { ok: true });
+    assert.equal(await controlDb().providerMedia.count({ where: { providerId } }), 0);
+    assert.equal(await store.head(key), null);
+    assert.equal(await store.head(thumb), null);
+  });
+
+  it('subir y bajar intercambia el orden, y en el extremo no hace nada', async () => {
+    const scope = unsafeProviderScope(providerId);
+    const uno = await addImage(scope, duenoId, await foto());
+    const dos = await addImage(scope, duenoId, await foto());
+    assert.ok(uno.ok && dos.ok);
+
+    const orden = async (): Promise<string[]> =>
+      (await listMedia(scope)).filter((one) => one.kind === 'image').map((one) => one.id);
+
+    assert.deepEqual(await orden(), [uno.id, dos.id]);
+    assert.deepEqual(await moveMedia(scope, dos.id, 'up'), { ok: true });
+    assert.deepEqual(await orden(), [dos.id, uno.id]);
+
+    // Ya está arriba del todo: no es un error, es que no hay a dónde.
+    assert.deepEqual(await moveMedia(scope, dos.id, 'up'), { ok: true });
+    assert.deepEqual(await orden(), [dos.id, uno.id]);
+  });
+
+  it('el vídeo es UNO, de un sitio conocido, y vaciar lo quita', async () => {
+    const scope = unsafeProviderScope(providerId);
+
+    // Una dirección cualquiera no entra: un `<iframe>` a una página cualquiera
+    // en la ficha de un salón ejecuta lo que quiera en nuestro dominio.
+    assert.deepEqual(await setVideo(scope, duenoId, 'https://malo.example/v'), {
+      ok: false,
+      problems: ['badVideo'],
+    });
+    assert.deepEqual(await setVideo(scope, duenoId, 'http://youtube.com/watch?v=x'), {
+      ok: false,
+      problems: ['badVideo'],
+    });
+
+    assert.deepEqual(await setVideo(scope, duenoId, 'https://www.youtube.com/watch?v=abc'), {
+      ok: true,
+    });
+    const primeros = (await listMedia(scope)).filter((one) => one.kind === 'video');
+    assert.equal(primeros.length, 1);
+
+    // Poner otro REEMPLAZA: uno, no dos.
+    assert.deepEqual(await setVideo(scope, duenoId, 'https://vimeo.com/12345'), { ok: true });
+    const segundos = (await listMedia(scope)).filter((one) => one.kind === 'video');
+    assert.equal(segundos.length, 1);
+    assert.match(segundos[0]?.externalUrl ?? '', /vimeo\.com/);
+
+    assert.deepEqual(await setVideo(scope, duenoId, '  '), { ok: true });
+    assert.equal((await listMedia(scope)).filter((one) => one.kind === 'video').length, 0);
+  });
+
+  it('el historial anota los bytes, jamás el nombre del archivo', async () => {
+    const scope = unsafeProviderScope(providerId);
+    const subida = await addImage(scope, duenoId, await foto());
+    assert.ok(subida.ok);
+
+    const linea = await controlDb().auditLog.findFirst({
+      where: { action: 'provider.media.upload', entityId: providerId },
+      select: { metadata: true },
+    });
+    const texto = JSON.stringify(linea?.metadata ?? {});
+    assert.match(texto, /bytes/);
+    assert.doesNotMatch(texto, /foto\.png/);
+  });
+
+  void fixture;
 });
