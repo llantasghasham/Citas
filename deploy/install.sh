@@ -185,6 +185,19 @@ ENV
   ok "apps/web/.env creado (600, dueño $APP_USER) — la contraseña no se muestra"
 fi
 
+# Dar de alta una oficina crea SU PROPIA base (`CREATE DATABASE … TEMPLATE`), y
+# eso lo hace la aplicación desde un botón del panel, no un administrador con
+# psql delante. Así que el usuario de la base tiene que poder crear bases.
+#
+# Va FUERA del `if` de arriba a propósito: una instalación que ya existe no pasa
+# por ahí —su `.env` ya está y no se toca— y sin este permiso
+# `npm run db:fleet -- migrar` muere al crear la plantilla y se lleva por delante
+# el despliegue entero. Ya pasó una vez.
+#
+# `ALTER ROLE` es idempotente: repetirlo no hace nada.
+sudo -u postgres psql -qc "ALTER ROLE \"$DB_USER\" CREATEDB;" \
+  || aviso "no se pudo dar CREATEDB a $DB_USER — dar de alta oficinas fallará"
+
 # ---------------------------------------------------------------- 5. compilar
 
 paso "Instalando dependencias y compilando (tarda unos minutos)"

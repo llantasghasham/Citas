@@ -285,6 +285,7 @@ export interface Dictionary {
     save: string;
     saved: string;
     forAct: string;
+    perAct: string;
     keys: {
       diet: string;
       transport: string;

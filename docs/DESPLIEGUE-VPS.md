@@ -322,5 +322,18 @@ systemctl restart citas
 >
 > Después, `npm run db:fleet -- estado` dice si alguna se quedó atrás, con las
 > atrasadas arriba y en rojo.
+>
+> Dos cosas que `db:fleet` necesita y que no son obvias, porque las dos
+> costaron un despliegue:
+>
+> 1. **Lee `apps/web/.env` él solo.** No se ejecuta bajo systemd —que le pasaría
+>    el archivo con `EnvironmentFile`— sino desde una shell, así que carga el
+>    `.env` como hace `prisma7.config.ts`. Sin eso moría con «DATABASE_URL no
+>    está puesta» en un servidor donde está puesta.
+> 2. **El usuario de la base tiene que poder crear bases** (`ALTER ROLE
+>    citas_app CREATEDB`). Dar de alta una oficina es `CREATE DATABASE …
+>    TEMPLATE`, y eso lo hace la aplicación desde un botón del panel. El
+>    instalador lo concede ya; una instalación anterior lo recibe la primera vez
+>    que se vuelve a ejecutar.
 
 `db:deploy` solo aplica migraciones nuevas; nunca borra datos.

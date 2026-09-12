@@ -1125,6 +1125,7 @@
     "save": "Save",
     "saved": "Noted.",
     "forAct": "For {act} only",
+    "perAct": "Say something different for one act",
     "keys": {
       "diet": "At the table",
       "transport": "Getting there",

@@ -118,7 +118,7 @@ export async function GuestPreferences({
 
       {acts.length > 1 && (
         <details className="border border-[color:var(--inv-accent)] p-4">
-          <summary className="cursor-pointer text-sm">{copy.forAct.replace('{act}', '…')}</summary>
+          <summary className="cursor-pointer text-sm">{copy.perAct}</summary>
           <div className="flex flex-col gap-5 pt-4">
             {acts.map((act) => (
               <form

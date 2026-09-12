@@ -1125,6 +1125,7 @@
     "save": "Guardar",
     "saved": "Anotado.",
     "forAct": "Só para {act}",
+    "perAct": "Dizer algo diferente para um ato",
     "keys": {
       "diet": "À mesa",
       "transport": "Como chega",

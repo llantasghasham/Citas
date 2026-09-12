@@ -1,3 +1,11 @@
+// `DATABASE_URL` vive en `apps/web/.env`, y esto se llama a mano y desde el
+// instalador —no desde systemd, que sí le pasa el archivo con `EnvironmentFile`—
+// así que el archivo hay que leerlo aquí. Sin esta línea, `npm run db:fleet --
+// migrar` moría con «DATABASE_URL no está puesta» en un servidor donde está
+// puesta, y se llevó por delante un despliegue entero. Es lo mismo que hace
+// `prisma7.config.ts`, por lo mismo.
+import 'dotenv/config';
+
 import { execFileSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
