@@ -880,6 +880,42 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   saltaba ahí mismo aunque los mensajes se estuvieran borrando en la misma
   orden. Prisma no sabe declararlo, así que vive en el SQL.
 
+### El almacén de imágenes del directorio
+- Las imágenes de un proveedor NO van a PostgreSQL. Entran por el puerto
+  `ObjectStore` (`lib/storage/`), con dos adaptadores: uno compatible con S3
+  —R2, Amazon, B2, MinIO: solo cambian las variables de entorno— y uno en
+  memoria para desarrollo y pruebas, que en producción SE NIEGA a arrancar. La
+  base guarda la llave, el tipo, los bytes, las medidas, el texto alternativo y
+  el estado de moderación; ni un byte de imagen.
+- La subida va del navegador AL SERVIDOR, y el servidor escribe en el almacén.
+  Una dirección firmada entregada al navegador significa que el servidor no ve
+  los bytes, y entonces no puede quitar el EXIF ni las coordenadas GPS, ni
+  recodificar, ni comprobar que lo que llegó es una imagen: lo que quedaría
+  guardado es la foto del móvil tal cual, con la casa de alguien dentro. Por eso
+  el puerto NO tiene una función que firme una escritura — no se puede usar mal
+  lo que no existe.
+- La firma (AWS Signature V4) está escrita con `node:crypto` y se comprueba
+  contra el VECTOR DE PRUEBA OFICIAL de AWS. Es la única forma honesta de saber
+  si una firma hecha a mano es correcta: si coincide con la que publica quien
+  define el algoritmo, el almacén va a aceptar nuestras peticiones.
+- La llave la ACUÑA el servidor (`objectKeyFor`), con el `providerId` dentro y un
+  UUID: nunca el nombre del archivo de quien sube —es texto de fuera metido en
+  una ruta, y encima cuenta la carpeta, la cámara y a veces el nombre del
+  cliente—. `ObjectKey` es un tipo marcado, como `TenantScope`, y su forma se
+  valida en la frontera como `assertDatabaseName`: un `..` no puede salirse del
+  sitio de un proveedor.
+- El puerto no sabe de proveedores ni de permisos: es un almacén de bytes. Quién
+  puede escribir qué lo decide la capa de arriba con su ámbito resuelto. Y no
+  tiene `list()`, que es la llamada que se paga caro el día que alguien la mete
+  en un bucle.
+- SVG PROHIBIDO: es un documento XML que admite `<script>`, y no hay ninguna
+  razón para aceptarlo en la foto de un salón. HEIC sí, porque es lo que sale de
+  un iPhone. Todo sale recodificado a WEBP, sin metadatos, con su miniatura.
+- Las seis variables (`STORAGE_*`) viven en el ENTORNO y no en el panel, como
+  `DATABASE_URL` y la llave. La secreta se acepta cifrada (`..._ENC`) y en claro
+  solo fuera de producción. Una dirección de almacén editable desde una pantalla
+  es la misma puerta que hubo que cerrar con la del servicio de WhatsApp.
+
 ### Render
 - El PNG se genera UNA vez por versión y se guarda (`Render`), porque esa URL es
   también la vista previa que pide WhatsApp: sin caché, cada invitado del grupo

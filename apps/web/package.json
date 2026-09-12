@@ -20,7 +20,7 @@
     "payments:reconcile": "tsx scripts/reconcile-payments.ts",
     "whatsapp:reminders": "tsx scripts/send-reminders.ts",
     "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts",
-    "test:unit": "node --import tsx --test tests/sinpe.test.ts tests/tiempo.test.ts tests/validacion.test.ts",
+    "test:unit": "node --import tsx --test tests/almacen.test.ts tests/sinpe.test.ts tests/tiempo.test.ts tests/validacion.test.ts",
     "test:integration": "node scripts/test-integration.mjs",
     "brand:build": "tsx scripts/build-brand.ts",
     "sinpe:check": "tsx scripts/check-sinpe.ts",
