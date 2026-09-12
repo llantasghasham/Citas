@@ -358,7 +358,7 @@ cat > "$TIMER_REC" <<UNIT
 Description=Citas — repaso de cobros pendientes, cada cinco minutos
 
 [Timer]
-# `OnCalendar` y no `OnUnitActiveSec`, porque `Persistent=true` SOLO tiene
+# \`OnCalendar\` y no \`OnUnitActiveSec\`, porque \`Persistent=true\` SOLO tiene
 # efecto con el primero: con el segundo, el comentario prometía recuperar las
 # ejecuciones perdidas y systemd no hacía tal cosa.
 OnCalendar=*:0/5
@@ -414,7 +414,7 @@ cat > "$TIMER_REM" <<UNIT
 Description=Citas — recordatorios, cada cuarto de hora
 
 [Timer]
-# Ver arriba: `Persistent` solo cuenta con `OnCalendar`.
+# Ver arriba: \`Persistent\` solo cuenta con \`OnCalendar\`.
 OnCalendar=*:0/15
 Persistent=true
 RandomizedDelaySec=120

@@ -17,6 +17,7 @@
     "db:fleet": "npm run db:fleet --workspace @citas/web --",
     "db:split": "npm run db:split --workspace @citas/web --",
     "db:check": "npm run db:check --workspace @citas/web",
+    "verify:e2e": "npm run verify:e2e --workspace @citas/web",
     "db:seed": "npm run db:seed --workspace @citas/web",
     "db:studio": "npm run db:studio --workspace @citas/web",
     "mobile": "npm run start --workspace @citas/mobile",

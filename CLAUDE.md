@@ -917,6 +917,8 @@ npm run lint:rtl   # guardia de CSS lógico (RTL)
 npm run lint:planes # guardia de la frontera: cada consulta en su base
 npm run brand:build # redibuja el logo, los iconos y los de la app móvil
 npm run db:check   # aplica las migraciones en una base nueva y comprueba el esquema
+npm run verify:e2e # el recorrido entero contra la base: evento, actos, invitados,
+                   # QR, puerta, exportación y el aislamiento entre dos oficinas
 npm run db:fleet   # la flota: -- migrar | estado | crear <subdominio>
 npm run db:split   # mueve cada oficina a su base: -- copiar | limpiar
 npm run sinpe:check # revisa los buzones de SINPE (lo llama el temporizador)
@@ -940,6 +942,14 @@ npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
   como dice el código. «Escritas» y «funcionan» no es lo mismo, y dos de este
   proyecto lo demostraron: la de las mesas reventaba al quitar una, y la de la
   cadena de oficina impedía borrar una oficina entera.
+- `npm run verify:e2e` es lo que se enseña cuando alguien pide una verificación
+  y no un resumen: hace el recorrido entero —crear el evento, los actos,
+  importar la lista pegada, repartir por grupos, abrir la invitación con y sin
+  enlace personal, responder, las preferencias, el QR, la puerta, el CSV— y
+  termina intentando TODO eso desde la oficina de al lado, que no encuentra
+  nada. Llama a las mismas funciones que las pantallas, así que no puede decir
+  que algo funciona si en el panel no funcionaría. Crea dos oficinas de prueba y
+  las borra al terminar.
 - Seis frentes, los que costaron dinero o confianza: el cobro y su liquidación,
   la concurrencia de la cola de WhatsApp, el aislamiento entre oficinas, las
   fechas con el calendario —que ahora se comprueban contra el CALENDARIO y no

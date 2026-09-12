@@ -23,6 +23,7 @@
     "brand:build": "tsx scripts/build-brand.ts",
     "sinpe:check": "tsx scripts/check-sinpe.ts",
     "db:check": "tsx scripts/check-migrations.ts",
+    "verify:e2e": "tsx scripts/e2e-verificacion.ts",
     "db:fleet": "tsx scripts/fleet.ts",
     "db:split": "tsx scripts/split.ts",
     "lint:planes": "node scripts/check-planes.mjs"
