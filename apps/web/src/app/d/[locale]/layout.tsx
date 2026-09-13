@@ -48,6 +48,9 @@ export default async function DirectoryLayout({ children, params }: Props) {
             {copy.nav.home}
           </Link>
           <nav className="flex min-w-0 flex-wrap gap-x-5 gap-y-1 text-sm">
+            <Link href={`/d/${locale}/fiestas`} className="hover:underline">
+              {copy.nav.parties}
+            </Link>
             <Link href={`/d/${locale}/proveedores`} className="hover:underline">
               {copy.nav.providers}
             </Link>

@@ -7,6 +7,7 @@ import { WhatsappSendSection } from '@/components/panel/WhatsappSendSection';
 import { VersionsSection } from '@/components/panel/VersionsSection';
 import { Field, FIELD_CLASS } from '@/components/create/Field';
 import { getAdminContext, canonicalOrigin } from '@/lib/admin/context';
+import { panelLocale } from '@/lib/directory/session';
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import { enabledMethods, listPackageOrders } from '@/lib/billing/checkout';
 import { actorTimezone } from '@/lib/time/actor';
@@ -18,7 +19,15 @@ import { COUNTRY_CODES } from '@/lib/guests/phone';
 import { toWaMe } from '@/lib/guests/phone';
 import { listGuestsWithLinks } from '@/lib/repositories/guests';
 import { displayFont, latinOnly } from '@/lib/typography';
-import { findCountry, getDictionary, interpolate, plural, LOCALES, type Locale } from '@citas/core';
+import {
+  findCountry,
+  getDictionary,
+  getDirectoryDictionary,
+  interpolate,
+  plural,
+  LOCALES,
+  type Locale,
+} from '@citas/core';
 
 interface PageProps {
   params: Promise<{ eventId: string }>;
@@ -70,6 +79,9 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
   const addedLocale = LOCALES.find((candidate) => candidate === version);
   const { dictionary, locale } = await getAdminContext(session.tenantId);
   const copy = dictionary.admin.guests;
+  // El directorio habla cinco idiomas y tiene su propio diccionario; el enlace a
+  // publicar la fiesta sale de ahí para no escribir la misma palabra dos veces.
+  const publicacion = getDirectoryDictionary(panelLocale(undefined, session.locale)).listing;
 
   const event = await listGuestsWithLinks(scopeOf(session), eventId);
   if (event === null) redirect('/panel');
@@ -214,6 +226,16 @@ export default async function EventGuestsPage({ params, searchParams }: PageProp
             href={`/panel/eventos/${eventId}/mesas`}
           >
             {dictionary.admin.tables.link}
+          </a>
+          {/* Publicar la fiesta en el directorio. Va el último porque es lo que
+              se hace DESPUÉS: lo de arriba organiza la boda, esto la enseña. Y
+              lleva a otra pantalla que explica que lo que se publica es una
+              copia — desde aquí no cabe explicarlo. */}
+          <a
+            className="text-sm underline text-[#8a6c22]"
+            href={`/panel/eventos/${eventId}/publicacion`}
+          >
+            {publicacion.title}
           </a>
         </div>
 

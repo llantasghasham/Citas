@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { getSession, sessionCan } from '@/lib/auth/session';
-import { mediaQueue, reviewQueue } from '@/lib/directory/moderation';
+import { decideListingAction } from './actions';
+import { listingQueue, mediaQueue, reviewQueue } from '@/lib/directory/moderation';
 import { panelLocale } from '@/lib/directory/session';
 import { actorTimezone } from '@/lib/time/actor';
 import { formatDateTime } from '@/lib/time/display';
@@ -30,10 +31,11 @@ export default async function ModerationQueuePage() {
   const locale = panelLocale(undefined, session.locale);
   const copy = getDirectoryDictionary(locale);
   const fechaLocale = locale === 'fr' ? 'en' : locale;
-  const [zone, perfiles, medios] = await Promise.all([
+  const [zone, perfiles, medios, fiestas] = await Promise.all([
     actorTimezone(session),
     reviewQueue(),
     mediaQueue(),
+    listingQueue(),
   ]);
 
   return (
@@ -85,6 +87,85 @@ export default async function ModerationQueuePage() {
                     {one.translations}
                   </span>
                 </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Las fiestas van con los proveedores porque es la MISMA promesa y la
+          atiende la misma persona. Lo que aquí se lee y en la de proveedores no
+          es la AUTORIZACIÓN: la fiesta no es de la oficina que la manda. */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg">
+          {copy.listing.browse}
+          <span className="text-sm text-[#6a6456]"> ({fiestas.length})</span>
+        </h2>
+
+        {fiestas.length === 0 ? (
+          <p className="text-sm text-[#6a6456]">{copy.moderation.empty}</p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {fiestas.map((one) => (
+              <li
+                key={one.id}
+                className={`flex flex-col gap-2 border p-3 ${
+                  one.overdue ? 'border-[#8a3a22] bg-[#fbeee9]' : 'border-[#ddd6c6] bg-white'
+                }`}
+              >
+                <span className="flex flex-wrap items-baseline gap-x-3">
+                  <span className="text-base">{one.title}</span>
+                  <span className="text-xs text-[#8a6c22]">
+                    {copy.listing.eventTypes[one.eventType as 'wedding']}
+                  </span>
+                  {one.overdue ? (
+                    <span className="text-xs text-[#8a3a22]">{copy.moderation.overdue}</span>
+                  ) : (
+                    <span className="text-xs text-[#6a6456]">
+                      {copy.moderation.hoursLeft.replace('{count}', String(one.hoursLeft))}
+                    </span>
+                  )}
+                </span>
+                <span className="text-xs text-[#6a6456]">
+                  {one.city} · {copy.governorates[one.governorate] ?? one.governorate} ·{' '}
+                  {formatDateTime(one.submittedAt, fechaLocale, zone)}
+                </span>
+
+                <div className="border-s-2 border-[#8a6c22] ps-3 text-xs text-[#4b4638]">
+                  <p className="text-[#6a6456]">
+                    {copy.listing.authorizedBy}: {one.authorizedBy ?? '—'}
+                  </p>
+                  <p className="whitespace-pre-line">{one.authorizationText ?? '—'}</p>
+                </div>
+
+                <form action={decideListingAction} className="flex flex-col gap-2">
+                  <input type="hidden" name="listingId" value={one.id} />
+                  <textarea
+                    name="note"
+                    rows={2}
+                    maxLength={1000}
+                    placeholder={copy.moderation.note}
+                    className="w-full border border-[#ddd6c6] bg-white px-3 py-2 text-sm"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="submit"
+                      name="decision"
+                      value="approved"
+                      className="bg-[#2f6b3a] px-4 py-2 text-sm text-[#fbf6ec] hover:opacity-90"
+                    >
+                      {copy.moderation.approve}
+                    </button>
+                    <button
+                      type="submit"
+                      name="decision"
+                      value="rejected"
+                      className="bg-[#8a3a22] px-4 py-2 text-sm text-[#fbf6ec] hover:opacity-90"
+                    >
+                      {copy.moderation.reject}
+                    </button>
+                  </div>
+                </form>
               </li>
             ))}
           </ul>

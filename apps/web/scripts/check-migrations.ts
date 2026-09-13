@@ -217,6 +217,38 @@ const CHECKS: Check[] = [
     why: 'sin el rango, «hueco once» sería un hueco válido y el tope no sería un tope',
   },
   {
+    what: 'una fiesta publicada solo guarda la fecha si la publica exacta',
+    /**
+     * Guardarla «por si acaso» con el modo en `month` es guardar el día de la
+     * boda de alguien que pidió que no se publicara. Y la fecha exacta de una
+     * fiesta que aún no ha ocurrido es una invitación a que aparezca gente.
+     */
+    sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname = 'PublicListing_date_mode'`,
+    expect: (rows) => String(rows[0]?.['def'] ?? '').includes('CHECK'),
+    why: 'la fecha exacta de una fiesta que no ha ocurrido es una invitación a que aparezca gente',
+  },
+  {
+    what: 'una fiesta no sale del borrador sin autorización registrada',
+    sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
+           WHERE conname = 'PublicListing_needs_authorization'`,
+    expect: (rows) => String(rows[0]?.['def'] ?? '').includes('CHECK'),
+    why: 'la fiesta no es de la oficina: sin quién, cuándo y con qué texto, no se publica',
+  },
+  {
+    what: 'una fiesta publicada NO apunta al evento privado',
+    /**
+     * `sourceEventId` es un TEXTO y no una clave foránea, a propósito. Con la
+     * clave, la publicación y la boda serían lo mismo otra vez y una consulta
+     * pública tendría camino hasta los invitados; sin ella, no lo tiene.
+     */
+    sql: `SELECT count(*)::int AS n FROM pg_constraint c
+            JOIN pg_class origen ON origen.oid = c.conrelid
+           WHERE c.contype = 'f' AND origen.relname = 'PublicListing'`,
+    expect: (rows) => rows[0]?.['n'] === 0,
+    why: 'con una clave foránea al evento, la publicación y la boda vuelven a ser lo mismo',
+  },
+  {
     what: 'el mapa de un proveedor exige dirección pública',
     sql: `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint
            WHERE conname = 'Provider_map_needs_address'`,

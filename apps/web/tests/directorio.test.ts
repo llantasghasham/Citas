@@ -25,6 +25,16 @@ import {
 } from '../src/lib/directory/clock';
 import { contactHref } from '../src/lib/directory/contacts';
 import {
+  approvedListingSlugs,
+  createListing,
+  deleteListing,
+  listPublicListings,
+  listingBySlug,
+  listingForEvent,
+  submitListing,
+} from '../src/lib/directory/listings';
+import { tenantScope, type TenantScope } from '../src/lib/db/tenant';
+import {
   fileReport,
   openReports,
   purgeReportIps,
@@ -32,6 +42,8 @@ import {
 } from '../src/lib/directory/reports';
 import {
   approveProvider,
+  decideListing,
+  listingQueue,
   rejectProvider,
   restoreProvider,
   reviewQueue,
@@ -61,7 +73,7 @@ import {
   myProviders,
   panelLocale,
 } from '../src/lib/directory/session';
-import { providerSlug } from '../src/lib/directory/slug';
+import { listingSlug, providerSlug } from '../src/lib/directory/slug';
 
 import {
   CATEGORIES,
@@ -1565,6 +1577,204 @@ describe('el mapa del sitio', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () 
     // Y suspender lo saca del mapa igual que lo saca del listado.
     await prisma.provider.update({ where: { id: publicado.id }, data: { status: 'suspended' } });
     assert.deepEqual(await approvedSlugs(), []);
+  });
+
+  void fixture;
+});
+
+/**
+ * La publicación de una fiesta.
+ *
+ * Lo que se comprueba es la decisión de fondo: que sea una COPIA. Si la
+ * publicación fuera una marca dentro de `Event`, lo único que separaría la lista
+ * de invitados de la calle sería que ninguna consulta pública se olvidara de un
+ * `where` — y una red que depende de que nadie se olvide no es una red.
+ */
+describe('publicar una fiesta', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  let scope: TenantScope;
+  let otraOficina: TenantScope;
+  let userId = '';
+  let moderadorId = '';
+  const eventId = 'evento-de-prueba-publicacion';
+
+  const buenos = {
+    title: 'Zaffe en Jbeil',
+    description: 'Una boda de trescientos.',
+    locale: 'ar',
+    eventType: 'wedding' as const,
+    dateMode: 'month',
+    date: '',
+    governorate: 'mount_lebanon',
+    district: 'jbeil',
+    city: 'Jbeil',
+    venueName: '',
+    contactMode: 'none',
+  };
+  const permiso = { by: 'Rami y Sara', text: 'Autorizamos publicar las fotos y el nombre.' };
+
+  beforeEach(async () => {
+    const prisma = controlDb();
+    await prisma.publicListing.deleteMany({});
+    await prisma.user.deleteMany({ where: { email: { startsWith: 'pub-fiesta-' } } });
+
+    const tenant = await prisma.tenant.findFirstOrThrow({
+      where: { isRoot: true },
+      select: { id: true, databaseName: true },
+    });
+    scope = tenantScope(tenant.id, tenant.databaseName);
+    // Una oficina que no existe sirve igual para lo que se comprueba: que su
+    // ámbito no encuentre lo de la otra.
+    otraOficina = tenantScope('oficina-de-al-lado', null);
+
+    const user = await prisma.user.create({
+      data: { email: 'pub-fiesta-a@example.com', locale: 'ar' },
+      select: { id: true },
+    });
+    const mod = await prisma.user.create({
+      data: { email: 'pub-fiesta-mod@example.com', locale: 'es', isSuperadmin: true },
+      select: { id: true },
+    });
+    userId = user.id;
+    moderadorId = mod.id;
+  });
+
+  it('nace en borrador y no sale a la calle hasta que alguien la aprueba', async () => {
+    const creada = await createListing(scope, userId, eventId, buenos, permiso);
+    assert.ok(creada.ok);
+
+    // Ni en el listado ni por su dirección.
+    assert.deepEqual(await listPublicListings('ar'), []);
+    assert.equal(await listingBySlug(creada.slug, 'ar'), null);
+
+    assert.deepEqual(await submitListing(scope, userId, creada.id), { ok: true });
+    assert.equal((await listingQueue()).length, 1);
+    assert.deepEqual(await listPublicListings('ar'), []);
+
+    assert.deepEqual(await decideListing(creada.id, moderadorId, 'approved', ''), { ok: true });
+    const publicadas = await listPublicListings('ar');
+    assert.equal(publicadas.length, 1);
+    assert.equal(publicadas[0]?.title, 'Zaffe en Jbeil');
+    assert.notEqual(await listingBySlug(creada.slug, 'ar'), null);
+  });
+
+  it('sin autorización no se crea, y la base tampoco la deja salir del borrador', async () => {
+    assert.deepEqual(await createListing(scope, userId, eventId, buenos, { by: '', text: '' }), {
+      ok: false,
+      problems: ['authorization'],
+    });
+    // Un texto de dos palabras tampoco: un permiso que no se puede enseñar no
+    // sirve para defenderse de una queja.
+    assert.deepEqual(
+      await createListing(scope, userId, eventId, buenos, { by: 'Rami', text: 'vale' }),
+      { ok: false, problems: ['authorization'] },
+    );
+
+    // Y a mano, saltándose el servicio: la base lo impide.
+    await assert.rejects(
+      controlDb().publicListing.create({
+        data: {
+          slug: 'f-sin-permiso',
+          title: 'Sin permiso',
+          eventType: 'wedding',
+          governorate: 'beirut',
+          district: 'beirut',
+          city: 'Beirut',
+          status: 'approved',
+        },
+      }),
+      /needs_authorization|violates check/i,
+    );
+  });
+
+  it('la fecha exacta se comprueba contra el CALENDARIO', async () => {
+    // Un 30 de febrero pasa el patrón y `Date.parse` lo corre al 2 de marzo.
+    assert.deepEqual(
+      await createListing(
+        scope, userId, eventId,
+        { ...buenos, dateMode: 'exact', date: '2026-02-30' },
+        permiso,
+      ),
+      { ok: false, problems: ['date'] },
+    );
+    // Y en modo `month` no se guarda ninguna fecha, aunque venga en el envío: la
+    // base lo exige.
+    const creada = await createListing(
+      scope, userId, eventId, { ...buenos, dateMode: 'month', date: '2026-06-14' }, permiso,
+    );
+    assert.ok(creada.ok);
+    const fila = await controlDb().publicListing.findUniqueOrThrow({
+      where: { id: creada.id }, select: { date: true, dateMode: true },
+    });
+    assert.equal(fila.dateMode, 'month');
+    assert.equal(fila.date, null);
+  });
+
+  it('un evento tiene UNA publicación', async () => {
+    assert.ok((await createListing(scope, userId, eventId, buenos, permiso)).ok);
+    assert.deepEqual(await createListing(scope, userId, eventId, buenos, permiso), {
+      ok: false,
+      problems: ['exists'],
+    });
+  });
+
+  it('la oficina de al lado no la ve, no la manda y no la borra', async () => {
+    const creada = await createListing(scope, userId, eventId, buenos, permiso);
+    assert.ok(creada.ok);
+
+    assert.equal(await listingForEvent(otraOficina, eventId), null);
+    assert.deepEqual(await submitListing(otraOficina, userId, creada.id), {
+      ok: false,
+      problems: ['notFound'],
+    });
+    assert.deepEqual(await deleteListing(otraOficina, userId, creada.id), {
+      ok: false,
+      problems: ['notFound'],
+    });
+    // Y la suya sigue ahí.
+    assert.notEqual(await listingForEvent(scope, eventId), null);
+  });
+
+  it('quitarla de la web la BORRA, y no deja un estado del que fiarse', async () => {
+    const creada = await createListing(scope, userId, eventId, buenos, permiso);
+    assert.ok(creada.ok);
+    await submitListing(scope, userId, creada.id);
+    await decideListing(creada.id, moderadorId, 'approved', '');
+    assert.equal((await listPublicListings('ar')).length, 1);
+
+    assert.deepEqual(await deleteListing(scope, userId, creada.id), { ok: true });
+    assert.equal(await controlDb().publicListing.count({ where: { id: creada.id } }), 0);
+    assert.deepEqual(await listPublicListings('ar'), []);
+    assert.deepEqual(await approvedListingSlugs(), []);
+  });
+
+  it('rechazar exige motivo, y suspender saca de la calle', async () => {
+    const creada = await createListing(scope, userId, eventId, buenos, permiso);
+    assert.ok(creada.ok);
+    await submitListing(scope, userId, creada.id);
+
+    assert.deepEqual(await decideListing(creada.id, moderadorId, 'rejected', ' '), {
+      ok: false,
+      problems: ['note'],
+    });
+
+    await decideListing(creada.id, moderadorId, 'approved', '');
+    assert.equal((await listPublicListings('ar')).length, 1);
+    assert.deepEqual(
+      await decideListing(creada.id, moderadorId, 'suspended', 'La pareja pidió quitarla.'),
+      { ok: true },
+    );
+    assert.deepEqual(await listPublicListings('ar'), []);
+  });
+
+  it('un nombre árabe NO se translitera, y una fiesta no se confunde con un salón', () => {
+    const arabe = listingSlug('زفاف رامي وسارة', []);
+    assert.match(arabe, /^f-[a-f0-9]{8}$/);
+    // El prefijo distingue: con el mismo, `p-3a9c…` podría ser un salón o una
+    // boda y quien lea un registro no sabría cuál.
+    assert.match(providerSlug('قاعة الأرز', []), /^p-[a-f0-9]{8}$/);
+    assert.equal(listingSlug('Zaffe in Jbeil', []), 'zaffe-in-jbeil');
   });
 
   void fixture;

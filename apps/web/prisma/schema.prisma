@@ -1706,6 +1706,7 @@ model Provider {
   reviews      ProviderReview[]
   reports      ProviderReport[]
   sessions     Session[]
+  listings     PublicListingProvider[]
 
   @@index([status, publishedAt])
   @@index([governorate, district, status])
@@ -1864,4 +1865,99 @@ model ProviderReport {
 
   @@index([providerId, status, createdAt])
   @@index([status, createdAt])
+}
+
+/// La cara PUBLICA de una fiesta, y no una marca dentro de `Event`.
+///
+/// Es una COPIA: solo los campos que se publican, escritos por una accion
+/// explicita de quien organiza. Con `isPublic` dentro del evento, lo unico que
+/// separaria la lista de invitados de la calle seria que ninguna consulta se
+/// olvidara de un `where` — la misma red que este proyecto ya rechazo para las
+/// oficinas. Ver la migracion `20260923100000_public_listing`.
+model PublicListing {
+  id     String @id @default(cuid())
+  slug   String @unique
+  /// Del conjunto del PORTAL (`DIRECTORY_LOCALES`), como las traducciones de un
+  /// proveedor. Por eso es texto y no el enum del producto.
+  locale String @default("ar")
+
+  /// El mismo tipo que un proveedor a proposito: los mismos estados, la misma
+  /// cola y la misma persona decidiendo.
+  status ProviderStatus @default(draft)
+
+  title       String
+  description String?
+  /// La portada, en el almacen de objetos.
+  coverKey String?
+
+  eventType EventType
+
+  /// La fecha exacta de una fiesta que aun no ha ocurrido es una invitacion a
+  /// que aparezca gente. Por defecto se publica el mes.
+  dateMode ListingDateMode @default(month)
+  date     DateTime?
+
+  governorate Governorate
+  district    String
+  city        String
+  /// Solo si el salon lo autoriza: que se celebrara alli es informacion suya.
+  venueName String?
+
+  contactMode ListingContactMode @default(none)
+
+  /// SIN clave foranea, y no se consulta desde lo publico. Sirve para que el
+  /// panel de la oficina sepa que su boda tiene publicacion.
+  sourceEventId String?
+  tenantId      String?
+
+  /// La fiesta no es de la oficina. Quien, cuando y CON QUE TEXTO.
+  authorizedBy      String?
+  authorizedAt      DateTime?
+  authorizationText String?
+
+  submittedAt  DateTime?
+  reviewedAt   DateTime?
+  rejectedNote String?
+  publishedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  providers PublicListingProvider[]
+
+  @@index([status, publishedAt])
+  @@index([governorate, status])
+  @@index([sourceEventId])
+}
+
+/// Quien participo en esa fiesta, y con que papel.
+model PublicListingProvider {
+  id         String @id @default(cuid())
+  listingId  String
+  providerId String
+  /// La categoria con la que participo: `wedding_hall`, `dj`, `catering`…
+  role String
+  /// Un salon puede no querer salir en la boda de otro.
+  approvedByProvider Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  listing  PublicListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  provider Provider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, providerId])
+  @@index([providerId])
+}
+
+enum ListingDateMode {
+  exact
+  month
+  season
+  hidden
+}
+
+enum ListingContactMode {
+  none
+  form
+  whatsapp
 }

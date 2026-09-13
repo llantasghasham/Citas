@@ -369,3 +369,112 @@ export async function purgeMedia(
   });
   return { ok: true };
 }
+
+// ------------------------------------------------------- las fiestas publicadas
+
+export interface ListingQueueRow {
+  id: string;
+  slug: string;
+  title: string;
+  city: string;
+  governorate: string;
+  eventType: string;
+  submittedAt: Date;
+  hoursLeft: number;
+  overdue: boolean;
+  authorizedBy: string | null;
+  authorizationText: string | null;
+}
+
+/**
+ * La cola de fiestas esperando revisión.
+ *
+ * Va con la de proveedores y con el mismo reloj: es la misma promesa y la
+ * atiende la misma persona. Lo que aquí se lee y en la de proveedores no es la
+ * AUTORIZACIÓN: la fiesta no es de la oficina que la manda, y lo primero que hay
+ * que mirar es con qué texto la autorizó quien se casa.
+ */
+export async function listingQueue(now = new Date()): Promise<ListingQueueRow[]> {
+  const rows = await controlDb().publicListing.findMany({
+    where: { status: 'pending_review', submittedAt: { not: null } },
+    orderBy: { submittedAt: 'asc' },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      city: true,
+      governorate: true,
+      eventType: true,
+      submittedAt: true,
+      authorizedBy: true,
+      authorizationText: true,
+    },
+  });
+
+  return rows.flatMap((row) => {
+    if (row.submittedAt === null) return [];
+    return [
+      {
+        id: row.id,
+        slug: row.slug,
+        title: row.title,
+        city: row.city,
+        governorate: row.governorate,
+        eventType: row.eventType,
+        submittedAt: row.submittedAt,
+        hoursLeft: hoursLeft(row.submittedAt, now),
+        overdue: isOverdue(row.submittedAt, now),
+        authorizedBy: row.authorizedBy,
+        authorizationText: row.authorizationText,
+      },
+    ];
+  });
+}
+
+/**
+ * Decidir sobre una fiesta.
+ *
+ * Igual que un proveedor: el estado y su línea de historial en la misma
+ * transacción, `publishedAt` solo la primera vez, y rechazar exige motivo.
+ * El historial va en `AuditLog` y no en `ProviderReview`: esa tabla cuelga de un
+ * proveedor y una fiesta no lo es.
+ */
+export async function decideListing(
+  listingId: string,
+  actorId: string,
+  status: 'approved' | 'rejected' | 'suspended',
+  note: string,
+): Promise<{ ok: true } | { ok: false; problems: ModerationProblem[] }> {
+  const prisma = controlDb();
+
+  const before = await prisma.publicListing.findUnique({
+    where: { id: listingId },
+    select: { status: true, publishedAt: true },
+  });
+  if (before === null) return { ok: false, problems: ['notFound'] };
+
+  const limpio = note.trim().slice(0, 1000);
+  if (status !== 'approved' && limpio.length < 5) return { ok: false, problems: ['note'] };
+
+  await prisma.publicListing.update({
+    where: { id: listingId },
+    data: {
+      status,
+      reviewedAt: new Date(),
+      rejectedNote: status === 'approved' ? null : limpio,
+      ...(status === 'approved' && before.publishedAt === null ? { publishedAt: new Date() } : {}),
+    },
+  });
+
+  await recordAudit({
+    tenantId: null,
+    actorId,
+    action: `directory.listing.${status}`,
+    entity: 'PublicListing',
+    entityId: listingId,
+    // Qué pasó y desde dónde. El motivo va en la fila, que es donde lo lee la
+    // oficina; y el texto de la autorización no se copia aquí.
+    metadata: { from: before.status, to: status },
+  });
+  return { ok: true };
+}

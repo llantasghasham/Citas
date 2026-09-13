@@ -261,5 +261,58 @@
     "history": "Historique",
     "images": "Photos",
     "languages": "Langues écrites"
+  },
+  "listing": {
+    "title": "Publier cette fête",
+    "help": "Ce qui est publié est une COPIE : corriger le mariage ensuite ne la change pas.",
+    "none": "Cette fête n'est pas publiée.",
+    "create": "Créer la publication",
+    "edit": "Modifier",
+    "submit": "Envoyer pour vérification",
+    "submitHelp": "Nous la regardons sous 24 heures ouvrées. D'ici là, elle n'apparaît pas.",
+    "remove": "Retirer du site",
+    "removeHelp": "Supprime la publication. Le mariage et ses invités ne sont pas touchés.",
+    "listingTitle": "Titre",
+    "description": "Ce qu’on raconte",
+    "eventType": "Type",
+    "eventTypes": {
+      "wedding": "Mariage",
+      "graduation": "Remise de diplôme",
+      "birthday": "Anniversaire",
+      "baptism": "Baptême",
+      "memorial": "Hommage"
+    },
+    "dateMode": "Quelle date publier",
+    "dateModes": {
+      "exact": "Le jour exact",
+      "month": "Le mois seulement",
+      "season": "La saison seulement",
+      "hidden": "Aucune"
+    },
+    "date": "Date",
+    "venueName": "Nom de la salle",
+    "venueHelp": "Seulement si la salle accepte d'être nommée. Vide ne la publie pas.",
+    "contactMode": "Comment vous joindre",
+    "contactModes": {
+      "none": "Impossible",
+      "form": "Un formulaire",
+      "whatsapp": "WhatsApp"
+    },
+    "authorizationTitle": "Autorisation",
+    "authorizedBy": "Qui autorise",
+    "authorizationText": "Avec quel texte",
+    "authorizationHelp": "La fête n'appartient pas à l'agence. Sans cela, pas de publication — et on la conserve pour pouvoir la montrer.",
+    "publicUrl": "Adresse publique",
+    "whoTookPart": "Qui y a participé",
+    "browse": "Mariages et fêtes",
+    "empty": "Rien de publié pour l'instant.",
+    "errors": {
+      "title": "Le titre manque, ou il est trop court.",
+      "date": "Cette date n'existe pas dans le calendrier.",
+      "authorization": "L'autorisation manque : qui, et avec quel texte.",
+      "exists": "Cette fête a déjà une publication.",
+      "notDraft": "Elle est déjà envoyée ou publiée.",
+      "notFound": "Introuvable."
+    }
   }
 }

@@ -1,4 +1,5 @@
 import { canonicalOriginOrNull } from '@/lib/admin/context';
+import { approvedListingSlugs } from '@/lib/directory/listings';
 import { approvedSlugs } from '@/lib/directory/public';
 import { DIRECTORY_LOCALES, isDirectoryLocale } from '@citas/core';
 
@@ -37,7 +38,7 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
   const origin = await canonicalOriginOrNull(request.headers);
   if (origin === null) return new Response(null, { status: 404 });
 
-  const providers = await approvedSlugs();
+  const [providers, listings] = await Promise.all([approvedSlugs(), approvedListingSlugs()]);
 
   const alternativas = (ruta: string): string =>
     DIRECTORY_LOCALES.map(
@@ -60,7 +61,9 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
     '        xmlns:xhtml="http://www.w3.org/1999/xhtml">',
     entrada('', null),
     entrada('/proveedores', null),
+    entrada('/fiestas', null),
     ...providers.map((one) => entrada(`/p/${one.slug}`, one.updatedAt)),
+    ...listings.map((one) => entrada(`/f/${one.slug}`, one.updatedAt)),
     '</urlset>',
   ].join('\n');
 

@@ -208,6 +208,52 @@ export interface DirectoryDictionary {
    * La moderación. Va aquí y no en el diccionario del producto porque son las
    * palabras de este módulo, y las de estado ya están escritas arriba.
    */
+  /** La publicación de una fiesta: la pantalla de la oficina y la pública. */
+  listing: {
+    title: string;
+    help: string;
+    none: string;
+    create: string;
+    edit: string;
+    submit: string;
+    submitHelp: string;
+    remove: string;
+    removeHelp: string;
+    listingTitle: string;
+    description: string;
+    eventType: string;
+    eventTypes: {
+      wedding: string;
+      graduation: string;
+      birthday: string;
+      baptism: string;
+      memorial: string;
+    };
+    dateMode: string;
+    dateModes: { exact: string; month: string; season: string; hidden: string };
+    date: string;
+    venueName: string;
+    venueHelp: string;
+    contactMode: string;
+    contactModes: { none: string; form: string; whatsapp: string };
+    authorizationTitle: string;
+    authorizedBy: string;
+    authorizationText: string;
+    authorizationHelp: string;
+    publicUrl: string;
+    whoTookPart: string;
+    browse: string;
+    empty: string;
+    errors: {
+      title: string;
+      date: string;
+      authorization: string;
+      exists: string;
+      notDraft: string;
+      notFound: string;
+    };
+  };
+
   moderation: {
     title: string;
     queue: string;

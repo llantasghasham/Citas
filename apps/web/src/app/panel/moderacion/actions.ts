@@ -6,6 +6,7 @@ import { getSession, sessionCan } from '@/lib/auth/session';
 import { resolveReport } from '@/lib/directory/reports';
 import {
   approveProvider,
+  decideListing,
   decideMedia,
   purgeMedia,
   rejectProvider,
@@ -118,4 +119,26 @@ export async function resolveReportAction(formData: FormData): Promise<void> {
   redirect(
     `/panel/moderacion/denuncias?${result.ok ? 'guardado=1' : `error=${result.problems.join(',')}`}`,
   );
+}
+
+/**
+ * Decidir sobre una fiesta publicada. Rechazar y suspender piden motivo, igual
+ * que con un proveedor: sin él, la oficina vuelve a mandar lo mismo.
+ */
+export async function decideListingAction(formData: FormData): Promise<void> {
+  const actorId = await guard();
+  const decision = String(formData.get('decision') ?? '');
+  const status =
+    decision === 'approved' || decision === 'rejected' || decision === 'suspended'
+      ? decision
+      : null;
+  if (status === null) redirect('/panel/moderacion?error=notFound');
+
+  const result = await decideListing(
+    String(formData.get('listingId') ?? ''),
+    actorId,
+    status,
+    String(formData.get('note') ?? ''),
+  );
+  redirect(`/panel/moderacion?${result.ok ? 'guardado=1' : `error=${result.problems.join(',')}`}`);
 }

@@ -261,5 +261,58 @@
     "history": "Historial",
     "images": "Fotos",
     "languages": "Idiomas escritos"
+  },
+  "listing": {
+    "title": "Publicar esta fiesta",
+    "help": "Se publica una COPIA: corregir la boda después no cambia lo publicado.",
+    "none": "Esta celebración no está publicada.",
+    "create": "Crear la publicación",
+    "edit": "Editar",
+    "submit": "Mandar a revisión",
+    "submitHelp": "La miramos en 24 horas hábiles. Hasta entonces no sale.",
+    "remove": "Quitar de la web",
+    "removeHelp": "Borra la publicación. La boda y sus invitados no se tocan.",
+    "listingTitle": "Título",
+    "description": "Qué contar",
+    "eventType": "Tipo",
+    "eventTypes": {
+      "wedding": "Boda",
+      "graduation": "Graduación",
+      "birthday": "Cumpleaños",
+      "baptism": "Bautizo",
+      "memorial": "Memorial"
+    },
+    "dateMode": "Qué fecha se publica",
+    "dateModes": {
+      "exact": "El día exacto",
+      "month": "Solo el mes",
+      "season": "Solo la temporada",
+      "hidden": "Ninguna"
+    },
+    "date": "Fecha",
+    "venueName": "Nombre del salón",
+    "venueHelp": "Solo si el salón autoriza que se diga. Vacío no lo publica.",
+    "contactMode": "Cómo contactar",
+    "contactModes": {
+      "none": "No se puede",
+      "form": "Un formulario",
+      "whatsapp": "WhatsApp"
+    },
+    "authorizationTitle": "Autorización",
+    "authorizedBy": "Quién autoriza",
+    "authorizationText": "Con qué texto lo autorizó",
+    "authorizationHelp": "La fiesta no es de la oficina. Sin esto no se publica, y se guarda para poder enseñarlo.",
+    "publicUrl": "Dirección pública",
+    "whoTookPart": "Quién participó",
+    "browse": "Bodas y fiestas",
+    "empty": "Todavía no hay ninguna publicada.",
+    "errors": {
+      "title": "Falta el título, o es demasiado corto.",
+      "date": "Esa fecha no existe en el calendario.",
+      "authorization": "Falta la autorización: quién y con qué texto.",
+      "exists": "Esta celebración ya tiene una publicación.",
+      "notDraft": "Ya está mandada o publicada.",
+      "notFound": "No se encontró."
+    }
   }
 }

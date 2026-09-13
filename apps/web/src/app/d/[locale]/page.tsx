@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
+import { ListingCard } from '@/components/directory/ListingCard';
+import { listPublicListings } from '@/lib/directory/listings';
 import { categoryCounts, governorateCounts, groupsWithCounts, listProviders } from '@/lib/directory/public';
 import { GOVERNORATE_KEYS } from '@/lib/directory/categories';
 import { getDirectoryDictionary, isDirectoryLocale, DIRECTORY_LOCALES } from '@citas/core';
@@ -36,10 +38,11 @@ export default async function DirectoryHome({ params }: Props) {
   if (!isDirectoryLocale(locale)) notFound();
 
   const copy = getDirectoryDictionary(locale);
-  const [categories, regions, featured] = await Promise.all([
+  const [categories, regions, featured, parties] = await Promise.all([
     categoryCounts(),
     governorateCounts(),
     listProviders(locale, { limit: 8 }),
+    listPublicListings(locale, { limit: 6 }),
   ]);
   const groups = groupsWithCounts(categories);
 
@@ -49,6 +52,25 @@ export default async function DirectoryHome({ params }: Props) {
         <h1 className="text-3xl">{copy.home.title}</h1>
         <p className="max-w-2xl text-sm text-[#6a6456]">{copy.home.subtitle}</p>
       </section>
+
+      {/* Las bodas y fiestas van ARRIBA, antes de las categorías: es lo que
+          hace que esto no parezca un listín de teléfonos. Quien entra a
+          organizar una boda mira primero cómo quedaron las de otros. */}
+      {parties.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-baseline gap-x-4">
+            <h2 className="text-xl">{copy.listing.browse}</h2>
+            <Link href={`/d/${locale}/fiestas`} className="text-sm underline">
+              {copy.search.submit}
+            </Link>
+          </div>
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {parties.map((one) => (
+              <ListingCard key={one.slug} listing={one} locale={locale} copy={copy} />
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="flex flex-col gap-4">
         <h2 className="text-xl">{copy.home.browseByCategory}</h2>

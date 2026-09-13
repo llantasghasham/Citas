@@ -261,5 +261,58 @@
     "history": "Histórico",
     "images": "Fotos",
     "languages": "Idiomas escritos"
+  },
+  "listing": {
+    "title": "Publicar esta festa",
+    "help": "Publica-se uma CÓPIA: corrigir o casamento depois não muda o que está publicado.",
+    "none": "Esta festa não está publicada.",
+    "create": "Criar a publicação",
+    "edit": "Editar",
+    "submit": "Enviar para revisão",
+    "submitHelp": "Vemos em 24 horas úteis. Até lá não aparece.",
+    "remove": "Retirar do site",
+    "removeHelp": "Apaga a publicação. O casamento e os convidados não se tocam.",
+    "listingTitle": "Título",
+    "description": "O que contar",
+    "eventType": "Tipo",
+    "eventTypes": {
+      "wedding": "Casamento",
+      "graduation": "Formatura",
+      "birthday": "Aniversário",
+      "baptism": "Batizado",
+      "memorial": "Memorial"
+    },
+    "dateMode": "Que data se publica",
+    "dateModes": {
+      "exact": "O dia exato",
+      "month": "Só o mês",
+      "season": "Só a época",
+      "hidden": "Nenhuma"
+    },
+    "date": "Data",
+    "venueName": "Nome do salão",
+    "venueHelp": "Só se o salão autorizar que se diga. Vazio não o publica.",
+    "contactMode": "Como contactar",
+    "contactModes": {
+      "none": "Não se pode",
+      "form": "Um formulário",
+      "whatsapp": "WhatsApp"
+    },
+    "authorizationTitle": "Autorização",
+    "authorizedBy": "Quem autoriza",
+    "authorizationText": "Com que texto autorizou",
+    "authorizationHelp": "A festa não é da agência. Sem isto não se publica, e guarda-se para poder mostrar.",
+    "publicUrl": "Endereço público",
+    "whoTookPart": "Quem participou",
+    "browse": "Casamentos e festas",
+    "empty": "Ainda não há nada publicado.",
+    "errors": {
+      "title": "Falta o título, ou é demasiado curto.",
+      "date": "Essa data não existe no calendário.",
+      "authorization": "Falta a autorização: quem e com que texto.",
+      "exists": "Esta festa já tem publicação.",
+      "notDraft": "Já foi enviada ou publicada.",
+      "notFound": "Não se encontrou."
+    }
   }
 }

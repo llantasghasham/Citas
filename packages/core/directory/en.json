@@ -261,5 +261,58 @@
     "history": "History",
     "images": "Photos",
     "languages": "Languages written"
+  },
+  "listing": {
+    "title": "Publish this celebration",
+    "help": "What gets published is a COPY: correcting the wedding later does not change it.",
+    "none": "This celebration is not published.",
+    "create": "Create the listing",
+    "edit": "Edit",
+    "submit": "Send for review",
+    "submitHelp": "We look at it within 24 business hours. Until then it is not out.",
+    "remove": "Take off the web",
+    "removeHelp": "Deletes the listing. The wedding and its guests are untouched.",
+    "listingTitle": "Title",
+    "description": "What to tell",
+    "eventType": "Type",
+    "eventTypes": {
+      "wedding": "Wedding",
+      "graduation": "Graduation",
+      "birthday": "Birthday",
+      "baptism": "Baptism",
+      "memorial": "Memorial"
+    },
+    "dateMode": "Which date to publish",
+    "dateModes": {
+      "exact": "The exact day",
+      "month": "The month only",
+      "season": "The season only",
+      "hidden": "None"
+    },
+    "date": "Date",
+    "venueName": "Venue name",
+    "venueHelp": "Only if the venue agrees to be named. Empty does not publish it.",
+    "contactMode": "How to get in touch",
+    "contactModes": {
+      "none": "Not possible",
+      "form": "A form",
+      "whatsapp": "WhatsApp"
+    },
+    "authorizationTitle": "Authorisation",
+    "authorizedBy": "Who authorises it",
+    "authorizationText": "The wording they authorised",
+    "authorizationHelp": "The celebration is not the office’s. Without this it is not published, and it is kept so it can be shown.",
+    "publicUrl": "Public address",
+    "whoTookPart": "Who took part",
+    "browse": "Weddings and parties",
+    "empty": "Nothing published yet.",
+    "errors": {
+      "title": "The title is missing, or too short.",
+      "date": "That date does not exist in the calendar.",
+      "authorization": "The authorisation is missing: who, and in what words.",
+      "exists": "This celebration already has a listing.",
+      "notDraft": "It is already sent or published.",
+      "notFound": "Not found."
+    }
   }
 }
