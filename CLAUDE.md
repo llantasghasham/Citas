@@ -968,6 +968,95 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   solo fuera de producción. Una dirección de almacén editable desde una pantalla
   es la misma puerta que hubo que cerrar con la del servicio de WhatsApp.
 
+### La galería, la moderación y las denuncias
+
+- El tope de DIEZ imágenes por proveedor lo impide la BASE, no una cuenta previa:
+  cada imagen ocupa un HUECO del cero al nueve, único por proveedor
+  (`ProviderMedia_slot_key`). La undécima no tiene dónde ponerse. Estuvo escrito
+  como una cuenta dentro de una transacción con la fila bloqueada, y la prueba
+  que decía comprobarlo PASABA IGUAL con el bloqueo quitado — lo único que lo
+  sostenía era que Prisma serializa hoy esas transacciones, que es una casualidad
+  de una versión. Una prueba que pasa con el candado puesto y quitado no está
+  probando el candado.
+- `slot` NO es el orden en que se ven, y por eso son dos columnas. `sortOrder` se
+  INTERCAMBIA al subir y bajar una foto, y con un índice único encima ese
+  intercambio tendría que pasar por un valor temporal — la misma razón por la que
+  el `order` de un acto no lo lleva. Un hueco no se reordena: se ocupa y se
+  suelta.
+- Al subir: PRIMERO el almacén y DESPUÉS la fila. No son atómicos y hay que
+  elegir de qué lado se falla: un objeto sin fila no se ve, no se sirve y se
+  barre; una fila sin objeto es un hueco roto en el perfil de alguien. Al borrar,
+  al revés: la fila primero, porque en cuanto no está ya no se sirve.
+- Las imágenes se sirven SIEMPRE por `/api/d/media/<id>`, nunca por una dirección
+  del almacén. Una firma ya entregada sigue valiendo hasta que caduque, así que
+  una foto retirada por derechos se vería horas más. `private, no-store` por lo
+  mismo, y el truco del `?v=` NO lo arregla: el archivo es el mismo cuando pasa
+  de `approved` a `hidden`, su huella no cambia y la dirección tampoco.
+- Pública solo si la imagen está aprobada **Y** el negocio publicado. Las dos:
+  con solo la primera, suspender un negocio le dejaría la galería sirviéndose.
+- El plazo de moderación se mide en horas HÁBILES (`lib/directory/clock.ts`):
+  lunes a viernes, de 9 a 17 en Beirut, sin festivos, y veinticuatro horas son
+  TRES jornadas. Medirlo en horas de reloj pondría la pantalla en rojo cada lunes
+  y el rojo dejaría de significar nada. Las tres decisiones no son del código y
+  están escritas juntas para que alguien las pueda cambiar.
+- La cola enseña lo más VIEJO arriba y lo atrasado en rojo, como los buzones de
+  SINPE caídos: es el mismo tipo de avería, una que desde fuera se ve igual que
+  si no pasara nada.
+- Rechazar y suspender EXIGEN motivo. Sin él, el proveedor vuelve a mandar lo
+  mismo y la cola se llena de la misma ficha. `publishedAt` se pone SOLO la
+  primera vez: es lo que ordena el listado, y reescribirla mandaría arriba lo que
+  solo se volvió a revisar. Y VERIFICADO no es APROBADO: aprobado es «no es
+  spam», verificado es «alguien comprobó que existe».
+- Una denuncia NO cierra el negocio de nadie. La de la ficha entera oculta sus
+  IMÁGENES, no la ficha; suspender lo decide quien modera con su nombre al lado.
+  Lo ÚNICO que una denuncia hace sola es ocultar fotos por derechos, porque «lo
+  revisamos en 24 horas» es un día entero publicando lo de otro.
+- El correo es obligatorio SOLO en la de derechos —sin alguien a quien responder
+  no hay reclamación, hay un botón anónimo contra un competidor— y los demás
+  motivos no lo piden. DESESTIMARLA DEVUELVE LAS FOTOS: sin eso, una reclamación
+  falsa deja la galería escondida para siempre, que es el sabotaje que el correo
+  pretendía impedir. Darle la razón BORRA la foto de verdad, bytes incluidos.
+- El correo de quien denuncia lo ve quien modera y NO lo ve el proveedor:
+  enseñárselo convierte un formulario en una represalia. Su IP se guarda para el
+  freno y se borra a los treinta días, con las sesiones caducadas.
+
+### Publicar una fiesta
+
+- Es una COPIA (`PublicListing`), no un `isPublic` dentro de `Event`. Con la
+  marca, la boda privada y su cara pública son la misma fila y lo único que
+  separa la lista de invitados de la calle es que ninguna consulta se olvide de
+  un `where`. Es el modelo que este proyecto rechazó para las oficinas.
+- NINGUNA clave foránea sale de `PublicListing`. `sourceEventId` es un TEXTO y no
+  se consulta desde lo público: sirve para que el panel sepa que su boda tiene
+  publicación. Desde la página pública no hay camino hasta un invitado.
+- DESPUBLICAR ES BORRAR la fila. No hay estado del que fiarse. Y corregir la boda
+  privada no cambia lo publicado hasta que alguien lo decide, que es lo correcto
+  para algo que ya se indexó y se compartió. El coste es copiar; es el coste de
+  no poder equivocarse.
+- Salir del borrador exige la AUTORIZACIÓN entera —quién, cuándo y CON QUÉ
+  TEXTO— y lo exige la base. La fiesta no es de la oficina, y un permiso que no
+  se puede enseñar no sirve para defenderse de una queja.
+- La fecha solo existe si se publica EXACTA, y por defecto se publica el mes: la
+  fecha exacta de una fiesta que aún no ha ocurrido es una invitación a que
+  aparezca gente que nadie llamó. Se comprueba contra el CALENDARIO.
+- Un proveedor no aparece en la boda de otro hasta que lo CONFIRMA
+  (`approvedByProvider`), y además tiene que estar publicado él mismo.
+
+### El SEO del directorio
+- Una canónica por idioma y `hreflang` entre los cinco, con `x-default` al árabe.
+  El mapa del sitio sale de la BASE con `status: approved` dentro: uno que
+  listara lo que está en revisión le entrega a un buscador lo que todavía no ha
+  salido.
+- `robots.txt` cierra `/g/` y `/pagar/` antes que nada: el primero es el enlace
+  personal de un invitado —recorrerlo marcaría `openedAt` de quien no ha abierto
+  nada— y el segundo es el enlace de cobro de una pareja.
+- Datos estructurados SOLO para lo aprobado y VERIFICADO, y sin
+  `aggregateRating`. Decirle a un buscador que un negocio existe es afirmar algo.
+- `canonicalOrigin()` LANZA sin dominio configurado, a propósito. Donde la
+  respuesta correcta es seguir sin el enlace —el `.ics`, el `robots.txt`— se usa
+  `canonicalOriginOrNull()`: un 500 en `robots.txt` le dice a un buscador que el
+  sitio entero está roto.
+
 ### Render
 - El PNG se genera UNA vez por versión y se guarda (`Render`), porque esa URL es
   también la vista previa que pide WhatsApp: sin caché, cada invitado del grupo
@@ -1156,6 +1245,17 @@ de los versículos.
   Whish, que aloja Whish. Volver a la URL de éxito no cobra ni prueba nada; lo
   decide `getStatus()`.
 
+### El directorio (`/d`)
+- `GET /d` — la puerta: negocia el idioma por `Accept-Language` y redirige (307).
+- `GET /d/<idioma>` — la portada: las fiestas publicadas arriba, después las
+  categorías por grupo y las ocho gobernaciones. Cinco idiomas: `ar en fr es pt`.
+- `GET /d/<idioma>/proveedores` — el listado, con sus casillas. Un GET.
+- `GET /d/<idioma>/p/<slug>` — la ficha de un negocio.
+- `GET /d/<idioma>/p/<slug>/denunciar` — el formulario de denuncia, `noindex`.
+- `GET /d/<idioma>/fiestas` y `/d/<idioma>/f/<slug>` — las fiestas publicadas.
+- `GET /d/sitemap.xml` y `/d/<idioma>/sitemap.xml` — el mapa del sitio.
+- `GET /api/d/media/<id>` — los bytes de una imagen, con su estado comprobado.
+
 ### Panel
 - `GET /entrar` — correo y contraseña en la MISMA pantalla, con dos botones. La
   contraseña es opcional y solo la tienen el superadministrador y los
@@ -1167,6 +1267,12 @@ de los versículos.
   `/mesas/imprimir?vista=mesa|invitado` las dos listas de papel.
 - `/panel/eventos/[eventId]/preferencias` — lo que hay que preparar: cocina,
   traslados, accesibilidad y fotos, en recuentos y por acto.
+- `/panel/eventos/[eventId]/publicacion` — publicar esa boda en el directorio.
+- `/panel/proveedor`, `/medios`, `/estado` y `/nuevo` — el panel de un PROVEEDOR,
+  en los cinco idiomas del portal. Va en un grupo de rutas —`(negocio)`— para no
+  colgar del layout del panel de oficina: un salón no tiene eventos ni invitados.
+- `/panel/moderacion` y `/panel/moderacion/denuncias` — SOLO con
+  `directory:moderate`: la cola con su reloj de horas hábiles y las denuncias.
 - `/panel/manual` — el manual de uso, en los cuatro idiomas.
 - `/panel/sistema` — SOLO superadministrador: once comprobaciones de salud,
   las versiones leídas en vivo y un botón que envía un correo de prueba y

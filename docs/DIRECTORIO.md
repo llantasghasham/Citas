@@ -520,10 +520,31 @@ gobernación. Se marcan como lo que son: «(ejemplo)» **en el nombre**, y **ni 
 solo contacto público** — una ficha inventada con un teléfono dentro es alguien
 recibiendo llamadas para una boda que no organiza.
 
-**Lo siguiente:** las imágenes (`provider_media`, la subida con el tope de diez
-dentro de la transacción y `/api/d/media/<id>` con `no-store`), el panel del
-proveedor, la moderación con su reloj de 24 horas hábiles, y el SEO —mapas del
-sitio por idioma y datos estructurados—.
+**Las imágenes** (`lib/directory/media.ts`, migración
+`20260922100000_provider_media_slot`): el tope de diez lo impide la BASE con un
+hueco numerado y único por proveedor, no una cuenta previa. Se sirven por
+`/api/d/media/<id>` con `private, no-store`, y solo si la imagen está aprobada Y
+el negocio publicado.
+
+**El panel del proveedor** (`/panel/proveedor`, `/medios`, `/estado`, `/nuevo`):
+en un grupo de rutas `(negocio)` para no colgar del layout del panel de oficina.
+El `providerId` viaja en la dirección y se comprueba contra la MEMBRESÍA antes de
+tocar nada.
+
+**La moderación** (`/panel/moderacion`, `/panel/moderacion/denuncias`): la cola
+con su reloj de horas hábiles —lunes a viernes, de 9 a 17 en Beirut, tres
+jornadas—, las decisiones con su historial, y las denuncias con retirada
+inmediata por derechos, correo obligatorio solo en esa, y devolución de las fotos
+al desestimarla.
+
+**El SEO**: `robots.txt`, un mapa del sitio por idioma generado de la base, y
+datos estructurados solo para lo aprobado y verificado.
+
+**Publicar una fiesta** (`PublicListing`, migración `20260923100000`): la COPIA
+del §2.3, con la autorización exigida por la base y la fecha solo si se publica
+exacta. En `/panel/eventos/<id>/publicacion` y en `/d/<idioma>/fiestas`.
+
+**La Fase 1 está construida y desplegada.** Lo que falta no es código:
 
 ## Lo que hace falta de fuera
 
