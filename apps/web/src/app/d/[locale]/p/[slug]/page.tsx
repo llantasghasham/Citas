@@ -1,7 +1,10 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
+import { ProviderJsonLd } from '@/components/directory/ProviderJsonLd';
+import { canonicalOriginOrNull } from '@/lib/admin/context';
 import { contactHref } from '@/lib/directory/contacts';
 import { providerBySlug } from '@/lib/directory/public';
 import { getDirectoryDictionary, isDirectoryLocale, DIRECTORY_LOCALES } from '@citas/core';
@@ -26,6 +29,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${provider.name} · ${provider.city}`,
     description,
+    openGraph: {
+      type: 'website',
+      title: provider.name,
+      description,
+      url: `/d/${locale}/p/${slug}`,
+      locale,
+    },
     alternates: {
       canonical: `/d/${locale}/p/${slug}`,
       // La MISMA ficha en cinco direcciones. El slug no cambia con el idioma —es
@@ -50,9 +60,20 @@ export default async function ProviderPage({ params }: Props) {
   if (provider === null) notFound();
 
   const copy = getDirectoryDictionary(locale);
+  // La dirección canónica sale de lo configurado, nunca de la cabecera: un
+  // `url` en los datos estructurados apuntando a un dominio ajeno es regalarle
+  // a otro la ficha entera.
+  const origin = await canonicalOriginOrNull(await headers());
 
   return (
     <article className="flex flex-col gap-8">
+      {origin !== null && (
+        <ProviderJsonLd
+          provider={provider}
+          copy={copy}
+          url={`${origin}/d/${locale}/p/${slug}`}
+        />
+      )}
       <header className="flex flex-col gap-2">
         <p className="text-xs text-[#8a6c22]">
           {provider.categories.map((category) => copy.categories[category]).join(' · ')}

@@ -78,6 +78,27 @@ export async function canonicalOrigin(requestHeaders: Headers): Promise<string> 
 }
 
 /**
+ * Lo mismo, pero para quien puede seguir sin dirección.
+ *
+ * `canonicalOrigin` LANZA a propósito: quien escribe el enlace de pago de una
+ * pareja tiene que enterarse a gritos de que no hay dominio configurado, porque
+ * la alternativa es un enlace hacia un dominio ajeno. Pero hay sitios donde la
+ * respuesta correcta es no escribir el enlace y seguir: el `.ics` sale sin
+ * enlace antes que fallar, y un `robots.txt` sin la línea del mapa del sitio
+ * sigue sirviendo — un 500 ahí le dice a un buscador que el sitio entero está
+ * roto.
+ *
+ * Devuelve `null`, que obliga a decidir qué hacer sin él.
+ */
+export async function canonicalOriginOrNull(requestHeaders: Headers): Promise<string | null> {
+  try {
+    return await canonicalOrigin(requestHeaders);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Forma de nombre de dominio público: letras, dígitos, guiones y puntos, con
  * una extensión de verdad. Fuera el bucle local, las direcciones IP y el puerto
  * — un enlace que mande a una pareja a `127.0.0.1` no es un enlace.

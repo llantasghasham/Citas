@@ -50,6 +50,7 @@ import {
 import { asObjectKey, forgetStore, storeFor } from '../src/lib/storage';
 import { directoryLocaleFrom } from '../src/lib/directory/locale';
 import {
+  approvedSlugs,
   categoryCounts,
   governorateCounts,
   listProviders,
@@ -1511,6 +1512,59 @@ describe('las denuncias', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
     assert.equal(filas.length, 1);
     assert.equal(filas[0]?.ip, null);
     assert.equal(filas[0]?.reason, 'scam');
+  });
+
+  void fixture;
+});
+
+/**
+ * El mapa del sitio.
+ *
+ * Lo que se comprueba es lo único que puede hacer daño: que no liste lo que no
+ * está publicado. Un mapa del sitio con las fichas en revisión dentro le entrega
+ * a un buscador la lista de lo que todavía no ha salido — y encima lo indexa
+ * para devolver un 404 después.
+ */
+describe('el mapa del sitio', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  it('solo lleva lo aprobado', async () => {
+    const prisma = controlDb();
+    await prisma.provider.deleteMany({});
+    await prisma.user.deleteMany({ where: { email: { startsWith: 'map-' } } });
+
+    const user = await prisma.user.create({
+      data: { email: 'map-a@example.com', locale: 'ar' },
+      select: { id: true },
+    });
+
+    const publicado = await createProvider(user.id, {
+      legalName: 'Salon publicado', governorate: 'beirut', district: 'beirut', city: 'Beirut', mainLocale: 'ar',
+    });
+    const enRevision = await createProvider(user.id, {
+      legalName: 'Salon en revision', governorate: 'beirut', district: 'beirut', city: 'Beirut', mainLocale: 'ar',
+    });
+    assert.ok(publicado.ok && enRevision.ok);
+
+    await prisma.provider.update({
+      where: { id: publicado.id },
+      data: { status: 'approved', publishedAt: new Date() },
+    });
+    await prisma.provider.update({
+      where: { id: enRevision.id },
+      data: { status: 'pending_review', submittedAt: new Date() },
+    });
+
+    const slugs = await approvedSlugs();
+    const publicadoSlug = (
+      await prisma.provider.findUniqueOrThrow({ where: { id: publicado.id }, select: { slug: true } })
+    ).slug;
+
+    assert.deepEqual(slugs.map((one) => one.slug), [publicadoSlug]);
+
+    // Y suspender lo saca del mapa igual que lo saca del listado.
+    await prisma.provider.update({ where: { id: publicado.id }, data: { status: 'suspended' } });
+    assert.deepEqual(await approvedSlugs(), []);
   });
 
   void fixture;

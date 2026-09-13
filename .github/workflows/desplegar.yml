@@ -149,6 +149,27 @@ jobs:
             *) echo "::error::/d no negocio el idioma: fue a $destino"; exit 1 ;;
           esac
 
+      - name: Comprobar el mapa del sitio
+        run: |
+          # Un mapa del sitio que apunta a otro dominio le regala a otro el
+          # rastreo de este, y no da error: hay que leerlo.
+          linea="$(curl -s --max-time 30 'https://citas.posxml.com/robots.txt' | grep -i '^Sitemap:')"
+          echo "$linea"
+          case "$linea" in
+            *'https://citas.posxml.com/d/sitemap.xml'*) ;;
+            *) echo "::error::robots.txt no apunta al mapa de este dominio"; exit 1 ;;
+          esac
+
+          # Y que el indice lleve los cinco idiomas.
+          cuantos="$(curl -s --max-time 30 'https://citas.posxml.com/d/sitemap.xml' | grep -c '<loc>')"
+          echo "idiomas en el indice: $cuantos"
+          [ "$cuantos" = "5" ] || { echo "::error::el indice del mapa no tiene cinco idiomas"; exit 1; }
+
+          # El de arabe tiene que llevar al menos la portada y el listado.
+          urls="$(curl -s --max-time 30 'https://citas.posxml.com/d/ar/sitemap.xml' | grep -c '<loc>')"
+          echo "direcciones en /d/ar/sitemap.xml: $urls"
+          [ "$urls" -ge 2 ] || { echo "::error::el mapa de arabe salio vacio"; exit 1; }
+
       - name: Contar lo que hay publicado en el directorio
         continue-on-error: true
         run: |
