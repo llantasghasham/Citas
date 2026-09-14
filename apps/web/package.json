@@ -38,7 +38,7 @@
     "mailparser": "^3.9.24",
     "next": "^16.3.4",
     "nodemailer": "^10.0.1",
-    "puppeteer-core": "25.10.0",
+    "puppeteer-core": "^25.11.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
