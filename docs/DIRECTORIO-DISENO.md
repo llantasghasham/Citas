@@ -1,5 +1,12 @@
 # Directorio — diseño final, antes de escribir código
 
+> **Nota (decisión posterior): NO hay francés.** El portal nació con cinco
+> idiomas y se quedó en los cuatro del producto —árabe, español, portugués e
+> inglés— por decisión del dueño: en el Líbano el francés se habla, pero nadie
+> iba a mantenerlo, y un idioma a medias es peor que no tenerlo. Todo lo que este
+> documento dice sobre «los cinco» o sobre el francés hay que leerlo así.
+> `DIRECTORY_LOCALES` se deriva ahora de `LOCALES`.
+
 Sigue a `docs/DIRECTORIO.md` (el plan) y recoge las siete decisiones aprobadas el
 12 de septiembre de 2026. Esto es lo que se va a construir, con nombres de
 tablas, de rutas y de archivos. Cuando esté revisado, empieza la Fase 1 y nada

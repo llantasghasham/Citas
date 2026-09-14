@@ -139,13 +139,13 @@ jobs:
           # que alguien la convirtio en una pagina, y entonces hay cinco idiomas
           # bajo la misma direccion.
           codigo="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
-            -H 'Accept-Language: fr-LB,fr;q=0.9' 'https://citas.posxml.com/d')"
+            -H 'Accept-Language: pt-BR,pt;q=0.9' 'https://citas.posxml.com/d')"
           destino="$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 30 \
-            -H 'Accept-Language: fr-LB,fr;q=0.9' 'https://citas.posxml.com/d')"
+            -H 'Accept-Language: pt-BR,pt;q=0.9' 'https://citas.posxml.com/d')"
           echo "/d -> $codigo $destino"
           [ "$codigo" = "307" ] || { echo "::error::/d deberia redirigir, devolvio $codigo"; exit 1; }
           case "$destino" in
-            *'/d/fr') ;;
+            *'/d/pt') ;;
             *) echo "::error::/d no negocio el idioma: fue a $destino"; exit 1 ;;
           esac
 
@@ -160,10 +160,10 @@ jobs:
             *) echo "::error::robots.txt no apunta al mapa de este dominio"; exit 1 ;;
           esac
 
-          # Y que el indice lleve los cinco idiomas.
+          # Y que el indice lleve los cuatro idiomas.
           cuantos="$(curl -s --max-time 30 'https://citas.posxml.com/d/sitemap.xml' | grep -c '<loc>')"
           echo "idiomas en el indice: $cuantos"
-          [ "$cuantos" = "5" ] || { echo "::error::el indice del mapa no tiene cinco idiomas"; exit 1; }
+          [ "$cuantos" = "4" ] || { echo "::error::el indice del mapa no tiene cuatro idiomas"; exit 1; }
 
           # El de arabe tiene que llevar al menos la portada y el listado.
           urls="$(curl -s --max-time 30 'https://citas.posxml.com/d/ar/sitemap.xml' | grep -c '<loc>')"

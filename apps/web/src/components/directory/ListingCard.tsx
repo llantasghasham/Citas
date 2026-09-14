@@ -18,8 +18,8 @@ export function listingWhen(
   if (listing.date === null) {
     return listing.dateMode === 'hidden' ? null : copy.listing.dateModes[listing.dateMode as 'month'];
   }
-  // `Intl` habla los cinco; el francés no está en el `Locale` del producto pero
-  // sí en el navegador de cualquiera.
+  // La fecha en el idioma de quien mira. `Intl` trae la base de datos de
+  // calendarios del sistema, así que no hace falta ninguna biblioteca.
   return new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeZone: 'UTC' }).format(
     listing.date,
   );

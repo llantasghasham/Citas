@@ -49,10 +49,9 @@ export async function currentProviderScope(
 /**
  * En qué idioma se le habla a quien administra un negocio.
  *
- * El suyo, guardado en su perfil, salvo que pida otro en la dirección. El portal
- * habla cinco y el producto cuatro, así que el francés solo puede llegar por
- * `?lang=fr` — quien lo quiera de serie tendrá que esperar a que el producto
- * entero lo hable.
+ * El suyo, guardado en su perfil, salvo que pida otro en la dirección. Un idioma
+ * que este producto no habla no cambia nada: se cae al del perfil, y sin perfil
+ * al árabe.
  */
 export function panelLocale(
   requested: string | undefined,

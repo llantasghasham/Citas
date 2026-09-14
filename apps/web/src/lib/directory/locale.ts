@@ -3,14 +3,14 @@ import { DIRECTORY_LOCALES, type DirectoryLocale } from '@citas/core';
 /**
  * En qué idioma abrir el portal a quien llega a `/d` sin decir cuál.
  *
- * Es lo MISMO que hace la portada con `Accept-Language`, pero sobre los cinco
- * del directorio y no sobre los cuatro del producto: aquí el francés cuenta. Lo
- * que decide es una CABECERA y el resultado es una redirección a una dirección
- * propia por idioma, no una página que cambia según quien la pida — eso último
- * es lo que impediría cachearla y lo que haría que un buscador indexara cinco
- * idiomas bajo la misma dirección.
+ * Es lo MISMO que hace la portada con `Accept-Language`. Lo que decide es una
+ * CABECERA y el resultado es una REDIRECCIÓN a una dirección propia por idioma,
+ * no una página que cambia según quien la pida — eso último es lo que impediría
+ * cachearla y lo que haría que un buscador indexara cuatro idiomas bajo la misma
+ * dirección.
  *
- * Sin cabecera, árabe: es el idioma principal de este producto y el del mercado.
+ * Sin cabecera conocida, árabe: es el idioma principal de este producto y el del
+ * mercado.
  */
 export function directoryLocaleFrom(acceptLanguage: string): DirectoryLocale {
   const preferred = acceptLanguage
@@ -22,7 +22,7 @@ export function directoryLocaleFrom(acceptLanguage: string): DirectoryLocale {
     .sort((a, b) => b.weight - a.weight);
 
   for (const { tag } of preferred) {
-    // `ar-LB` y `fr-LB` son la forma normal de esta cabecera: se compara la
+    // `ar-LB` y `pt-BR` son la forma normal de esta cabecera: se compara la
     // primera etiqueta, no la entera.
     const primary = tag.split('-')[0];
     const match = DIRECTORY_LOCALES.find((locale) => locale === primary);

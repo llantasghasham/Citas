@@ -7,19 +7,13 @@ import { parseDraft } from '@/lib/create/draft';
 import { loadPublicOrder } from '@/lib/billing/checkout';
 import { resolvePayLocale } from '@/lib/billing/pay-locale';
 import { resolveHomeLocale } from '@/lib/home/locale';
-import { isDirectoryLocale, type DirectoryLocale } from '@citas/core';
+import { isDirectoryLocale } from '@citas/core';
 import { LANG_HINT_HEADER, PATH_HEADER } from '@/proxy';
 import { loadInvitation } from '@/lib/repositories';
 import type { Direction, Locale } from '@/lib/types';
 
 export interface DocumentLanguage {
-  /**
-   * Los cuatro del producto, y además los del PORTAL del directorio, que habla
-   * cinco: el francés existe en `/d/fr` y en ningún otro sitio. Es una etiqueta
-   * de idioma para `<html lang>`, no un diccionario, así que ensancharla aquí
-   * no obliga a traducir nada.
-   */
-  locale: Locale | DirectoryLocale;
+  locale: Locale;
   direction: Direction;
 }
 
@@ -38,7 +32,7 @@ export async function documentLanguage(): Promise<DocumentLanguage> {
   return { locale, direction: locale === 'ar' ? 'rtl' : 'ltr' };
 }
 
-async function resolveLocale(): Promise<Locale | DirectoryLocale> {
+async function resolveLocale(): Promise<Locale> {
   const requestHeaders = await headers();
   const path = requestHeaders.get(PATH_HEADER) ?? '';
 
@@ -55,7 +49,7 @@ async function resolveLocale(): Promise<Locale | DirectoryLocale> {
     // permite una canónica por idioma. Sin esta rama, `/d/ar` se anunciaba en
     // el idioma del NAVEGADOR: un documento declarado `en` con árabe dentro y
     // el `dir` al revés, que es exactamente lo que un lector de pantalla lee
-    // mal. Y es el único sitio donde `fr` es una respuesta posible.
+    // mal.
     if (path === '/d' || path.startsWith('/d/')) {
       const segment = path.split('/')[2] ?? '';
       if (isDirectoryLocale(segment)) return segment;

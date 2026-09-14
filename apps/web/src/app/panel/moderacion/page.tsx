@@ -30,7 +30,6 @@ export default async function ModerationQueuePage() {
 
   const locale = panelLocale(undefined, session.locale);
   const copy = getDirectoryDictionary(locale);
-  const fechaLocale = locale === 'fr' ? 'en' : locale;
   const [zone, perfiles, medios, fiestas] = await Promise.all([
     actorTimezone(session),
     reviewQueue(),
@@ -79,7 +78,7 @@ export default async function ModerationQueuePage() {
                     {one.city} · {copy.governorates[one.governorate] ?? one.governorate} ·{' '}
                     {copy.moderation.waiting.replace(
                       '{date}',
-                      formatDateTime(one.submittedAt, fechaLocale, zone),
+                      formatDateTime(one.submittedAt, locale, zone),
                     )}
                   </span>
                   <span className="text-xs text-[#6a6456]">
@@ -128,7 +127,7 @@ export default async function ModerationQueuePage() {
                 </span>
                 <span className="text-xs text-[#6a6456]">
                   {one.city} · {copy.governorates[one.governorate] ?? one.governorate} ·{' '}
-                  {formatDateTime(one.submittedAt, fechaLocale, zone)}
+                  {formatDateTime(one.submittedAt, locale, zone)}
                 </span>
 
                 <div className="border-s-2 border-[#8a6c22] ps-3 text-xs text-[#4b4638]">

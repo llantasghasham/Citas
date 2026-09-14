@@ -90,6 +90,7 @@ import {
 } from '../src/lib/directory/categories';
 import {
   DIRECTORY_LOCALES,
+  LOCALES,
   directoryDirection,
   getDirectoryDictionary,
   isDirectoryLocale,
@@ -161,9 +162,12 @@ describe('los cinco idiomas del portal', () => {
     }
   });
 
-  it('el francés está, y el árabe sigue siendo el único de derecha a izquierda', () => {
-    assert.deepEqual([...DIRECTORY_LOCALES], ['ar', 'en', 'fr', 'es', 'pt']);
-    assert.equal(isDirectoryLocale('fr'), true);
+  it('el portal habla los MISMOS idiomas que el producto, y el árabe es el único RTL', () => {
+    // Derivados de `LOCALES` y no escritos otra vez: si un día se añade un
+    // idioma al producto y el portal se quedara sin él, nadie se enteraría hasta
+    // que alguien abriera `/d/<ese idioma>` y encontrara un 404.
+    assert.deepEqual([...DIRECTORY_LOCALES], [...LOCALES]);
+    assert.equal(isDirectoryLocale('fr'), false);
     assert.equal(isDirectoryLocale('de'), false);
 
     assert.equal(directoryDirection('ar'), 'rtl');
@@ -173,10 +177,10 @@ describe('los cinco idiomas del portal', () => {
   });
 
   it('ninguna traducción se dejó a medias copiando del inglés', () => {
-    // Una comprobación tonta y que sirve: si el francés y el inglés tienen el
-    // mismo título de portada, alguien copió el archivo y no lo tradujo.
+    // Una comprobación tonta y que sirve: si dos idiomas tienen el mismo título
+    // de portada, alguien copió el archivo y no lo tradujo.
     const en = getDirectoryDictionary('en');
-    for (const locale of ['fr', 'es', 'pt', 'ar'] as const) {
+    for (const locale of ['es', 'pt', 'ar'] as const) {
       const copy = getDirectoryDictionary(locale);
       assert.notEqual(copy.home.title, en.home.title, `${locale} parece copiado del inglés`);
       assert.notEqual(copy.search.submit, en.search.submit, `${locale} parece copiado del inglés`);
@@ -658,19 +662,19 @@ describe('el portal público', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
   });
 
   it('el idioma cae al del negocio antes que a nada', async () => {
-    // Escrito en árabe y leído en francés: sale el árabe, porque el respaldo es
-    // `mainLocale`. No se traduce solo.
-    const enFrances = await listProviders('fr');
-    assert.equal(enFrances.length, 1);
-    assert.equal(enFrances[0]?.name, 'Publicado');
+    // Escrito en árabe y leído en portugués: sale el árabe, porque el respaldo
+    // es `mainLocale`. No se traduce solo.
+    const enPortugues = await listProviders('pt');
+    assert.equal(enPortugues.length, 1);
+    assert.equal(enPortugues[0]?.name, 'Publicado');
 
-    await setTranslation(unsafeProviderScope(publicado), duenoPublicado, 'fr', {
-      name: 'Publié',
+    await setTranslation(unsafeProviderScope(publicado), duenoPublicado, 'pt', {
+      name: 'Publicado em português',
       tagline: '',
       description: '',
       services: [],
     });
-    assert.equal((await listProviders('fr'))[0]?.name, 'Publié');
+    assert.equal((await listProviders('pt'))[0]?.name, 'Publicado em português');
     // Y el árabe sigue siendo el árabe.
     assert.equal((await listProviders('ar'))[0]?.name, 'Publicado');
   });
@@ -710,8 +714,11 @@ describe('el portal público', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, ()
  * Sin base de datos: son dos funciones puras y se comprueban siempre.
  */
 describe('la puerta del portal', () => {
-  it('negocia el idioma, y el francés cuenta aquí aunque no en el producto', () => {
-    assert.equal(directoryLocaleFrom('fr-LB,fr;q=0.9,ar;q=0.8'), 'fr');
+  it('negocia el idioma con la cabecera del navegador', () => {
+    // El francés ya no está: quien lo pida cae al árabe, como cualquier otro
+    // idioma que este producto no habla.
+    assert.equal(directoryLocaleFrom('fr-LB,fr;q=0.9'), 'ar');
+    assert.equal(directoryLocaleFrom('fr-LB,fr;q=0.9,es;q=0.8'), 'es');
     assert.equal(directoryLocaleFrom('ar-LB,ar;q=0.9'), 'ar');
     assert.equal(directoryLocaleFrom('pt-BR'), 'pt');
     // El peso manda sobre el orden de escritura.
@@ -1098,14 +1105,13 @@ describe('el panel del proveedor', { skip: HAS_DB ? false : 'sin DATABASE_URL' }
     assert.deepEqual(mios.map((one) => one.legalName).sort(), ['Negocio de A', 'Segundo de A']);
   });
 
-  it('el idioma del panel sale del perfil, y el francés solo si se pide', () => {
+  it('el idioma del panel sale del perfil, y la dirección lo puede tapar', () => {
     assert.equal(panelLocale(undefined, 'ar'), 'ar');
     assert.equal(panelLocale(undefined, 'es'), 'es');
-    // El francés no está en el perfil de nadie —el producto habla cuatro— así
-    // que solo puede llegar por la dirección.
-    assert.equal(panelLocale('fr', 'es'), 'fr');
-    // Basura en la dirección no cambia nada.
+    assert.equal(panelLocale('pt', 'es'), 'pt');
+    // Basura en la dirección no cambia nada, y el francés ya es basura.
     assert.equal(panelLocale('de', 'es'), 'es');
+    assert.equal(panelLocale('fr', 'es'), 'es');
     // Y sin nada, árabe.
     assert.equal(panelLocale(undefined, null), 'ar');
   });

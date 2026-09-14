@@ -1,20 +1,24 @@
+import { LOCALES, type Locale } from './types';
+
 /**
- * El portal público del directorio habla CINCO idiomas, y el producto sigue
- * hablando cuatro.
+ * El portal del directorio habla LOS MISMOS idiomas que el producto.
  *
- * No es un capricho de organización: `Locale` —el del producto— está en el enum
- * de Prisma, en `types.ts` y en cada `Record<Locale, …>` del repositorio, y el
- * tipo `Dictionary` exige todas las claves de todos los idiomas. Meter `fr` ahí
- * obligaría a traducir al francés el panel entero, el manual de veintidós
- * capítulos, los correos y la app móvil: unas mil cuatrocientas frases, para
- * poder publicar un salón.
+ * Nació con un quinto —el francés— y se quitó por decisión del dueño: en el
+ * Líbano se habla, pero nadie iba a mantenerlo, y un idioma a medias es peor que
+ * no tenerlo. Un portal en francés con el panel en cuatro idiomas obliga a
+ * quien administra un salón a cambiar de idioma para trabajar.
  *
- * Así que son dos conjuntos. El portal nace con francés —que en Líbano hace
- * falta— y su diccionario lleva SOLO sus frases. Si algún día se quiere el
- * producto entero en francés, es un trabajo aparte y esto no lo estorba.
+ * Lo que SÍ sigue separado es el DICCIONARIO: el del portal lleva solo sus
+ * frases (categorías, regiones, la ficha, la moderación) y el del producto las
+ * suyas. Eso es lo que evita que una palabra viva en dos sitios.
+ *
+ * El conjunto de idiomas se DERIVA de `LOCALES` en vez de repetirlo. Escritos
+ * dos veces, el día que se añada uno al producto el portal se quedaría sin él y
+ * nadie se enteraría hasta que alguien abriera `/d/<ese idioma>` y encontrara un
+ * 404.
  */
-export const DIRECTORY_LOCALES = ['ar', 'en', 'fr', 'es', 'pt'] as const;
-export type DirectoryLocale = (typeof DIRECTORY_LOCALES)[number];
+export const DIRECTORY_LOCALES = LOCALES;
+export type DirectoryLocale = Locale;
 
 export function isDirectoryLocale(value: string): value is DirectoryLocale {
   return (DIRECTORY_LOCALES as readonly string[]).includes(value);

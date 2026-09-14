@@ -1,5 +1,12 @@
 # Directorio público de proveedores y celebraciones
 
+> **Nota (decisión posterior): NO hay francés.** El portal nació con cinco
+> idiomas y se quedó en los cuatro del producto —árabe, español, portugués e
+> inglés— por decisión del dueño: en el Líbano el francés se habla, pero nadie
+> iba a mantenerlo, y un idioma a medias es peor que no tenerlo. Todo lo que este
+> documento dice sobre «los cinco» o sobre el francés hay que leerlo así.
+> `DIRECTORY_LOCALES` se deriva ahora de `LOCALES`.
+
 Plan, no código. Lo que sigue es lo que hay que decidir **antes** de escribir una
 migración, con las razones y con lo que cuesta cada decisión.
 

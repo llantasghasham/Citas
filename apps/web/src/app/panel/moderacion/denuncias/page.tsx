@@ -33,7 +33,6 @@ export default async function ReportsPage({ searchParams }: Props) {
 
   const locale = panelLocale(undefined, session.locale);
   const copy = getDirectoryDictionary(locale);
-  const fechaLocale = locale === 'fr' ? 'en' : locale;
   const [zone, reports] = await Promise.all([actorTimezone(session), openReports()]);
 
   return (
@@ -69,7 +68,7 @@ export default async function ReportsPage({ searchParams }: Props) {
                   {copy.report.reasons[one.reason as keyof typeof copy.report.reasons] ?? one.reason}
                 </span>
                 <span className="text-xs text-[#6a6456]">
-                  {formatDateTime(one.createdAt, fechaLocale, zone)}
+                  {formatDateTime(one.createdAt, locale, zone)}
                 </span>
               </div>
 

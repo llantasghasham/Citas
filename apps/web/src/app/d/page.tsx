@@ -12,9 +12,8 @@ import { directoryLocaleFrom } from '@/lib/directory/locale';
  * en que lo estaba leyendo.
  *
  * La redirección es TEMPORAL —307, la de por defecto— y no permanente: depende
- * de una cabecera, y un 308 se lo guardaría el navegador para siempre. El
- * francés que abrió el portal una vez desde un móvil en árabe no volvería a ver
- * el suyo nunca.
+ * de una cabecera, y un 308 se lo guardaría el navegador para siempre. Quien
+ * abriera el portal una vez desde un móvil ajeno no volvería a ver su idioma.
  */
 export default async function DirectoryEntry() {
   const requestHeaders = await headers();

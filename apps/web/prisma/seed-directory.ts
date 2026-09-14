@@ -45,15 +45,15 @@ interface Ejemplo {
   capacity?: number;
   since?: number;
   /** La traducción por idioma. El árabe es el principal y nunca falta. */
-  t: Record<'ar' | 'en' | 'fr' | 'es' | 'pt', EjemploTraduccion>;
+  t: Record<'ar' | 'en' | 'es' | 'pt', EjemploTraduccion>;
 }
 
 /** Lo que dice la etiqueta, en cada idioma. */
-const MARCA = { ar: '(مثال)', en: '(example)', fr: '(exemple)', es: '(ejemplo)', pt: '(exemplo)' };
+const MARCA = { ar: '(مثال)', en: '(example)', es: '(ejemplo)', pt: '(exemplo)' };
 
 function ficha(
   base: Omit<Ejemplo, 't'>,
-  textos: Record<'ar' | 'en' | 'fr' | 'es' | 'pt', EjemploTraduccion>,
+  textos: Record<'ar' | 'en' | 'es' | 'pt', EjemploTraduccion>,
 ): Ejemplo {
   return { ...base, t: textos };
 }
@@ -80,11 +80,6 @@ const EJEMPLOS: Ejemplo[] = [
         name: `Wedding hall ${MARCA.en}`,
         tagline: 'A hall for four hundred, with parking and a garden.',
         services: ['Air-conditioned hall', 'Parking', 'Garden for photos', 'Lighting and stage'],
-      },
-      fr: {
-        name: `Salle de mariage ${MARCA.fr}`,
-        tagline: 'Une salle pour quatre cents personnes, avec parking et jardin.',
-        services: ['Salle climatisée', 'Parking', 'Jardin pour les photos', 'Éclairage et scène'],
       },
       es: {
         name: `Salón de bodas ${MARCA.es}`,
@@ -120,11 +115,6 @@ const EJEMPLOS: Ejemplo[] = [
         tagline: 'Lebanese cooking, at the restaurant or at your venue.',
         services: ['Mezze and grills', 'Service at your venue', 'Vegetarian menu'],
       },
-      fr: {
-        name: `Restaurant et cuisine ${MARCA.fr}`,
-        tagline: 'Cuisine libanaise, au restaurant ou sur le lieu de la fête.',
-        services: ['Mezzés et grillades', 'Service sur place', 'Menu végétarien'],
-      },
       es: {
         name: `Restaurante que prepara la comida ${MARCA.es}`,
         tagline: 'Cocina libanesa, en el restaurante o en el lugar de la fiesta.',
@@ -157,11 +147,6 @@ const EJEMPLOS: Ejemplo[] = [
         name: `Wedding cakes and sweets ${MARCA.en}`,
         tagline: 'The cake, the baklava, and boxes for the guests.',
         services: ['Wedding cake', 'Baklava', 'Guest boxes'],
-      },
-      fr: {
-        name: `Gâteaux de mariage ${MARCA.fr}`,
-        tagline: 'Le gâteau, les baklavas et les boîtes pour les invités.',
-        services: ['Gâteau de mariage', 'Baklava', 'Boîtes pour les invités'],
       },
       es: {
         name: `Venta de queque y dulces ${MARCA.es}`,
@@ -196,11 +181,6 @@ const EJEMPLOS: Ejemplo[] = [
         tagline: 'Arabic and international music, sound and lights included.',
         services: ['Full evening', 'Sound and lights', 'Zaffe entrance'],
       },
-      fr: {
-        name: `DJ de mariage ${MARCA.fr}`,
-        tagline: 'Musique arabe et internationale, son et lumière compris.',
-        services: ['Soirée complète', 'Son et lumière', 'Entrée zaffé'],
-      },
       es: {
         name: `DJ para bodas ${MARCA.es}`,
         tagline: 'Música árabe e internacional, con sonido y luces.',
@@ -233,11 +213,6 @@ const EJEMPLOS: Ejemplo[] = [
         name: `Singer and band ${MARCA.en}`,
         tagline: 'Lebanese songs, with a band or on his own.',
         services: ['Singer', 'Full band', 'Dabke'],
-      },
-      fr: {
-        name: `Chanteur et orchestre ${MARCA.fr}`,
-        tagline: 'Chansons libanaises, avec ou sans orchestre.',
-        services: ['Chanteur', 'Orchestre complet', 'Dabké'],
       },
       es: {
         name: `Cantante y grupo ${MARCA.es}`,
@@ -272,11 +247,6 @@ const EJEMPLOS: Ejemplo[] = [
         tagline: 'Tables, chairs, tents and dishes, set up and taken down.',
         services: ['Tables and chairs', 'Tent', 'Dishes and glasses', 'Setup and takedown'],
       },
-      fr: {
-        name: `Location de tables et chaises ${MARCA.fr}`,
-        tagline: 'Tables, chaises, tentes et vaisselle, montage compris.',
-        services: ['Tables et chaises', 'Tente', 'Vaisselle et verres', 'Montage et démontage'],
-      },
       es: {
         name: `Alquiler de mesas y sillas ${MARCA.es}`,
         tagline: 'Mesas, sillas, carpas y vajilla, con montaje.',
@@ -309,11 +279,6 @@ const EJEMPLOS: Ejemplo[] = [
         name: `Flowers and decoration ${MARCA.en}`,
         tagline: "The bride's bouquet, the hall and the entrance.",
         services: ['Bridal bouquet', 'Table decoration', 'Entrance decoration'],
-      },
-      fr: {
-        name: `Fleurs et décoration ${MARCA.fr}`,
-        tagline: 'Le bouquet de la mariée, la salle et l’entrée.',
-        services: ['Bouquet de la mariée', 'Décoration des tables', 'Décoration de l’entrée'],
       },
       es: {
         name: `Flores y decoración ${MARCA.es}`,
@@ -348,11 +313,6 @@ const EJEMPLOS: Ejemplo[] = [
         tagline: 'From choosing the hall to the last guest home.',
         services: ['Full planning', 'Day-of coordination', 'Budget and follow-up'],
       },
-      fr: {
-        name: `Organisation de mariages ${MARCA.fr}`,
-        tagline: 'Du choix de la salle au dernier invité.',
-        services: ['Organisation complète', 'Coordination le jour J', 'Budget et suivi'],
-      },
       es: {
         name: `Organización de bodas y fiestas ${MARCA.es}`,
         tagline: 'Desde elegir el salón hasta el último invitado.',
@@ -385,11 +345,6 @@ const EJEMPLOS: Ejemplo[] = [
         name: `Video and photography ${MARCA.en}`,
         tagline: 'The wedding film, the photographs, and drone footage.',
         services: ['Full film', 'Photographs', 'Drone footage', 'Printed album'],
-      },
-      fr: {
-        name: `Vidéo et photographie ${MARCA.fr}`,
-        tagline: 'Le film du mariage, les photos et les vues par drone.',
-        services: ['Film complet', 'Photos', 'Prises de vue par drone', 'Album imprimé'],
       },
       es: {
         name: `Grabación de vídeo y fotografía ${MARCA.es}`,
@@ -424,11 +379,6 @@ const EJEMPLOS: Ejemplo[] = [
         name: `Wedding catering ${MARCA.en}`,
         tagline: 'Lebanese food for six hundred, in any hall.',
         services: ['Open buffet', 'Table service', 'Manakish and breakfast'],
-      },
-      fr: {
-        name: `Traiteur de mariage ${MARCA.fr}`,
-        tagline: 'Cuisine libanaise pour six cents personnes, dans n’importe quelle salle.',
-        services: ['Buffet', 'Service à table', 'Manakiche et petit-déjeuner'],
       },
       es: {
         name: `Catering para bodas ${MARCA.es}`,

@@ -881,16 +881,20 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   orden. Prisma no sabe declararlo, así que vive en el SQL.
 
 ### El directorio de proveedores
-- El portal habla CINCO idiomas y el producto sigue hablando cuatro, y son dos
-  conjuntos separados a propósito: `LOCALES` (`ar es pt en`) para el producto y
-  `DIRECTORY_LOCALES` (`ar en fr es pt`) para el portal, con su propio
-  `DirectoryDictionary` en `packages/core/directory/`. Meter `fr` en el `Locale`
-  del producto obligaría a traducir al francés el panel entero, el manual de
-  veintidós capítulos, los correos y la app móvil —unas mil cuatrocientas
-  frases— para poder publicar un salón.
+- El portal habla LOS MISMOS idiomas que el producto: `DIRECTORY_LOCALES` se
+  DERIVA de `LOCALES` en vez de repetirlos. Escritos dos veces, el día que se
+  añada uno al producto el portal se quedaría sin él y nadie se enteraría hasta
+  que alguien abriera `/d/<ese idioma>` y encontrara un 404.
+- Lo que SÍ sigue separado es el DICCIONARIO (`packages/core/directory/`): el del
+  portal lleva solo sus frases y el del producto las suyas, y eso es lo que evita
+  que una palabra viva en dos sitios.
+- NO hay francés, y la ausencia es una decisión: nació con él —en Líbano se
+  habla— y se quitó porque nadie iba a mantenerlo. Un idioma a medias es peor que
+  no tenerlo, y un portal en francés con el panel en cuatro obliga a quien
+  administra un salón a cambiar de idioma para trabajar.
 - Las CLAVES de las categorías y las regiones viven en el servidor
   (`lib/directory/categories.ts`) y los NOMBRES en el diccionario. Una prueba
-  que no necesita base de datos comprueba que los cinco idiomas traducen las
+  que no necesita base de datos comprueba que los cuatro idiomas traducen las
   cincuenta categorías, las ocho gobernaciones y los veintiséis distritos —y que
   no sobra ninguna—. Sin ella, el fallo es una tarjeta que dice «undefined» en
   el portal de un negocio real.
@@ -1043,7 +1047,7 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   (`approvedByProvider`), y además tiene que estar publicado él mismo.
 
 ### El SEO del directorio
-- Una canónica por idioma y `hreflang` entre los cinco, con `x-default` al árabe.
+- Una canónica por idioma y `hreflang` entre los cuatro, con `x-default` al árabe.
   El mapa del sitio sale de la BASE con `status: approved` dentro: uno que
   listara lo que está en revisión le entrega a un buscador lo que todavía no ha
   salido.
@@ -1248,7 +1252,7 @@ de los versículos.
 ### El directorio (`/d`)
 - `GET /d` — la puerta: negocia el idioma por `Accept-Language` y redirige (307).
 - `GET /d/<idioma>` — la portada: las fiestas publicadas arriba, después las
-  categorías por grupo y las ocho gobernaciones. Cinco idiomas: `ar en fr es pt`.
+  categorías por grupo y las ocho gobernaciones. Los mismos cuatro del producto.
 - `GET /d/<idioma>/proveedores` — el listado, con sus casillas. Un GET.
 - `GET /d/<idioma>/p/<slug>` — la ficha de un negocio.
 - `GET /d/<idioma>/p/<slug>/denunciar` — el formulario de denuncia, `noindex`.
@@ -1268,8 +1272,8 @@ de los versículos.
 - `/panel/eventos/[eventId]/preferencias` — lo que hay que preparar: cocina,
   traslados, accesibilidad y fotos, en recuentos y por acto.
 - `/panel/eventos/[eventId]/publicacion` — publicar esa boda en el directorio.
-- `/panel/proveedor`, `/medios`, `/estado` y `/nuevo` — el panel de un PROVEEDOR,
-  en los cinco idiomas del portal. Va en un grupo de rutas —`(negocio)`— para no
+- `/panel/proveedor`, `/medios`, `/estado`, `/fiestas` y `/nuevo` — el panel de
+  un PROVEEDOR. Va en un grupo de rutas —`(negocio)`— para no
   colgar del layout del panel de oficina: un salón no tiene eventos ni invitados.
 - `/panel/moderacion` y `/panel/moderacion/denuncias` — SOLO con
   `directory:moderate`: la cola con su reloj de horas hábiles y las denuncias.

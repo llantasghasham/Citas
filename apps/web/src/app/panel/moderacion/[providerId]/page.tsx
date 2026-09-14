@@ -47,7 +47,6 @@ export default async function ModerationDetailPage({ params, searchParams }: Pro
 
   const locale = panelLocale(undefined, session.locale);
   const copy = getDirectoryDictionary(locale);
-  const fechaLocale = locale === 'fr' ? 'en' : locale;
 
   const [zone, provider] = await Promise.all([
     actorTimezone(session),
@@ -278,7 +277,7 @@ export default async function ModerationDetailPage({ params, searchParams }: Pro
         <ul className="flex flex-col gap-1 text-xs text-[#6a6456]">
           {provider.reviews.map((one, index) => (
             <li key={`${one.createdAt.toISOString()}-${index}`}>
-              {formatDateTime(one.createdAt, fechaLocale, zone)} · {one.action}
+              {formatDateTime(one.createdAt, locale, zone)} · {one.action}
               {one.note === null ? '' : ` · ${one.note}`}
             </li>
           ))}

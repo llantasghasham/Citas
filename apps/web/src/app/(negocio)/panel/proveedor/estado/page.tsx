@@ -39,10 +39,6 @@ export default async function ProviderStatePage({ searchParams }: Props) {
   // En SU zona. `toISOString()` sería UTC, y para quien administra en Beirut una
   // fecha de la tarde sale con el día cambiado.
   const zone = await actorTimezone(session);
-  // El portal habla cinco idiomas y `Intl` los habla todos, pero `formatDate`
-  // pide un `Locale` del producto, que son cuatro. El francés se formatea en
-  // inglés: una fecha, no una frase.
-  const fechaLocale = locale === 'fr' ? 'en' : locale;
 
   // Mandar a revisión solo desde borrador o rechazado: volver a mandar algo ya
   // publicado lo sacaría del directorio mientras alguien lo mira otra vez.
@@ -67,7 +63,7 @@ export default async function ProviderStatePage({ searchParams }: Props) {
                 // En SU zona y en SU idioma. Un `toISOString()` aquí sería la
                 // fecha en UTC, que para quien administra en Beirut puede ser
                 // el día anterior.
-                formatDate(provider.submittedAt, fechaLocale, zone),
+                formatDate(provider.submittedAt, locale, zone),
               )}
             </dd>
           </div>
@@ -76,7 +72,7 @@ export default async function ProviderStatePage({ searchParams }: Props) {
           <div className="flex flex-wrap gap-x-2">
             <dt className="text-xs text-[#6a6456]">{copy.panel.statusApproved}</dt>
             <dd>
-              {formatDate(provider.publishedAt, fechaLocale, zone)}
+              {formatDate(provider.publishedAt, locale, zone)}
             </dd>
           </div>
         )}
@@ -84,7 +80,7 @@ export default async function ProviderStatePage({ searchParams }: Props) {
           <div className="flex flex-wrap gap-x-2">
             <dt className="text-xs text-[#6a6456]">{copy.provider.verified}</dt>
             <dd>
-              {formatDate(provider.verifiedAt, fechaLocale, zone)}
+              {formatDate(provider.verifiedAt, locale, zone)}
             </dd>
           </div>
         )}
