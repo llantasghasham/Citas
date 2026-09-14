@@ -28,8 +28,8 @@ function xml(value: string): string {
  * viviera en cada sitio, este sería el sitio donde un día falta, y entonces un
  * buscador tendría la lista de lo que todavía no se ha publicado.
  *
- * Cada dirección lleva sus alternativas en los cinco idiomas, que es lo que
- * evita que un buscador tome cinco páginas por cinco contenidos distintos.
+ * Cada dirección lleva sus alternativas en los cuatro idiomas, que es lo que
+ * evita que un buscador tome cuatro páginas por cuatro contenidos distintos.
  */
 export async function GET(request: Request, context: RouteContext): Promise<Response> {
   const { locale } = await context.params;
@@ -70,7 +70,13 @@ export async function GET(request: Request, context: RouteContext): Promise<Resp
   return new Response(cuerpo, {
     headers: {
       'content-type': 'application/xml; charset=utf-8',
-      'cache-control': 'public, max-age=3600',
+      // UN MINUTO, no una hora. Aquí sí hay dos consultas y sí conviene que un
+      // robot insistente no las repita, que es para lo que se puso la caché.
+      // Pero una hora es lo que dejó al proxy sirviendo un índice con un idioma
+      // que ya no existía mientras tres despliegues lo comprobaban y se ponían
+      // en rojo. Un minuto corta al robot igual, y una ficha recién aprobada
+      // entra en el mapa hoy y no dentro de una hora.
+      'cache-control': 'public, max-age=60',
     },
   });
 }

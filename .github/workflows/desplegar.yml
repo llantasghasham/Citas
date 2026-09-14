@@ -136,8 +136,8 @@ jobs:
       - name: Comprobar la puerta del directorio
         run: |
           # /d no es una pagina: negocia el idioma y redirige. Un 200 aqui seria
-          # que alguien la convirtio en una pagina, y entonces hay cinco idiomas
-          # bajo la misma direccion.
+          # que alguien la convirtio en una pagina, y entonces hay cuatro
+          # idiomas bajo la misma direccion.
           codigo="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
             -H 'Accept-Language: pt-BR,pt;q=0.9' 'https://citas.posxml.com/d')"
           destino="$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 30 \
@@ -148,6 +148,15 @@ jobs:
             *'/d/pt') ;;
             *) echo "::error::/d no negocio el idioma: fue a $destino"; exit 1 ;;
           esac
+
+          # Y que el idioma que se quito NO exista. Pedir portugues y recibir
+          # /d/pt no prueba nada: el portugues estaba en las dos listas, la de
+          # antes y la de ahora. Esta comprobacion pasaba en verde mientras el
+          # despliegue servia la version vieja — un idioma que sobra solo se ve
+          # preguntando por el.
+          fr="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 'https://citas.posxml.com/d/fr')"
+          echo "/d/fr -> $fr"
+          [ "$fr" = "404" ] || { echo "::error::/d/fr sigue existiendo: devolvio $fr"; exit 1; }
 
       - name: Comprobar el mapa del sitio
         run: |
@@ -161,12 +170,24 @@ jobs:
           esac
 
           # Y que el indice lleve los cuatro idiomas.
-          cuantos="$(curl -s --max-time 30 'https://citas.posxml.com/d/sitemap.xml' | grep -c '<loc>')"
+          #
+          # Con `?d=` y sin pedirle nada al proxy: lo que se comprueba aqui es
+          # el PROGRAMA recien desplegado, y una respuesta guardada no lo es.
+          # Es lo mismo que ya pasaba con /render/... al lado de
+          # /api/render/..., y costo tres despliegues en rojo: el indice tenia
+          # una hora de cache, asi que tras quitar el frances el proxy siguio
+          # entregando el de cinco idiomas mientras el servidor servia el de
+          # cuatro. La cache ya se quito del codigo; el rodeo se queda, porque
+          # una comprobacion que puede leer una cache no comprueba nada.
+          sello="$(date +%s)"
+          cuantos="$(curl -s --max-time 30 -H 'Cache-Control: no-cache' \
+            "https://citas.posxml.com/d/sitemap.xml?d=$sello" | grep -c '<loc>')"
           echo "idiomas en el indice: $cuantos"
           [ "$cuantos" = "4" ] || { echo "::error::el indice del mapa no tiene cuatro idiomas"; exit 1; }
 
           # El de arabe tiene que llevar al menos la portada y el listado.
-          urls="$(curl -s --max-time 30 'https://citas.posxml.com/d/ar/sitemap.xml' | grep -c '<loc>')"
+          urls="$(curl -s --max-time 30 -H 'Cache-Control: no-cache' \
+            "https://citas.posxml.com/d/ar/sitemap.xml?d=$sello" | grep -c '<loc>')"
           echo "direcciones en /d/ar/sitemap.xml: $urls"
           [ "$urls" -ge 2 ] || { echo "::error::el mapa de arabe salio vacio"; exit 1; }
 

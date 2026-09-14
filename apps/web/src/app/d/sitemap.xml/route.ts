@@ -7,9 +7,9 @@ export const dynamic = 'force-dynamic';
 /**
  * El índice de mapas del sitio: uno por idioma.
  *
- * Cinco idiomas en un solo archivo obligaría a un buscador a leerlo entero para
- * encontrar lo suyo, y con mil fichas son cinco mil direcciones. Partido por
- * idioma, cada uno lee el que le toca.
+ * Cuatro idiomas en un solo archivo obligaría a un buscador a leerlo entero
+ * para encontrar lo suyo, y con mil fichas son cuatro mil direcciones. Partido
+ * por idioma, cada uno lee el que le toca.
  *
  * Se escribe a mano y no con el ayudante de Next porque ese genera UN mapa, no
  * un índice.
@@ -32,9 +32,14 @@ export async function GET(request: Request): Promise<Response> {
   return new Response(cuerpo, {
     headers: {
       'content-type': 'application/xml; charset=utf-8',
-      // Una hora: un buscador no necesita el minuto exacto en que se publicó una
-      // ficha, y sin caché esto es una consulta por cada visita de un robot.
-      'cache-control': 'public, max-age=3600',
+      // SIN caché, y la razón por la que la tuvo una hora no valía aquí: esto
+      // son cuatro cadenas salidas de una lista fija, ni una consulta. Lo que
+      // la hora ahorraba era nada y lo que costaba fue esto — al quitar el
+      // francés, el proxy siguió sirviendo el índice viejo durante una hora, y
+      // tres despliegues seguidos se pusieron en rojo comprobando la CACHÉ en
+      // vez del programa. Un buscador no necesita el minuto exacto, pero
+      // tampoco necesita que se lo guarden.
+      'cache-control': 'no-store',
     },
   });
 }

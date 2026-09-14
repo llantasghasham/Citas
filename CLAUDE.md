@@ -1060,6 +1060,20 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   respuesta correcta es seguir sin el enlace —el `.ics`, el `robots.txt`— se usa
   `canonicalOriginOrNull()`: un 500 en `robots.txt` le dice a un buscador que el
   sitio entero está roto.
+- El ÍNDICE del mapa va SIN caché y el de cada idioma con un minuto. Tenía una
+  hora, y una hora es lo que tarda un despliegue en dejar de ser verdad: al
+  quitar el francés, el proxy siguió entregando el índice de cinco idiomas
+  mientras el servidor ya servía el de cuatro, y TRES despliegues seguidos se
+  pusieron en rojo comprobando la caché en vez del programa. El índice no
+  consulta nada —son cuatro cadenas de una lista fija—, así que la hora no
+  ahorraba ni una consulta; el de cada idioma sí consulta, y un minuto corta
+  igual a un robot insistente y además mete hoy la ficha recién aprobada.
+- Lo que se comprueba tras desplegar se pide de forma que NO pueda salir de una
+  caché (`?d=<sello>`), por la misma razón por la que `/render/...` está en la
+  lista al lado de `/api/render/...`. Y se comprueba algo que DISTINGA las dos
+  versiones: pedir portugués y recibir `/d/pt` pasaba en verde con el código
+  viejo y con el nuevo, porque el portugués estaba en las dos listas. Lo que
+  prueba que el francés se fue es preguntar por `/d/fr` y recibir un 404.
 
 ### Render
 - El PNG se genera UNA vez por versión y se guarda (`Render`), porque esa URL es
