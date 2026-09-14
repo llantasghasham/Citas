@@ -62,7 +62,7 @@ describe('el archivo de calendario', () => {
   it('escapa el punto y coma, que rompía el archivo entero', () => {
     // `'\;'` en JavaScript es un punto y coma a secas: no se escapaba nada.
     const line = ics('Le Royal; piso 2').split('\r\n').find((l) => l.startsWith('LOCATION:'));
-    assert.ok(line?.includes('\;'), line);
+    assert.ok(line?.includes('\;'), `LOCATION: ${line ?? '—'}`);
   });
 
   it('no deja ni un ; ni un , sin escapar en ningún valor de texto', () => {

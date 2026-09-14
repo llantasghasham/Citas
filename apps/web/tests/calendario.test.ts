@@ -192,7 +192,9 @@ describe('el calendario de varios actos', { skip: HAS_DB ? false : 'sin DATABASE
     const ics = ok(await calendarFor(scope(), eventId, subject()));
     const location = lines(ics, 'LOCATION:');
     assert.equal(location.length, 1);
-    assert.ok(location[0]?.includes('Le Royal\\; piso 2'), location[0]);
+    // El mensaje se compone SIEMPRE con una cadena: `location[0]` puede ser
+    // `undefined`, y un fallo cuyo mensaje es «undefined» no dice nada.
+    assert.ok(location[0]?.includes('Le Royal\\; piso 2'), `LOCATION: ${location[0] ?? '—'}`);
 
     // Y ni un punto y coma ni una coma sueltos en ningún valor de texto.
     const sueltos = ics
