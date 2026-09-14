@@ -4,6 +4,7 @@ import type { TenantScope } from '@/lib/db/tenant';
 import type { DirectoryLocale } from '@citas/core';
 
 import { isDistrictOf, isGovernorate, type GovernorateKey } from './categories';
+import type { ProviderScope } from './scope';
 import { listingSlug } from './slug';
 
 /**
@@ -407,4 +408,219 @@ export async function approvedListingSlugs(): Promise<{ slug: string; updatedAt:
     orderBy: { publishedAt: 'desc' },
     select: { slug: true, updatedAt: true },
   });
+}
+
+// ------------------------------------------------- quién participó en la fiesta
+
+export type TagProblem = ListingProblem | 'provider' | 'role' | 'already';
+
+/**
+ * Apuntar a un proveedor en una fiesta.
+ *
+ * Tres comprobaciones, y ninguna sobra:
+ *
+ *   1. La fiesta tiene que ser de ESTA oficina (`tenantId` en el WHERE). Etiquetar
+ *      en la boda de otra agencia sería escribir en su página.
+ *   2. El proveedor tiene que estar PUBLICADO. No se puede etiquetar a un negocio
+ *      que todavía no ha salido: sería sacarlo a la calle por la puerta de atrás,
+ *      sin que pasara por su propia revisión.
+ *   3. El papel tiene que ser una de SUS categorías. Un salón apuntado como «dj»
+ *      es una ficha mal puesta, y el que la sufre no es quien la escribió.
+ *
+ * Y nace SIN confirmar. Un salón puede no querer salir en la boda de otro, así
+ * que hasta que él lo diga no aparece: `approvedByProvider` en falso, que es lo
+ * que filtra la consulta pública.
+ */
+export async function addListingProvider(
+  scope: TenantScope,
+  userId: string,
+  listingId: string,
+  providerRef: string,
+  role: string,
+): Promise<{ ok: true } | { ok: false; problems: TagProblem[] }> {
+  const prisma = controlDb();
+
+  const listing = await prisma.publicListing.findFirst({
+    where: { id: listingId, tenantId: scope.tenantId },
+    select: { id: true },
+  });
+  if (listing === null) return { ok: false, problems: ['notFound'] };
+
+  // Se acepta el slug o la dirección entera: quien lo busca lo tiene abierto en
+  // otra pestaña y lo que copia es la barra de direcciones, no el slug pelado.
+  const slug = (providerRef.trim().split('/').pop() ?? '').split('?')[0] ?? '';
+  if (slug.length === 0) return { ok: false, problems: ['provider'] };
+
+  const provider = await prisma.provider.findFirst({
+    where: { slug, status: 'approved' },
+    select: { id: true, categories: { select: { category: true, isPrimary: true } } },
+  });
+  if (provider === null) return { ok: false, problems: ['provider'] };
+
+  const suyas = provider.categories.map((one) => one.category);
+  const papel = role.trim().length === 0
+    ? (provider.categories.find((one) => one.isPrimary)?.category ?? suyas[0] ?? '')
+    : role.trim();
+  if (!suyas.includes(papel)) return { ok: false, problems: ['role'] };
+
+  const existing = await prisma.publicListingProvider.findFirst({
+    where: { listingId, providerId: provider.id },
+    select: { id: true },
+  });
+  if (existing !== null) return { ok: false, problems: ['already'] };
+
+  await prisma.publicListingProvider.create({
+    data: { listingId, providerId: provider.id, role: papel, approvedByProvider: false },
+  });
+
+  await recordAudit({
+    tenantId: scope.tenantId,
+    actorId: userId,
+    action: 'listing.provider.tagged',
+    entity: 'PublicListing',
+    entityId: listingId,
+    metadata: { providerId: provider.id, role: papel },
+  });
+  return { ok: true };
+}
+
+/** Quitar a un proveedor de una fiesta. Lo puede hacer la oficina que la publicó. */
+export async function removeListingProvider(
+  scope: TenantScope,
+  userId: string,
+  listingId: string,
+  providerId: string,
+): Promise<{ ok: true } | { ok: false; problems: TagProblem[] }> {
+  const prisma = controlDb();
+
+  const listing = await prisma.publicListing.findFirst({
+    where: { id: listingId, tenantId: scope.tenantId },
+    select: { id: true },
+  });
+  if (listing === null) return { ok: false, problems: ['notFound'] };
+
+  const done = await prisma.publicListingProvider.deleteMany({
+    where: { listingId, providerId },
+  });
+  if (done.count === 0) return { ok: false, problems: ['notFound'] };
+
+  await recordAudit({
+    tenantId: scope.tenantId,
+    actorId: userId,
+    action: 'listing.provider.untagged',
+    entity: 'PublicListing',
+    entityId: listingId,
+    metadata: { providerId },
+  });
+  return { ok: true };
+}
+
+export interface TaggedProvider {
+  providerId: string;
+  slug: string;
+  legalName: string;
+  role: string;
+  approvedByProvider: boolean;
+}
+
+/**
+ * Los apuntados en una fiesta, CONFIRMADOS O NO, para la oficina que la publicó.
+ *
+ * Es lo contrario de la consulta pública, y a propósito: la oficina tiene que
+ * ver a quién apuntó y quién no lo ha confirmado todavía — si no, «puse al salón
+ * y no sale» no tiene explicación en ninguna pantalla.
+ */
+export async function listingProviders(
+  scope: TenantScope,
+  listingId: string,
+): Promise<TaggedProvider[]> {
+  const rows = await controlDb().publicListingProvider.findMany({
+    where: { listingId, listing: { tenantId: scope.tenantId } },
+    orderBy: { createdAt: 'asc' },
+    select: {
+      providerId: true,
+      role: true,
+      approvedByProvider: true,
+      provider: { select: { slug: true, legalName: true } },
+    },
+  });
+  return rows.map((row) => ({
+    providerId: row.providerId,
+    slug: row.provider.slug,
+    legalName: row.provider.legalName,
+    role: row.role,
+    approvedByProvider: row.approvedByProvider,
+  }));
+}
+
+export interface ProviderInvitation {
+  listingId: string;
+  slug: string;
+  title: string;
+  city: string;
+  governorate: string;
+  eventType: string;
+  listingStatus: string;
+  locale: string;
+  role: string;
+  approvedByProvider: boolean;
+}
+
+/** En qué fiestas han apuntado a ESTE negocio. */
+export async function listingsForProvider(providerId: string): Promise<ProviderInvitation[]> {
+  const rows = await controlDb().publicListingProvider.findMany({
+    where: { providerId },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+    select: {
+      listingId: true,
+      role: true,
+      approvedByProvider: true,
+      listing: {
+        select: {
+          slug: true,
+          title: true,
+          city: true,
+          governorate: true,
+          eventType: true,
+          status: true,
+          locale: true,
+        },
+      },
+    },
+  });
+  return rows.map((row) => ({
+    listingId: row.listingId,
+    slug: row.listing.slug,
+    title: row.listing.title,
+    city: row.listing.city,
+    governorate: row.listing.governorate,
+    eventType: row.listing.eventType,
+    listingStatus: row.listing.status,
+    locale: row.listing.locale,
+    role: row.role,
+    approvedByProvider: row.approvedByProvider,
+  }));
+}
+
+/**
+ * El proveedor dice si quiere salir en esa fiesta, o retira el permiso.
+ *
+ * Lo decide ÉL y solo él: el `where` lleva su `providerId`, que sale del ámbito
+ * acuñado contra su membresía. La oficina que publicó la boda puede apuntarlo y
+ * puede quitarlo, pero no puede confirmarlo por él — que es lo que convierte
+ * «aparece en la boda de un cliente» en algo que el negocio eligió.
+ *
+ * Y se puede RETIRAR después. Un permiso que solo se puede dar no es un permiso.
+ */
+export async function setProviderApproval(
+  scope: ProviderScope,
+  listingId: string,
+  approved: boolean,
+): Promise<{ ok: true } | { ok: false; problems: TagProblem[] }> {
+  const done = await controlDb().publicListingProvider.updateMany({
+    where: { listingId, providerId: scope.providerId },
+    data: { approvedByProvider: approved },
+  });
+  return done.count === 0 ? { ok: false, problems: ['notFound'] } : { ok: true };
 }

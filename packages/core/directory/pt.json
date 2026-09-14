@@ -236,7 +236,8 @@
       "tooSmall": "A foto é demasiado pequena.",
       "tooManyPixels": "A foto é demasiado grande.",
       "badVideo": "Só YouTube ou Vimeo, e com https."
-    }
+    },
+    "parties": "Festas"
   },
   "moderation": {
     "title": "Moderação",
@@ -312,7 +313,23 @@
       "authorization": "Falta a autorização: quem e com que texto.",
       "exists": "Esta festa já tem publicação.",
       "notDraft": "Já foi enviada ou publicada.",
-      "notFound": "Não se encontrou."
-    }
+      "notFound": "Não se encontrou.",
+      "provider": "Não se encontrou esse negócio publicado.",
+      "role": "Esse papel não é uma das suas categorias.",
+      "already": "Esse negócio já está apontado nesta festa."
+    },
+    "tagProvider": "Apontar quem participou",
+    "tagHelp": "Cole o endereço da ficha no diretório. Tem de estar publicada, e não aparece até o negócio confirmar.",
+    "providerRef": "Endereço ou identificador",
+    "role": "Com que papel",
+    "add": "Apontar",
+    "untag": "Retirar",
+    "waitingConfirmation": "À espera que confirme",
+    "confirmed": "Confirmado",
+    "invitedTo": "Festas onde o apontaram",
+    "invitedHelp": "É você quem decide se aparece. Pode retirar depois.",
+    "appear": "Sim, quero aparecer",
+    "dontAppear": "Não aparecer",
+    "noInvitations": "Ainda não o apontaram em nenhuma."
   }
 }

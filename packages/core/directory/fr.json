@@ -236,7 +236,8 @@
       "tooSmall": "La photo est trop petite.",
       "tooManyPixels": "La photo est trop grande.",
       "badVideo": "YouTube ou Vimeo uniquement, en https."
-    }
+    },
+    "parties": "Fêtes"
   },
   "moderation": {
     "title": "Modération",
@@ -312,7 +313,23 @@
       "authorization": "L'autorisation manque : qui, et avec quel texte.",
       "exists": "Cette fête a déjà une publication.",
       "notDraft": "Elle est déjà envoyée ou publiée.",
-      "notFound": "Introuvable."
-    }
+      "notFound": "Introuvable.",
+      "provider": "Aucune entreprise publiée à cette adresse.",
+      "role": "Ce rôle ne fait pas partie de ses catégories.",
+      "already": "Cette entreprise est déjà sur cette fête."
+    },
+    "tagProvider": "Ajouter qui y a participé",
+    "tagHelp": "Collez l'adresse de sa fiche dans l'annuaire. Elle doit être publiée, et elle n'apparaît pas tant que l'entreprise ne le confirme pas.",
+    "providerRef": "Adresse ou identifiant",
+    "role": "À quel titre",
+    "add": "Ajouter",
+    "untag": "Retirer",
+    "waitingConfirmation": "En attente de sa confirmation",
+    "confirmed": "Confirmé",
+    "invitedTo": "Fêtes où on vous a ajouté",
+    "invitedHelp": "C'est vous qui décidez si vous apparaissez. Vous pouvez le retirer ensuite.",
+    "appear": "Oui, affichez-moi",
+    "dontAppear": "Ne pas afficher",
+    "noInvitations": "Personne ne vous a encore ajouté."
   }
 }

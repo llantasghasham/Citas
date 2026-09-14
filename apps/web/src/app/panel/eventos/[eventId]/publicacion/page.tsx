@@ -10,12 +10,19 @@ import {
   DATE_MODES,
   EVENT_TYPES,
   listingForEvent,
+  listingProviders,
 } from '@/lib/directory/listings';
 import { GOVERNORATES, GOVERNORATE_KEYS } from '@/lib/directory/categories';
 import { panelLocale } from '@/lib/directory/session';
 import { DIRECTORY_LOCALES, getDirectoryDictionary } from '@citas/core';
 
-import { createListingAction, deleteListingAction, submitListingAction } from './actions';
+import {
+  createListingAction,
+  deleteListingAction,
+  submitListingAction,
+  tagProviderAction,
+  untagProviderAction,
+} from './actions';
 
 interface Props {
   params: Promise<{ eventId: string }>;
@@ -58,6 +65,10 @@ export default async function PublicationPage({ params, searchParams }: Props) {
   if (event === null) redirect('/panel');
 
   const listing = await listingForEvent(scope, eventId);
+  // Los apuntados, CONFIRMADOS O NO: la oficina tiene que ver a quién puso y
+  // quién no lo ha confirmado, o «puse al salón y no sale» no tiene explicación
+  // en ninguna pantalla.
+  const tagged = listing === null ? [] : await listingProviders(scope, listing.id);
 
   return (
     <>
@@ -249,6 +260,65 @@ export default async function PublicationPage({ params, searchParams }: Props) {
               <p className="text-sm whitespace-pre-line">{listing.rejectedNote}</p>
             </section>
           )}
+
+          {/* ------------------------------------------------ quién participó */}
+          <section className="flex flex-col gap-3 border border-[#ddd6c6] bg-[#fbf6ec] p-4">
+            <h2 className="text-lg">{copy.listing.whoTookPart}</h2>
+            <p className="text-xs text-[#6a6456]">{copy.listing.tagHelp}</p>
+
+            {tagged.length > 0 && (
+              <ul className="flex flex-col gap-2">
+                {tagged.map((one) => (
+                  <li key={one.providerId} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="text-sm">{one.legalName}</span>
+                    <span className="text-xs text-[#8a6c22]">
+                      {copy.categories[one.role] ?? one.role}
+                    </span>
+                    <span
+                      className={`text-xs ${
+                        one.approvedByProvider ? 'text-[#2f6b3a]' : 'text-[#8a3a22]'
+                      }`}
+                    >
+                      {one.approvedByProvider
+                        ? copy.listing.confirmed
+                        : copy.listing.waitingConfirmation}
+                    </span>
+                    <form action={untagProviderAction} className="ms-auto">
+                      <input type="hidden" name="eventId" value={eventId} />
+                      <input type="hidden" name="listingId" value={listing.id} />
+                      <input type="hidden" name="providerId" value={one.providerId} />
+                      <button
+                        type="submit"
+                        className="border border-[#ddd6c6] bg-white px-3 py-1 text-xs hover:bg-[#f4efe6]"
+                      >
+                        {copy.listing.untag}
+                      </button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <form action={tagProviderAction} className="flex flex-wrap items-end gap-3">
+              <input type="hidden" name="eventId" value={eventId} />
+              <input type="hidden" name="listingId" value={listing.id} />
+              <label className={`${ETIQUETA} flex-1`}>
+                {copy.listing.providerRef}
+                <input name="providerRef" required maxLength={300} dir="ltr" className={CAJA} />
+              </label>
+              <label className={ETIQUETA}>
+                {copy.listing.role}
+                {/* Vacío toma su categoría principal. El servicio comprueba que
+                    el papel sea una de SUS categorías: un salón apuntado como
+                    «dj» es una ficha mal puesta, y quien la sufre no es quien la
+                    escribió. */}
+                <input name="role" maxLength={60} className={CAJA} />
+              </label>
+              <button type="submit" className={`${BOTON} bg-[#8a6c22]`}>
+                {copy.listing.add}
+              </button>
+            </form>
+          </section>
 
           <div className="flex flex-wrap gap-3">
             {(listing.status === 'draft' || listing.status === 'rejected') && (

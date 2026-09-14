@@ -131,6 +131,7 @@ export interface DirectoryDictionary {
     profile: string;
     media: string;
     state: string;
+    parties: string;
     signOut: string;
 
     legalName: string;
@@ -242,6 +243,19 @@ export interface DirectoryDictionary {
     authorizationHelp: string;
     publicUrl: string;
     whoTookPart: string;
+    tagProvider: string;
+    tagHelp: string;
+    providerRef: string;
+    role: string;
+    add: string;
+    untag: string;
+    waitingConfirmation: string;
+    confirmed: string;
+    invitedTo: string;
+    invitedHelp: string;
+    appear: string;
+    dontAppear: string;
+    noInvitations: string;
     browse: string;
     empty: string;
     errors: {
@@ -251,6 +265,9 @@ export interface DirectoryDictionary {
       exists: string;
       notDraft: string;
       notFound: string;
+      provider: string;
+      role: string;
+      already: string;
     };
   };
 

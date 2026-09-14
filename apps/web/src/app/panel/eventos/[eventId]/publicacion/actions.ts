@@ -4,9 +4,11 @@ import { redirect } from 'next/navigation';
 
 import { getSession, scopeOf, sessionCan } from '@/lib/auth/session';
 import {
+  addListingProvider,
   createListing,
   deleteListing,
   isEventType,
+  removeListingProvider,
   submitListing,
   type ListingInput,
 } from '@/lib/directory/listings';
@@ -72,5 +74,40 @@ export async function deleteListingAction(formData: FormData): Promise<void> {
   const destino = `/panel/eventos/${encodeURIComponent(eventId)}/publicacion`;
 
   const result = await deleteListing(scope, userId, String(formData.get('listingId') ?? ''));
+  redirect(result.ok ? `${destino}?guardado=1` : `${destino}?error=${result.problems.join(',')}`);
+}
+
+/**
+ * Apuntar a un proveedor en la fiesta.
+ *
+ * Nace SIN confirmar: la oficina dice quién participó, y el negocio decide si
+ * quiere salir. Puede no querer aparecer en la boda de otro.
+ */
+export async function tagProviderAction(formData: FormData): Promise<void> {
+  const { userId, scope } = await guard();
+  const eventId = String(formData.get('eventId') ?? '');
+  const destino = `/panel/eventos/${encodeURIComponent(eventId)}/publicacion`;
+
+  const result = await addListingProvider(
+    scope,
+    userId,
+    String(formData.get('listingId') ?? ''),
+    String(formData.get('providerRef') ?? ''),
+    String(formData.get('role') ?? ''),
+  );
+  redirect(result.ok ? `${destino}?guardado=1` : `${destino}?error=${result.problems.join(',')}`);
+}
+
+export async function untagProviderAction(formData: FormData): Promise<void> {
+  const { userId, scope } = await guard();
+  const eventId = String(formData.get('eventId') ?? '');
+  const destino = `/panel/eventos/${encodeURIComponent(eventId)}/publicacion`;
+
+  const result = await removeListingProvider(
+    scope,
+    userId,
+    String(formData.get('listingId') ?? ''),
+    String(formData.get('providerId') ?? ''),
+  );
   redirect(result.ok ? `${destino}?guardado=1` : `${destino}?error=${result.problems.join(',')}`);
 }

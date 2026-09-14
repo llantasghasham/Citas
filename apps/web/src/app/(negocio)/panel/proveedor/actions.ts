@@ -11,6 +11,7 @@ import {
   setAltText,
   setVideo,
 } from '@/lib/directory/media';
+import { setProviderApproval } from '@/lib/directory/listings';
 import { currentProviderScope } from '@/lib/directory/session';
 import {
   createProvider,
@@ -234,4 +235,27 @@ export async function setVideoAction(formData: FormData): Promise<void> {
   const result = await setVideo(scope, session.userId, String(formData.get('videoUrl') ?? ''));
   if (!result.ok) back('/medios', scope.providerId, `&error=${result.problems.join(',')}`);
   back('/medios', scope.providerId, '&guardado=1');
+}
+
+/**
+ * Aparecer, o no, en la fiesta de un cliente.
+ *
+ * Lo decide el NEGOCIO y solo él. La oficina que publicó la boda puede apuntarlo
+ * y puede quitarlo, pero no puede confirmarlo por él: eso es lo que convierte
+ * «sale en la boda de un cliente» en algo que el negocio eligió. Y se puede
+ * retirar después — un permiso que solo se puede dar no es un permiso.
+ */
+export async function setAppearanceAction(formData: FormData): Promise<void> {
+  const session = await getSession();
+  if (session === null) redirect('/entrar');
+
+  const scope = await currentProviderScope(session.userId, requestedId(formData));
+  if (scope === null) redirect('/panel/proveedor');
+
+  await setProviderApproval(
+    scope,
+    String(formData.get('listingId') ?? ''),
+    formData.get('appear') === '1',
+  );
+  back('/fiestas', scope.providerId, '&guardado=1');
 }

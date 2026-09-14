@@ -50,6 +50,9 @@ export default async function ProviderPanelLayout({ children }: { children: Reac
             <Link href="/panel/proveedor/medios" className="hover:underline">
               {copy.panel.media}
             </Link>
+            <Link href="/panel/proveedor/fiestas" className="hover:underline">
+              {copy.panel.parties}
+            </Link>
             <Link href="/panel/proveedor/estado" className="hover:underline">
               {copy.panel.state}
             </Link>

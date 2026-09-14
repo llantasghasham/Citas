@@ -236,7 +236,8 @@
       "tooSmall": "The photo is too small.",
       "tooManyPixels": "The photo is too large.",
       "badVideo": "YouTube or Vimeo only, over https."
-    }
+    },
+    "parties": "Celebrations"
   },
   "moderation": {
     "title": "Moderation",
@@ -312,7 +313,23 @@
       "authorization": "The authorisation is missing: who, and in what words.",
       "exists": "This celebration already has a listing.",
       "notDraft": "It is already sent or published.",
-      "notFound": "Not found."
-    }
+      "notFound": "Not found.",
+      "provider": "No published business found at that address.",
+      "role": "That role is not one of their categories.",
+      "already": "That business is already on this celebration."
+    },
+    "tagProvider": "Add who took part",
+    "tagHelp": "Paste the address of their directory listing. It has to be published, and it does not show until the business confirms.",
+    "providerRef": "Address or identifier",
+    "role": "In what role",
+    "add": "Add",
+    "untag": "Remove",
+    "waitingConfirmation": "Waiting for them to confirm",
+    "confirmed": "Confirmed",
+    "invitedTo": "Celebrations you were added to",
+    "invitedHelp": "You decide whether you appear. You can take it back later.",
+    "appear": "Yes, show me",
+    "dontAppear": "Do not show me",
+    "noInvitations": "Nobody has added you to one yet."
   }
 }

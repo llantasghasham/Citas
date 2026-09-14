@@ -25,8 +25,13 @@ import {
 } from '../src/lib/directory/clock';
 import { contactHref } from '../src/lib/directory/contacts';
 import {
+  addListingProvider,
   approvedListingSlugs,
   createListing,
+  listingProviders,
+  listingsForProvider,
+  removeListingProvider,
+  setProviderApproval,
   deleteListing,
   listPublicListings,
   listingBySlug,
@@ -1775,6 +1780,227 @@ describe('publicar una fiesta', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, (
     // boda y quien lea un registro no sabría cuál.
     assert.match(providerSlug('قاعة الأرز', []), /^p-[a-f0-9]{8}$/);
     assert.equal(listingSlug('Zaffe in Jbeil', []), 'zaffe-in-jbeil');
+  });
+
+  void fixture;
+});
+
+/**
+ * Quién participó en una fiesta.
+ *
+ * Es el permiso de un TERCERO dentro de la página de otro. La oficina que
+ * organiza la boda dice quién participó; si eso bastara para publicarlo, un
+ * salón aparecería en la página de la boda de un cliente sin que nadie se lo
+ * preguntara.
+ */
+describe('apuntar a un proveedor en una fiesta', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  let scope: TenantScope;
+  let otraOficina: TenantScope;
+  let userId = '';
+  let moderadorId = '';
+  let listingId = '';
+  let salonId = '';
+  let salonSlug = '';
+  let borradorSlug = '';
+
+  const publicarProveedor = async (
+    nombre: string,
+    email: string,
+    categorias: string[],
+    aprobar: boolean,
+  ): Promise<{ id: string; slug: string }> => {
+    const prisma = controlDb();
+    const user = await prisma.user.create({ data: { email, locale: 'ar' }, select: { id: true } });
+    const result = await createProvider(user.id, {
+      legalName: nombre, governorate: 'beirut', district: 'beirut', city: 'Beirut', mainLocale: 'ar',
+    });
+    assert.ok(result.ok);
+    await setTranslation(unsafeProviderScope(result.id), user.id, 'ar', {
+      name: nombre, tagline: '', description: '', services: [],
+    });
+    await setCategories(unsafeProviderScope(result.id), user.id, categorias, categorias[0] ?? '');
+    if (aprobar) {
+      await prisma.provider.update({
+        where: { id: result.id },
+        data: { status: 'approved', publishedAt: new Date() },
+      });
+    }
+    const row = await prisma.provider.findUniqueOrThrow({
+      where: { id: result.id }, select: { slug: true },
+    });
+    return { id: result.id, slug: row.slug };
+  };
+
+  beforeEach(async () => {
+    const prisma = controlDb();
+    await prisma.publicListing.deleteMany({});
+    await prisma.provider.deleteMany({});
+    await prisma.user.deleteMany({ where: { email: { startsWith: 'tag-' } } });
+
+    const tenant = await prisma.tenant.findFirstOrThrow({
+      where: { isRoot: true }, select: { id: true, databaseName: true },
+    });
+    scope = tenantScope(tenant.id, tenant.databaseName);
+    otraOficina = tenantScope('oficina-de-al-lado', null);
+
+    const user = await prisma.user.create({
+      data: { email: 'tag-oficina@example.com', locale: 'ar' }, select: { id: true },
+    });
+    const mod = await prisma.user.create({
+      data: { email: 'tag-mod@example.com', locale: 'es', isSuperadmin: true }, select: { id: true },
+    });
+    userId = user.id;
+    moderadorId = mod.id;
+
+    const salon = await publicarProveedor('Salon del Cedro', 'tag-salon@example.com', ['wedding_hall'], true);
+    salonId = salon.id;
+    salonSlug = salon.slug;
+    const borrador = await publicarProveedor('Sin publicar', 'tag-borrador@example.com', ['dj'], false);
+    borradorSlug = borrador.slug;
+
+    const creada = await createListing(
+      scope, userId, 'evento-tag',
+      {
+        title: 'Boda de prueba', description: '', locale: 'ar', eventType: 'wedding',
+        dateMode: 'month', date: '', governorate: 'beirut', district: 'beirut', city: 'Beirut',
+        venueName: '', contactMode: 'none',
+      },
+      { by: 'La pareja', text: 'Autorizamos publicar esta boda.' },
+    );
+    assert.ok(creada.ok);
+    listingId = creada.id;
+    await submitListing(scope, userId, listingId);
+    await decideListing(listingId, moderadorId, 'approved', '');
+  });
+
+  it('apuntado NO es publicado: hace falta que el negocio lo confirme', async () => {
+    assert.deepEqual(
+      await addListingProvider(scope, userId, listingId, salonSlug, 'wedding_hall'),
+      { ok: true },
+    );
+
+    // La oficina lo ve apuntado y sin confirmar.
+    const apuntados = await listingProviders(scope, listingId);
+    assert.equal(apuntados.length, 1);
+    assert.equal(apuntados[0]?.approvedByProvider, false);
+
+    // Y la calle NO lo ve.
+    const publica = await listPublicListings('ar');
+    assert.deepEqual(publica[0]?.providers, []);
+
+    // El negocio dice que sí, y entonces sale.
+    assert.deepEqual(
+      await setProviderApproval(unsafeProviderScope(salonId), listingId, true),
+      { ok: true },
+    );
+    const despues = await listPublicListings('ar');
+    assert.equal(despues[0]?.providers.length, 1);
+    assert.equal(despues[0]?.providers[0]?.name, 'Salon del Cedro');
+
+    // Y lo puede RETIRAR. Un permiso que solo se puede dar no es un permiso.
+    assert.deepEqual(
+      await setProviderApproval(unsafeProviderScope(salonId), listingId, false),
+      { ok: true },
+    );
+    assert.deepEqual((await listPublicListings('ar'))[0]?.providers, []);
+  });
+
+  it('no se puede apuntar a un negocio que no está publicado', async () => {
+    // Seria sacarlo a la calle por la puerta de atras, sin pasar por su propia
+    // revision.
+    assert.deepEqual(await addListingProvider(scope, userId, listingId, borradorSlug, 'dj'), {
+      ok: false,
+      problems: ['provider'],
+    });
+    assert.deepEqual(await addListingProvider(scope, userId, listingId, 'no-existe', ''), {
+      ok: false,
+      problems: ['provider'],
+    });
+  });
+
+  it('el papel tiene que ser una de SUS categorías', async () => {
+    assert.deepEqual(await addListingProvider(scope, userId, listingId, salonSlug, 'dj'), {
+      ok: false,
+      problems: ['role'],
+    });
+    // Vacío toma la principal.
+    assert.deepEqual(await addListingProvider(scope, userId, listingId, salonSlug, ''), { ok: true });
+    assert.equal((await listingProviders(scope, listingId))[0]?.role, 'wedding_hall');
+  });
+
+  it('se acepta la dirección entera, que es lo que se copia de la barra', async () => {
+    assert.deepEqual(
+      await addListingProvider(
+        scope, userId, listingId,
+        `https://citas.posxml.com/d/es/p/${salonSlug}`,
+        'wedding_hall',
+      ),
+      { ok: true },
+    );
+    assert.equal((await listingProviders(scope, listingId))[0]?.slug, salonSlug);
+  });
+
+  it('no se apunta dos veces al mismo', async () => {
+    assert.deepEqual(await addListingProvider(scope, userId, listingId, salonSlug, ''), { ok: true });
+    assert.deepEqual(await addListingProvider(scope, userId, listingId, salonSlug, ''), {
+      ok: false,
+      problems: ['already'],
+    });
+  });
+
+  it('la oficina de al lado no apunta ni quita en esta fiesta', async () => {
+    assert.deepEqual(await addListingProvider(otraOficina, userId, listingId, salonSlug, ''), {
+      ok: false,
+      problems: ['notFound'],
+    });
+
+    await addListingProvider(scope, userId, listingId, salonSlug, '');
+    assert.deepEqual(await removeListingProvider(otraOficina, userId, listingId, salonId), {
+      ok: false,
+      problems: ['notFound'],
+    });
+    assert.equal((await listingProviders(scope, listingId)).length, 1);
+    // Y desde la suya, sí.
+    assert.deepEqual(await removeListingProvider(scope, userId, listingId, salonId), { ok: true });
+  });
+
+  it('un negocio no confirma por otro', async () => {
+    await addListingProvider(scope, userId, listingId, salonSlug, '');
+    const otro = await publicarProveedor('Otro salon', 'tag-otro@example.com', ['wedding_hall'], true);
+
+    // Con el ámbito del vecino no hay fila que tocar.
+    assert.deepEqual(await setProviderApproval(unsafeProviderScope(otro.id), listingId, true), {
+      ok: false,
+      problems: ['notFound'],
+    });
+    assert.equal((await listingProviders(scope, listingId))[0]?.approvedByProvider, false);
+  });
+
+  it('confirmado sí, pero si la fiesta deja de estar publicada tampoco sale', async () => {
+    await addListingProvider(scope, userId, listingId, salonSlug, '');
+    await setProviderApproval(unsafeProviderScope(salonId), listingId, true);
+    assert.equal((await listPublicListings('ar'))[0]?.providers.length, 1);
+
+    // Y si al salón lo suspenden, desaparece de la boda sin tocar la boda.
+    await controlDb().provider.update({ where: { id: salonId }, data: { status: 'suspended' } });
+    const despues = await listPublicListings('ar');
+    assert.equal(despues.length, 1);
+    assert.deepEqual(despues[0]?.providers, []);
+  });
+
+  it('lo ve en SU panel, con el estado de la fiesta', async () => {
+    await addListingProvider(scope, userId, listingId, salonSlug, '');
+    const suyas = await listingsForProvider(salonId);
+    assert.equal(suyas.length, 1);
+    assert.equal(suyas[0]?.title, 'Boda de prueba');
+    assert.equal(suyas[0]?.listingStatus, 'approved');
+    assert.equal(suyas[0]?.approvedByProvider, false);
+
+    // Y el vecino no ve nada.
+    const otro = await publicarProveedor('Tercero', 'tag-tercero@example.com', ['dj'], true);
+    assert.deepEqual(await listingsForProvider(otro.id), []);
   });
 
   void fixture;
