@@ -427,7 +427,10 @@
           "migrations": "Migrations applied",
           "whatsapp": "WhatsApp service",
           "tenancy": "How offices are separated",
-          "verses": "Unverified verses (not shown)"
+          "verses": "Unverified verses (not shown)",
+          "directoryStorage": "Directory photo storage",
+          "directoryQueue": "Directory: waiting for review",
+          "directoryReports": "Directory: unresolved reports"
         }
       },
       "mail": {

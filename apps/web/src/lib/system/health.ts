@@ -5,6 +5,8 @@ import { CODE_SEND_FAILED_ACTION } from '@/lib/auth/otp';
 import { readSenderDns } from '@/lib/mail/dns';
 import { runningAsRoot } from '@/lib/render/browser';
 import { controlDb, tenancyMode } from '@/lib/db/client';
+import { isOverdue } from '@/lib/directory/clock';
+import { s3ConfigFromEnv } from '@/lib/storage/s3';
 import { unverifiedVerses } from '@/lib/verses';
 import { gatewayHealth } from '@/lib/whatsapp/gateway';
 import type { HealthKey } from '@/lib/types';
@@ -52,6 +54,9 @@ export async function readHealth(): Promise<HealthCheck[]> {
     await whatsappCheck(),
     await tenancyCheck(),
     versesCheck(),
+    directoryStorageCheck(),
+    await directoryQueueCheck(),
+    await directoryReportsCheck(),
   ];
 }
 
@@ -486,4 +491,104 @@ async function tenancyCheck(): Promise<HealthCheck> {
     level: 'ok',
     detail: `Una base de datos por oficina · ${offices.length} oficina(s), ${offices.length} base(s).`,
   };
+}
+
+/**
+ * ¿Hay dónde guardar las fotos de un proveedor?
+ *
+ * Sin las seis variables del almacén, el adaptador es el de MEMORIA — y ese se
+ * niega a arrancar en producción, así que una subida no falla a medias: no
+ * ocurre. Eso está bien y es ruidoso para quien sube, pero desde esta pantalla
+ * no se veía nada: el directorio entero funciona salvo las galerías, que es
+ * justo la mitad por la que un salón paga.
+ *
+ * No se lee ni un valor: solo si están puestas y contra qué servidor apuntan.
+ */
+function directoryStorageCheck(): HealthCheck {
+  const config = s3ConfigFromEnv();
+  if (config !== null) {
+    return {
+      key: 'directoryStorage',
+      level: 'ok',
+      // El servidor y el cubo, que no son secretos. La clave no se menciona.
+      detail: `${config.endpoint} · ${config.bucket}`.slice(0, 200),
+    };
+  }
+
+  return {
+    key: 'directoryStorage',
+    // En producción es un FALLO y no un aviso: significa que nadie puede subir
+    // una foto y que nada lo dice en la pantalla donde se sube.
+    level: inProduction() ? 'fail' : 'warn',
+    detail: 'STORAGE_* sin poner · en memoria',
+  };
+}
+
+/**
+ * Lo que lleva esperando revisión, y lo que se pasó del plazo.
+ *
+ * El atraso es la avería silenciosa de este módulo: desde fuera, un proveedor
+ * que espera cuatro días se ve igual que uno que espera cuatro horas — no falla
+ * nada, simplemente no sale. Es el mismo tipo de avería que un buzón de SINPE
+ * caído, y se trata igual: en rojo y con el número delante.
+ */
+async function directoryQueueCheck(): Promise<HealthCheck> {
+  const prisma = controlDb();
+  const ahora = new Date();
+
+  try {
+    const [proveedores, fiestas, medios] = await Promise.all([
+      prisma.provider.findMany({
+        where: { status: 'pending_review', submittedAt: { not: null } },
+        select: { submittedAt: true },
+      }),
+      prisma.publicListing.findMany({
+        where: { status: 'pending_review', submittedAt: { not: null } },
+        select: { submittedAt: true },
+      }),
+      prisma.providerMedia.count({ where: { status: 'pending_review' } }),
+    ]);
+
+    const esperando = [...proveedores, ...fiestas].flatMap((row) =>
+      row.submittedAt === null ? [] : [row.submittedAt],
+    );
+    const atrasados = esperando.filter((fecha) => isOverdue(fecha, ahora)).length;
+    const total = esperando.length + medios;
+
+    if (total === 0) return { key: 'directoryQueue', level: 'ok', detail: '0' };
+
+    const detalle = `${proveedores.length} · ${fiestas.length} · ${medios}`;
+    return atrasados === 0
+      ? { key: 'directoryQueue', level: 'ok', detail: detalle }
+      : { key: 'directoryQueue', level: 'fail', detail: `${detalle} · +24h: ${atrasados}` };
+  } catch {
+    // La base ya tiene su propia comprobación arriba; esta no puede tumbar la
+    // pantalla entera por no poder contar.
+    return { key: 'directoryQueue', level: 'warn', detail: '—' };
+  }
+}
+
+/**
+ * Denuncias sin resolver, y las de DERECHOS aparte.
+ *
+ * Una reclamación de derechos ya ocultó fotos cuando se puso: mientras nadie la
+ * resuelva, un negocio tiene su galería escondida por algo que puede ser falso.
+ * Eso es una avería con reloj, y por eso sale en rojo y no en ámbar.
+ */
+async function directoryReportsCheck(): Promise<HealthCheck> {
+  try {
+    const [abiertas, derechos] = await Promise.all([
+      controlDb().providerReport.count({ where: { status: { in: ['new', 'reviewing'] } } }),
+      controlDb().providerReport.count({
+        where: { status: { in: ['new', 'reviewing'] }, reason: 'copyright' },
+      }),
+    ]);
+
+    if (abiertas === 0) return { key: 'directoryReports', level: 'ok', detail: '0' };
+    return derechos === 0
+      ? { key: 'directoryReports', level: 'warn', detail: String(abiertas) }
+      : { key: 'directoryReports', level: 'fail', detail: `${abiertas} · copyright: ${derechos}` };
+  } catch {
+    return { key: 'directoryReports', level: 'warn', detail: '—' };
+  }
 }

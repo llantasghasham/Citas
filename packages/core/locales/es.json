@@ -427,7 +427,10 @@
           "migrations": "Migraciones aplicadas",
           "whatsapp": "Servicio de WhatsApp",
           "tenancy": "Reparto de oficinas",
-          "verses": "Versículos sin verificar (no se muestran)"
+          "verses": "Versículos sin verificar (no se muestran)",
+          "directoryStorage": "Almacén de fotos del directorio",
+          "directoryQueue": "Directorio: esperando revisión",
+          "directoryReports": "Directorio: denuncias sin resolver"
         }
       },
       "mail": {

@@ -134,6 +134,9 @@ export const HEALTH_KEYS = [
   'whatsapp',
   'tenancy',
   'verses',
+  'directoryStorage',
+  'directoryQueue',
+  'directoryReports',
 ] as const;
 export type HealthKey = (typeof HEALTH_KEYS)[number];
 

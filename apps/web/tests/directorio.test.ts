@@ -24,6 +24,7 @@ import {
   isOverdue,
 } from '../src/lib/directory/clock';
 import { contactHref } from '../src/lib/directory/contacts';
+import { readHealth } from '../src/lib/system/health';
 import {
   addListingProvider,
   approvedListingSlugs,
@@ -2001,6 +2002,80 @@ describe('apuntar a un proveedor en una fiesta', { skip: HAS_DB ? false : 'sin D
     // Y el vecino no ve nada.
     const otro = await publicarProveedor('Tercero', 'tag-tercero@example.com', ['dj'], true);
     assert.deepEqual(await listingsForProvider(otro.id), []);
+  });
+
+  void fixture;
+});
+
+/**
+ * Lo que enseña `/panel/sistema` del directorio.
+ *
+ * Existe porque el atraso es la avería SILENCIOSA de este módulo: desde fuera,
+ * un proveedor que lleva cuatro días esperando se ve igual que uno que lleva
+ * cuatro horas. No falla nada; simplemente no sale.
+ */
+describe('la salud del directorio', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, () => {
+  const fixture = withDatabase();
+
+  const check = async (key: string) =>
+    (await readHealth()).find((one) => one.key === key);
+
+  beforeEach(async () => {
+    const prisma = controlDb();
+    await prisma.provider.deleteMany({});
+    await prisma.user.deleteMany({ where: { email: { startsWith: 'salud-' } } });
+  });
+
+  it('sin nada esperando, en verde', async () => {
+    const cola = await check('directoryQueue');
+    assert.equal(cola?.level, 'ok');
+    assert.equal(cola?.detail, '0');
+
+    const denuncias = await check('directoryReports');
+    assert.equal(denuncias?.level, 'ok');
+  });
+
+  it('lo que se pasó del plazo sale en ROJO, con el número delante', async () => {
+    const prisma = controlDb();
+    const user = await prisma.user.create({
+      data: { email: 'salud-a@example.com', locale: 'ar' },
+      select: { id: true },
+    });
+    const creado = await createProvider(user.id, {
+      legalName: 'Salon que espera',
+      governorate: 'beirut',
+      district: 'beirut',
+      city: 'Beirut',
+      mainLocale: 'ar',
+    });
+    assert.ok(creado.ok);
+
+    // Mandado hace un momento: espera, pero está en plazo.
+    await prisma.provider.update({
+      where: { id: creado.id },
+      data: { status: 'pending_review', submittedAt: new Date() },
+    });
+    assert.equal((await check('directoryQueue'))?.level, 'ok');
+
+    // Mandado hace tres semanas: son más de veinticuatro horas hábiles.
+    await prisma.provider.update({
+      where: { id: creado.id },
+      data: { submittedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000) },
+    });
+    const atrasado = await check('directoryQueue');
+    assert.equal(atrasado?.level, 'fail');
+    assert.match(atrasado?.detail ?? '', /\+24h: 1/);
+  });
+
+  it('el almacén sin configurar lo DICE, en vez de que las subidas no ocurran en silencio', async () => {
+    // Sin las seis variables, el adaptador es el de memoria — que en producción
+    // se niega a arrancar. Fuera de producción es un aviso.
+    const almacen = await check('directoryStorage');
+    assert.ok(almacen !== undefined);
+    assert.ok(almacen.level === 'warn' || almacen.level === 'fail');
+    assert.match(almacen.detail, /STORAGE/);
+    // Y jamás una clave: lo único que se nombra es qué falta.
+    assert.doesNotMatch(almacen.detail, /secret|key=|[A-Za-z0-9]{32,}/i);
   });
 
   void fixture;
