@@ -1295,6 +1295,26 @@ de los versículos.
 - `/panel/sistema` — SOLO superadministrador: once comprobaciones de salud,
   las versiones leídas en vivo y un botón que envía un correo de prueba y
   enseña la respuesta del proveedor.
+- La prueba de correo lleva el destinatario ESCRITO, con el de quien mira ya
+  puesto. Nació fijo —un campo abierto convierte esa pantalla en una forma de
+  mandar correo desde el dominio de la oficina a cualquiera— y eso dejaba fuera
+  justo la prueba que hay que hacer: quién descarta un mensaje depende del buzón
+  al que va, y Gmail y Hotmail tiran en silencio lo que otros aceptan. Lo que de
+  verdad frena el abuso se queda y no era el campo: solo `platform:manage`
+  —quien puede escribir las credenciales del SMTP ya podía mandar con ellas—,
+  UNO POR MINUTO contado sobre el historial, y el DESTINATARIO APUNTADO en ese
+  historial. La dirección se comprueba en el SERVIDOR: el `type="email"` del
+  campo es una comodidad para quien escribe, no una barrera, y una coma no cuela
+  una lista por un campo pensado para uno.
+- Un fallo del correo dice QUIÉN dijo que no. `MailNotSentError` marca lo que
+  paramos aquí, antes de abrir la conexión, y la pantalla lo separa de lo que
+  contestó el proveedor. Pintarlo todo como «el servidor de correo lo rechazó»
+  manda a revisar un Bluehost ajeno por un campo mal escrito en el propio panel.
+- Una fila de diagnóstico enseña EL VALOR, nunca el ejemplo. La del correo
+  saliente ponía el formato —`MAIL_FROM: Su Marca <info@su-dominio.com>`— en la
+  columna donde todas las demás enseñan lo guardado, y el dueño preguntó por qué
+  su instalación estaba «por defecto». Una comprobación que contesta con un
+  ejemplo no comprueba nada.
 - `/panel/configuracion` — SOLO superadministrador, por sectores (`?s=`):
   **correo**, **cobro**, **marca**, **portada** y **el sitio**. Cada campo dice
   de dónde sale hoy su valor —guardado aquí, heredado del servidor o sin

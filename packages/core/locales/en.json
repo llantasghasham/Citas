@@ -435,12 +435,15 @@
       },
       "mail": {
         "heading": "Test outgoing mail",
-        "intro": "Sends a real message to the superadmin address. It is the only way to know whether SMTP works: the configuration can be complete and the provider still refuse the login.",
+        "intro": "Sends a real message to the address you write below. It is the only way to know whether SMTP works: the configuration can be complete and the provider still refuse the login — or accept it and have the receiving mailbox drop it without a word.",
+        "toLabel": "Send the test to",
+        "toHint": "Yours is filled in. Test against a Gmail and a Hotmail too: those are the ones that silently discard what others accept.",
         "test": "Send a test email",
         "ok": "Handed over to the mail server. Careful: accepting it does not guarantee it reaches the inbox — if it does not show up within a few minutes, check the spam folder.",
         "failed": "The mail server refused it. Its answer, verbatim:",
         "notSent": "The message never left this machine: this installation stopped it before opening the connection, so your mail server has nothing to do with it. What is missing:",
-        "tooSoon": "Wait a minute between tests."
+        "tooSoon": "Wait a minute between tests.",
+        "badTo": "That is not an email address:"
       },
       "superadmins": {
         "heading": "Extra superadministrators",

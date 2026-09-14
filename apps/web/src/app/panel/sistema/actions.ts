@@ -8,6 +8,7 @@ import { recordAudit } from '@/lib/audit';
 import { getSession, sessionCan } from '@/lib/auth/session';
 import { controlDb } from '@/lib/db/client';
 import { getMailer } from '@/lib/mail';
+import { isEmailAddress } from '@/lib/mail/from';
 import { MailNotSentError } from '@/lib/mail/types';
 import { getPaymentProvider } from '@/lib/payments';
 
@@ -22,24 +23,51 @@ const COOLDOWN_SECONDS = 60;
  * a provider refusing the login, a blocked port. Nothing short of an actual send
  * tells you that, and the day the codes stopped arriving there was no way to ask.
  *
- * It only ever writes to the address of whoever pressed the button (falling back
- * to the configured superadmin address). A field for an arbitrary recipient
- * would turn this panel into a way to send mail from the office's own domain to
- * anyone.
+ * EL DESTINATARIO SE ESCRIBE, y viene puesto el de quien pulsa.
+ *
+ * Nació fijo a la dirección de quien pulsaba, y la razón era buena: un campo
+ * abierto convierte esta pantalla en una forma de mandar correo desde el
+ * dominio de la oficina a cualquiera. Pero dejaba fuera justo la prueba que hay
+ * que hacer. Lo que este proyecto ya se ha comido una vez es un mensaje que
+ * sale con «250 OK» y que el que RECIBE tira en silencio, y quién lo tira
+ * depende de a dónde va: Gmail y Hotmail descartan lo que otros aceptan. Sin
+ * poder elegir el buzón, «funciona» quería decir «funciona hacia mi propio
+ * correo», que es la única respuesta que no hacía falta.
+ *
+ * Lo que de verdad frena el abuso se queda, y no era el campo fijo:
+ *
+ *   · Solo `platform:manage`, que es el superadministrador — y quien puede
+ *     escribir las credenciales del SMTP ya podía mandar con ellas por su
+ *     cuenta. El campo no le da nada que no tuviera.
+ *   · UNO POR MINUTO, contado sobre el historial. Es lo que impide que esto sea
+ *     un grifo, con o sin campo.
+ *   · El destinatario QUEDA APUNTADO en el historial. Lo que sale del dominio
+ *     de la oficina tiene que poder contestarse después.
  */
-export async function sendTestMailAction(): Promise<void> {
+export async function sendTestMailAction(formData: FormData): Promise<void> {
   const session = await getSession();
   if (session === null || !sessionCan(session, 'platform:manage')) redirect('/panel');
 
-  // A QUIÉN se le manda: a la dirección de QUIEN pulsa el botón, y solo si no
-  // la tiene, a la del entorno. Es la misma clase de destinatario —una cuenta
-  // de esta instalación, nunca una escrita a mano— y es la única que la persona
-  // que está mirando la pantalla puede abrir. Con `SUPERADMIN_EMAIL` a secas,
-  // un correo que salía perfectamente parecía no salir: llegaba a un buzón que
-  // no era el suyo, y el panel decía «enviado» sin decir adónde.
-  const to = session.email.length > 0 ? session.email : (process.env['SUPERADMIN_EMAIL'] ?? '');
+  // Lo escrito manda; vacío es «a mí», que es el caso de todos los días y por eso
+  // viene puesto en la casilla. Y si esta cuenta no tuviera correo —no pasa, se
+  // entra con él— queda el del entorno. Con `SUPERADMIN_EMAIL` a secas, un correo
+  // que salía perfectamente parecía no salir: llegaba a un buzón que no era el
+  // suyo, y el panel decía «enviado» sin decir adónde.
+  const escrito = String(formData.get('to') ?? '').trim();
+  const to =
+    escrito.length > 0
+      ? escrito
+      : session.email.length > 0
+        ? session.email
+        : (process.env['SUPERADMIN_EMAIL'] ?? '');
   if (to.length === 0) {
     redirect('/panel/configuracion?mail=failed&reason=SUPERADMIN_EMAIL');
+  }
+  // Se comprueba AQUÍ y no solo en el navegador: el `type="email"` del campo es
+  // una comodidad para quien lo rellena, no una barrera — lo que llega a una
+  // Server Action es lo que el cliente quiso mandar.
+  if (!isEmailAddress(to)) {
+    redirect(`/panel/configuracion?mail=badTo&reason=${encodeURIComponent(to.slice(0, 120))}`);
   }
 
   const since = new Date(Date.now() - COOLDOWN_SECONDS * 1000);
@@ -91,7 +119,9 @@ export async function sendTestMailAction(): Promise<void> {
     action: TEST_ACTION,
     entity: 'User',
     entityId: session.userId,
-    metadata: { ok: problem === null, problem, ownFault, receipt },
+    // El destinatario, SIEMPRE: es lo que salió del dominio de la oficina y
+    // hacia dónde, y esa pregunta se hace después, no mientras.
+    metadata: { ok: problem === null, to, problem, ownFault, receipt },
     ip,
   });
 

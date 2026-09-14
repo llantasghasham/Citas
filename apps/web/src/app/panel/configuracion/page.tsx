@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { saveConfigAction } from '@/app/panel/configuracion/actions';
 import { probePaymentsAction, sendTestMailAction } from '@/app/panel/sistema/actions';
+import { FIELD_CLASS } from '@/components/create/Field';
 import { BrandSection } from '@/components/panel/config/BrandSection';
 import { ConfigNav } from '@/components/panel/config/ConfigNav';
 import { HomeSection } from '@/components/panel/config/HomeSection';
@@ -276,6 +277,14 @@ export default async function ConfigPage({ searchParams }: PageProps) {
           {params.mail === 'tooSoon' ? (
             <p className="text-sm text-[#8a6d2f]">{dictionary.admin.system.mail.tooSoon}</p>
           ) : null}
+          {params.mail === 'badTo' ? (
+            <p className="text-sm text-[#8c2f1e]">
+              {dictionary.admin.system.mail.badTo}{' '}
+              <span className="font-mono text-xs" dir="ltr">
+                {params.reason ?? ''}
+              </span>
+            </p>
+          ) : null}
           {params.pago === 'ok' || params.pago === 'failed' ? (
             <p className={`text-sm ${params.pago === 'ok' ? 'text-[#2f6b3a]' : 'text-[#8c2f1e]'}`}>
               {params.pago === 'ok' ? copy.probeOk : copy.probeFailed}{' '}
@@ -285,8 +294,31 @@ export default async function ConfigPage({ searchParams }: PageProps) {
             </p>
           ) : null}
 
-          <form action={section === 'mail' ? sendTestMailAction : probePaymentsAction}>
-            <button type="submit" className={BOTON_SUAVE}>
+          <form
+            action={section === 'mail' ? sendTestMailAction : probePaymentsAction}
+            className="flex flex-col gap-3"
+          >
+            {/* A QUIÉN se le manda, escrito. Viene puesto el de quien mira, que
+                es el caso de todos los días, pero se cambia: quién descarta un
+                correo depende del buzón al que va —Gmail y Hotmail tiran en
+                silencio lo que otros aceptan— y probar solo contra el propio
+                contesta la única pregunta que no hacía falta. */}
+            {section === 'mail' ? (
+              <label className="flex flex-col gap-2 text-sm text-[#23201a]">
+                <span>{dictionary.admin.system.mail.toLabel}</span>
+                <input
+                  className={FIELD_CLASS}
+                  type="email"
+                  name="to"
+                  defaultValue={session.email}
+                  dir="ltr"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                <span className="text-xs text-[#6a6456]">{dictionary.admin.system.mail.toHint}</span>
+              </label>
+            ) : null}
+            <button type="submit" className={`self-start ${BOTON_SUAVE}`}>
               {section === 'mail' ? copy.testMail : copy.testPayments}
             </button>
           </form>

@@ -435,12 +435,15 @@
       },
       "mail": {
         "heading": "Testar o correio a sair",
-        "intro": "Envia uma mensagem a sério para o endereço do superadministrador. É a única forma de saber se o SMTP funciona: a configuração pode estar completa e o fornecedor recusar na mesma a autenticação.",
+        "intro": "Envia uma mensagem a sério para o endereço que escrever abaixo. É a única forma de saber se o SMTP funciona: a configuração pode estar completa e o fornecedor recusar na mesma a autenticação — ou aceitá-la e a caixa de destino deitá-la fora sem avisar.",
+        "toLabel": "Enviar o teste para",
+        "toHint": "Vem preenchido o seu. Teste também contra um Gmail e um Hotmail: são os que descartam em silêncio o que outros aceitam.",
         "test": "Enviar um email de teste",
         "ok": "Entregue ao servidor de correio. Atenção: aceitá-lo não garante que chegue à caixa de entrada — se não aparecer em poucos minutos, veja o spam.",
         "failed": "O servidor de correio recusou-o. A resposta dele, tal como veio:",
         "notSent": "A mensagem NÃO chegou a sair daqui: esta instalação a parou antes de abrir a conexão, portanto o seu servidor de correio não tem nada a ver. O que falta:",
-        "tooSoon": "Espere um minuto entre testes."
+        "tooSoon": "Espere um minuto entre testes.",
+        "badTo": "Isso não é um endereço de correio:"
       },
       "superadmins": {
         "heading": "Superadministradores a mais",

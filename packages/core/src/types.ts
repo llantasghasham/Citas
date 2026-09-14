@@ -665,6 +665,9 @@ export interface Dictionary {
       mail: {
         heading: string;
         intro: string;
+        /** A quién se le manda la prueba: viene puesto el de quien mira. */
+        toLabel: string;
+        toHint: string;
         test: string;
         ok: string;
         /** Lo que contestó el proveedor al rechazarlo. */
@@ -672,6 +675,8 @@ export interface Dictionary {
         /** No llegó a salir de aquí: lo paró esta instalación, no el servidor. */
         notSent: string;
         tooSoon: string;
+        /** Lo escrito en «enviar a» no es una dirección. */
+        badTo: string;
       };
       /** Quién manda sobre TODAS las oficinas, y cómo quitárselo. */
       superadmins: {

@@ -34,6 +34,15 @@ export type MailFromProblem = 'missing' | 'noAddress' | 'badAddress';
  */
 const ADDRESS = /^[^\s@<>,;]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
 
+/**
+ * Si eso es una dirección de correo. Vale para el remitente y para cualquier
+ * destinatario: es la MISMA forma mínima, y escrita dos veces son dos
+ * expresiones que un día dejan de decir lo mismo.
+ */
+export function isEmailAddress(value: string): boolean {
+  return ADDRESS.test(value.trim());
+}
+
 /** La dirección que hay dentro, venga sola o entre ángulos. */
 export function mailFromAddress(value: string | undefined): string | null {
   if (value === undefined) return null;

@@ -9,7 +9,7 @@ import { allowedForCapture, captureUrl, renderOrigin } from '../src/lib/render/o
 import { isCalendarDate, isClockTime } from '../src/lib/time/zoned';
 import { findVerse, listVerses, unverifiedVerses } from '../src/lib/verses';
 import { senderDomain } from '../src/lib/mail/dns';
-import { mailFromAddress, mailFromProblem } from '../src/lib/mail/from';
+import { isEmailAddress, mailFromAddress, mailFromProblem } from '../src/lib/mail/from';
 import { MailNotSentError } from '../src/lib/mail/types';
 import { smtpMailer } from '../src/lib/mail/smtp';
 
@@ -326,6 +326,22 @@ describe('el remitente del correo', () => {
     // se quedaba en ámbar sin explicar la causa de verdad.
     assert.equal(senderDomain('POSFactura <info@posfacturacr.com>'), 'posfacturacr.com');
     assert.equal(senderDomain('POSFactura'), null);
+  });
+
+  it('el destinatario de la prueba se comprueba: es lo que sale del dominio', () => {
+    // El campo de «enviar la prueba a» viaja en un formulario, así que es un
+    // dato del cliente: el `type="email"` del navegador es una comodidad para
+    // quien escribe, no una barrera. Lo que decide a dónde sale un correo desde
+    // el dominio de la oficina se comprueba en el servidor.
+    assert.equal(isEmailAddress('autolavadoelpana@hotmail.com'), true);
+    assert.equal(isEmailAddress('  info@posfacturacr.com  '), true, 'los espacios no cuentan');
+    assert.equal(isEmailAddress('POSFactura'), false);
+    assert.equal(isEmailAddress('info@localhost'), false, 'sin dominio de verdad no sale');
+    assert.equal(isEmailAddress(''), false);
+    // Y nada de meter dos en uno: una coma o un espacio abriría la puerta a una
+    // lista de destinatarios en un campo pensado para uno.
+    assert.equal(isEmailAddress('a@b.com, c@d.com'), false);
+    assert.equal(isEmailAddress('a@b.com c@d.com'), false);
   });
 
   it('un remitente sin dirección se para AQUÍ, y el error lo dice', async () => {
