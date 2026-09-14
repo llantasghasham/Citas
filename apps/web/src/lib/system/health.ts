@@ -3,6 +3,8 @@ import { join } from 'node:path';
 
 import { CODE_SEND_FAILED_ACTION } from '@/lib/auth/otp';
 import { readSenderDns } from '@/lib/mail/dns';
+import { MAIL_FROM_FORMAT, mailFromProblem } from '@/lib/mail/from';
+import { secret, setting } from '@/lib/settings';
 import { runningAsRoot } from '@/lib/render/browser';
 import { controlDb, tenancyMode } from '@/lib/db/client';
 import { isOverdue } from '@/lib/directory/clock';
@@ -40,7 +42,7 @@ export async function readHealth(): Promise<HealthCheck[]> {
   return [
     await databaseCheck(),
     dataSourceCheck(),
-    mailerCheck(),
+    await mailerCheck(),
     await senderDnsCheck(),
     paymentsCheck(),
     renderStoreCheck(),
@@ -298,34 +300,60 @@ function dataSourceCheck(): HealthCheck {
  * the codes stopped arriving, nothing anywhere said why, and finding it took
  * days.
  */
-function mailerCheck(): HealthCheck {
+async function mailerCheck(): Promise<HealthCheck> {
   const fail = (detail: string): HealthCheck => ({ key: 'mailer', level: 'fail', detail });
 
-  if (env('MAILER') !== 'smtp') {
+  // Se mira DONDE MIRA EL CÓDIGO que manda: `setting()` resuelve primero lo
+  // guardado en el panel y solo después el entorno. Leyendo el entorno a secas,
+  // esta fila decía «falta MAIL_FROM» en una instalación que lo tenía puesto en
+  // la pantalla —y al revés: daba por bueno lo que el panel había cambiado—.
+  // Una comprobación que no mira donde mira el programa no comprueba el
+  // programa.
+  if ((await setting('MAILER')) !== 'smtp') {
     // Without this, the one-time code never leaves the machine and nobody can
     // sign in at all. In production the console mailer also refuses to run.
     return { key: 'mailer', level: inProduction() ? 'fail' : 'warn', detail: 'console' };
   }
 
-  const host = env('SMTP_HOST');
+  const host = await setting('SMTP_HOST');
   if (host === undefined) return fail('SMTP_HOST');
-  if (env('SMTP_USER') === undefined) return fail('SMTP_USER');
+  if ((await setting('SMTP_USER')) === undefined) return fail('SMTP_USER');
 
   // Writing SMTP_FROM instead of MAIL_FROM has already broken one deployment.
-  if (env('MAIL_FROM') === undefined) {
+  const from = await setting('MAIL_FROM');
+  if (from === undefined) {
     return fail(env('SMTP_FROM') === undefined ? 'MAIL_FROM' : 'MAIL_FROM ← SMTP_FROM');
   }
 
+  // Y el remitente SIN DIRECCIÓN, que es el caso que de verdad muerde: se
+  // escribe el nombre de la marca a secas, la pantalla lo guarda tan contenta,
+  // el servidor contesta «250 OK» y el mensaje sale sin cabecera `From:` — que
+  // Hotmail y Gmail descartan sin rebote. Desde fuera, un correo que funciona y
+  // uno que se tira se ven igual.
+  const problem = mailFromProblem(from);
+  if (problem !== null) return fail(`MAIL_FROM: ${MAIL_FROM_FORMAT}`);
+
   const encrypted = env('SMTP_PASSWORD_ENC');
-  if (encrypted === undefined) {
+  // Envuelto: `secret()` DESCIFRA, y sin llave lanza. Que la pantalla de salud
+  // entera reventara por no poder leer una contraseña sería justo lo contrario
+  // de lo que hace esta pantalla — y la llave que falta ya tiene su propia fila.
+  let stored: string | undefined;
+  try {
+    stored = await secret('SMTP_PASSWORD');
+  } catch {
+    stored = undefined;
+  }
+  if (encrypted === undefined && stored === undefined) {
     if (env('SMTP_PASSWORD') === undefined) return fail('SMTP_PASSWORD_ENC');
     return { key: 'mailer', level: inProduction() ? 'fail' : 'warn', detail: 'SMTP_PASSWORD' };
   }
   // The password pasted in the clear into the encrypted field: it looks set,
   // and it fails only at the moment somebody tries to sign in.
-  if (!encrypted.startsWith('v1.')) return fail('SMTP_PASSWORD_ENC · npm run secret:encrypt');
+  if (encrypted !== undefined && !encrypted.startsWith('v1.')) {
+    return fail('SMTP_PASSWORD_ENC · npm run secret:encrypt');
+  }
 
-  return { key: 'mailer', level: 'ok', detail: host };
+  return { key: 'mailer', level: 'ok', detail: `${host} · ${from}` };
 }
 
 /**

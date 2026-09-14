@@ -19,6 +19,12 @@ export interface MailReceipt {
   rejected: string[];
   /** The server's own last line, e.g. "250 OK id=1abcd-…". */
   response: string;
+  /**
+   * El remitente con el que salió. Se devuelve para poder ENSEÑARLO: «no llega»
+   * casi siempre se explica mirando de quién venía, y sin esto hay que ir a
+   * buscarlo a otra pantalla.
+   */
+  from?: string;
 }
 
 /**

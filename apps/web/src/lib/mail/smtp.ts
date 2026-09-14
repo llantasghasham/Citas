@@ -2,6 +2,7 @@ import { createTransport, type Transporter } from 'nodemailer';
 
 import { secret, setting } from '@/lib/settings';
 
+import { MAIL_FROM_FORMAT, mailFromProblem } from './from';
 import type { Email, Mailer, MailReceipt } from './types';
 
 /**
@@ -67,9 +68,24 @@ export const smtpMailer: Mailer = {
   id: 'smtp',
 
   async send(email: Email): Promise<MailReceipt> {
+    // El remitente se comprueba AQUÍ y no solo al guardarlo en el panel: en el
+    // `.env` se escribe a mano y ahí no pasa por ninguna pantalla. Sin
+    // dirección, lo que sale es un mensaje sin cabecera `From:` que el servidor
+    // acepta con un «250 OK» y el destinatario tira en silencio — el fallo más
+    // caro de diagnosticar que tiene esto, porque desde aquí se ve como un
+    // envío correcto.
+    const from = await required('MAIL_FROM');
+    const problem = mailFromProblem(from);
+    if (problem !== null) {
+      throw new Error(
+        `MAIL_FROM no lleva una dirección de correo (${problem}). ` +
+          `Se escribe así: ${MAIL_FROM_FORMAT}`,
+      );
+    }
+
     try {
       const info = await (await getTransporter()).sendMail({
-        from: await required('MAIL_FROM'),
+        from,
         to: email.to,
         subject: email.subject,
         text: email.text,
@@ -82,6 +98,7 @@ export const smtpMailer: Mailer = {
         accepted: (info.accepted ?? []).map(String),
         rejected: (info.rejected ?? []).map(String),
         response: info.response ?? '',
+        from,
       };
     } catch (error) {
       // Never let the credentials travel in an error: nodemailer's messages can

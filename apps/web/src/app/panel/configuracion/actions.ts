@@ -14,6 +14,7 @@ import {
 } from '@/lib/brand/assets';
 import { recordAudit } from '@/lib/audit';
 import { getSession, sessionCan } from '@/lib/auth/session';
+import { mailFromProblem } from '@/lib/mail/from';
 import { resetTransporter } from '@/lib/mail/smtp';
 import {
   saveRawSetting,
@@ -75,6 +76,16 @@ export async function saveConfigAction(formData: FormData): Promise<void> {
       await saveBrandAsset(kind, result, session.userId);
       cambiados.push(`${kind} (nuevo)`);
     }
+  }
+
+  // El REMITENTE se comprueba antes de escribir nada. Guardar «POSFactura» a
+  // secas se ve bien en la pantalla y deja el correo roto de una forma que no
+  // se nota: el mensaje sale sin cabecera `From:`, el servidor lo acepta con un
+  // «250 OK» y el destinatario lo descarta sin rebote. Se rebota sin guardar,
+  // que es lo único que evita ese día perdido.
+  const remitente = formData.get('MAIL_FROM');
+  if (remitente !== null && mailFromProblem(String(remitente)) !== null) {
+    redirect(`/panel/configuracion?s=mail&error=mailFrom`);
   }
 
   for (const key of SETTING_KEYS) {

@@ -65,7 +65,11 @@ export async function sendTestMailAction(): Promise<void> {
     // El destinatario va PRIMERO. «Enviado» sin decir adónde es lo que hace que
     // se busque el fallo en el servidor de correo cuando el mensaje está en
     // otro buzón —o en la carpeta de no deseado de este.
-    receipt = `para ${to} · ${result.response} · aceptados: ${result.accepted.join(', ') || '—'}${
+    // El remitente va con el destinatario. «No llega» casi siempre se explica
+    // mirando de quién venía — un remitente sin dirección, o de un dominio que
+    // no autoriza a este servidor— y sin esto hay que ir a buscarlo a otra
+    // pantalla.
+    receipt = `de ${result.from ?? '—'} · para ${to} · ${result.response} · aceptados: ${result.accepted.join(', ') || '—'}${
       result.rejected.length > 0 ? ` · rechazados: ${result.rejected.join(', ')}` : ''
     }`;
     if (result.accepted.length === 0) {

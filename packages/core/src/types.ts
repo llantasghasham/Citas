@@ -518,6 +518,8 @@ export interface Dictionary {
     >;
     /** La configuración del sistema, editable sin entrar al servidor. */
     config: {
+      /** Por qué se rechazó el remitente del correo. */
+      mailFromInvalid: string;
       title: string;
       intro: string;
       save: string;

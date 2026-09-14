@@ -8,6 +8,8 @@ import { renderOnce, renderingNow } from '../src/lib/render/once';
 import { allowedForCapture, captureUrl, renderOrigin } from '../src/lib/render/origin';
 import { isCalendarDate, isClockTime } from '../src/lib/time/zoned';
 import { findVerse, listVerses, unverifiedVerses } from '../src/lib/verses';
+import { senderDomain } from '../src/lib/mail/dns';
+import { mailFromAddress, mailFromProblem } from '../src/lib/mail/from';
 
 /**
  * Lo que se comprueba ANTES de publicar, y lo que sale en una exportación.
@@ -279,5 +281,48 @@ describe('un versículo sin verificar no existe para el programa', () => {
       unverifiedVerses().every((verse) => findVerse(verse.id) === undefined),
       true,
     );
+  });
+});
+
+/**
+ * El REMITENTE del correo.
+ *
+ * Esta prueba existe por un caso real y caro de diagnosticar: en el campo
+ * «Remitente» se escribió el nombre de la marca a secas —«POSFactura»—, la
+ * pantalla lo guardó, el servidor contestó «250 OK» con su número de cola, y el
+ * correo no llegó nunca. Lo que sale con ese valor es un mensaje SIN cabecera
+ * `From:` y con el sobre vacío, que Hotmail y Gmail descartan en silencio.
+ */
+describe('el remitente del correo', () => {
+  it('el nombre de la marca a secas NO es un remitente', () => {
+    assert.equal(mailFromProblem('POSFactura'), 'noAddress');
+    assert.equal(mailFromProblem('Citas'), 'noAddress');
+    assert.equal(mailFromProblem(''), 'missing');
+    assert.equal(mailFromProblem('   '), 'missing');
+    assert.equal(mailFromProblem(undefined), 'missing');
+    // Con arroba pero sin dominio de verdad tampoco.
+    assert.equal(mailFromProblem('info@localhost'), 'badAddress');
+    assert.equal(mailFromProblem('Marca <info@>'), 'badAddress');
+  });
+
+  it('con dirección, sola o entre ángulos, está bien', () => {
+    assert.equal(mailFromProblem('info@posfacturacr.com'), null);
+    assert.equal(mailFromProblem('POSFactura <info@posfacturacr.com>'), null);
+    assert.equal(mailFromProblem('  Citas <hola@citas.example>  '), null);
+  });
+
+  it('la dirección se saca de dentro de los ángulos', () => {
+    assert.equal(mailFromAddress('POSFactura <info@posfacturacr.com>'), 'info@posfacturacr.com');
+    assert.equal(mailFromAddress('info@posfacturacr.com'), 'info@posfacturacr.com');
+    // Y sin dirección no se inventa ninguna.
+    assert.equal(mailFromAddress('POSFactura'), null);
+  });
+
+  it('el dominio que miran Hotmail y Gmail sale del remitente', () => {
+    // `senderDomain` es lo que alimenta la comprobación de SPF y DMARC: con un
+    // remitente sin dirección no hay dominio que comprobar, y esa fila del panel
+    // se quedaba en ámbar sin explicar la causa de verdad.
+    assert.equal(senderDomain('POSFactura <info@posfacturacr.com>'), 'posfacturacr.com');
+    assert.equal(senderDomain('POSFactura'), null);
   });
 });

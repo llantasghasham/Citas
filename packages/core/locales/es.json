@@ -590,7 +590,8 @@
       "brandRemove": "Quitar al guardar",
       "brandByUrl": "O poner una dirección de imagen en vez de subirla",
       "brandTooBig": "La imagen pesa más de {mb} MB. Elija una más pequeña.",
-      "brandNotAnImage": "Ese archivo no es una imagen que se pueda abrir."
+      "brandNotAnImage": "Ese archivo no es una imagen que se pueda abrir.",
+      "mailFromInvalid": "El remitente tiene que llevar una dirección de correo. Se escribe así: Su Marca <info@su-dominio.com>. Sin ella el mensaje sale sin remitente, el servidor lo acepta igual y Hotmail y Gmail lo descartan sin avisar."
     },
     "offices": {
       "heading": "Oficinas",

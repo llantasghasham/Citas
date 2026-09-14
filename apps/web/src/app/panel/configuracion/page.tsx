@@ -125,6 +125,14 @@ export default async function ConfigPage({ searchParams }: PageProps) {
 
       <p className="max-w-2xl text-sm text-[#6a6456]">{copy.sectionIntros[section]}</p>
       {params.guardado === '1' ? <p className="text-sm text-[#2f6b3a]">{copy.saved}</p> : null}
+      {/* El remitente sin dirección se rechaza SIN guardar, y se dice por qué:
+          es el único campo de esta pantalla que se puede rellenar con algo que
+          parece correcto y deja el correo roto de una forma que no se nota. */}
+      {params.error === 'mailFrom' ? (
+        <p className="max-w-2xl border border-[#8c2f1e] bg-[#fbeee9] px-4 py-2 text-sm text-[#8c2f1e]">
+          {copy.mailFromInvalid}
+        </p>
+      ) : null}
 
       {section === 'mail' ? (
         <MailSection

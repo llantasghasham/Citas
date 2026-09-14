@@ -590,7 +590,8 @@
       "brandRemove": "Remove on save",
       "brandByUrl": "Or point at an image address instead of uploading one",
       "brandTooBig": "The image is over {mb} MB. Pick a smaller one.",
-      "brandNotAnImage": "That file is not an image that can be opened."
+      "brandNotAnImage": "That file is not an image that can be opened.",
+      "mailFromInvalid": "The sender must carry an email address. Write it like this: Your Brand <info@your-domain.com>. Without it the message goes out with no sender, the server accepts it anyway, and Hotmail and Gmail drop it without telling anyone."
     },
     "offices": {
       "heading": "Offices",
