@@ -439,6 +439,7 @@
         "test": "Enviar un correo de prueba",
         "ok": "Entregado al servidor de correo. Ojo: que lo acepte no garantiza que llegue a la bandeja — si no aparece en unos minutos, mire el correo no deseado.",
         "failed": "El servidor de correo lo rechazó. Su respuesta, tal cual:",
+        "notSent": "El mensaje NO llegó a salir de aquí: lo paró esta instalación antes de abrir la conexión, así que su servidor de correo no tiene nada que ver. Lo que falta:",
         "tooSoon": "Espere un minuto entre pruebas."
       },
       "superadmins": {
@@ -591,7 +592,7 @@
       "brandByUrl": "O poner una dirección de imagen en vez de subirla",
       "brandTooBig": "La imagen pesa más de {mb} MB. Elija una más pequeña.",
       "brandNotAnImage": "Ese archivo no es una imagen que se pueda abrir.",
-      "mailFromInvalid": "El remitente tiene que llevar una dirección de correo. Se escribe así: Su Marca <info@su-dominio.com>. Sin ella el mensaje sale sin remitente, el servidor lo acepta igual y Hotmail y Gmail lo descartan sin avisar."
+      "mailFromInvalid": "El remitente tiene que llevar una dirección de correo. Se escribe así: Su Marca <info@su-dominio.com>. Sin ella el mensaje sale sin remitente, el servidor lo acepta igual y Hotmail y Gmail lo descartan sin avisar. NO se guardó nada de este apartado: vuelva a escribir lo que hubiera cambiado."
     },
     "offices": {
       "heading": "Oficinas",

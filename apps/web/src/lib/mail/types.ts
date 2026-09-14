@@ -36,3 +36,22 @@ export interface Mailer {
   readonly id: string;
   send(email: Email): Promise<MailReceipt>;
 }
+
+/**
+ * El mensaje NO llegó a salir de esta máquina.
+ *
+ * Existe para no mentir sobre quién dijo que no. La pantalla de prueba pinta
+ * todo fallo como «El servidor de correo lo rechazó. Su respuesta, tal cual:» y
+ * a continuación el texto del error — y cuando el que se negó fuimos nosotros,
+ * antes de abrir la conexión, eso manda a alguien a revisar su Bluehost por un
+ * campo mal escrito en su propio panel. Un error del programa disfrazado de
+ * respuesta del proveedor cuesta el día entero que iba a ahorrar.
+ *
+ * Lo que sí viene del servidor sigue siendo un `Error` corriente.
+ */
+export class MailNotSentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'MailNotSentError';
+  }
+}

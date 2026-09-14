@@ -10,6 +10,8 @@ import { isCalendarDate, isClockTime } from '../src/lib/time/zoned';
 import { findVerse, listVerses, unverifiedVerses } from '../src/lib/verses';
 import { senderDomain } from '../src/lib/mail/dns';
 import { mailFromAddress, mailFromProblem } from '../src/lib/mail/from';
+import { MailNotSentError } from '../src/lib/mail/types';
+import { smtpMailer } from '../src/lib/mail/smtp';
 
 /**
  * Lo que se comprueba ANTES de publicar, y lo que sale en una exportación.
@@ -324,5 +326,29 @@ describe('el remitente del correo', () => {
     // se quedaba en ámbar sin explicar la causa de verdad.
     assert.equal(senderDomain('POSFactura <info@posfacturacr.com>'), 'posfacturacr.com');
     assert.equal(senderDomain('POSFactura'), null);
+  });
+
+  it('un remitente sin dirección se para AQUÍ, y el error lo dice', async () => {
+    // Lo que se fija no es que falle —eso ya se comprobaba— sino QUIÉN dice que
+    // no. La pantalla pintaba todo fallo como «El servidor de correo lo
+    // rechazó. Su respuesta, tal cual: …», y este mensaje no es la respuesta de
+    // nadie: es nuestro, decidido antes de abrir la conexión. Con esa frase
+    // delante, un campo mal escrito en el propio panel manda a revisar el
+    // Bluehost de alguien durante un día.
+    process.env['MAILER'] = 'smtp';
+    process.env['MAIL_FROM'] = 'POSFactura';
+    await assert.rejects(
+      () => smtpMailer.send({ to: 'x@example.com', subject: 's', text: 't' }),
+      (error: unknown) => {
+        assert.ok(error instanceof MailNotSentError, 'tiene que ir marcado como «no salió de aquí»');
+        // Y lleva dentro LO QUE HAY GUARDADO, no el ejemplo: la fila de
+        // `/panel/sistema` enseñaba el formato en la columna del valor y se
+        // leía como «su instalación está por defecto».
+        assert.match(error.message, /POSFactura/);
+        return true;
+      },
+    );
+    delete process.env['MAIL_FROM'];
+    delete process.env['MAILER'];
   });
 });

@@ -77,7 +77,12 @@ export async function readHealth(): Promise<HealthCheck[]> {
  */
 async function senderDnsCheck(): Promise<HealthCheck> {
   const dns = await readSenderDns();
-  if (dns.domain === null) return { key: 'senderDns', level: 'warn', detail: 'MAIL_FROM' };
+  // Sin dirección en el remitente no hay dominio al que preguntarle por su SPF,
+  // así que esta fila no es otra avería: es la misma de arriba vista desde
+  // aquí. Decir «MAIL_FROM» a secas mandaba a buscar una segunda cosa rota.
+  if (dns.domain === null) {
+    return { key: 'senderDns', level: 'warn', detail: 'MAIL_FROM no lleva dirección: no hay dominio que mirar' };
+  }
   if (dns.unreachable === true) return { key: 'senderDns', level: 'warn', detail: `${dns.domain} · DNS` };
 
   if (dns.spf === null) {
@@ -331,7 +336,24 @@ async function mailerCheck(): Promise<HealthCheck> {
   // Hotmail y Gmail descartan sin rebote. Desde fuera, un correo que funciona y
   // uno que se tira se ven igual.
   const problem = mailFromProblem(from);
-  if (problem !== null) return fail(`MAIL_FROM: ${MAIL_FROM_FORMAT}`);
+  if (problem !== null) {
+    // Se enseña LO QUE HAY GUARDADO, no el ejemplo. Esta fila decía
+    // «MAIL_FROM: Su Marca <info@su-dominio.com>» —que es el FORMATO— en la
+    // columna donde todas las demás filas enseñan el valor real, así que quien
+    // la leía entendía que ese era su remitente y preguntaba por qué su
+    // instalación estaba «por defecto». Una fila de diagnóstico que contesta
+    // con un ejemplo no diagnostica nada.
+    //
+    // No es un secreto que enseñar: es la cabecera `From:` que sale en cada
+    // correo, a la vista de todos los que lo reciben.
+    const que =
+      problem === 'missing'
+        ? 'está vacío'
+        : problem === 'noAddress'
+          ? 'no lleva ninguna dirección'
+          : 'esa dirección no vale';
+    return fail(`MAIL_FROM = «${from}» · ${que} · se escribe: ${MAIL_FROM_FORMAT}`);
+  }
 
   const encrypted = env('SMTP_PASSWORD_ENC');
   // Envuelto: `secret()` DESCIFRA, y sin llave lanza. Que la pantalla de salud

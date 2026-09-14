@@ -667,7 +667,10 @@ export interface Dictionary {
         intro: string;
         test: string;
         ok: string;
+        /** Lo que contestó el proveedor al rechazarlo. */
         failed: string;
+        /** No llegó a salir de aquí: lo paró esta instalación, no el servidor. */
+        notSent: string;
         tooSoon: string;
       };
       /** Quién manda sobre TODAS las oficinas, y cómo quitárselo. */

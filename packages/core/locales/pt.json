@@ -439,6 +439,7 @@
         "test": "Enviar um email de teste",
         "ok": "Entregue ao servidor de correio. Atenção: aceitá-lo não garante que chegue à caixa de entrada — se não aparecer em poucos minutos, veja o spam.",
         "failed": "O servidor de correio recusou-o. A resposta dele, tal como veio:",
+        "notSent": "A mensagem NÃO chegou a sair daqui: esta instalação a parou antes de abrir a conexão, portanto o seu servidor de correio não tem nada a ver. O que falta:",
         "tooSoon": "Espere um minuto entre testes."
       },
       "superadmins": {
@@ -591,7 +592,7 @@
       "brandByUrl": "Ou pôr um endereço de imagem em vez de a enviar",
       "brandTooBig": "A imagem pesa mais de {mb} MB. Escolha uma mais pequena.",
       "brandNotAnImage": "Esse ficheiro não é uma imagem que se possa abrir.",
-      "mailFromInvalid": "O remetente tem de levar um endereço de correio. Escreve-se assim: A Sua Marca <info@o-seu-dominio.com>. Sem ele a mensagem sai sem remetente, o servidor aceita-a à mesma e o Hotmail e o Gmail descartam-na sem avisar."
+      "mailFromInvalid": "O remetente tem de levar um endereço de correio. Escreve-se assim: Sua Marca <info@seu-dominio.com>. Sem ele a mensagem sai sem remetente, o servidor aceita-a na mesma e o Hotmail e o Gmail descartam-na sem avisar. NÃO se guardou nada desta secção: volte a escrever o que tivesse mudado."
     },
     "offices": {
       "heading": "Escritórios",

@@ -8,6 +8,7 @@ import { recordAudit } from '@/lib/audit';
 import { getSession, sessionCan } from '@/lib/auth/session';
 import { controlDb } from '@/lib/db/client';
 import { getMailer } from '@/lib/mail';
+import { MailNotSentError } from '@/lib/mail/types';
 import { getPaymentProvider } from '@/lib/payments';
 
 const TEST_ACTION = 'system.mail.test';
@@ -49,6 +50,10 @@ export async function sendTestMailAction(): Promise<void> {
 
   const ip = clientIp(await headers());
   let problem: string | null = null;
+  // Si el mensaje ni llegó a salir de aquí. La pantalla lo dice con otras
+  // palabras: «el servidor lo rechazó» sobre un fallo nuestro manda a revisar
+  // el proveedor por algo que se arregla en el campo de al lado.
+  let ownFault = false;
   let receipt = '';
   try {
     const result = await (await getMailer()).send({
@@ -77,6 +82,7 @@ export async function sendTestMailAction(): Promise<void> {
     }
   } catch (error) {
     problem = error instanceof Error ? error.message : 'unknown error';
+    ownFault = error instanceof MailNotSentError;
   }
 
   await recordAudit({
@@ -85,12 +91,13 @@ export async function sendTestMailAction(): Promise<void> {
     action: TEST_ACTION,
     entity: 'User',
     entityId: session.userId,
-    metadata: { ok: problem === null, problem, receipt },
+    metadata: { ok: problem === null, problem, ownFault, receipt },
     ip,
   });
 
   if (problem !== null) {
-    redirect(`/panel/configuracion?mail=failed&reason=${encodeURIComponent(problem.slice(0, 300))}`);
+    const estado = ownFault ? 'notSent' : 'failed';
+    redirect(`/panel/configuracion?mail=${estado}&reason=${encodeURIComponent(problem.slice(0, 300))}`);
   }
   redirect(`/panel/configuracion?mail=ok&reason=${encodeURIComponent(receipt.slice(0, 300))}`);
 }

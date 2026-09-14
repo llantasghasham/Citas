@@ -3,7 +3,7 @@ import { createTransport, type Transporter } from 'nodemailer';
 import { secret, setting } from '@/lib/settings';
 
 import { MAIL_FROM_FORMAT, mailFromProblem } from './from';
-import type { Email, Mailer, MailReceipt } from './types';
+import { MailNotSentError, type Email, type Mailer, type MailReceipt } from './types';
 
 /**
  * SMTP delivery.
@@ -77,8 +77,11 @@ export const smtpMailer: Mailer = {
     const from = await required('MAIL_FROM');
     const problem = mailFromProblem(from);
     if (problem !== null) {
-      throw new Error(
-        `MAIL_FROM no lleva una dirección de correo (${problem}). ` +
+      // Marcado: esto lo decidimos AQUÍ, sin abrir la conexión. La pantalla lo
+      // distingue de lo que contesta el proveedor, que es otra avería y se
+      // arregla en otro sitio.
+      throw new MailNotSentError(
+        `MAIL_FROM = «${from}» no lleva una dirección de correo (${problem}). ` +
           `Se escribe así: ${MAIL_FROM_FORMAT}`,
       );
     }

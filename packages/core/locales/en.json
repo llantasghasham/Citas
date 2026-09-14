@@ -439,6 +439,7 @@
         "test": "Send a test email",
         "ok": "Handed over to the mail server. Careful: accepting it does not guarantee it reaches the inbox — if it does not show up within a few minutes, check the spam folder.",
         "failed": "The mail server refused it. Its answer, verbatim:",
+        "notSent": "The message never left this machine: this installation stopped it before opening the connection, so your mail server has nothing to do with it. What is missing:",
         "tooSoon": "Wait a minute between tests."
       },
       "superadmins": {
@@ -591,7 +592,7 @@
       "brandByUrl": "Or point at an image address instead of uploading one",
       "brandTooBig": "The image is over {mb} MB. Pick a smaller one.",
       "brandNotAnImage": "That file is not an image that can be opened.",
-      "mailFromInvalid": "The sender must carry an email address. Write it like this: Your Brand <info@your-domain.com>. Without it the message goes out with no sender, the server accepts it anyway, and Hotmail and Gmail drop it without telling anyone."
+      "mailFromInvalid": "The sender must carry an email address. It is written like this: Your Brand <info@your-domain.com>. Without it the message goes out with no sender, the server accepts it anyway, and Hotmail and Gmail discard it silently. NOTHING in this section was saved: type again whatever you had changed."
     },
     "offices": {
       "heading": "Offices",

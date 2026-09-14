@@ -252,15 +252,29 @@ export default async function ConfigPage({ searchParams }: PageProps) {
           saber si valen deja el mismo silencio que había antes. */}
       {section === 'mail' || section === 'payments' ? (
         <section className="flex max-w-2xl flex-col gap-4 border-t border-[#ddd6c6] pt-6">
-          {params.mail === 'ok' || params.mail === 'failed' ? (
+          {/* Tres resultados y no dos, porque «no llegó» tiene dos culpables
+              distintos y se arreglan en sitios distintos. `failed` es lo que
+              contestó el proveedor; `notSent` es que el mensaje ni salió de
+              aquí —lo paró esta instalación— y decirle a alguien que «el
+              servidor de correo lo rechazó» por un campo mal escrito en su
+              propio panel le manda a revisar su Bluehost un día entero.
+              Y `tooSoon` estaba escrito en los cuatro idiomas y no se pintaba
+              en ninguno: pulsar dos veces seguidas no enseñaba NADA, que se lee
+              como un botón roto. */}
+          {params.mail === 'ok' || params.mail === 'failed' || params.mail === 'notSent' ? (
             <p className={`text-sm ${params.mail === 'ok' ? 'text-[#2f6b3a]' : 'text-[#8c2f1e]'}`}>
               {params.mail === 'ok'
                 ? dictionary.admin.system.mail.ok
-                : dictionary.admin.system.mail.failed}{' '}
+                : params.mail === 'notSent'
+                  ? dictionary.admin.system.mail.notSent
+                  : dictionary.admin.system.mail.failed}{' '}
               <span className="font-mono text-xs" dir="ltr">
                 {params.reason ?? ''}
               </span>
             </p>
+          ) : null}
+          {params.mail === 'tooSoon' ? (
+            <p className="text-sm text-[#8a6d2f]">{dictionary.admin.system.mail.tooSoon}</p>
           ) : null}
           {params.pago === 'ok' || params.pago === 'failed' ? (
             <p className={`text-sm ${params.pago === 'ok' ? 'text-[#2f6b3a]' : 'text-[#8c2f1e]'}`}>
