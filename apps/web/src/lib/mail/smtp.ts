@@ -2,6 +2,7 @@ import { createTransport, type Transporter } from 'nodemailer';
 
 import { secret, setting } from '@/lib/settings';
 
+import { senderDomain } from './dns';
 import { MAIL_FROM_FORMAT, mailFromProblem } from './from';
 import { MailNotSentError, type Email, type Mailer, type MailReceipt } from './types';
 
@@ -40,9 +41,27 @@ async function getTransporter(): Promise<Transporter> {
     throw new Error('No hay contraseña de SMTP. Póngala en el panel, en Configuración.');
   }
 
+  // CÓMO SE PRESENTA este cliente al servidor (el `EHLO`).
+  //
+  // Sin esto nodemailer usa `os.hostname()`, que en un VPS es lo que pusiera el
+  // instalador: `vm`, `localhost`, `srv1`. Y eso no se queda entre nosotros y
+  // Bluehost — el servidor lo escribe en la cabecera `Received:` y esa cabecera
+  // VIAJA con el mensaje hasta Hotmail y Gmail, que leen ahí un nombre que no
+  // es un dominio, junto a la IP suelta de una máquina cualquiera. Un correo
+  // escrito en el webmail no lleva esa línea, y es la diferencia que queda
+  // entre uno que llega y uno que no.
+  //
+  // Se usa el dominio DEL REMITENTE, que es un nombre que existe y resuelve, y
+  // es además lo que este servidor dice ser. Si el remitente no tuviera
+  // dominio no se llega hasta aquí: `send` lo rechaza antes.
+  const helo = senderDomain(await required('MAIL_FROM'));
+
   transporter = createTransport({
     host: await required('SMTP_HOST'),
     port,
+    // `name` es el EHLO. Sin dominio en el remitente se deja lo que haya, que
+    // es exactamente el comportamiento de antes.
+    ...(helo === null ? {} : { name: helo }),
     // 587 is STARTTLS: the connection opens in the clear and is upgraded.
     // Only 465 is TLS from the first byte.
     secure: port === 465,
