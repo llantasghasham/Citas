@@ -1352,6 +1352,41 @@ de los versículos.
 - `/panel/moderacion` y `/panel/moderacion/denuncias` — SOLO con
   `directory:moderate`: la cola con su reloj de horas hábiles y las denuncias.
 - `/panel/manual` — el manual de uso, en los cuatro idiomas.
+- `/panel/historial` — quién hizo qué, cuándo y desde dónde. Los datos ya se
+  guardaban —setenta y cuatro acciones distintas, desde el primer día— y no
+  había dónde verlos: un registro que solo se lee con un cliente de PostgreSQL
+  no se lee nunca, y la primera vez que hace falta es el día que alguien
+  pregunta quién cambió la cuenta a la que va el dinero.
+  - QUIÉN VE QUÉ son dos reglas distintas. Con `platform:manage` se ve todo, de
+    todas las oficinas, con la IP. Con `tenant:manage` se ve SOLO lo de la
+    propia oficina y SIN la IP — quien administra una agencia no necesita saber
+    desde qué casa se conectó su operadora un domingo. El recorte de la IP se
+    hace al CONSULTAR y no al pintar: una decisión sobre datos personales que
+    dependa de que una plantilla se acuerde de no pintar un campo es una que un
+    día se olvida.
+  - La oficina la manda la SESIÓN. El `?o=` de la dirección solo lo mira quien
+    administra la plataforma; a un administrador de oficina se le ignora y sigue
+    viendo lo suyo. Comprobado contra el servidor compilado, con las dos
+    sesiones y con un id ajeno en la dirección.
+  - SOLO LECTURA, y no por falta de tiempo: no hay forma de editar ni de borrar
+    una línea desde ninguna pantalla. Un historial que se puede corregir no
+    sirve para lo único que sirve un historial.
+  - Se traduce el ÁREA —lista cerrada de siete, en `packages/core`— y NO la
+    acción, que se enseña en monoespaciado tal cual. Son setenta y cuatro y
+    crecen cada semana: traducirlas serían casi trescientas frases y un
+    «undefined» en el registro de una oficina real el día que alguien añada la
+    setenta y cinco. Una acción nueva cae sola en su área por el prefijo, y un
+    prefijo que nadie previó cae en «otros» — nunca en la nada. Misma decisión
+    que las categorías del directorio.
+  - La lista de áreas vive en `packages/core` y la web la IMPORTA, no la repite:
+    es el diccionario quien tiene que exigir las siete en los cuatro idiomas
+    (`Record<AuditAreaName, string>`), y escrita dos veces quedaría un filtro
+    que encuentra cosas y una pantalla que no sabe cómo llamarlas.
+  - Se PAGINA POR FECHA y no por número de página: esta tabla crece mientras se
+    mira, y con `skip` cada línea nueva empuja a las demás y la página dos
+    repetiría lo de la uno. Los filtros son ENLACES y no un formulario, así que
+    una búsqueda concreta se pasa pegando la dirección — la misma razón por la
+    que la vista previa de «qué ve este invitado» es un GET.
 - `/panel/sistema` — SOLO superadministrador: once comprobaciones de salud,
   las versiones leídas en vivo y un botón que envía un correo de prueba y
   enseña la respuesta del proveedor.

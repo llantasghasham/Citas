@@ -54,6 +54,14 @@ export async function PanelHeader({ session }: { session: AuthenticatedSession }
       // plataforma: es su propia capacidad, y por eso su propio enlace.
       visible: sessionCan(session, 'directory:moderate'),
     },
+    {
+      href: '/panel/historial',
+      label: nav.history,
+      // Quien administra una OFICINA ve el suyo, no solo la plataforma: es su
+      // registro —quién entró, quién cobró, quién exportó la lista de una
+      // boda— y la pantalla ya lo recorta a lo suyo y le quita la IP.
+      visible: sessionCan(session, 'tenant:manage'),
+    },
     { href: '/panel/sistema', label: nav.system, visible: sessionCan(session, 'platform:manage') },
   ].filter((link) => link.visible);
 

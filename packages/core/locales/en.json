@@ -128,6 +128,7 @@
       "billing": "Subscription",
       "manual": "Manual",
       "system": "System",
+      "history": "History",
       "moderation": "Moderation",
       "config": "Settings",
       "profile": "My profile"
@@ -466,6 +467,33 @@
         "checkCommand": "See what has an update",
         "updateCommand": "Update one package and rebuild"
       }
+    },
+    "history": {
+      "title": "History",
+      "intro": "Everything that gets recorded: who did what, when and from where. It cannot be edited or deleted from here — a history you can correct is worth nothing.",
+      "areas": {
+        "access": "Access",
+        "money": "Money",
+        "event": "Weddings",
+        "messaging": "Messages",
+        "directory": "Directory",
+        "system": "System",
+        "other": "Other"
+      },
+      "all": "All",
+      "area": "Area",
+      "office": "Office",
+      "allOffices": "All offices",
+      "when": "When",
+      "who": "Who",
+      "what": "What",
+      "detail": "Detail",
+      "from": "From",
+      "automatic": "Automatic job",
+      "platform": "Platform",
+      "empty": "Nothing recorded with that filter.",
+      "more": "See older",
+      "noIp": "—"
     },
     "config": {
       "title": "Settings",

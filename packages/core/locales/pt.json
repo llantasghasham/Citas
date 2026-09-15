@@ -128,6 +128,7 @@
       "billing": "Subscrição",
       "manual": "Manual",
       "system": "Sistema",
+      "history": "Histórico",
       "moderation": "Moderação",
       "config": "Configuração",
       "profile": "O meu perfil"
@@ -466,6 +467,33 @@
         "checkCommand": "Ver o que tem atualização",
         "updateCommand": "Atualizar um pacote e reconstruir"
       }
+    },
+    "history": {
+      "title": "Histórico",
+      "intro": "Tudo o que fica registado: quem fez o quê, quando e de onde. Não se pode editar nem apagar daqui — um histórico que se pode corrigir não serve para nada.",
+      "areas": {
+        "access": "Acesso",
+        "money": "Dinheiro",
+        "event": "Casamentos",
+        "messaging": "Mensagens",
+        "directory": "Diretório",
+        "system": "Sistema",
+        "other": "Outros"
+      },
+      "all": "Tudo",
+      "area": "Área",
+      "office": "Escritório",
+      "allOffices": "Todos os escritórios",
+      "when": "Quando",
+      "who": "Quem",
+      "what": "O quê",
+      "detail": "Detalhe",
+      "from": "De",
+      "automatic": "Trabalho automático",
+      "platform": "Plataforma",
+      "empty": "Nada registado com esse filtro.",
+      "more": "Ver mais antigas",
+      "noIp": "—"
     },
     "config": {
       "title": "Configuração",

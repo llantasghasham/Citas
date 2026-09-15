@@ -76,6 +76,27 @@ export const MANUAL_CHAPTERS = [
   'config',
   'system',
 ] as const;
+/**
+ * Las áreas del historial, en UN solo sitio.
+ *
+ * Vive aquí y no en la web porque es el diccionario quien tiene que exigirlas:
+ * `Record<AuditAreaName, string>` obliga a las siete en los cuatro idiomas y
+ * el compilador caza la que falte. Y la web la IMPORTA en vez de repetirla —
+ * escrita dos veces, el día que se añada un área quedaría un filtro que
+ * encuentra cosas y una pantalla que no sabe cómo llamarlas. Es la misma razón
+ * por la que `DIRECTORY_LOCALES` se deriva de `LOCALES`.
+ */
+export const AUDIT_AREAS = [
+  'access',
+  'money',
+  'event',
+  'messaging',
+  'directory',
+  'system',
+  'other',
+] as const;
+export type AuditAreaName = (typeof AUDIT_AREAS)[number];
+
 export type ManualChapter = (typeof MANUAL_CHAPTERS)[number];
 
 /** The moving parts the status page names, each with its own version. */
@@ -511,6 +532,7 @@ export interface Dictionary {
       | 'billing'
       | 'manual'
       | 'system'
+      | 'history'
       | 'config'
       | 'moderation'
       | 'profile',
@@ -640,6 +662,35 @@ export interface Dictionary {
         | 'NEXT_PUBLIC_SITE_URL',
         string
       >;
+    };
+    /**
+     * El HISTORIAL: quién hizo qué, cuándo y desde dónde.
+     *
+     * Las ÁREAS son una lista cerrada y traducida; la acción exacta se enseña
+     * en monoespaciado y no se traduce. Son setenta y cuatro y crecen cada
+     * semana: traducirlas todas serían casi trescientas frases y un
+     * «undefined» en el registro de una oficina real el día que alguien añada
+     * una. Es la misma decisión que las categorías del directorio.
+     */
+    history: {
+      title: string;
+      intro: string;
+      areas: Record<AuditAreaName, string>;
+      all: string;
+      area: string;
+      office: string;
+      allOffices: string;
+      when: string;
+      who: string;
+      what: string;
+      detail: string;
+      from: string;
+      /** Lo hizo un temporizador, no una persona. */
+      automatic: string;
+      platform: string;
+      empty: string;
+      more: string;
+      noIp: string;
     };
     /** The manual the office reads inside the panel, not in a PDF nobody opens. */
     manual: {
