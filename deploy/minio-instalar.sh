@@ -1,8 +1,22 @@
 #!/usr/bin/env bash
 #
-# Levanta el almacén de las fotos del directorio, en esta misma máquina.
+# Levanta el almacén de las fotos del directorio con MinIO, en esta misma
+# máquina.
 #
 #   sudo bash deploy/minio-instalar.sh
+#
+# ANTES DE USARLO: MinIO RETIRÓ el binario del servidor de la edición
+# comunitaria. `dl.min.io` contesta 410 «Gone» tanto en la dirección de siempre
+# como en la del archivo de una versión concreta, y la imagen de contenedor
+# `minio/minio` dejó de servirse sin credenciales. O sea que este guion NO puede
+# descargar nada por su cuenta, y lo dirá.
+#
+# Para una instalación normal use el otro, que no necesita descargar nada:
+#
+#   sudo bash deploy/almacen-instalar.sh      ← el disco de esta máquina
+#
+# Este sigue aquí para dos casos que sí valen: alguien que YA tenga el binario
+# (MINIO_BIN=), y quien quiera un almacén compatible con S3 de verdad.
 #
 # Y si el binario de MinIO no se puede descargar desde aquí —ver abajo—, con la
 # dirección puesta a mano o con el archivo ya bajado:
@@ -67,7 +81,7 @@ if grep -q '^STORAGE_ENDPOINT=' "$ENV_FILE"; then
   echo "  Si lo que falló fue el último paso —el bucket— no hace falta repetir"
   echo "  nada de esto. Basta con:"
   echo
-  echo "    cd $DIR && npm run storage:bucket --workspace @citas/web"
+  echo "    cd $DIR && npm run storage:check --workspace @citas/web"
   echo
   echo "  Para empezar de cero, quite a mano las líneas STORAGE_* y vuelva."
   exit 1
@@ -250,7 +264,7 @@ ok "cinco variables escritas en apps/web/.env (la secreta, cifrada)"
 # `mc` habría dicho «bucket creado» usando su propio código y sus propias
 # credenciales, que no prueba nada de lo que va a correr después.
 paso "Bucket y comprobación"
-if ( cd "$DIR" && sudo -u "$APP_USER" npm run storage:bucket --workspace @citas/web --silent ); then
+if ( cd "$DIR" && sudo -u "$APP_USER" npm run storage:check --workspace @citas/web --silent ); then
   ok "bucket «$BUCKET», privado, y la ida y vuelta comprobada"
 else
   echo
@@ -260,7 +274,7 @@ else
   echo "  guion: se negaría, y con razón. Corrija lo que diga el error de arriba"
   echo "  y vuelva a lanzar solo el último paso:"
   echo
-  echo "    cd $DIR && npm run storage:bucket --workspace @citas/web"
+  echo "    cd $DIR && npm run storage:check --workspace @citas/web"
   exit 1
 fi
 

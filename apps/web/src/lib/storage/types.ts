@@ -34,7 +34,7 @@ export interface StoredObject {
  *     `tests/almacen.test.ts`.
  */
 export interface ObjectStore {
-  readonly id: 's3' | 'memory';
+  readonly id: 's3' | 'fs' | 'memory';
 
   /** Escribe. El `contentType` es el REAL, decidido por el servidor. */
   put(key: ObjectKey, body: Uint8Array, contentType: string): Promise<void>;

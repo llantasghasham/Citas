@@ -998,51 +998,82 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - SVG PROHIBIDO: es un documento XML que admite `<script>`, y no hay ninguna
   razón para aceptarlo en la foto de un salón. HEIC sí, porque es lo que sale de
   un iPhone. Todo sale recodificado a WEBP, sin metadatos, con su miniatura.
-- Las seis variables (`STORAGE_*`) viven en el ENTORNO y no en el panel, como
-  `DATABASE_URL` y la llave. La secreta se acepta cifrada (`..._ENC`) y en claro
-  solo fuera de producción. Una dirección de almacén editable desde una pantalla
-  es la misma puerta que hubo que cerrar con la del servicio de WhatsApp.
-- Se monta con `sudo bash deploy/minio-instalar.sh`: MinIO en la PROPIA máquina,
-  escuchando SOLO en `127.0.0.1`. Las fotos de un salón no necesitan salir a
-  ningún sitio —se sirven por `/api/d/media/<id>`, que mira el estado antes de
-  devolver un byte— así que el bucket no tiene que ser público ni estar en la
-  cuenta de nadie. Quien llegue a ese puerto con las credenciales lee y escribe
-  las fotos de TODOS los proveedores: es la misma razón por la que la web
+- HAY DOS ALMACENES DE VERDAD y se ELIGE uno: el DISCO de esta máquina
+  (`STORAGE_DIR`) o uno compatible con S3 (`STORAGE_*`). Con los DOS puestos,
+  `storeFor()` se LEVANTA en vez de elegir por precedencia: las fotos acabarían
+  en el sitio que no se cree quien mira las variables, y el día que alguien
+  quitara el otro media galería se quedaría vacía sin que nada lo dijera. Es la
+  misma decisión que `MAILER`, donde tampoco hay respaldo automático.
+- Las variables del almacén viven en el ENTORNO y no en el panel, como
+  `DATABASE_URL` y la llave. La secreta de S3 se acepta cifrada (`..._ENC`) y en
+  claro solo fuera de producción. Una dirección —o una ruta— de almacén editable
+  desde una pantalla es la misma puerta que hubo que cerrar con la del servicio
+  de WhatsApp.
+- EL PLAN ERA MinIO Y NO SE PUDO, y queda escrito porque es la clase de cosa que
+  alguien vuelve a intentar: MinIO RETIRÓ el binario del servidor de la edición
+  comunitaria. `dl.min.io` contesta **410 Gone** en la dirección de siempre Y en
+  la del archivo de una versión concreta, y la imagen `minio/minio` de Docker Hub
+  contesta **401** sin credenciales donde cualquier otra imagen pública da 200.
+  No es una avería de una tarde: es una distribución que se retiró.
+- Y para UNA máquina, MinIO nunca era lo que hacía falta: un proceso más que
+  mantener, un puerto más que cerrar, unas credenciales más que rotar y un
+  binario más que bajar de internet, todo para hablar el protocolo de S3 con un
+  disco que está a diez centímetros. `fsObjectStore` hace lo mismo con un
+  `open()`. El PUERTO no cambia, así que el producto no se entera, y el
+  adaptador de S3 sigue ahí —probado contra un servidor de verdad— para el día
+  que las fotos tengan que irse a R2.
+- Se monta con `sudo bash deploy/almacen-instalar.sh`. No genera credenciales
+  porque no hay ninguna: crea la carpeta, la deja del usuario de la web y de
+  nadie más (0700) y comprueba la ida y vuelta. Quien pueda leer esa carpeta lee
+  las fotos de TODOS los proveedores, que es la misma razón por la que la web
   escucha en el bucle local.
-- Las credenciales las genera el guion con `/dev/urandom`, en la máquina, y la
-  secreta se cifra por la ENTRADA ESTÁNDAR con la llave de la instalación. En el
-  repositorio y en `.env.example` van los NOMBRES y ningún valor: una credencial
-  de ejemplo es una credencial que alguien deja puesta.
-- El guion se NIEGA a pisar un `STORAGE_ENDPOINT` que ya exista. Reescribir el
-  almacén en uso deja las filas de la base apuntando a objetos del almacén
-  anterior, y eso se descubre como galerías rotas en la ficha de gente real.
-- LO PRIMERO que hace el guion es CONSEGUIR el binario y comprobar que
-  ARRANCA, antes de crear un usuario, una carpeta o una credencial. Estaba en
-  medio, y el día que `dl.min.io` empezó a contestar **410 Gone** —MinIO dejó de
-  publicar el servidor de la edición comunitaria— el guion se paró en seco con
-  un `curl: (22)` a secas, con media máquina ya preparada. Ahora prueba varias
-  direcciones, DICE cuál falló y con qué código, y admite `MINIO_URL=` o
-  `MINIO_BIN=` para una copia propia. Un `curl -f` calla el código y `set -e`
-  mata el guion antes de poder contarlo: por eso ahí no lleva `-f`.
-- Y comprueba que lo descargado es un ELF que responde a `--version`. Un 200 con
-  una página de error dentro —un proxy de empresa, un portal cautivo— se
-  instalaba igual, y el fallo aparecía después en `systemctl`, sin ninguna pista.
+- LA CARPETA VA FUERA del directorio de la aplicación, y lo comprueban los dos
+  —el guion y `storageDirFromEnv()`—. Un despliegue copia el código y se lleva
+  por delante lo que se hubiera dejado al lado: es exactamente la razón por la
+  que los PNG de `Render` y las fotos de perfil viven en PostgreSQL. Y la ruta
+  tiene que ser ABSOLUTA: una relativa depende de desde dónde arrancó el
+  proceso, y un temporizador no arranca desde donde arranca la web.
+- Se escribe a un temporal y se RENOMBRA, que dentro del mismo sistema de
+  archivos es atómico. Escribiendo directo, un proceso que muera a la mitad deja
+  media imagen en su sitio con su fila en la base diciendo que está bien — peor
+  que no tener la fila.
+- El tipo sale de la EXTENSIÓN y no de un archivo de metadatos al lado. Se puede
+  porque `ObjectKey` solo admite `.webp` y `.avif`: es una lista cerrada validada
+  en la frontera. Un segundo archivo junto a cada imagen es un segundo archivo
+  que puede faltar, quedarse a medias o contradecir al primero.
+- Los dos guiones se NIEGAN a pisar un almacén ya configurado. Cambiar el
+  almacén en uso deja las filas de la base apuntando a lo que hay en el anterior,
+  y eso se descubre como galerías rotas en la ficha de gente real.
+- `minio-instalar.sh` sigue en el repositorio para quien YA tenga el binario
+  (`MINIO_BIN=`) o quiera un S3 de verdad, y ahora dice en la cabecera que no
+  puede descargar nada. De aquella vuelta quedan dos arreglos que valen igual:
+  el binario se consigue LO PRIMERO —antes de crear usuario, carpeta o
+  credencial, para que un fallo no deje nada detrás— y se comprueba que es un
+  ELF que responde a `--version`, porque un 200 con una página de error dentro
+  se instalaba igual y el fallo salía después en `systemctl`, sin ninguna pista.
+  Ahí `curl` no lleva `-f`: con él se calla el código y `set -e` mata el guion
+  antes de poder contar cuál falló.
 - El bucket ya NO lo crea `mc`. Era un SEGUNDO binario traído de internet, es
-  decir una segunda forma de que la instalación se caiga por algo que no es de
-  este proyecto. Lo hace `npm run storage:bucket`, con la firma del propio
-  proyecto —la comprobada contra el vector oficial de AWS— y la llave vacía, que
-  es la dirección DEL BUCKET y el único sitio que firma algo que no es un
-  objeto; `tests/almacen-s3.test.ts` comprueba que sale `/<bucket>/`.
-- Y lo que ese paso comprueba no es que el bucket exista: escribe, lee y borra
-  un objeto POR EL PUERTO DEL PRODUCTO con las variables recién escritas. Si
-  termina en verde, lo probado es la instalación entera. `mc` decía «bucket
-  creado» con su propio código y sus propias credenciales, que no prueba nada de
-  lo que va a correr después.
+  decir una segunda forma de caerse por algo que no es de este proyecto. Lo hace
+  `npm run storage:check`, con la firma del propio proyecto —la comprobada
+  contra el vector oficial de AWS— y la llave vacía, que es la dirección DEL
+  BUCKET y el único sitio que firma algo que no es un objeto;
+  `tests/almacen-s3.test.ts` comprueba que sale `/<bucket>/`.
+- Y lo que `storage:check` comprueba no es que el bucket o la carpeta existan:
+  escribe, lee y borra un objeto POR EL PUERTO DEL PRODUCTO con las variables
+  recién escritas. Si termina en verde, lo probado es la instalación entera.
+  `mc` decía «bucket creado» con su propio código y sus propias credenciales,
+  que no prueba nada de lo que va a correr después.
 - LO QUE EL GUION NO PUEDE HACER y por eso lo dice al terminar: respaldar.
   `backup-citas.sh` solo copia PostgreSQL, y las fotos viven en
-  `/var/lib/minio`. Una boda sin sus fotos se arregla; el catálogo de
+  `/var/lib/citas/almacen`. Una boda sin sus fotos se arregla; el catálogo de
   doscientos proveedores, no.
-- El ADAPTADOR se prueba contra un servidor HTTP de verdad
+- EL DEL DISCO se prueba contra un disco de verdad (`tests/almacen-fs.test.ts`),
+  con las mismas comprobaciones que el de S3 más las dos que solo pasan en un
+  disco: que una llave forzada NO puede salirse de la carpeta —`ObjectKey` ya lo
+  impide, esto es la SEGUNDA red, la de la frontera donde la llave se vuelve una
+  ruta— y que la carpeta no puede estar dentro del directorio de la aplicación.
+- El ADAPTADOR DE S3 se prueba contra un servidor HTTP de verdad
   (`tests/almacen-s3.test.ts`), y hacía falta: había pruebas de la firma, de la
   llave, del almacén de memoria y del recodificado, pero `s3ObjectStore` —lo
   único de todo eso que corre en producción— no había hecho UNA sola petición.
@@ -1237,12 +1268,12 @@ npm run brand:build # redibuja el logo, los iconos y los de la app móvil
 npm run db:check   # aplica las migraciones en una base nueva y comprueba el esquema
 npm run verify:e2e # el recorrido entero contra la base: evento, actos, invitados,
                    # QR, puerta, exportación y el aislamiento entre dos oficinas
-npm run test:unit  # solo lo que NO necesita base (62)
+npm run test:unit  # solo lo que NO necesita base
 npm run test:integration # la suite entera, y se NIEGA a correr sin DATABASE_URL
 npm run db:fleet   # la flota: -- migrar | estado | crear <subdominio>
 npm run db:split   # mueve cada oficina a su base: -- copiar | limpiar
 npm run sinpe:check # revisa los buzones de SINPE (lo llama el temporizador)
-npm run storage:bucket # crea el bucket del almacen y comprueba ida y vuelta
+npm run storage:check # comprueba el almacen: escribe, lee y borra de verdad
 npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
 ```
 

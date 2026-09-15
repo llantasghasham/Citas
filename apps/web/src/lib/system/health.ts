@@ -8,6 +8,7 @@ import { secret, setting } from '@/lib/settings';
 import { runningAsRoot } from '@/lib/render/browser';
 import { controlDb, tenancyMode } from '@/lib/db/client';
 import { isOverdue } from '@/lib/directory/clock';
+import { storageDirFromEnv } from '@/lib/storage/fs';
 import { s3ConfigFromEnv } from '@/lib/storage/s3';
 import { unverifiedVerses } from '@/lib/verses';
 import { gatewayHealth } from '@/lib/whatsapp/gateway';
@@ -571,22 +572,59 @@ async function tenancyCheck(): Promise<HealthCheck> {
 /**
  * ¿Hay dónde guardar las fotos de un proveedor?
  *
- * Sin las seis variables del almacén, el adaptador es el de MEMORIA — y ese se
+ * Sin ninguna variable del almacén, el adaptador es el de MEMORIA — y ese se
  * niega a arrancar en producción, así que una subida no falla a medias: no
  * ocurre. Eso está bien y es ruidoso para quien sube, pero desde esta pantalla
  * no se veía nada: el directorio entero funciona salvo las galerías, que es
  * justo la mitad por la que un salón paga.
  *
- * No se lee ni un valor: solo si están puestas y contra qué servidor apuntan.
+ * DICE CUÁL de los dos está puesto, porque son sitios distintos y el día que
+ * alguien busque una foto por SSH tiene que saber si mirar en un disco o en un
+ * bucket. Y si están los DOS, eso es un FALLO y sale como tal: `storeFor()` se
+ * levanta, o sea que no se puede subir nada, y desde fuera se vería igual que
+ * si el almacén estuviera bien.
+ *
+ * No se lee ni un valor: solo si están puestas y a dónde apuntan.
  */
 function directoryStorageCheck(): HealthCheck {
+  let dir: string | null = null;
+  try {
+    dir = storageDirFromEnv();
+  } catch (error) {
+    // `storageDirFromEnv` se levanta con una ruta relativa o con una dentro del
+    // directorio de la aplicación. Las dos hacen que no se pueda subir nada, y
+    // el mensaje ya explica cuál es: se enseña tal cual.
+    return {
+      key: 'directoryStorage',
+      level: 'fail',
+      detail: (error instanceof Error ? error.message : 'STORAGE_DIR no vale').slice(0, 200),
+    };
+  }
+
   const config = s3ConfigFromEnv();
+
+  if (config !== null && dir !== null) {
+    return {
+      key: 'directoryStorage',
+      level: 'fail',
+      detail: 'STORAGE_DIR y STORAGE_ENDPOINT puestos a la vez · quite uno',
+    };
+  }
+
   if (config !== null) {
     return {
       key: 'directoryStorage',
       level: 'ok',
       // El servidor y el cubo, que no son secretos. La clave no se menciona.
-      detail: `${config.endpoint} · ${config.bucket}`.slice(0, 200),
+      detail: `S3 · ${config.endpoint} · ${config.bucket}`.slice(0, 200),
+    };
+  }
+
+  if (dir !== null) {
+    return {
+      key: 'directoryStorage',
+      level: 'ok',
+      detail: `Disco de esta máquina · ${dir}`.slice(0, 200),
     };
   }
 
@@ -595,7 +633,7 @@ function directoryStorageCheck(): HealthCheck {
     // En producción es un FALLO y no un aviso: significa que nadie puede subir
     // una foto y que nada lo dice en la pantalla donde se sube.
     level: inProduction() ? 'fail' : 'warn',
-    detail: 'STORAGE_* sin poner · en memoria',
+    detail: 'STORAGE_DIR y STORAGE_* sin poner · en memoria',
   };
 }
 

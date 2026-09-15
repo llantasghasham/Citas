@@ -117,22 +117,44 @@ Lo que **no** lleva esta interfaz, y es a propósito:
 - **`list()` tampoco.** No hace falta y es la llamada que se paga caro cuando
   alguien la mete en un bucle.
 
-### 1.1 Los dos adaptadores
+### 1.1 Los tres adaptadores
 
 ```
+fsObjectStore      El DISCO de esta máquina. Lo normal en una instalación de un
+                   servidor: un open() y nada más que mantener. La carpeta va
+                   FUERA del directorio de la aplicación y se comprueba.
+
 s3ObjectStore      AWS Signature V4 escrito con node:crypto. Sirve para R2,
                    Amazon S3, Backblaze B2 y MinIO sin cambiar nada del dominio:
-                   lo único que cambia son las seis variables de entorno.
+                   lo único que cambia son las variables de entorno.
 
 memoryObjectStore  Un Map en memoria. Para desarrollo y para las pruebas.
                    En producción SE NIEGA A ARRANCAR, igual que el emisor de
                    consola y el proveedor de pago de mentira.
 ```
 
-`storeFor()` resuelve uno u otro y es el único sitio que lo decide.
+`storeFor()` resuelve uno y es el único sitio que lo decide. Con los DOS de
+verdad configurados a la vez **se levanta** en vez de elegir por precedencia: las
+fotos acabarían en el sitio que no se cree quien mira las variables, y quitar el
+otro dejaría media galería vacía sin que nada lo dijera. Misma decisión que
+`MAILER`, donde tampoco hay respaldo automático entre dos emisores.
+
+**Por qué apareció el del disco.** El plan de despliegue era MinIO en la propia
+máquina, y no se pudo: MinIO retiró el binario del servidor de la edición
+comunitaria. `dl.min.io` contesta 410 «Gone» en la dirección de siempre y en la
+del archivo de una versión concreta, y la imagen `minio/minio` de Docker Hub
+contesta 401 sin credenciales donde cualquier otra imagen pública da 200. Y
+mirándolo de frente, para una máquina MinIO nunca era lo que hacía falta: un
+proceso más, un puerto más, unas credenciales más y un binario más bajado de
+internet, todo para hablar S3 con un disco que está a diez centímetros.
+
+Lo que NO cambió es el puerto, que es el punto de tenerlo: el dominio no se
+entera de cuál hay debajo, y el de S3 sigue probado contra un servidor de verdad
+para el día que las fotos tengan que salir de aquí.
 
 **No hay adaptador de PostgreSQL.** Fue explícito en el encargo y estoy de
-acuerdo: la base guarda las once columnas de §2 y ni un byte de imagen.
+acuerdo: la base guarda las once columnas de §2 y ni un byte de imagen. El del
+disco no es una vuelta atrás sobre eso — son bytes en un disco, no filas.
 
 ### 1.2 Las variables, y cómo se guardan
 
