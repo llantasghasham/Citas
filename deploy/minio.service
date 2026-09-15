@@ -1,0 +1,53 @@
+# MinIO: el almacén de las fotos del directorio.
+#
+# Lo escribe `deploy/minio-instalar.sh`, que además genera las credenciales.
+# Está aquí para poder leerlo antes de ejecutarlo y para poder compararlo con
+# lo que hay puesto en una máquina.
+#
+# POR QUÉ EN LA PROPIA MÁQUINA y no en un servicio de fuera: las fotos de un
+# salón no necesitan salir a ningún sitio. Se sirven SIEMPRE por
+# `/api/d/media/<id>`, que mira antes el estado de moderación — así que el
+# bucket no tiene que ser público, no tiene que tener CDN y no tiene que estar
+# en la cuenta de nadie. Lo que sí tiene que estar es respaldado: ver abajo.
+[Unit]
+Description=MinIO — almacén de objetos de Citas
+After=network.target
+Before=citas.service
+
+[Service]
+Type=simple
+User=minio
+Group=minio
+
+# SOLO EL BUCLE LOCAL, y esto no es un detalle de configuración.
+#
+# Quien llegue a este puerto con las credenciales lee y escribe las fotos de
+# todos los proveedores. Es exactamente la razón por la que Docker publica la
+# web en `127.0.0.1:3000` y por la que la dirección del servicio de WhatsApp
+# solo puede apuntar al bucle local: si se puede llegar sin pasar por nginx,
+# no hay nginx.
+#
+# La consola de administración NO se abre. `--console-address` sin dirección la
+# deja en un puerto al azar; se fija también en local para que no escuche fuera
+# por su cuenta.
+ExecStart=/usr/local/bin/minio server /var/lib/minio/datos \
+  --address 127.0.0.1:9000 \
+  --console-address 127.0.0.1:9001
+
+# Las credenciales de administración van en un archivo 600 que solo lee este
+# servicio, NO en esta unidad: `systemctl show` enseña el entorno de una unidad
+# a cualquiera que pueda ejecutarlo.
+EnvironmentFile=/etc/minio/entorno
+
+Restart=always
+RestartSec=5
+
+# Endurecimiento: este proceso solo necesita su carpeta de datos.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/minio
+
+[Install]
+WantedBy=multi-user.target

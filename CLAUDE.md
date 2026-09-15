@@ -1002,6 +1002,35 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   `DATABASE_URL` y la llave. La secreta se acepta cifrada (`..._ENC`) y en claro
   solo fuera de producción. Una dirección de almacén editable desde una pantalla
   es la misma puerta que hubo que cerrar con la del servicio de WhatsApp.
+- Se monta con `sudo bash deploy/minio-instalar.sh`: MinIO en la PROPIA máquina,
+  escuchando SOLO en `127.0.0.1`. Las fotos de un salón no necesitan salir a
+  ningún sitio —se sirven por `/api/d/media/<id>`, que mira el estado antes de
+  devolver un byte— así que el bucket no tiene que ser público ni estar en la
+  cuenta de nadie. Quien llegue a ese puerto con las credenciales lee y escribe
+  las fotos de TODOS los proveedores: es la misma razón por la que la web
+  escucha en el bucle local.
+- Las credenciales las genera el guion con `/dev/urandom`, en la máquina, y la
+  secreta se cifra por la ENTRADA ESTÁNDAR con la llave de la instalación. En el
+  repositorio y en `.env.example` van los NOMBRES y ningún valor: una credencial
+  de ejemplo es una credencial que alguien deja puesta.
+- El guion se NIEGA a pisar un `STORAGE_ENDPOINT` que ya exista. Reescribir el
+  almacén en uso deja las filas de la base apuntando a objetos del almacén
+  anterior, y eso se descubre como galerías rotas en la ficha de gente real.
+- LO QUE EL GUION NO PUEDE HACER y por eso lo dice al terminar: respaldar.
+  `backup-citas.sh` solo copia PostgreSQL, y las fotos viven en
+  `/var/lib/minio`. Una boda sin sus fotos se arregla; el catálogo de
+  doscientos proveedores, no.
+- El ADAPTADOR se prueba contra un servidor HTTP de verdad
+  (`tests/almacen-s3.test.ts`), y hacía falta: había pruebas de la firma, de la
+  llave, del almacén de memoria y del recodificado, pero `s3ObjectStore` —lo
+  único de todo eso que corre en producción— no había hecho UNA sola petición.
+  Se iba a estrenar contra el bucket de alguien. Se comprueba que los bytes van
+  y vuelven intactos, que «no está» es `null` y no una excepción, que borrar dos
+  veces no falla, que un 500 SÍ se levanta, que NO se sigue una redirección, y
+  que las seis variables tal como las escribe el guion —secreta cifrada
+  incluida— dan un almacén que funciona. La FIRMA no se comprueba ahí: ya está
+  contra el vector oficial de AWS, y comprobarla contra mi propia comprobación
+  sería la misma cuenta hecha dos veces por la misma cabeza.
 
 ### La galería, la moderación y las denuncias
 
