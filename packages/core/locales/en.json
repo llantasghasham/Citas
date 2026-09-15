@@ -439,6 +439,7 @@
         "toLabel": "Send the test to",
         "toHint": "Yours is filled in. Test against a Gmail and a Hotmail too: those are the ones that silently discard what others accept.",
         "test": "Send a test email",
+        "sending": "Sending the message…",
         "ok": "Handed over to the mail server. Careful: accepting it does not guarantee it reaches the inbox — if it does not show up within a few minutes, check the spam folder.",
         "failed": "The mail server refused it. Its answer, verbatim:",
         "notSent": "The message never left this machine: this installation stopped it before opening the connection, so your mail server has nothing to do with it. What is missing:",
@@ -482,6 +483,7 @@
       "site": "The site",
       "testMail": "Send a test email",
       "testPayments": "Test the payment credentials",
+      "probing": "Asking the gateway…",
       "probeOk": "The credentials work.",
       "probeFailed": "The gateway refused them. Its answer:",
       "labels": {

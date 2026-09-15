@@ -575,6 +575,8 @@ export interface Dictionary {
       };
       testMail: string;
       testPayments: string;
+      /** Y mientras la consulta. */
+      probing: string;
       probeOk: string;
       probeFailed: string;
       /**
@@ -671,6 +673,8 @@ export interface Dictionary {
         toLabel: string;
         toHint: string;
         test: string;
+        /** Lo que dice el botón MIENTRAS manda. Puede tardar veinte segundos. */
+        sending: string;
         ok: string;
         /** Lo que contestó el proveedor al rechazarlo. */
         failed: string;

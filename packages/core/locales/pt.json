@@ -439,6 +439,7 @@
         "toLabel": "Enviar o teste para",
         "toHint": "Vem preenchido o seu. Teste também contra um Gmail e um Hotmail: são os que descartam em silêncio o que outros aceitam.",
         "test": "Enviar um email de teste",
+        "sending": "A enviar o correio…",
         "ok": "Entregue ao servidor de correio. Atenção: aceitá-lo não garante que chegue à caixa de entrada — se não aparecer em poucos minutos, veja o spam.",
         "failed": "O servidor de correio recusou-o. A resposta dele, tal como veio:",
         "notSent": "A mensagem NÃO chegou a sair daqui: esta instalação a parou antes de abrir a conexão, portanto o seu servidor de correio não tem nada a ver. O que falta:",
@@ -482,6 +483,7 @@
       "site": "O site",
       "testMail": "Enviar um email de teste",
       "testPayments": "Testar as credenciais de cobrança",
+      "probing": "A consultar a gateway…",
       "probeOk": "As credenciais servem.",
       "probeFailed": "O gateway recusou-as. A resposta dele:",
       "labels": {

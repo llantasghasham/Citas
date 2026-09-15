@@ -439,6 +439,7 @@
         "toLabel": "Enviar la prueba a",
         "toHint": "Viene puesta la suya. Pruebe también contra un Gmail y un Hotmail: son los que descartan en silencio lo que otros aceptan.",
         "test": "Enviar un correo de prueba",
+        "sending": "Enviando el correo…",
         "ok": "Entregado al servidor de correo. Ojo: que lo acepte no garantiza que llegue a la bandeja — si no aparece en unos minutos, mire el correo no deseado.",
         "failed": "El servidor de correo lo rechazó. Su respuesta, tal cual:",
         "notSent": "El mensaje NO llegó a salir de aquí: lo paró esta instalación antes de abrir la conexión, así que su servidor de correo no tiene nada que ver. Lo que falta:",
@@ -482,6 +483,7 @@
       "site": "El sitio",
       "testMail": "Enviar un correo de prueba",
       "testPayments": "Probar las credenciales de cobro",
+      "probing": "Consultando la pasarela…",
       "probeOk": "Las credenciales valen.",
       "probeFailed": "La pasarela las rechazó. Su respuesta:",
       "labels": {

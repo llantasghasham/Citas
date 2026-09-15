@@ -1366,6 +1366,18 @@ de los versículos.
     Un campo vacío es «el texto original», y no se guarda fila.
   - Los cuatro botones de idioma son ahora un icono de mundo (`<details>`, sin
     JavaScript de cliente).
+  - **El botón de probar DICE que está trabajando** (`SubmitBusy`, el ÚNICO
+    componente de cliente del proyecto). Abre una conexión con un servidor de
+    fuera y puede tardar los veinte segundos que tiene de tope el SMTP; sin
+    avisar, eso se ve igual que un botón que no se enteró del clic, y el segundo
+    clic choca contra el freno de un minuto y contesta «espere», que se lee como
+    que está roto. Cambia de color, dice «Enviando el correo…» y no se deja
+    pulsar otra vez.
+  - No rompe la regla de «sin JavaScript de cliente» porque NADA se apoya en él:
+    sin JavaScript es un `<button type="submit">` y el formulario se envía igual
+    —comprobado contra el servidor compilado—. El navegador solo añade el aviso.
+    Y desactivar el botón no sustituye al freno del servidor: evita gastarlo por
+    error, no es un permiso, igual que esconder un botón no lo es.
 - `/panel/perfil` — cada persona edita LO SUYO: nombre, foto, teléfono, idioma,
   país y zona horaria; su contraseña; y dónde tiene la sesión abierta. El id sale
   de la sesión, nunca del formulario: un campo oculto con el id del usuario en

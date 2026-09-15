@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { saveConfigAction } from '@/app/panel/configuracion/actions';
 import { probePaymentsAction, sendTestMailAction } from '@/app/panel/sistema/actions';
 import { FIELD_CLASS } from '@/components/create/Field';
+import { SubmitBusy } from '@/components/panel/SubmitBusy';
 import { BrandSection } from '@/components/panel/config/BrandSection';
 import { ConfigNav } from '@/components/panel/config/ConfigNav';
 import { HomeSection } from '@/components/panel/config/HomeSection';
@@ -47,6 +48,14 @@ interface PageProps {
 }
 
 const BOTON_SUAVE = 'border border-[#23201a] px-5 py-2.5 text-sm text-[#23201a] hover:opacity-70';
+/**
+ * El MISMO botón mientras trabaja: relleno, en el dorado de la marca y con el
+ * cursor de espera. Se distingue de un vistazo y sin leerlo, que es de lo que
+ * se trata — y no cambia de tamaño, para que la pantalla no dé un salto justo
+ * cuando alguien acaba de pulsar.
+ */
+const BOTON_OCUPADO =
+  'border border-[#8a6c22] bg-[#8a6c22] px-5 py-2.5 text-sm text-[#f4efe6] cursor-wait';
 
 /**
  * Lo que se propone cuando el campo está vacío.
@@ -318,9 +327,18 @@ export default async function ConfigPage({ searchParams }: PageProps) {
                 <span className="text-xs text-[#6a6456]">{dictionary.admin.system.mail.toHint}</span>
               </label>
             ) : null}
-            <button type="submit" className={`self-start ${BOTON_SUAVE}`}>
-              {section === 'mail' ? copy.testMail : copy.testPayments}
-            </button>
+            {/* Pulsar esto abre una conexión con un servidor de FUERA: puede
+                tardar un segundo o los veinte que tiene de tope el SMTP. Sin
+                avisar, esos veinte segundos se ven igual que un botón que no
+                se enteró del clic, y quien no lo sabe vuelve a pulsar — y el
+                segundo clic choca contra el freno de un minuto y contesta
+                «espere», que se lee como que está roto. */}
+            <SubmitBusy
+              idle={section === 'mail' ? copy.testMail : copy.testPayments}
+              busy={section === 'mail' ? dictionary.admin.system.mail.sending : copy.probing}
+              className={`self-start ${BOTON_SUAVE}`}
+              busyClassName={`self-start ${BOTON_OCUPADO}`}
+            />
           </form>
         </section>
       ) : null}
