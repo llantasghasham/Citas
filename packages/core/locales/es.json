@@ -339,6 +339,17 @@
             "Si cambia algo de la invitación se genera una imagen nueva sola: la huella cubre todo lo que cambia el dibujo."
           ]
         },
+        "media": {
+          "title": "Las fotos del directorio",
+          "steps": [
+            "Las fotos de los proveedores se guardan en el servidor de esta instalación, no en un servicio de fuera, y no se paga nada por guardarlas.",
+            "Diez por proveedor, y lo impide la base de datos: la undécima no tiene dónde ponerse.",
+            "Cada foto se recodifica siempre y queda en unos 300 KB — y eso es lo que borra los metadatos del móvil, incluidas las coordenadas de dónde se tomó.",
+            "Quitar una foto la borra de verdad, con su archivo y su miniatura. No queda ninguna copia escondida.",
+            "Una foto es pública solo si está aprobada Y el negocio publicado. Las dos cosas.",
+            "El respaldo diario se lleva las fotos, y el simulacro semanal las desempaqueta y las cuenta."
+          ]
+        },
         "team": {
           "title": "El equipo de la oficina",
           "steps": [

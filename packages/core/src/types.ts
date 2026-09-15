@@ -71,6 +71,7 @@ export const MANUAL_CHAPTERS = [
   'gate',
   'preferences',
   'image',
+  'media',
   'team',
   'roles',
   'config',

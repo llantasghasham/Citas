@@ -339,6 +339,17 @@
             "Se algo do convite mudar, gera-se uma imagem nova sozinha: a impressão digital cobre tudo o que altera o desenho."
           ]
         },
+        "media": {
+          "title": "As fotos do diretório",
+          "steps": [
+            "As fotos dos fornecedores ficam no servidor desta instalação, não num serviço de fora, e não se paga nada por guardá-las.",
+            "Dez por fornecedor, e é a base de dados que impede a décima primeira: não há onde a pôr.",
+            "Cada foto é sempre recodificada e fica com uns 300 KB — e é isso que apaga os metadados do telemóvel, incluindo as coordenadas de onde foi tirada.",
+            "Remover uma foto apaga-a a sério, com o ficheiro e a miniatura. Não fica nenhuma cópia escondida.",
+            "Uma foto só é pública se estiver aprovada E o negócio publicado. As duas coisas.",
+            "O backup diário leva as fotos, e o ensaio semanal desempacota-as e conta-as."
+          ]
+        },
         "team": {
           "title": "A equipa do escritório",
           "steps": [

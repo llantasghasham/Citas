@@ -637,6 +637,104 @@ en los cuatro.
   operativo a través de `Intl`, ya localizados (en árabe se usa `ar-LB`, que da
   los meses levantinos: تشرين الأول, no أكتوبر).
 
+## 5 bis. Dónde viven las fotos de los proveedores
+
+Las fotos que sube un salón, un fotógrafo o una pastelería al directorio **no
+van a la base de datos**. Van a una carpeta de **su propio servidor**:
+
+```
+/var/lib/citas/almacen
+```
+
+Nada sale de esa máquina. No hay cuenta de Amazon, ni de Google, ni de nadie, y
+no se paga nada por guardarlas. Lo monta `sudo bash deploy/almacen-instalar.sh`
+y la ruta se escribe en `apps/web/.env` como `STORAGE_DIR`.
+
+Está **fuera** del directorio de la aplicación a propósito: un despliegue copia
+el código y se lleva por delante lo que haya al lado. En `/var/lib` un
+despliegue no la toca. El programa lo comprueba al arrancar y se niega si
+alguien apunta `STORAGE_DIR` dentro del código.
+
+Para verlo de un vistazo, en **`/panel/sistema`**, la fila «Almacén de fotos del
+directorio» dice cuál está en uso y dónde.
+
+### ¿Es ilimitado?
+
+No, y conviene saber el número. El límite es **el disco de su servidor**, pero
+las fotos ocupan mucho menos de lo que parece porque **no se guarda lo que
+llega**: todo se recodifica.
+
+| | |
+|---|---|
+| Lo que se acepta de entrada | hasta **8 MB** por archivo |
+| Lo que se guarda | WEBP, lado mayor **1600 px** — unos **200–350 KB** |
+| Y su miniatura | WEBP, **400 px** — unos **20–40 KB** |
+| Fotos por proveedor | **10**, y lo impide la base de datos |
+
+Echando la cuenta: un proveedor lleno ocupa **unos 3 MB**. Doscientos
+proveedores con las diez fotos cada uno son **menos de 1 GB**. En un VPS normal
+eso no se nota.
+
+Además de ahorrar espacio, recodificar es lo que **borra los metadatos** de la
+foto — incluidas las coordenadas GPS que mete el móvil. La foto de una
+pastelería hecha en casa no publica dónde vive quien la hace.
+
+Para ver cuánto ocupa hoy y cuánto queda libre:
+
+```bash
+du -sh /var/lib/citas/almacen     # lo que ocupan las fotos
+df -h /var/lib                    # lo que queda en el disco
+```
+
+### Cómo se borran las fotos
+
+**Una foto suelta.** El proveedor entra en `/panel/proveedor/medios` y la
+quita. Quien modera puede quitarla también desde `/panel/moderacion`. En los dos
+casos se borra **de verdad**: la fila de la base y los bytes del disco, la foto y
+su miniatura. No queda nada escondido, que es lo que exige una reclamación de
+derechos.
+
+**Todas las de un proveedor.** Borrar el proveedor se lleva sus fotos.
+
+**Empezar de cero con todo.** No hay ningún botón que haga eso, y no lo hay a
+propósito: es la clase de cosa que no se deshace. Si de verdad hace falta —una
+instalación de pruebas que se pasa a producción, por ejemplo—, se hace a mano y
+en este orden:
+
+```bash
+# 1. PRIMERO un respaldo, siempre
+/usr/local/bin/backup-citas.sh
+
+# 2. Vaciar la carpeta (deja la carpeta, borra lo de dentro)
+sudo rm -rf /var/lib/citas/almacen/providers
+
+# 3. Y borrar las filas, o el panel enseñará huecos rotos
+```
+
+El paso 3 importa: borrar solo los archivos deja la base diciendo que la foto
+existe, y eso se ve como galerías rotas en la ficha de gente real. **Los
+archivos y las filas se borran juntos o no se borra ninguno.**
+
+### El respaldo sí las incluye
+
+`backup-citas.sh` lee `STORAGE_DIR` del `.env` y empaqueta las fotos junto a los
+volcados de la base. Y `probar-restauracion.sh` las **desempaqueta** en el
+simulacro y cuenta cuántas salieron, porque que un `.tar.gz` pese no quiere
+decir que dentro estén las fotos.
+
+Lo que el respaldo no hace es sacarlas de la máquina: están en
+`/www/backup/citas`, en el mismo servidor. Un respaldo que se pierde con el
+servidor que respalda no es un respaldo.
+
+### Si algún día no cabe
+
+Cuando el disco se quede corto, o las fotos tengan que servirse desde fuera, se
+cambia a un almacén compatible con S3 —Cloudflare R2, Amazon, Backblaze— sin
+tocar una sola pantalla: se quita `STORAGE_DIR`, se ponen las `STORAGE_*` de ese
+otro y se copian los archivos. El programa no sabe qué hay detrás. **Los dos a
+la vez no se pueden**, y si se ponen los dos se niega a arrancar en vez de
+elegir por su cuenta.
+
 ## 6. Descargar el PNG
 
 ```bash

@@ -339,6 +339,17 @@
             "If anything on the invitation changes, a new image is made on its own: the fingerprint covers everything that changes the drawing."
           ]
         },
+        "media": {
+          "title": "Directory photos",
+          "steps": [
+            "Provider photos live on this installation's own server, not on an outside service, and storing them costs nothing.",
+            "Ten per provider, and the database is what stops the eleventh: there is nowhere to put it.",
+            "Every photo is always re-encoded down to around 300 KB — which is what strips the phone's metadata, including the coordinates of where it was taken.",
+            "Removing a photo deletes it for real, file and thumbnail. No hidden copy is left anywhere.",
+            "A photo is public only if it is approved AND the business is published. Both.",
+            "The nightly backup includes the photos, and the weekly drill unpacks and counts them."
+          ]
+        },
         "team": {
           "title": "The office's team",
           "steps": [
