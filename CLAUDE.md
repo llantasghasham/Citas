@@ -929,7 +929,16 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   `npm run db:split -- copiar`, que mueve lo que ya existe y COMPRUEBA los recuentos,
   luego se pone `TENANCY=fleet`, luego se MIRA —una boda, sus invitados, sus
   mesas, una invitación pública— y solo entonces `npm run db:split -- limpiar`
-  borra de la común lo copiado. Son dos órdenes y no una porque entre copiar y
+  borra de la común lo copiado.
+- `copiar` SOLO AÑADE, y ahora lo DICE cuando en la base de la oficina hay más
+  filas que en el origen. La comprobación miraba solo que no faltara ninguna, así
+  que de más pasaba en verde — y de más pasa de verdad: se copia, el origen
+  cambia —el sembrado BORRA Y RECREA sus ejemplos con identificadores nuevos— y
+  se vuelve a copiar. En una instalación de verdad eso dejó diez bodas de ejemplo
+  duplicadas en la base de una oficina, en silencio. No se borra nada al avisar:
+  con la flota ya encendida, lo que sobra puede ser trabajo de verdad hecho en la
+  base de la oficina, y borrarlo sería el desastre que estas dos órdenes
+  separadas existen para evitar. Son dos órdenes y no una porque entre copiar y
   borrar tiene que caber que alguien mire: una copia que se creyó buena y no lo
   era, con el original ya borrado, no tiene arreglo, y esto son listas de
   invitados de bodas ya pagadas. `limpiar` se niega si los recuentos no cuadran o

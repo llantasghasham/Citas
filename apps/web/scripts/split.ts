@@ -102,6 +102,25 @@ async function copyTenant(
       console.error(`  ✗ ${subdomain}/${table}: leídas ${rows.length}, escritas ${written}`);
       return false;
     }
+
+    // DE MÁS TAMBIÉN SE DICE, y antes no. Este guion solo AÑADE, así que en la
+    // base de la oficina pueden quedar filas que ya no están en el origen: pasa
+    // si se copia, el origen cambia —un sembrado que borra y recrea sus
+    // ejemplos con identificadores nuevos, por ejemplo— y se vuelve a copiar.
+    // La comprobación miraba solo que no faltara ninguna, así que diez bodas de
+    // ejemplo duplicadas pasaban en verde.
+    //
+    // No se BORRA nada: después de encender la flota, lo que sobra puede ser
+    // trabajo de verdad hecho ya en la base de la oficina, y borrarlo sería
+    // exactamente el desastre que estas dos órdenes separadas existen para
+    // evitar. Se dice, con el número, y lo mira una persona.
+    if (written > rows.length) {
+      console.warn(
+        `    ⚠ ${table}: en la base de la oficina hay ${written} y en el origen ` +
+          `${rows.length}. Sobran ${written - rows.length}: o son filas creadas ya ` +
+          `con la flota encendida, o restos de una copia anterior. Míralas antes de limpiar.`,
+      );
+    }
     total += rows.length;
     console.log(`    ${table}: ${rows.length}`);
   }
