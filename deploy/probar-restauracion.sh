@@ -23,8 +23,10 @@ DESTINO=${CITAS_BACKUP_DIR:-/www/backup/citas}
 COMO=${CITAS_PG_SUDO-sudo -u postgres}
 # Sin los NOTICE de «no existe, me la salto»: esto se lee en un correo del cron
 # y lo único que tiene que decirse es qué restauró y qué no.
-export PGOPTIONS="--client-min-messages=warning"
-PSQL="$COMO psql"
+#
+# Va POR DENTRO del sudo y no como `export`: `sudo` limpia el entorno, así que
+# exportarlo aquí no llegaba a `psql` y los NOTICE salían igual.
+PSQL="$COMO env PGOPTIONS=--client-min-messages=warning psql"
 
 CARPETA=${1:-}
 if [ -z "$CARPETA" ]; then
@@ -50,8 +52,14 @@ for ARCHIVO in "$CARPETA"/*.dump; do
   $PSQL -d postgres -q -c "DROP DATABASE IF EXISTS \"$PRUEBA\""
   $PSQL -d postgres -q -c "CREATE DATABASE \"$PRUEBA\""
 
-  if ! $COMO pg_restore --no-owner --no-privileges -d "$PRUEBA" "$ARCHIVO" \
-        > /dev/null 2>"/tmp/$PRUEBA.error"; then
+  # El volcado se le pasa por la ENTRADA ESTÁNDAR, no por su nombre, y esto no
+  # es un detalle: los respaldos son 600 de root —llevan datos personales de
+  # gente real y así tienen que estar— y `pg_restore` corre como `postgres`, que
+  # no puede abrirlos. Salía «Permission denied» y el simulacro NUNCA había
+  # pasado. Redirigiendo, el archivo lo abre ROOT y `postgres` solo recibe el
+  # descriptor ya abierto: ni se relajan los permisos ni se copia nada.
+  if ! $COMO pg_restore --no-owner --no-privileges -d "$PRUEBA" \
+        < "$ARCHIVO" > /dev/null 2>"/tmp/$PRUEBA.error"; then
     echo "  ✗ $ORIGEN — no restaura"
     sed -n '1,5p' "/tmp/$PRUEBA.error" >&2
     FALLOS=$((FALLOS + 1))
@@ -102,6 +110,10 @@ else
       # todavía peor. En los dos casos, esto no es un respaldo.
       echo "  ✗ fotos — salieron $SALIERON y el respaldo decía $DECIA"
       FALLOS=$((FALLOS + 1))
+    elif [ "$SALIERON" -eq 0 ]; then
+      # Cero y cero cuadran, pero un ✓ ahí se lee como «las fotos están a
+      # salvo» cuando lo único probado es que no hay ninguna. Se dice.
+      echo "  · fotos — el almacén está vacío, no hay nada que restaurar todavía"
     else
       echo "  ✓ fotos — $SALIERON imagen(es) desempaquetadas"
     fi

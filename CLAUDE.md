@@ -1093,6 +1093,18 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   salieron contra las que el respaldo dijo que metía, igual que cuenta las filas
   de una base restaurada. Que un `.tar.gz` pese no quiere decir que dentro estén
   las fotos, y eso solo se ve intentándolo.
+- Y EL SIMULACRO NUNCA HABÍA PASADO, cosa que se supo el día que se ejecutó por
+  primera vez: `pg_restore` corre como `postgres` y los volcados son 600 de
+  root —llevan datos de gente real y así tienen que estar—, así que contestaba
+  «Permission denied». El volcado se le pasa ahora por la ENTRADA ESTÁNDAR: lo
+  abre root y `postgres` recibe el descriptor ya abierto, sin relajar un permiso
+  ni copiar el archivo. Es exactamente lo que este guion existe para descubrir,
+  y lo descubrió de sí mismo.
+- `PGOPTIONS` va POR DENTRO del `sudo` y no como `export`: `sudo` limpia el
+  entorno, así que los `NOTICE` de «no existe, me la salto» salían igual en un
+  correo del cron donde lo único que debe verse es qué restauró y qué no.
+- CERO fotos no es un aprobado. Cuadra —cero y cero— pero un ✓ ahí se lee como
+  «las fotos están a salvo» cuando lo único probado es que no hay ninguna.
 - EL DEL DISCO se prueba contra un disco de verdad (`tests/almacen-fs.test.ts`),
   con las mismas comprobaciones que el de S3 más las dos que solo pasan en un
   disco: que una llave forzada NO puede salirse de la carpeta —`ObjectKey` ya lo
