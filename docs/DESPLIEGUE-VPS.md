@@ -238,16 +238,30 @@ sin cookie   cache-control: public, max-age=0, s-maxage=60,
 con cookie   cache-control: private, no-store
 ```
 
-Falta que nginx las obedezca. En aaPanel: **Sitios → citas.posxml.com →
-Configuración**, y dentro del `server`:
+Falta que nginx las obedezca, y son **dos sitios distintos**. Esto importa: la
+despensa se declara en el bloque `http` y **no** dentro de un `server`. Puesta
+en el sitio equivocado, nginx no arranca —«proxy_cache_path directive is not
+allowed here»— y se queda la web entera caída por intentar hacerla más robusta.
 
-```nginx
-# La despensa. 100 MB sobran: una invitación son unas decenas de kilobytes.
+**Primero la despensa**, en el `http`. En aaPanel eso es el archivo principal de
+nginx, no el del sitio:
+
+```bash
+# /www/server/nginx/conf/nginx.conf — dentro de http { … }, junto a los otros
+# ajustes globales y ANTES de los `include` de los sitios.
 proxy_cache_path /var/cache/nginx/citas levels=1:2 keys_zone=citas:10m
                  max_size=100m inactive=7d use_temp_path=off;
 ```
 
-Y dentro del `location` que ya hace de proxy inverso:
+Y la carpeta, del usuario con el que corre nginx:
+
+```bash
+mkdir -p /var/cache/nginx/citas
+chown -R www:www /var/cache/nginx/citas
+```
+
+**Después la regla**, en **Sitios → citas.posxml.com → Configuración**, dentro
+del `location` que ya hace de proxy inverso:
 
 ```nginx
 proxy_cache citas;
@@ -269,6 +283,16 @@ proxy_cache_lock on;
 # Para poder mirar si funciona.
 add_header X-Cache $upstream_cache_status always;
 ```
+
+Y antes de recargar, **comprobar que la configuración es válida** — esto es lo
+que separa un ajuste de una caída:
+
+```bash
+nginx -t && systemctl reload nginx
+```
+
+Si `nginx -t` protesta, NO recargue: corrija y vuelva a probar. Recargar con la
+configuración rota deja el sitio sin servidor.
 
 Comprobarlo:
 
