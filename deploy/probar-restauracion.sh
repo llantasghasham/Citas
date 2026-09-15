@@ -1,6 +1,7 @@
 #!/bin/bash
-# Restaura el último respaldo en bases de usar y tirar, cuenta lo que hay dentro
-# y las borra. El simulacro, no el respaldo.
+# Restaura el último respaldo en bases de usar y tirar, desempaqueta las fotos
+# en una carpeta de usar y tirar, cuenta lo que hay dentro y lo borra todo. El
+# simulacro, no el respaldo.
 #
 #   /usr/local/bin/probar-restauracion.sh              el último
 #   /usr/local/bin/probar-restauracion.sh 2026-09-11-0330   uno concreto
@@ -74,8 +75,44 @@ for ARCHIVO in "$CARPETA"/*.dump; do
   $PSQL -d postgres -q -c "DROP DATABASE IF EXISTS \"$PRUEBA\""
 done
 
+# ─────────────────────────────────────────────────────────── LAS FOTOS
+#
+# Mismo simulacro y por la misma razón: que un `.tar.gz` pese no quiere decir
+# que dentro estén las fotos. Se DESEMPAQUETA en una carpeta de usar y tirar y
+# se cuenta lo que salió, contra lo que el respaldo dijo que metía — que es el
+# equivalente de contar las filas de una base restaurada.
+PAQUETE="$CARPETA/fotos.tar.gz"
+if [ ! -f "$PAQUETE" ]; then
+  echo "  · sin fotos.tar.gz — el almacén no es local, o el respaldo es anterior"
+else
+  TEMPORAL=$(mktemp -d)
+  # Pase lo que pase, la carpeta se va: esto corre en un cron todas las semanas
+  # y un simulacro que deja basura acaba llenando el disco que respalda.
+  trap 'rm -rf "$TEMPORAL"' EXIT
+
+  if ! tar -xzf "$PAQUETE" -C "$TEMPORAL" 2>/dev/null; then
+    echo "  ✗ fotos — el paquete no se puede desempaquetar"
+    FALLOS=$((FALLOS + 1))
+  else
+    SALIERON=$(find "$TEMPORAL" -type f \( -name '*.webp' -o -name '*.avif' \) | wc -l)
+    DECIA=$(awk '/^fotos /{print $4}' "$CARPETA/MANIFIESTO" 2>/dev/null || true)
+
+    if [ -n "$DECIA" ] && [ "$SALIERON" -ne "$DECIA" ]; then
+      # Menos de las que se metieron es un paquete truncado; más sería otra cosa
+      # todavía peor. En los dos casos, esto no es un respaldo.
+      echo "  ✗ fotos — salieron $SALIERON y el respaldo decía $DECIA"
+      FALLOS=$((FALLOS + 1))
+    else
+      echo "  ✓ fotos — $SALIERON imagen(es) desempaquetadas"
+    fi
+  fi
+
+  rm -rf "$TEMPORAL"
+  trap - EXIT
+fi
+
 if [ "$FALLOS" -gt 0 ]; then
-  echo "probar-restauracion: $FALLOS volcado(s) NO restauran. Eso no son respaldos." >&2
+  echo "probar-restauracion: $FALLOS cosa(s) NO restauran. Eso no son respaldos." >&2
   exit 1
 fi
 echo "probar-restauracion: $PROBADAS volcado(s) restaurados y comprobados."

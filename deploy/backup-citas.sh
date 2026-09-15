@@ -1,5 +1,10 @@
 #!/bin/bash
-# Respaldo diario de Citas: la base del arrendador Y la de cada oficina.
+# Respaldo diario de Citas: la base del arrendador, la de cada oficina Y las
+# fotos del directorio.
+#
+# Las fotos NO están en PostgreSQL —son bytes en un disco, en la carpeta que
+# dice STORAGE_DIR— así que un volcado de las bases no se las lleva. Una boda
+# sin sus fotos se arregla; el catálogo de doscientos proveedores, no.
 #
 # Desde que cada oficina tiene su propia base de datos, «respaldar Citas» dejó
 # de ser un volcado. Un guion que vuelque solo `citas` hoy se lleva el registro
@@ -29,6 +34,7 @@
 set -euo pipefail
 
 DESTINO=${CITAS_BACKUP_DIR:-/www/backup/citas}
+ENV_FILE=${CITAS_ENV_FILE:-/www/wwwroot/citas/apps/web/.env}
 DIAS=${CITAS_BACKUP_DIAS:-14}
 CONTROL=${CITAS_DB:-citas}
 # `sudo -u postgres` es lo normal en un VPS; en Docker o con PostgreSQL
@@ -77,6 +83,47 @@ for BASE in $BASES; do
   echo "$BASE $(stat -c %s "$ARCHIVO")" >> "$CARPETA/MANIFIESTO"
 done
 
+# ─────────────────────────────────────────────────────────── LAS FOTOS
+#
+# Dónde están lo dice el propio `.env`, no una ruta escrita aquí: si alguien
+# cambia la carpeta, este guion la sigue. Y si el almacén es uno compatible con
+# S3 —no hay STORAGE_DIR— no hay nada que copiar aquí y se dice, para que un
+# silencio no se lea como «respaldado».
+if [ -f "$ENV_FILE" ]; then
+  FOTOS=$(grep -m1 '^STORAGE_DIR=' "$ENV_FILE" | cut -d= -f2- | tr -d '"' || true)
+else
+  FOTOS=""
+fi
+
+if [ -z "$FOTOS" ]; then
+  echo "fotos: sin STORAGE_DIR — el almacén no es local, o no está configurado" >> "$CARPETA/MANIFIESTO"
+elif [ ! -d "$FOTOS" ]; then
+  # Configurado y sin carpeta es una AVERÍA, no un «no aplica»: o alguien la
+  # borró, o la web lleva sin poder guardar una foto desde vaya usted a saber.
+  echo "backup-citas: STORAGE_DIR dice $FOTOS y esa carpeta no existe" >&2
+  FALLOS=$((FALLOS + 1))
+else
+  ARCHIVO_FOTOS="$CARPETA/fotos.tar.gz"
+  if ! tar -czf "$ARCHIVO_FOTOS" -C "$FOTOS" . 2>"$CARPETA/fotos.error"; then
+    echo "backup-citas: falló el empaquetado de $FOTOS" >&2
+    cat "$CARPETA/fotos.error" >&2
+    FALLOS=$((FALLOS + 1))
+  else
+    rm -f "$CARPETA/fotos.error"
+    chmod 600 "$ARCHIVO_FOTOS"
+    # Que exista y pese no es que sirva, igual que con los volcados: se lee el
+    # índice entero. Cuesta un rato en un catálogo grande y es lo que evita
+    # descubrir el día malo que el archivo estaba truncado.
+    if ! tar -tzf "$ARCHIVO_FOTOS" > /dev/null 2>&1; then
+      echo "backup-citas: el paquete de fotos no se puede leer" >&2
+      FALLOS=$((FALLOS + 1))
+    else
+      CUANTAS=$(tar -tzf "$ARCHIVO_FOTOS" | grep -c '\.\(webp\|avif\)$' || true)
+      echo "fotos $(stat -c %s "$ARCHIVO_FOTOS") · $CUANTAS imágenes · $FOTOS" >> "$CARPETA/MANIFIESTO"
+    fi
+  fi
+fi
+
 # Cuántas había que respaldar, para que falte una y se note. Sin esto, una
 # oficina que desapareciera del volcado se vería igual que un día normal.
 ESPERADAS=$(echo "$BASES" | wc -l)
@@ -86,9 +133,9 @@ chmod 600 "$CARPETA/MANIFIESTO"
 # Se borra lo viejo SOLO si lo de hoy salió entero: con un respaldo fallido, lo
 # último que hay que hacer es tirar el último que sí valía.
 if [ "$FALLOS" -gt 0 ]; then
-  echo "backup-citas: $FALLOS de $ESPERADAS bases sin respaldar. No se borra nada viejo." >&2
+  echo "backup-citas: $FALLOS fallo(s) de $ESPERADAS bases más las fotos. No se borra nada viejo." >&2
   exit 1
 fi
 
 find "$DESTINO" -mindepth 1 -maxdepth 1 -type d -mtime "+$DIAS" -exec rm -rf {} +
-echo "backup-citas: $TOTAL bases en $CARPETA"
+echo "backup-citas: $TOTAL bases${ARCHIVO_FOTOS:+ y las fotos} en $CARPETA"

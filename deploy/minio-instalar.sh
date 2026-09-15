@@ -312,9 +312,11 @@ cat <<EOF
 
  FALTA UNA COSA, y no la puede hacer este guion:
 
- EL RESPALDO. Las fotos viven en $DATOS y
- el respaldo de este proyecto solo copia PostgreSQL. Añada
- esta carpeta a /usr/local/bin/backup-citas.sh, o al menos:
+ EL RESPALDO, y aquí NO lo resuelve `backup-citas.sh`.
+ Ese se lleva las fotos cuando están en un disco
+ (STORAGE_DIR); con MinIO están dentro de MinIO, en
+ $DATOS, y eso hay
+ que copiarlo aparte:
 
    tar -czf /respaldos/minio-\$(date +%F).tar.gz $DATOS
 

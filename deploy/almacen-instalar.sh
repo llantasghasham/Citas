@@ -218,14 +218,24 @@ cat <<EOF
 
  FALTA UNA COSA, y no la puede hacer este guion:
 
- EL RESPALDO. Las fotos viven en
- $ALMACEN
- y el respaldo de este proyecto solo copia PostgreSQL. Añada
- esta carpeta a /usr/local/bin/backup-citas.sh, o al menos:
+ EL RESPALDO. `backup-citas.sh` YA se lleva las fotos
+ —lee STORAGE_DIR del .env y las empaqueta junto a los
+ volcados— pero la copia que corre en el cron es la que
+ se copió a /usr/local/bin el día de la instalación.
+ Actualícela, o seguirá respaldando solo PostgreSQL:
 
-   tar -czf /respaldos/almacen-\$(date +%F).tar.gz $ALMACEN
+   cp $DIR/deploy/backup-citas.sh /usr/local/bin/
+   cp $DIR/deploy/probar-restauracion.sh /usr/local/bin/
+   chmod 700 /usr/local/bin/backup-citas.sh \\
+             /usr/local/bin/probar-restauracion.sh
 
- Una boda sin sus fotos se arregla; el catálogo de
- doscientos proveedores, no.
+ Y compruébelo de verdad, que es lo que vale:
+
+   /usr/local/bin/backup-citas.sh
+   /usr/local/bin/probar-restauracion.sh
+
+ La segunda desempaqueta las fotos y cuenta cuántas
+ salieron. Una boda sin sus fotos se arregla; el
+ catálogo de doscientos proveedores, no.
 ────────────────────────────────────────────────────────────
 EOF

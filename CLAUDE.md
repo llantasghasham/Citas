@@ -1083,10 +1083,16 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   recién escritas. Si termina en verde, lo probado es la instalación entera.
   `mc` decía «bucket creado» con su propio código y sus propias credenciales,
   que no prueba nada de lo que va a correr después.
-- LO QUE EL GUION NO PUEDE HACER y por eso lo dice al terminar: respaldar.
-  `backup-citas.sh` solo copia PostgreSQL, y las fotos viven en
-  `/var/lib/citas/almacen`. Una boda sin sus fotos se arregla; el catálogo de
-  doscientos proveedores, no.
+- EL RESPALDO SÍ LAS COPIA. `backup-citas.sh` lee `STORAGE_DIR` del propio
+  `.env` —no una ruta escrita en el guion, para que siga a quien cambie la
+  carpeta— y empaqueta las fotos junto a los volcados. Con la variable puesta y
+  la carpeta AUSENTE cuenta como FALLO y no se borra nada viejo: configurado y
+  sin carpeta no es un «no aplica», es una avería. Sin `STORAGE_DIR` lo DICE en
+  el manifiesto, para que un silencio no se lea como «respaldado».
+- Y `probar-restauracion.sh` las DESEMPAQUETA en el simulacro y cuenta cuántas
+  salieron contra las que el respaldo dijo que metía, igual que cuenta las filas
+  de una base restaurada. Que un `.tar.gz` pese no quiere decir que dentro estén
+  las fotos, y eso solo se ve intentándolo.
 - EL DEL DISCO se prueba contra un disco de verdad (`tests/almacen-fs.test.ts`),
   con las mismas comprobaciones que el de S3 más las dos que solo pasan en un
   disco: que una llave forzada NO puede salirse de la carpeta —`ObjectKey` ya lo
