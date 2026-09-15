@@ -217,6 +217,29 @@ sudo -u "$APP_USER" bash -lc "
 " || alto "falló la compilación — mira el error de arriba"
 ok "compilado"
 
+# ------------------------------------------------- 5 bis. almacén de las fotos
+#
+# VA AQUÍ Y NO DESPUÉS, y el orden es la gracia: escribe STORAGE_DIR en el .env
+# ANTES de que exista la unidad de systemd, así que la web arranca ya con el
+# almacén puesto y no hay que reiniciar nada.
+#
+# Y va DENTRO del instalador porque sin esto una instalación nueva queda sin
+# sitio donde guardar las fotos del directorio — y eso no se ve al instalar: se
+# ve el día que un proveedor intenta subir la primera y no puede. Una avería que
+# desde fuera se parece a que todo está bien es justo la que hay que evitar.
+paso "Almacén de las fotos del directorio"
+
+if DIR="$DIR" bash "$DIR/deploy/almacen-instalar.sh"; then
+  ALMACEN_LISTO=1
+else
+  # NO se aborta la instalación: sin almacén, las invitaciones, los invitados,
+  # las mesas y el WhatsApp funcionan igual. Lo único que no se puede es subir
+  # fotos de proveedor. Se avisa fuerte y se sigue.
+  ALMACEN_LISTO=0
+  aviso "el almacén de fotos NO quedó montado — el directorio funcionará sin galerías"
+  aviso "se arregla luego con: sudo bash $DIR/deploy/almacen-instalar.sh"
+fi
+
 # ---------------------------------------------------------------- 6. servicio
 
 paso "Servicio"
@@ -496,6 +519,20 @@ fi
 
 # ---------------------------------------------------------------- 7. resumen
 
+if [ "$ALMACEN_LISTO" -eq 1 ]; then
+  RESUMEN_ALMACEN="
+ 5. LAS FOTOS DEL DIRECTORIO ya tienen sitio: /var/lib/citas/almacen
+    Están en este servidor, comprobadas escribiendo, leyendo y borrando.
+    Diez por proveedor, recodificadas a WEBP: menos de 1 GB con doscientos.
+    Para comprobarlo cuando quiera: sudo bash $DIR/deploy/almacen-instalar.sh"
+else
+  RESUMEN_ALMACEN="
+ 5. LAS FOTOS DEL DIRECTORIO NO TIENEN DÓNDE GUARDARSE.
+    Todo lo demás funciona; lo único que falla es subir la foto de un
+    proveedor, y falla el día que alguien lo intente. Móntelo con:
+      sudo bash $DIR/deploy/almacen-instalar.sh"
+fi
+
 cat <<FIN
 
 ────────────────────────────────────────────────────────────
@@ -525,11 +562,20 @@ cat <<FIN
     ANTES de escanear, lea docs/WHATSAPP.md: automatizar un número personal
     va contra los términos de WhatsApp y el número que cierran es el suyo.
 
- 4. RESPALDOS (aaPanel no respalda PostgreSQL)
+ 4. RESPALDOS (aaPanel no respalda PostgreSQL ni las fotos)
     cp $DIR/deploy/backup-citas.sh /usr/local/bin/
-    chmod 700 /usr/local/bin/backup-citas.sh
+    cp $DIR/deploy/probar-restauracion.sh /usr/local/bin/
+    chmod 700 /usr/local/bin/backup-citas.sh \\
+              /usr/local/bin/probar-restauracion.sh
     crontab -e   →   30 3 * * *  /usr/local/bin/backup-citas.sh
+                     0  5 * * 0  /usr/local/bin/probar-restauracion.sh
 
+    El respaldo se lleva las bases Y las fotos del directorio. El segundo
+    guion RESTAURA de verdad en bases de usar y tirar y desempaqueta las
+    fotos: «tenemos respaldos» y «podemos volver» no son lo mismo, y la
+    diferencia solo se ve intentándolo. Y esto sigue en la MISMA máquina:
+    sáquelos fuera.
+$RESUMEN_ALMACEN
  Para volver a desplegar tras un cambio: ejecuta este mismo script otra vez.
 ────────────────────────────────────────────────────────────
 FIN

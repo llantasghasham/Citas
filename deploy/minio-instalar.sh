@@ -312,7 +312,7 @@ cat <<EOF
 
  FALTA UNA COSA, y no la puede hacer este guion:
 
- EL RESPALDO, y aquí NO lo resuelve `backup-citas.sh`.
+ EL RESPALDO, y aquí NO lo resuelve «backup-citas.sh».
  Ese se lleva las fotos cuando están en un disco
  (STORAGE_DIR); con MinIO están dentro de MinIO, en
  $DATOS, y eso hay

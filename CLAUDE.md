@@ -1022,7 +1022,15 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   `open()`. El PUERTO no cambia, así que el producto no se entera, y el
   adaptador de S3 sigue ahí —probado contra un servidor de verdad— para el día
   que las fotos tengan que irse a R2.
-- Se monta con `sudo bash deploy/almacen-instalar.sh`. No genera credenciales
+- LO MONTA `deploy/install.sh` SOLO, en una instalación desde cero, y va ANTES
+  de crear la unidad de systemd: así la web arranca ya con `STORAGE_DIR` puesto
+  y no hay que reiniciar nada. Sin eso, un servidor nuevo quedaba sin sitio
+  donde guardar las fotos y no se veía al instalar — se veía el día que un
+  proveedor intentaba subir la primera. Una avería que desde fuera se parece a
+  que todo está bien es justo la que no puede quedar. Si falla NO aborta la
+  instalación: lo demás funciona sin galerías, y el resumen final lo dice con
+  esas palabras y con la orden para montarlo.
+- Y a mano, `sudo bash deploy/almacen-instalar.sh`. No genera credenciales
   porque no hay ninguna: crea la carpeta, la deja del usuario de la web y de
   nadie más (0700) y comprueba la ida y vuelta. Y volver a lanzarlo con la
   variable ya puesta NO reescribe nada: comprueba, REINICIA la web si hace

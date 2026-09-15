@@ -72,6 +72,15 @@ correr_guion() {
   ( cd "$DIR/apps/web" && sudo -u "$APP_USER" "$NODE_BIN" "$tsx" "$guion" )
 }
 
+# ¿Existe ya el servicio de la web?
+#
+# En una instalación desde cero, NO: este guion lo llama `deploy/install.sh`
+# antes de crear la unidad, a propósito, para que la web arranque ya con el
+# almacén puesto y no haga falta reiniciar nada.
+hay_servicio() {
+  systemctl cat citas.service >/dev/null 2>&1
+}
+
 # ¿La web está corriendo con el `.env` de AHORA, o con uno anterior?
 #
 # Se compara cuándo se levantó el servicio con cuándo se tocó el archivo. Es la
@@ -81,6 +90,8 @@ correr_guion() {
 # más cuesta unos segundos y no reiniciar deja las subidas rotas.
 hay_que_reiniciar() {
   local arrancada t_srv t_env
+  # Sin servicio no hay nada que reiniciar, y no es un fallo.
+  hay_servicio || return 1
   arrancada="$(systemctl show -p ActiveEnterTimestamp --value citas 2>/dev/null || true)"
   [ -n "$arrancada" ] || return 0
   t_srv="$(date -d "$arrancada" +%s 2>/dev/null || echo 0)"
@@ -205,9 +216,16 @@ else
   exit 1
 fi
 
-paso "Reiniciando la web"
-systemctl restart citas
-ok "listo"
+if hay_servicio; then
+  paso "Reiniciando la web"
+  systemctl restart citas
+  ok "listo"
+else
+  # Instalación desde cero: la unidad se crea después, así que arrancará ya
+  # con STORAGE_DIR puesto. Reiniciar algo que no existe sería un error feo
+  # en medio de una instalación que va bien.
+  ok "la web todavía no está instalada — arrancará ya con el almacén puesto"
+fi
 
 cat <<EOF
 
@@ -218,7 +236,7 @@ cat <<EOF
 
  FALTA UNA COSA, y no la puede hacer este guion:
 
- EL RESPALDO. `backup-citas.sh` YA se lleva las fotos
+ EL RESPALDO. «backup-citas.sh» YA se lleva las fotos
  —lee STORAGE_DIR del .env y las empaqueta junto a los
  volcados— pero la copia que corre en el cron es la que
  se copió a /usr/local/bin el día de la instalación.

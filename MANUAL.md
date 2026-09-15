@@ -647,8 +647,13 @@ van a la base de datos**. Van a una carpeta de **su propio servidor**:
 ```
 
 Nada sale de esa máquina. No hay cuenta de Amazon, ni de Google, ni de nadie, y
-no se paga nada por guardarlas. Lo monta `sudo bash deploy/almacen-instalar.sh`
-y la ruta se escribe en `apps/web/.env` como `STORAGE_DIR`.
+no se paga nada por guardarlas. La ruta se escribe en `apps/web/.env` como
+`STORAGE_DIR`.
+
+**En una instalación nueva no hay que hacer nada**: `deploy/install.sh` lo monta
+solo, antes de arrancar la web. A mano —o para comprobar el que ya hay— se
+ejecuta `sudo bash deploy/almacen-instalar.sh`, que con la carpeta ya puesta no
+reescribe nada: comprueba y se va.
 
 Está **fuera** del directorio de la aplicación a propósito: un despliegue copia
 el código y se lleva por delante lo que haya al lado. En `/var/lib` un
