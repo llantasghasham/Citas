@@ -1024,7 +1024,20 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   que las fotos tengan que irse a R2.
 - Se monta con `sudo bash deploy/almacen-instalar.sh`. No genera credenciales
   porque no hay ninguna: crea la carpeta, la deja del usuario de la web y de
-  nadie más (0700) y comprueba la ida y vuelta. Quien pueda leer esa carpeta lee
+  nadie más (0700) y comprueba la ida y vuelta. Y volver a lanzarlo con la
+  variable ya puesta NO reescribe nada: comprueba y se va. Negarse a secas
+  dejaba sin salida a quien había llegado hasta ahí y falló la comprobación
+  —carpeta hecha, variable escrita, y el guion contestando «no lo repita»—, que
+  es justo el momento en que uno vuelve a lanzarlo.
+- UN GUION DE DESPLIEGUE LLAMA A `node $DIR/node_modules/tsx/dist/cli.mjs
+  <guion>` desde `apps/web`, **nunca** `npm run`. `npm run` es la única forma
+  que depende del PATH y en producción salió como `tsx: command not found`, que
+  no se parece en nada a la causa. Las cuatro unidades de systemd de este
+  proyecto —conciliación, recordatorios, SINPE y el servicio de WhatsApp— llaman
+  por la ruta completa desde el primer día; el guion del almacén se salió de esa
+  norma y por eso se rompió. Y si el archivo no está, se DICE lo que significa:
+  faltan las dependencias de desarrollo, y entonces esos tres temporizadores
+  tampoco corren — una avería que desde fuera se ve igual que si no pasara nada. Quien pueda leer esa carpeta lee
   las fotos de TODOS los proveedores, que es la misma razón por la que la web
   escucha en el bucle local.
 - LA CARPETA VA FUERA del directorio de la aplicación, y lo comprueban los dos

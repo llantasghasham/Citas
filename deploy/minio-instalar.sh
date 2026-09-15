@@ -67,6 +67,26 @@ ok()   { printf '  \033[32m✓\033[0m %s\n' "$*"; }
 aviso(){ printf '  \033[33m·\033[0m %s\n' "$*"; }
 paso() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
+# La ruta completa a `tsx`, como la usan las cuatro unidades de systemd de este
+# proyecto. NO `npm run`: es la única forma que depende del PATH, y en una
+# máquina de producción eso sale como «tsx: command not found», que no se parece
+# en nada a la causa.
+TSX_CLI="$DIR/node_modules/tsx/dist/cli.mjs"
+NODE_BIN="$(command -v node || true)"
+
+falta_tsx() {
+  rojo "No encuentro $TSX_CLI"
+  echo
+  echo "  Faltan las dependencias de DESARROLLO. Y esto importa más allá de este"
+  echo "  guion: los temporizadores de conciliación, recordatorios y SINPE"
+  echo "  arrancan por esa MISMA ruta, así que si no está, esos tres llevan sin"
+  echo "  correr. Compruébelo con: systemctl list-timers 'citas-*'"
+  echo
+  echo "    cd $DIR && npm ci --ignore-scripts --include-workspace-root \\"
+  echo "      --workspace @citas/web --workspace @citas/core --workspace @citas/whatsapp"
+  exit 1
+}
+
 [ "$(id -u)" -eq 0 ] || { rojo "Hay que ejecutarlo como root (sudo)."; exit 1; }
 [ -f "$ENV_FILE" ] || { rojo "No encuentro $ENV_FILE. Ponga DIR=/ruta/a/citas."; exit 1; }
 
@@ -81,7 +101,7 @@ if grep -q '^STORAGE_ENDPOINT=' "$ENV_FILE"; then
   echo "  Si lo que falló fue el último paso —el bucket— no hace falta repetir"
   echo "  nada de esto. Basta con:"
   echo
-  echo "    cd $DIR && npm run storage:check --workspace @citas/web"
+  echo "    cd $DIR/apps/web && sudo -u $APP_USER node $TSX_CLI scripts/storage-check.ts"
   echo
   echo "  Para empezar de cero, quite a mano las líneas STORAGE_* y vuelva."
   exit 1
@@ -235,9 +255,10 @@ APP_USER="$(stat -c '%U' "$ENV_FILE")"
 # La secreta se cifra con la MISMA llave que la del SMTP y la de Whish, y entra
 # por la ENTRADA ESTÁNDAR: un secreto como argumento queda en la lista de
 # procesos y en el historial del intérprete.
-CIFRADA="$(printf %s "$MINIO_ROOT_PASSWORD" | sudo -u "$APP_USER" env \
+[ -f "$TSX_CLI" ] && [ -n "$NODE_BIN" ] || falta_tsx
+CIFRADA="$(cd "$DIR/apps/web" && printf %s "$MINIO_ROOT_PASSWORD" | sudo -u "$APP_USER" env \
   CITAS_SECRET_KEY_FILE="$KEY_FILE" \
-  npm run secret:encrypt --workspace @citas/web --silent --prefix "$DIR")"
+  "$NODE_BIN" "$TSX_CLI" scripts/encrypt-secret.mjs)"
 
 cat >> "$ENV_FILE" <<EOF
 
@@ -264,7 +285,7 @@ ok "cinco variables escritas en apps/web/.env (la secreta, cifrada)"
 # `mc` habría dicho «bucket creado» usando su propio código y sus propias
 # credenciales, que no prueba nada de lo que va a correr después.
 paso "Bucket y comprobación"
-if ( cd "$DIR" && sudo -u "$APP_USER" npm run storage:check --workspace @citas/web --silent ); then
+if ( cd "$DIR/apps/web" && sudo -u "$APP_USER" "$NODE_BIN" "$TSX_CLI" scripts/storage-check.ts ); then
   ok "bucket «$BUCKET», privado, y la ida y vuelta comprobada"
 else
   echo
@@ -274,7 +295,7 @@ else
   echo "  guion: se negaría, y con razón. Corrija lo que diga el error de arriba"
   echo "  y vuelva a lanzar solo el último paso:"
   echo
-  echo "    cd $DIR && npm run storage:check --workspace @citas/web"
+  echo "    cd $DIR/apps/web && sudo -u $APP_USER node $TSX_CLI scripts/storage-check.ts"
   exit 1
 fi
 

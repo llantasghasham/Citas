@@ -38,20 +38,73 @@ rojo() { printf '\033[31m%s\033[0m\n' "$*"; }
 ok()   { printf '  \033[32m✓\033[0m %s\n' "$*"; }
 paso() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
+# Ejecuta un guion del proyecto EXACTAMENTE como lo hacen los temporizadores:
+# `node node_modules/tsx/dist/cli.mjs <guion>`, desde `apps/web`.
+#
+# NO con `npm run`. Es la única forma que depende del PATH, y en una máquina de
+# producción eso falla con un «tsx: command not found» que no se parece en nada
+# a la causa. Las cuatro unidades de systemd de este proyecto —conciliación,
+# recordatorios, SINPE y el servicio de WhatsApp— llaman por la ruta completa
+# desde el primer día; esto se salía de esa norma y por eso se rompió.
+correr_guion() {
+  local guion="$1"
+  local tsx="$DIR/node_modules/tsx/dist/cli.mjs"
+
+  if [ ! -f "$tsx" ]; then
+    rojo "No encuentro $tsx"
+    echo
+    echo "  Faltan las dependencias de DESARROLLO. Y esto importa más allá de"
+    echo "  este guion: los temporizadores de conciliación de cobros, de"
+    echo "  recordatorios y de SINPE arrancan por esa MISMA ruta, así que si no"
+    echo "  está, esos tres llevan sin correr desde que se instalaron así."
+    echo
+    echo "  Compruébelo:  systemctl list-timers 'citas-*'"
+    echo "                journalctl -u citas-sinpe -n 20"
+    echo
+    echo "  Y se arregla reinstalando sin omitir las de desarrollo:"
+    echo
+    echo "    cd $DIR && sudo -u $APP_USER npm ci --ignore-scripts \\"
+    echo "      --include-workspace-root --workspace @citas/web \\"
+    echo "      --workspace @citas/core --workspace @citas/whatsapp"
+    return 1
+  fi
+
+  ( cd "$DIR/apps/web" && sudo -u "$APP_USER" "$NODE_BIN" "$tsx" "$guion" )
+}
+
 [ "$(id -u)" -eq 0 ] || { rojo "Hay que ejecutarlo como root (sudo)."; exit 1; }
 [ -f "$ENV_FILE" ] || { rojo "No encuentro $ENV_FILE. Ponga DIR=/ruta/a/citas."; exit 1; }
 
-# ---------------------------------------------------------------- ya instalado
+# De quién es el .env es de quién es la aplicación: no hace falta preguntarlo.
+APP_USER="$(stat -c '%U' "$ENV_FILE")"
+APP_GROUP="$(stat -c '%G' "$ENV_FILE")"
+NODE_BIN="$(command -v node || true)"
+[ -n "$NODE_BIN" ] || { rojo "No encuentro node en el PATH."; exit 1; }
+
+# ------------------------------------------------------- ya estaba configurado
+#
+# No se niega a secas: COMPRUEBA el que ya hay y se va. Negarse dejaba sin
+# salida a quien llegó hasta aquí y falló la comprobación —la carpeta hecha y la
+# variable escrita, y el guion contestando «no lo repita»—, que es justo el
+# momento en que uno vuelve a lanzarlo. Lo que no hace, y eso sigue igual, es
+# TOCAR nada: cambiar la carpeta de un almacén en uso deja las filas de la base
+# apuntando a archivos de la carpeta anterior, y eso se descubre como galerías
+# rotas en la ficha de gente real.
 if grep -q '^STORAGE_DIR=' "$ENV_FILE"; then
-  rojo "apps/web/.env ya tiene STORAGE_DIR."
+  paso "Ya estaba configurado — solo compruebo"
+  YA="$(grep -m1 '^STORAGE_DIR=' "$ENV_FILE" | cut -d= -f2- | tr -d '"')"
+  ok "$YA"
+  if correr_guion scripts/storage-check.ts; then
+    ok "escribir, leer y borrar: correcto"
+    echo
+    echo "  Para cambiar la carpeta hay que quitar esa línea a mano, y antes"
+    echo "  mover los archivos: la base apunta a lo que hay dentro."
+    exit 0
+  fi
   echo
-  echo "  Este guion NO lo pisa: cambiar la carpeta de un almacén en uso deja"
-  echo "  las filas de la base apuntando a archivos de la carpeta anterior, y"
-  echo "  eso se descubre como galerías rotas en la ficha de gente real."
-  echo
-  echo "  Para comprobar el que ya hay:"
-  echo
-  echo "    cd $DIR && npm run storage:check --workspace @citas/web"
+  rojo "El almacén NO funciona."
+  echo "  Corrija lo de arriba y vuelva a lanzar este mismo guion: ya no"
+  echo "  reescribe nada, solo comprueba."
   exit 1
 fi
 
@@ -66,8 +119,6 @@ fi
 
 # ------------------------------------------------------------------- la carpeta
 paso "La carpeta"
-APP_USER="$(stat -c '%U' "$ENV_FILE")"
-APP_GROUP="$(stat -c '%G' "$ENV_FILE")"
 
 # FUERA del directorio de la aplicación, y no es un gusto: un despliegue copia
 # el código y se lleva por delante lo que se hubiera dejado al lado. Es la misma
@@ -109,17 +160,15 @@ ok "STORAGE_DIR escrito en apps/web/.env"
 # variables que se acaban de escribir. Si esto sale en verde, lo probado es la
 # instalación entera.
 paso "Comprobación"
-if ( cd "$DIR" && sudo -u "$APP_USER" npm run storage:check --workspace @citas/web --silent ); then
+if correr_guion scripts/storage-check.ts; then
   ok "escribir, leer y borrar: correcto"
 else
   echo
   rojo "El almacén no quedó listo."
   echo
-  echo "  STORAGE_DIR YA está escrito en el .env, así que no repita este guion:"
-  echo "  se negaría, y con razón. Corrija lo que diga el error de arriba y"
-  echo "  vuelva a lanzar solo la comprobación:"
-  echo
-  echo "    cd $DIR && npm run storage:check --workspace @citas/web"
+  echo "  STORAGE_DIR ya está escrito en el .env. Corrija lo que diga el error"
+  echo "  de arriba y vuelva a lanzar ESTE MISMO GUION: al ver la variable ya"
+  echo "  puesta no reescribe nada, solo comprueba."
   exit 1
 fi
 

@@ -510,12 +510,14 @@ cat <<FIN
 
  2. EL CORREO, o no podrás entrar al panel
     Edita $ENV_FILE, pon SUPERADMIN_EMAIL y los datos SMTP.
-    La contraseña, cifrada:
-      printf %s 'LA-CONTRASEÑA' | sudo -u $APP_USER env \\
+    La contraseña, cifrada (por la ENTRADA ESTÁNDAR: un secreto como
+    argumento queda en la lista de procesos y en el historial):
+      cd $DIR/apps/web && printf %s 'LA-CONTRASEÑA' | sudo -u $APP_USER env \\
         CITAS_SECRET_KEY_FILE=$KEY_FILE \\
-        npm run secret:encrypt --workspace @citas/web --silent --prefix $DIR
-    Pega el resultado en SMTP_PASSWORD_ENC, pon MAILER="smtp",
-    y luego:  systemctl restart citas && npm run db:seed --workspace @citas/web --prefix $DIR
+        $NODE_BIN $DIR/node_modules/tsx/dist/cli.mjs scripts/encrypt-secret.mjs
+    Pega el resultado en SMTP_PASSWORD_ENC, pon MAILER="smtp", y luego:
+      systemctl restart citas
+      cd $DIR/apps/web && sudo -u $APP_USER npx prisma db seed
 
  3. WHATSAPP POR QR (opcional, y léalo antes)
     Ya está instalado y corriendo: systemctl status citas-whatsapp
