@@ -1345,7 +1345,11 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   por delante lo que ponga el proxy Y lo que ponga `headers()` en
   `next.config.mjs` — comprobado contra el servidor compilado, las dos formas.
   Así que quien distingue es la caché de delante y hay que configurarla: el
-  trozo de nginx está en `docs/DESPLIEGUE-VPS.md`, con la prueba que lo cierra
+  trozo de nginx lo pone `deploy/nginx-cache-invitacion.sh` —dos archivos y dos
+  contextos distintos, la despensa en el `http` y la regla en el `location`, y
+  pegarlos en el sitio equivocado deja nginx sin arrancar: el guion comprueba con
+  `nginx -t` y DESHACE los dos si falla— y está explicado en
+  `docs/DESPLIEGUE-VPS.md`, con la prueba que lo cierra
   —parar el servicio y pedir la invitación: 200—. Y esa regla mira el
   ENCABEZADO `Cookie` entero con un `map`, no una cookie concreta: la del
   invitado lleva el SLUG dentro (`citas_guest_<slug>`), así que cada boda tiene

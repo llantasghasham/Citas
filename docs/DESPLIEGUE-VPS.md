@@ -238,7 +238,19 @@ sin cookie   cache-control: public, max-age=0, s-maxage=60,
 con cookie   cache-control: private, no-store
 ```
 
-Falta que nginx las obedezca, y son **dos sitios distintos**. Esto importa: la
+Falta que nginx las obedezca, y hay un guion que lo hace:
+
+```bash
+sudo bash deploy/nginx-cache-invitacion.sh
+```
+
+Pone las dos piezas donde van, COMPRUEBA con `nginx -t` y, si algo no cuadra,
+DESHACE los dos archivos y no recarga nada — un ajuste para que el sitio aguante
+más no puede ser lo que lo tire. Es idempotente y deja copias con su fecha al
+lado de cada archivo.
+
+Lo que hace por dentro, para quien quiera hacerlo a mano. Son **dos sitios
+distintos**. Esto importa: la
 despensa se declara en el bloque `http` y **no** dentro de un `server`. Puesta
 en el sitio equivocado, nginx no arranca —«proxy_cache_path directive is not
 allowed here»— y se queda la web entera caída por intentar hacerla más robusta.
