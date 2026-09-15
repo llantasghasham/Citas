@@ -148,14 +148,24 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   No hay respaldo automático, a propósito: saltar de uno a otro al primer
   tropiezo mandaría el MISMO código de acceso dos veces por dos caminos —«no
   contestó» no es «no salió»— y además escondería que el primero está roto.
-- Resend existe por algo que NO está en este repositorio, y conviene no
-  perderlo: el SMTP funciona. El mensaje sale bien formado, con su remitente, y
-  el dominio publica SPF, DKIM y DMARC — comprobado contra Gmail, que lo pone en
-  la BANDEJA DE ENTRADA. Lo que no llega es a Hotmail y Outlook, y la causa es
-  la reputación que Microsoft le tiene a las IP COMPARTIDAS del alojamiento
-  desde el que se manda. Esa IP no es nuestra: no se arregla, se deja de usar.
-  Antes de culpar al código otra vez, esa es la comprobación que lo zanja —
-  Gmail acepta, Hotmail no, mismo mensaje.
+- EL SMTP FUNCIONA Y ENTREGA EN LAS DOS, comprobado en producción: Gmail y
+  Hotmail, los dos en la BANDEJA DE ENTRADA y no en no deseado, con SPF, DKIM y
+  DMARC publicados. Esto está escrito porque durante un rato se creyó lo
+  contrario y se llegó a dar por hecho que era la reputación de las IP
+  compartidas del alojamiento — algo que no se puede consultar desde fuera y que
+  por eso es una explicación cómoda y difícil de desmentir.
+- LA CAUSA ERA EL REMITENTE SIN DIRECCIÓN, y nada más. Con `MAIL_FROM` a
+  «POSFactura» el mensaje salía sin cabecera `From:`; el servidor lo aceptaba con
+  un «250 OK» y Hotmail lo descartaba en silencio mientras Gmail hacía lo mismo.
+  Corregido el campo, entra en las dos. El cambio de `EHLO` se hizo por medio y
+  NO se le atribuye el mérito: quita una señal negativa que sobraba, y no hay
+  forma honesta de saber si aportó algo.
+- Resend NO hace falta hoy y queda como PUERTA DE REPUESTO. Cuesta dinero y
+  exige verificar el dominio con registros DNS, así que encenderlo sin necesidad
+  es pagar por un problema que no se tiene. Cambiar de emisor es un campo.
+- Antes de volver a culpar a la reputación de nadie: mandar la prueba a un Gmail
+  y a un Hotmail y mirar de quién venía. Un remitente mal escrito se ve en el
+  recibo, que dice «de …», y se arregla en un minuto.
 - La clave de Resend es un secreto como la del SMTP: `RESEND_API_KEY`, cifrada
   con AES-256-GCM, se escribe y no se lee. Y va en la CABECERA de la petición,
   nunca en la dirección: una URL se escribe entera en el registro de cualquier
