@@ -1025,7 +1025,13 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Se monta con `sudo bash deploy/almacen-instalar.sh`. No genera credenciales
   porque no hay ninguna: crea la carpeta, la deja del usuario de la web y de
   nadie más (0700) y comprueba la ida y vuelta. Y volver a lanzarlo con la
-  variable ya puesta NO reescribe nada: comprueba y se va. Negarse a secas
+  variable ya puesta NO reescribe nada: comprueba, REINICIA la web si hace
+  falta, y se va. Lo de reiniciar no es de adorno: la web lee el `.env` al
+  ARRANCAR, así que un proceso levantado antes de escribir `STORAGE_DIR` sigue
+  sin almacén —en producción `storeFor()` se levanta y subir una foto falla— y
+  el guion habría terminado en verde igual. Se compara cuándo arrancó el
+  servicio con cuándo se tocó el archivo, y si no se puede saber se reinicia:
+  reiniciar de más cuesta unos segundos y no reiniciar deja las subidas rotas. Negarse a secas
   dejaba sin salida a quien había llegado hasta ahí y falló la comprobación
   —carpeta hecha, variable escrita, y el guion contestando «no lo repita»—, que
   es justo el momento en que uno vuelve a lanzarlo.

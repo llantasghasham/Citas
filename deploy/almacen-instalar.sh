@@ -72,6 +72,23 @@ correr_guion() {
   ( cd "$DIR/apps/web" && sudo -u "$APP_USER" "$NODE_BIN" "$tsx" "$guion" )
 }
 
+# ¿La web está corriendo con el `.env` de AHORA, o con uno anterior?
+#
+# Se compara cuándo se levantó el servicio con cuándo se tocó el archivo. Es la
+# diferencia entre «configurado» y «en marcha», y sin mirarla un guion puede
+# terminar en verde dejando la aplicación sin almacén. Si no se puede saber
+# —systemd no contesta, el servicio no existe— se contesta que SÍ: reiniciar de
+# más cuesta unos segundos y no reiniciar deja las subidas rotas.
+hay_que_reiniciar() {
+  local arrancada t_srv t_env
+  arrancada="$(systemctl show -p ActiveEnterTimestamp --value citas 2>/dev/null || true)"
+  [ -n "$arrancada" ] || return 0
+  t_srv="$(date -d "$arrancada" +%s 2>/dev/null || echo 0)"
+  [ "$t_srv" -gt 0 ] || return 0
+  t_env="$(stat -c %Y "$ENV_FILE")"
+  [ "$t_env" -gt "$t_srv" ]
+}
+
 [ "$(id -u)" -eq 0 ] || { rojo "Hay que ejecutarlo como root (sudo)."; exit 1; }
 [ -f "$ENV_FILE" ] || { rojo "No encuentro $ENV_FILE. Ponga DIR=/ruta/a/citas."; exit 1; }
 
@@ -96,6 +113,22 @@ if grep -q '^STORAGE_DIR=' "$ENV_FILE"; then
   ok "$YA"
   if correr_guion scripts/storage-check.ts; then
     ok "escribir, leer y borrar: correcto"
+
+    # LA WEB LEE EL .env AL ARRANCAR, no cada vez. Así que un proceso que se
+    # levantó ANTES de que se escribiera STORAGE_DIR sigue sin almacén —en
+    # producción `storeFor()` se levanta, o sea que subir una foto falla— y
+    # desde aquí se vería todo en verde. Faltaba justamente este paso: la
+    # primera vez el guion murió en la comprobación y nunca llegó a reiniciar.
+    if hay_que_reiniciar; then
+      paso "Reiniciando la web"
+      echo "  La web se levantó antes de que se escribiera STORAGE_DIR, así que"
+      echo "  todavía está corriendo sin almacén."
+      systemctl restart citas
+      ok "listo"
+    else
+      ok "la web ya estaba corriendo con esta configuración"
+    fi
+
     echo
     echo "  Para cambiar la carpeta hay que quitar esa línea a mano, y antes"
     echo "  mover los archivos: la base apunta a lo que hay dentro."
