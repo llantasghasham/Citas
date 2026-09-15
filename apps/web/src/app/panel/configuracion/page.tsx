@@ -145,7 +145,7 @@ export default async function ConfigPage({ searchParams }: PageProps) {
             campo('SMTP_USER'),
             campo('MAIL_FROM'),
           ])}
-          password={await clave('SMTP_PASSWORD')}
+          secrets={await Promise.all([clave('SMTP_PASSWORD'), clave('RESEND_API_KEY')])}
           dictionary={dictionary}
         />
       ) : null}

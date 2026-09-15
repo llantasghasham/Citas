@@ -77,7 +77,14 @@ export const SETTING_KEYS = [
 export type SettingKey = (typeof SETTING_KEYS)[number];
 
 /** Las que son contraseñas. Se guardan cifradas y no se devuelven nunca. */
-export const SECRET_KEYS = ['SMTP_PASSWORD', 'WHISH_SECRET', 'TILOPAY_PASSWORD'] as const;
+export const SECRET_KEYS = [
+  'SMTP_PASSWORD',
+  // La de Resend es una contraseña como las demás: quien la tiene manda correo
+  // desde el dominio de esta instalación. Cifrada, y la pantalla no la devuelve.
+  'RESEND_API_KEY',
+  'WHISH_SECRET',
+  'TILOPAY_PASSWORD',
+] as const;
 export type SecretKey = (typeof SECRET_KEYS)[number];
 
 /** Todo lo guardado, en una sola consulta por petición. */

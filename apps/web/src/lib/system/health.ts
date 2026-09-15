@@ -314,10 +314,35 @@ async function mailerCheck(): Promise<HealthCheck> {
   // la pantalla —y al revés: daba por bueno lo que el panel había cambiado—.
   // Una comprobación que no mira donde mira el programa no comprueba el
   // programa.
-  if ((await setting('MAILER')) !== 'smtp') {
+  const quien = await setting('MAILER');
+  if (quien !== 'smtp' && quien !== 'resend') {
     // Without this, the one-time code never leaves the machine and nobody can
     // sign in at all. In production the console mailer also refuses to run.
     return { key: 'mailer', level: inProduction() ? 'fail' : 'warn', detail: 'console' };
+  }
+
+  // El remitente lo exigen LOS DOS, así que se comprueba una vez y antes de
+  // ramificar. Con Resend, además, ese dominio tiene que estar verificado en su
+  // panel — eso no se puede comprobar desde aquí y se dice en la pantalla.
+  const remitente = await setting('MAIL_FROM');
+  if (quien === 'resend') {
+    if (remitente === undefined) return fail('MAIL_FROM');
+    const problema = mailFromProblem(remitente);
+    if (problema !== null) {
+      return fail(`MAIL_FROM = «${remitente}» · sin dirección · se escribe: ${MAIL_FROM_FORMAT}`);
+    }
+    let clave: string | undefined;
+    try {
+      clave = await secret('RESEND_API_KEY');
+    } catch {
+      clave = undefined;
+    }
+    if (clave === undefined) return fail('RESEND_API_KEY');
+    return {
+      key: 'mailer',
+      level: 'ok',
+      detail: `resend · ${remitente} · el dominio tiene que estar verificado en Resend`,
+    };
   }
 
   const host = await setting('SMTP_HOST');

@@ -12,6 +12,8 @@ import { senderDomain } from '../src/lib/mail/dns';
 import { isEmailAddress, mailFromAddress, mailFromProblem } from '../src/lib/mail/from';
 import { MailNotSentError } from '../src/lib/mail/types';
 import { smtpMailer } from '../src/lib/mail/smtp';
+import { getMailer } from '../src/lib/mail';
+import { resendMailer } from '../src/lib/mail/resend';
 
 /**
  * Lo que se comprueba ANTES de publicar, y lo que sale en una exportación.
@@ -366,5 +368,74 @@ describe('el remitente del correo', () => {
     );
     delete process.env['MAIL_FROM'];
     delete process.env['MAILER'];
+  });
+});
+
+/**
+ * El SEGUNDO emisor.
+ *
+ * Existe por una razón que no está en este repositorio y conviene no perder: el
+ * SMTP funciona —Gmail pone el mensaje en la bandeja de entrada, con SPF, DKIM
+ * y DMARC en regla— y aun así Hotmail lo descarta, por la reputación que
+ * Microsoft le tiene a las IP compartidas del alojamiento. Eso no se arregla
+ * con código: se deja de usar esa puerta.
+ */
+describe('el emisor de correo se elige, y no hay respaldo automático', () => {
+  const limpiar = (): void => {
+    delete process.env['MAILER'];
+    delete process.env['MAIL_FROM'];
+    delete process.env['RESEND_API_KEY'];
+    delete process.env['RESEND_API_KEY_ENC'];
+  };
+
+  it('cada valor de MAILER da SU emisor, y lo desconocido no manda nada', async () => {
+    process.env['MAILER'] = 'smtp';
+    assert.equal((await getMailer()).id, 'smtp');
+    process.env['MAILER'] = 'resend';
+    assert.equal((await getMailer()).id, 'resend');
+    // Lo que no se reconoce cae al de consola, que en producción se NIEGA a
+    // correr: un código de acceso no se «entrega» en un archivo de registro.
+    process.env['MAILER'] = 'sendgrid';
+    assert.equal((await getMailer()).id, 'console');
+    delete process.env['MAILER'];
+    assert.equal((await getMailer()).id, 'console');
+    limpiar();
+  });
+
+  it('sin clave de Resend NO sale, y el error dice que es cosa nuestra', async () => {
+    process.env['MAILER'] = 'resend';
+    process.env['MAIL_FROM'] = 'POSFactura <info@posfacturacr.com>';
+    await assert.rejects(
+      () => resendMailer.send({ to: 'x@example.com', subject: 's', text: 't' }),
+      (error: unknown) => {
+        // MARCADO: lo paramos aquí, sin llamar a nadie. Si esto saliera como un
+        // error corriente, la pantalla diría «el proveedor lo rechazó» sobre
+        // algo que el proveedor no ha visto — el mismo fallo que ya costó
+        // mandar a revisar un Bluehost ajeno.
+        assert.ok(error instanceof MailNotSentError, 'tiene que ir marcado como «no salió de aquí»');
+        assert.match(error.message, /Resend/);
+        // Y nombra lo que hay que hacer FUERA del panel, que es lo que nadie
+        // adivina: verificar el dominio.
+        assert.match(error.message, /posfacturacr\.com/);
+        return true;
+      },
+    );
+    limpiar();
+  });
+
+  it('Resend exige el mismo remitente que el SMTP, con el valor guardado dentro', async () => {
+    process.env['MAILER'] = 'resend';
+    process.env['MAIL_FROM'] = 'POSFactura';
+    await assert.rejects(
+      () => resendMailer.send({ to: 'x@example.com', subject: 's', text: 't' }),
+      (error: unknown) => {
+        assert.ok(error instanceof MailNotSentError);
+        // El valor guardado, nunca el ejemplo: es la misma regla que la fila de
+        // `/panel/sistema`, y por los dos emisores.
+        assert.match(error.message, /POSFactura/);
+        return true;
+      },
+    );
+    limpiar();
   });
 });

@@ -585,6 +585,7 @@ export interface Dictionary {
         Record<
           | 'MAILER'
           | 'MAIL_FROM'
+          | 'RESEND_API_KEY'
           | 'PAYMENTS_PROVIDER'
           | 'WHISH_BASE_URL'
           | 'WHISH_CHANNEL'
@@ -607,6 +608,7 @@ export interface Dictionary {
         | 'SMTP_USER'
         | 'MAIL_FROM'
         | 'SMTP_PASSWORD'
+        | 'RESEND_API_KEY'
         | 'PAYMENTS_PROVIDER'
         | 'WHISH_BASE_URL'
         | 'WHISH_CHANNEL'

@@ -144,6 +144,27 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - Una vez dentro, la oficina la manda la SESIÓN, no el host.
 - El envío de correo entra por el puerto `Mailer`. El emisor de consola está
   prohibido en producción y el código lo impide.
+- Hay DOS emisores de verdad y se ELIGE uno: `MAILER=smtp` o `MAILER=resend`.
+  No hay respaldo automático, a propósito: saltar de uno a otro al primer
+  tropiezo mandaría el MISMO código de acceso dos veces por dos caminos —«no
+  contestó» no es «no salió»— y además escondería que el primero está roto.
+- Resend existe por algo que NO está en este repositorio, y conviene no
+  perderlo: el SMTP funciona. El mensaje sale bien formado, con su remitente, y
+  el dominio publica SPF, DKIM y DMARC — comprobado contra Gmail, que lo pone en
+  la BANDEJA DE ENTRADA. Lo que no llega es a Hotmail y Outlook, y la causa es
+  la reputación que Microsoft le tiene a las IP COMPARTIDAS del alojamiento
+  desde el que se manda. Esa IP no es nuestra: no se arregla, se deja de usar.
+  Antes de culpar al código otra vez, esa es la comprobación que lo zanja —
+  Gmail acepta, Hotmail no, mismo mensaje.
+- La clave de Resend es un secreto como la del SMTP: `RESEND_API_KEY`, cifrada
+  con AES-256-GCM, se escribe y no se lee. Y va en la CABECERA de la petición,
+  nunca en la dirección: una URL se escribe entera en el registro de cualquier
+  proxy que haya en medio.
+- Verificar el dominio en Resend es cosa de una PERSONA, con registros DNS. El
+  código no puede hacerlo, así que lo DICE: la fila de `/panel/sistema` y el
+  error de «falta la clave» nombran los dos esa condición.
+- Sin dependencia nueva: es una petición HTTP con una clave, y `fetch` ya viene
+  en Node.
 - La configuración del sistema —correo saliente, cobro, dirección del sitio— se
   edita en `/panel/configuracion`, NO en el `.env`. Quien monta esto no debería
   tener que abrir un archivo por SSH para cambiar un servidor de correo. El
