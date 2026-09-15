@@ -889,6 +889,17 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   oficina (`eachOffice`). No hay atajo: preguntarle a todas a la vez es
   exactamente lo que una base por oficina impide. Una oficina que falle no se
   lleva por delante a las demás.
+- EL SERVICIO DE WHATSAPP TODAVÍA NO SABE DE LA FLOTA, y por eso `TENANCY=fleet`
+  no se puede encender en una instalación que use el número por QR. Se conecta a
+  UNA base con SQL directo: con la flota, la web encolaría los mensajes en la
+  base de la oficina y ese proceso seguiría mirando la común — no saldría
+  ninguno, y nada lo diría. Ni un error, ni una fila en el historial, ni un
+  estado distinto en la pantalla; y la fila de la conexión existiría en las DOS
+  bases, con las credenciales de sesión duplicadas y escribiéndose por separado.
+  Así que FALLA CERRADO Y RUIDOSO: el servicio se niega a arrancar con
+  `TENANCY=fleet`, como el emisor de consola en producción y el almacén en
+  memoria. Y `/panel/sistema` lo dice en la misma fila donde recomienda el
+  cambio, que es donde alguien lo va a leer.
 - El interruptor es `TENANCY`, y el orden de encenderlo NO es negociable:
   PRIMERO `npm run db:fleet -- migrar` —la base de cada oficina se COPIA de la
   plantilla, así que una plantilla atrasada da una oficina atrasada y el copiado

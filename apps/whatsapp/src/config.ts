@@ -66,6 +66,31 @@ function number(name: string, fallback: number): number {
 }
 
 export function readConfig(): GatewayConfig {
+  // ESTE SERVICIO NO ENTIENDE LA FLOTA, y se para antes que fingir que sí.
+  //
+  // Se conecta a UNA base y consulta `WhatsappConnection` y `WhatsappMessage`
+  // con SQL directo. Con `TENANCY=fleet`, esas filas viven en la base de cada
+  // oficina: la web encolaría los mensajes allí y este proceso seguiría mirando
+  // la común, sin encontrar nada. Los mensajes no saldrían NUNCA y nada lo
+  // diría — ni un error, ni una fila en el historial, ni un estado distinto en
+  // la pantalla. Peor todavía: la fila de la conexión existiría en las DOS
+  // bases, con las credenciales de sesión duplicadas y escribiéndose por
+  // separado, que es el secreto más caro del proyecto.
+  //
+  // Así que falla CERRADO y RUIDOSO, como el emisor de consola en producción y
+  // como el almacén en memoria. El día que este servicio aprenda a recorrer las
+  // oficinas, esto se quita en una línea.
+  const tenancy = process.env['TENANCY'];
+  if (tenancy !== undefined && tenancy.trim().toLowerCase() === 'fleet') {
+    throw new Error(
+      'TENANCY=fleet y este servicio todavía no sabe recorrer una base por ' +
+        'oficina: se conecta a una sola. Si arrancara, la web encolaría los ' +
+        'mensajes en la base de la oficina y aquí no se vería ninguno — no ' +
+        'saldría nada y nada lo diría. Deje TENANCY sin poner (o en su valor ' +
+        'anterior) hasta que este proceso lo entienda.',
+    );
+  }
+
   const token = required('WHATSAPP_GATEWAY_TOKEN');
   if (token.length < 24) {
     // Un secreto corto es un secreto adivinable, y lo que abre es el WhatsApp
