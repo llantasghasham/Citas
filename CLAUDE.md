@@ -862,16 +862,38 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   lo que es su trabajo —eventos, invitaciones, imágenes, invitados, mesas,
   confirmaciones, números de WhatsApp y sus mensajes—; en la de CONTROL va lo que
   es del arrendador —el registro de oficinas, las personas y sus sesiones, los
-  planes, los pedidos y cobros, el SINPE, la configuración y el historial—. El
-  esquema ya estaba partido así: NINGUNA clave foránea cruza la frontera, y eso
-  no es casualidad sino la comprobación de que la línea está donde tenía que
-  estar.
+  planes, los pedidos y cobros, el SINPE, la configuración y el historial—.
+- NINGUNA clave foránea cruza la frontera, y eso ESTUVO ESCRITO AQUÍ COMO
+  CIERTO CUANDO NO LO ERA: `Event.ownerId` apuntaba a `User` con una clave
+  foránea de verdad, y `User` es del plano de control. Mientras todo estaba en
+  una sola base se cumplía sola y nadie lo notó; el primer
+  `npm run db:split -- copiar` contra datos de verdad murió exactamente ahí.
+  Ahora `ownerId` es TEXTO SUELTO, igual que `PublicListing.sourceEventId` y por
+  lo mismo. Una frontera que se afirma y no se comprueba es una frontera que un
+  día no está.
+- QUÉ TABLA VIVE EN QUÉ PLANO está en `lib/db/planes.ts`, en DOS listas cerradas,
+  y `tests/planes.test.ts` comprueba contra `schema.prisma` que no falte ninguna
+  en las dos. Estaba escrita a mano dentro del guion de la mudanza y se quedó
+  ATRÁS: movía diez tablas cuando ya había veinticuatro. Faltaban los actos de
+  una boda, sus grupos, las respuestas por acto, las entradas de la puerta, las
+  preferencias de cocina, los permisos y las campañas — o sea que encender la
+  flota dejaba una boda de varios días sin sus días. Y EN SILENCIO, porque
+  copiar no falla por lo que no copia. La prueba encontró otras tres el día que
+  se escribió.
+- Y el CAMINO para encontrar las filas de una oficina se EJECUTA contra la base
+  (`tests/planes-db.test.ts`), porque leerlo no basta: `ActAudience` lleva
+  `eventId` dentro pero no tiene relación `event` —sus relaciones son `act` y
+  `segment`— y un camino inventado no da un resultado raro, revienta a mitad del
+  copiado con unas tablas escritas y otras no.
 - Un trabajo automático que antes era UNA consulta con un `IN` ahora es una por
   oficina (`eachOffice`). No hay atajo: preguntarle a todas a la vez es
   exactamente lo que una base por oficina impide. Una oficina que falle no se
   lleva por delante a las demás.
 - El interruptor es `TENANCY`, y el orden de encenderlo NO es negociable:
-  `npm run db:split -- copiar` mueve lo que ya existe y COMPRUEBA los recuentos,
+  PRIMERO `npm run db:fleet -- migrar` —la base de cada oficina se COPIA de la
+  plantilla, así que una plantilla atrasada da una oficina atrasada y el copiado
+  muere contra una columna o una clave que allí todavía no existe—, luego
+  `npm run db:split -- copiar`, que mueve lo que ya existe y COMPRUEBA los recuentos,
   luego se pone `TENANCY=fleet`, luego se MIRA —una boda, sus invitados, sus
   mesas, una invitación pública— y solo entonces `npm run db:split -- limpiar`
   borra de la común lo copiado. Son dos órdenes y no una porque entre copiar y

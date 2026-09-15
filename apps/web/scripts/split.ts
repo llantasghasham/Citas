@@ -9,6 +9,7 @@ import 'dotenv/config';
 import { closeAllDatabases, controlDb, databaseByName } from '../src/lib/db/client';
 import { createTenantDatabase, databaseExists, seedTenantRow } from '../src/lib/db/fleet';
 import { databaseNameFor } from '../src/lib/db/naming';
+import { OFFICE_TABLES, officeWhere, type OfficeTable } from '../src/lib/db/planes';
 
 /**
  * Mueve a cada oficina a SU base de datos.
@@ -30,46 +31,17 @@ import { databaseNameFor } from '../src/lib/db/naming';
  */
 
 /**
- * Las tablas que se mudan, EN ESTE ORDEN.
+ * Las tablas que se mudan y cómo se encuentran las de una oficina.
  *
- * El orden es el de las claves foráneas y no es negociable: un invitado no se
- * puede escribir antes que su evento, ni un mensaje antes que su conexión. Las
- * mesas van antes que los invitados porque un invitado sentado apunta a la suya.
+ * NO se escriben aquí: vienen de `src/lib/db/planes.ts`, que es donde está la
+ * lista cerrada y donde una prueba comprueba que no falta ninguna. Escrita aquí
+ * se quedó atrás —movía diez tablas cuando ya había veinticuatro— y copiar no
+ * falla por lo que no copia: se encendía la flota y una boda de varios días
+ * perdía los días, sin un solo error.
  */
-const MOVED = [
-  'event',
-  'eventHost',
-  'eventHonoree',
-  'invitationVersion',
-  'render',
-  'table',
-  'guest',
-  'rsvp',
-  'whatsappConnection',
-  'whatsappMessage',
-] as const;
-
-type Moved = (typeof MOVED)[number];
-
-/** Cómo se encuentran las filas de UNA oficina en cada tabla. */
-function whereFor(table: Moved, tenantId: string): Record<string, unknown> {
-  switch (table) {
-    case 'event':
-    case 'whatsappConnection':
-    case 'whatsappMessage':
-      return { tenantId };
-    case 'eventHost':
-    case 'eventHonoree':
-    case 'invitationVersion':
-    case 'table':
-    case 'guest':
-      return { event: { tenantId } };
-    case 'render':
-      return { version: { event: { tenantId } } };
-    case 'rsvp':
-      return { guest: { event: { tenantId } } };
-  }
-}
+const MOVED = OFFICE_TABLES;
+type Moved = OfficeTable;
+const whereFor = officeWhere;
 
 const CHUNK = 500;
 

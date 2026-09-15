@@ -272,7 +272,6 @@ model User {
 
   memberships         Membership[]
   providerMemberships ProviderMembership[]
-  ownedEvents Event[]      @relation("EventOwner")
   auditLogs   AuditLog[]
   sessions    Session[]
 }
@@ -299,6 +298,14 @@ model Event {
   id       String  @id @default(cuid())
   tenantId String
   /// El organizador. Nulo en un trabajo concierge sin cuenta de cliente.
+  ///
+  /// TEXTO SUELTO Y SIN CLAVE FORÁNEA, a propósito y como
+  /// `PublicListing.sourceEventId`: `User` vive en la base de CONTROL y el
+  /// evento en la de su OFICINA, así que una clave foránea aquí CRUZA la
+  /// frontera — y no se puede cumplir cuando el evento se muda a su base. La
+  /// tenía, y es lo que hizo fallar `npm run db:split -- copiar` la primera vez
+  /// que se ejecutó contra datos de verdad: `Event_ownerId_fkey` violada, con
+  /// la base de la oficina recién creada y sin una sola fila dentro.
   ownerId  String?
 
   type    EventType
@@ -335,7 +342,6 @@ model Event {
   updatedAt DateTime @updatedAt
 
   tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  owner     User?               @relation("EventOwner", fields: [ownerId], references: [id])
   versions  InvitationVersion[]
   hosts     EventHost[]
   honorees  EventHonoree[]

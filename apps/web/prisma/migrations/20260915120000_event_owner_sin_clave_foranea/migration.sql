@@ -1,0 +1,15 @@
+-- `Event.ownerId` deja de tener clave foránea, y no es un descuido: es la única
+-- que CRUZABA la frontera entre los dos planos.
+--
+-- `User` vive en la base de CONTROL —las personas y sus sesiones son del
+-- arrendador— y `Event` en la base de su OFICINA. Mientras todo estaba en una
+-- sola base la clave se cumplía sola y nadie lo notó. En cuanto se muda una
+-- oficina a la suya, no hay ningún `User` al otro lado: el primer
+-- `npm run db:split -- copiar` contra datos de verdad murió exactamente ahí,
+-- con «Foreign key constraint violated on the constraint: Event_ownerId_fkey».
+--
+-- Se queda como TEXTO, igual que `PublicListing.sourceEventId` y por lo mismo:
+-- ese también apunta a algo que está del otro lado y por eso no es una clave.
+-- El valor no cambia y ninguna consulta se entera; lo que desaparece es una
+-- garantía que la base no podía dar.
+ALTER TABLE "Event" DROP CONSTRAINT IF EXISTS "Event_ownerId_fkey";
