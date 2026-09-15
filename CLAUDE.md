@@ -1333,6 +1333,21 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   se quedaba «pendiente» para siempre: pendientes eternos que ensucian la
   facturación y que, por el índice de «un cobro abierto por pedido», impiden
   abrir uno nuevo.
+- LA INVITACIÓN PÚBLICA SE PUEDE GUARDAR FUERA, para que siga viva aunque esto
+  no lo esté. `src/proxy.ts` mira la cookie del invitado y decide: sin cookie
+  —los trescientos que llegan por un reenvío— `public, s-maxage=60,
+  stale-while-revalidate=300, stale-if-error=86400`; con cookie, `private,
+  no-store`, porque esa página saluda por su nombre y enseña una mesa. El minuto
+  es corto a propósito: corregir una invitación y seguir sirviendo la anterior
+  una hora es peor que consultar de más. Lo que dura es `stale-if-error`.
+- NO SE PUEDE PONER `Vary: Cookie` DESDE LA APLICACIÓN, y queda escrito para que
+  nadie lo vuelva a intentar: Next REESCRIBE esa cabecera con la suya, y se lleva
+  por delante lo que ponga el proxy Y lo que ponga `headers()` en
+  `next.config.mjs` — comprobado contra el servidor compilado, las dos formas.
+  Así que quien distingue es la caché de delante y hay que configurarla: el
+  trozo de nginx está en `docs/DESPLIEGUE-VPS.md`, con la prueba que lo cierra
+  —parar el servicio y pedir la invitación: 200—. Con Cloudflare da igual de
+  todos modos: ignora `Vary` salvo `accept-encoding`.
 - Una invitación se dibuja UNA vez por versión aunque la pidan doscientos a la
   vez (`lib/render/once.ts`), y nunca hay más de dos Chromium dibujando. Es el
   caso normal, no el raro: la invitación se reenvía a un grupo y la abren todos

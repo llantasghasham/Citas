@@ -221,6 +221,80 @@ curl -s https://citas.posxml.com/entrar | grep -c 'dir='
 Y el origen **solo debe ser accesible por nginx**: el servicio escucha en
 `127.0.0.1`, así que no abras el 3000 en el cortafuegos.
 
+## 5 bis. Que la invitación siga viva aunque la aplicación se caiga
+
+Una boda ocurre una vez. Si la invitación no abre la tarde que se manda el
+WhatsApp, no hay disculpa que lo arregle. Y el patrón no es tráfico constante:
+son **trescientas aperturas en dos horas**, casi todas en el minuto siguiente a
+que alguien reenvíe el enlace al grupo de la familia.
+
+Para casi todas, la página es **la misma**: llegan por un reenvío, sin enlace
+personal. Eso es lo que nginx puede guardar y seguir sirviendo aunque el
+servicio esté parado. La aplicación ya manda las cabeceras:
+
+```
+sin cookie   cache-control: public, max-age=0, s-maxage=60,
+                            stale-while-revalidate=300, stale-if-error=86400
+con cookie   cache-control: private, no-store
+```
+
+Falta que nginx las obedezca. En aaPanel: **Sitios → citas.posxml.com →
+Configuración**, y dentro del `server`:
+
+```nginx
+# La despensa. 100 MB sobran: una invitación son unas decenas de kilobytes.
+proxy_cache_path /var/cache/nginx/citas levels=1:2 keys_zone=citas:10m
+                 max_size=100m inactive=7d use_temp_path=off;
+```
+
+Y dentro del `location` que ya hace de proxy inverso:
+
+```nginx
+proxy_cache citas;
+
+# LA REGLA QUE IMPORTA. Quien trae la cookie de invitado ya contestó, y su
+# página le saluda por su nombre y le enseña su mesa: ni se guarda ni se le
+# sirve nada guardado. Hace falta escribirlo porque Next REESCRIBE la cabecera
+# `Vary` con la suya, así que no llega un `Vary: Cookie` que nginx pueda usar.
+proxy_cache_bypass $cookie_citas_guest_ejemplo_ar $http_authorization;
+proxy_no_cache     $cookie_citas_guest_ejemplo_ar $http_authorization;
+
+# Y ESTO es lo que la mantiene viva: si el origen no contesta, se sigue
+# sirviendo la última copia buena en vez de un 502.
+proxy_cache_use_stale error timeout updating invalid_header
+                      http_500 http_502 http_503 http_504;
+proxy_cache_background_update on;
+proxy_cache_lock on;
+
+# Para poder mirar si funciona.
+add_header X-Cache $upstream_cache_status always;
+```
+
+Comprobarlo:
+
+```bash
+# Dos veces seguidas: la primera MISS, la segunda HIT.
+curl -sI https://citas.posxml.com/i/ejemplo-ar | grep -i x-cache
+curl -sI https://citas.posxml.com/i/ejemplo-ar | grep -i x-cache
+
+# Y la prueba de verdad: parar la aplicación y ver si la invitación sigue.
+systemctl stop citas
+curl -s -o /dev/null -w '%{http_code}\n' https://citas.posxml.com/i/ejemplo-ar   # 200
+systemctl start citas
+```
+
+Si esa última línea da 200 con el servicio parado, está hecho.
+
+**Lo que NO se cachea, y no es olvido:** `/g/<token>` es el enlace personal de un
+invitado —abrirlo marca que lo abrió—, `/pagar/<token>` es el cobro de una
+pareja, y todo `/panel` lleva sesión dentro. La aplicación los manda ya con
+`private, no-store`; nginx los respeta solo, sin regla extra.
+
+**Un CDN no cambia nada de esto.** Cloudflare ignora `Vary` salvo
+`accept-encoding`, así que allí hay que escribir la misma regla —una Cache Rule
+que salte la caché cuando venga esa cookie— y no vale con confiar en la
+cabecera.
+
 ## 6. Comprobación final
 
 | Prueba | Esperado |

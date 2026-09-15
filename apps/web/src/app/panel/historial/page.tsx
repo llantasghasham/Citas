@@ -27,6 +27,22 @@ function detalle(metadata: unknown): string {
 }
 
 /**
+ * Cuánto detalle se enseña antes de plegar el resto.
+ *
+ * Una prueba de correo anota el recibo entero del servidor —`250 OK id=…`, el
+ * remitente, los aceptados— y son cinco líneas que empujan todas las demás
+ * columnas. Leer un historial es recorrerlo con la vista, y una fila que ocupa
+ * lo que cinco hace justo lo contrario.
+ *
+ * SE PLIEGA, NO SE RECORTA. El resto sigue ahí, a un clic, dentro de un
+ * `<details>` sin JavaScript de cliente: un historial que esconde parte de lo
+ * que guardó no sirve para lo único que sirve un historial, que es que alguien
+ * pueda comprobar qué pasó de verdad. El identificador que da el servidor de
+ * correo es justo lo que hace falta el día que alguien diga que no le llegó.
+ */
+const DETALLE_CORTO = 120;
+
+/**
  * EL HISTORIAL: quién hizo qué, cuándo y desde dónde.
  *
  * Los datos ya se guardaban —setenta y cuatro acciones distintas, desde el
@@ -193,9 +209,20 @@ export default async function HistorialPage({ searchParams }: PageProps) {
                     </span>
                   </td>
                   <td className="py-2 pe-4 text-xs text-[#6a6456]">
-                    <span className="block font-mono" dir="ltr">
-                      {detalle(row.metadata)}
-                    </span>
+                    {detalle(row.metadata).length > DETALLE_CORTO ? (
+                      <details className="block">
+                        <summary className="cursor-pointer font-mono" dir="ltr">
+                          {`${detalle(row.metadata).slice(0, DETALLE_CORTO)}…`}
+                        </summary>
+                        <span className="mt-1 block font-mono break-all" dir="ltr">
+                          {detalle(row.metadata)}
+                        </span>
+                      </details>
+                    ) : (
+                      <span className="block font-mono" dir="ltr">
+                        {detalle(row.metadata)}
+                      </span>
+                    )}
                     <span className="block font-mono opacity-60" dir="ltr">
                       {row.entity} {row.entityId}
                     </span>

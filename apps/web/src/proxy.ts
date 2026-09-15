@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { guestCookieName } from '@/lib/rsvp/cookie';
+
 /**
  * Runs before every document request. Named `proxy` because Next 16 deprecated
  * `middleware`; the runtime is Node, and it cannot be configured.
@@ -37,7 +39,61 @@ export function proxy(request: NextRequest): NextResponse {
   const requested = request.nextUrl.searchParams.get('lang');
   if (requested !== null && requested.length > 0) headers.set(LANG_HINT_HEADER, requested);
 
-  return NextResponse.next({ request: { headers } });
+  const response = NextResponse.next({ request: { headers } });
+  cacheInvitation(request, response);
+  return response;
+}
+
+/**
+ * QUE LA INVITACIÓN SIGA VIVA AUNQUE ESTO NO LO ESTÉ.
+ *
+ * Una boda ocurre una vez. Si la invitación no abre la tarde que se manda el
+ * WhatsApp, no hay disculpa que lo arregle — y el patrón real no es tráfico
+ * constante: son trescientas aperturas en dos horas, todas en el minuto
+ * siguiente a que alguien reenvíe el enlace al grupo de la familia.
+ *
+ * Para casi todas esas trescientas, la página es LA MISMA: llegan por un
+ * reenvío, sin enlace personal y sin cookie. Eso es lo que se puede guardar
+ * fuera —en nginx, en un CDN— y lo que hace que el sitio siga sirviendo la
+ * invitación aunque la aplicación se haya caído: `stale-if-error`.
+ *
+ * QUIEN TRAE COOKIE NO SE GUARDA, y por eso esto mira la cookie en vez de poner
+ * una cabecera fija. Esa persona ya contestó, y su página la saluda por su
+ * nombre y le enseña su mesa: guardarla sería servírsela al siguiente. `private,
+ * no-store`, como la foto de perfil y por lo mismo.
+ *
+ * NO SE PUEDE PONER `Vary: cookie` DESDE AQUÍ, y queda escrito para que nadie
+ * lo vuelva a intentar: Next REESCRIBE esa cabecera con la suya —`rsc`,
+ * `next-router-*`, `Accept-Encoding`— y se lleva por delante lo que ponga el
+ * proxy Y lo que ponga `headers()` en `next.config.mjs`. Comprobado contra el
+ * servidor compilado, las dos formas.
+ *
+ * Así que quien tiene que distinguir es la caché de delante, y hay que
+ * configurarla: nginx no guarda nada cuando viene la cookie del invitado. El
+ * trozo exacto está en `docs/DESPLIEGUE-VPS.md`. Da igual de todos modos para
+ * un CDN como Cloudflare, que ignora `Vary` salvo `accept-encoding`: allí la
+ * regla hay que escribirla igualmente.
+ *
+ * El minuto de `s-maxage` es corto a propósito: corregir una invitación y que
+ * siga saliendo la anterior durante una hora es peor que consultar de más. Lo
+ * que dura de verdad es `stale-if-error`: un día entero sirviendo la última
+ * copia buena si el origen deja de contestar.
+ */
+function cacheInvitation(request: NextRequest, response: NextResponse): void {
+  const path = request.nextUrl.pathname;
+  if (!path.startsWith('/i/')) return;
+
+  const slug = path.slice('/i/'.length).split('/')[0] ?? '';
+  if (slug.length === 0) return;
+
+  const personal = request.cookies.get(guestCookieName(slug)) !== undefined;
+
+  response.headers.set(
+    'cache-control',
+    personal
+      ? 'private, no-store'
+      : 'public, max-age=0, s-maxage=60, stale-while-revalidate=300, stale-if-error=86400',
+  );
 }
 
 export const config = {

@@ -5,9 +5,7 @@ import { Pool } from 'pg';
 // la otra el fallo no sería un error, sería escribir en la base equivocada. El
 // camino relativo es el mismo trato que ya hay en la otra dirección:
 // `apps/web/tests/cola.test.ts` importa el `db.ts` de aquí.
-import { controlDatabaseName, urlForDatabase } from '../../web/src/lib/db/routing.js';
-
-import { readConfig } from './config.js';
+import { controlDatabaseName, controlUrl, urlForDatabase } from '../../web/src/lib/db/routing.js';
 
 /**
  * A QUÉ BASE VA CADA CONSULTA, también aquí.
@@ -34,9 +32,17 @@ import { readConfig } from './config.js';
 
 let control: Pool | undefined;
 
-/** La base de control. En modo compartido es también la de todo lo demás. */
+/**
+ * La base de control. En modo compartido es también la de todo lo demás.
+ *
+ * Lee `DATABASE_URL` directamente y NO por `readConfig()`, que además exige el
+ * token de la puerta de servicio. Ese token no tiene nada que ver con a qué base
+ * se conecta esto, y atarlos tenía un coste real: las pruebas de este módulo
+ * salían «5 pruebas, 0 pasadas, 0 fallidas» cuando faltaba el token — ni verde
+ * ni rojo, que es la peor de las tres.
+ */
 export function controlPool(): Pool {
-  control ??= new Pool({ connectionString: readConfig().databaseUrl, max: 4 });
+  control ??= new Pool({ connectionString: controlUrl(), max: 4 });
   return control;
 }
 
