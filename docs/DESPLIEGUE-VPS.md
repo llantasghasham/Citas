@@ -246,11 +246,21 @@ allowed here»— y se queda la web entera caída por intentar hacerla más robu
 **Primero la despensa**, en el `http`. En aaPanel eso es el archivo principal de
 nginx, no el del sitio:
 
-```bash
+```nginx
 # /www/server/nginx/conf/nginx.conf — dentro de http { … }, junto a los otros
 # ajustes globales y ANTES de los `include` de los sitios.
 proxy_cache_path /var/cache/nginx/citas levels=1:2 keys_zone=citas:10m
                  max_size=100m inactive=7d use_temp_path=off;
+
+# QUIÉN NO SE CACHEA. La cookie del invitado lleva el SLUG dentro
+# —`citas_guest_<slug>`— así que cada boda tiene la suya: mirar una sola con
+# `$cookie_citas_guest_<slug>` cubriría esa invitación y ninguna más, y las
+# demás se cachearían con la página personal dentro. Se mira el encabezado
+# entero, que vale para todas.
+map $http_cookie $citas_sin_cache {
+    default            0;
+    "~*citas_guest_"   1;
+}
 ```
 
 Y la carpeta, del usuario con el que corre nginx:
@@ -270,8 +280,8 @@ proxy_cache citas;
 # página le saluda por su nombre y le enseña su mesa: ni se guarda ni se le
 # sirve nada guardado. Hace falta escribirlo porque Next REESCRIBE la cabecera
 # `Vary` con la suya, así que no llega un `Vary: Cookie` que nginx pueda usar.
-proxy_cache_bypass $cookie_citas_guest_ejemplo_ar $http_authorization;
-proxy_no_cache     $cookie_citas_guest_ejemplo_ar $http_authorization;
+proxy_cache_bypass $citas_sin_cache $http_authorization;
+proxy_no_cache     $citas_sin_cache $http_authorization;
 
 # Y ESTO es lo que la mantiene viva: si el origen no contesta, se sigue
 # sirviendo la última copia buena en vez de un 502.

@@ -1346,7 +1346,11 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   `next.config.mjs` — comprobado contra el servidor compilado, las dos formas.
   Así que quien distingue es la caché de delante y hay que configurarla: el
   trozo de nginx está en `docs/DESPLIEGUE-VPS.md`, con la prueba que lo cierra
-  —parar el servicio y pedir la invitación: 200—. Con Cloudflare da igual de
+  —parar el servicio y pedir la invitación: 200—. Y esa regla mira el
+  ENCABEZADO `Cookie` entero con un `map`, no una cookie concreta: la del
+  invitado lleva el SLUG dentro (`citas_guest_<slug>`), así que cada boda tiene
+  la suya y apuntar a una sola habría cacheado la página personal de todas las
+  demás. Con Cloudflare da igual de
   todos modos: ignora `Vary` salvo `accept-encoding`.
 - Una invitación se dibuja UNA vez por versión aunque la pidan doscientos a la
   vez (`lib/render/once.ts`), y nunca hay más de dos Chromium dibujando. Es el
