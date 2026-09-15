@@ -538,27 +538,14 @@ async function tenancyCheck(): Promise<HealthCheck> {
   }
 
   if (mode === 'shared') {
-    // NO se cuentan los números conectados, y no por pereza: `whatsappConnection`
-    // es trabajo de la oficina y consultarla con `controlDb()` es justo lo que
-    // `lint:planes` prohíbe — lo cazó al escribir esto. Tampoco hace falta: la
-    // condición es cierta con un número o con cero.
-    //
-    // El servicio de WhatsApp se conecta a UNA base con SQL directo y no sabe
-    // recorrer una por oficina. Con la flota encendida se niega a arrancar, a
-    // propósito: si arrancara, la web encolaría los mensajes en la base de la
-    // oficina y ese proceso seguiría mirando la común. No saldría ninguno, y
-    // nada lo diría. Se dice AQUÍ, que es donde alguien lee «para darle a cada
-    // una la suya», y no cuando un invitado no reciba su invitación.
     return {
       key: 'tenancy',
       level: 'warn',
       detail:
         'Todas las oficinas comparten una base de datos. Lo que las separa es el ' +
-        'filtro por oficina del código. Para darle a cada una la suya: TENANCY=fleet, ' +
-        'antes `npm run db:fleet -- migrar` y luego `db:split -- copiar`. PERO NO ' +
-        'TODAVÍA si usa WhatsApp por QR: ese servicio se conecta a una sola base y ' +
-        'con la flota se niega a arrancar, porque encolar mensajes que no saldrían ' +
-        'nunca sería peor.',
+        'filtro por oficina del código. Para darle a cada una la suya: primero ' +
+        '`npm run db:fleet -- migrar`, luego `db:split -- copiar`, luego ' +
+        'TENANCY=fleet, mirar, y solo entonces `db:split -- limpiar`.',
     };
   }
 

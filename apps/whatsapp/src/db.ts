@@ -1,6 +1,5 @@
-import { Pool } from 'pg';
-
-import { clamp, fromEnv, LIMITS, readConfig, type Tunables } from './config.js';
+import { clamp, fromEnv, LIMITS, type Tunables } from './config.js';
+import { controlPool, offices, poolFor, rememberHome } from './planes.js';
 
 /**
  * Acceso a la base, con SQL a secas.
@@ -9,13 +8,13 @@ import { clamp, fromEnv, LIMITS, readConfig, type Tunables } from './config.js';
  * Arrastrar el cliente generado de la web hasta aquí ataría un proceso de larga
  * vida al ciclo de construcción de Next, y lo que hace falta son ocho consultas.
  * Todas parametrizadas; en este archivo no se concatena nada.
+ *
+ * A QUÉ base va cada una lo decide `planes.ts`, y son dos sitios distintos: los
+ * números y sus mensajes están en la base de la OFICINA —una por oficina cuando
+ * `TENANCY=fleet`, la común cuando no— y el freno en `Setting`, que es del
+ * ARRENDADOR. Confundirlos no da un error: da un freno que no se aplica o un
+ * mensaje que nadie encuentra.
  */
-let pool: Pool | undefined;
-
-export function getPool(): Pool {
-  pool ??= new Pool({ connectionString: readConfig().databaseUrl, max: 4 });
-  return pool;
-}
 
 export type Status = 'pending' | 'qr' | 'connected' | 'disconnected';
 
@@ -34,15 +33,42 @@ export interface ConnectionRow {
 const CONNECTION_COLUMNS =
   'id, "tenantId", name, phone, status, "authEnc", "dailyCap", "sentToday", "sentDay"';
 
+/**
+ * Todos los números de TODAS las oficinas.
+ *
+ * Una oficina que falle no se lleva por delante a las demás: se anota y se
+ * sigue. Con una base por oficina, que una esté caída es un caso normal —está
+ * migrando, la acaban de crear, el disco se llenó— y parar el reparto de las
+ * otras por eso sería convertir el problema de una en el de todas.
+ */
 export async function listConnections(): Promise<ConnectionRow[]> {
-  const { rows } = await getPool().query<ConnectionRow>(
-    `SELECT ${CONNECTION_COLUMNS} FROM "WhatsappConnection"`,
-  );
-  return rows;
+  const todas: ConnectionRow[] = [];
+
+  for (const office of await offices()) {
+    try {
+      const { rows } = await office.pool.query<ConnectionRow>(
+        `SELECT ${CONNECTION_COLUMNS} FROM "WhatsappConnection"`,
+      );
+      for (const row of rows) rememberHome(row.id, office.database);
+      todas.push(...rows);
+    } catch (error) {
+      console.error(`[wa] ${office.database}: no se pudo leer sus números: ${String(error)}`);
+    }
+  }
+
+  return todas;
 }
 
 export async function getConnection(id: string): Promise<ConnectionRow | undefined> {
-  const { rows } = await getPool().query<ConnectionRow>(
+  let pool;
+  try {
+    pool = await poolFor(id);
+  } catch {
+    // No está en ninguna oficina: para quien pregunta es «no existe», que es
+    // exactamente lo que es.
+    return undefined;
+  }
+  const { rows } = await pool.query<ConnectionRow>(
     `SELECT ${CONNECTION_COLUMNS} FROM "WhatsappConnection" WHERE id = $1`,
     [id],
   );
@@ -54,7 +80,7 @@ export async function setStatus(
   status: Status,
   extra: { qrCode?: string | null; phone?: string | null; lastError?: string | null } = {},
 ): Promise<void> {
-  await getPool().query(
+  await (await poolFor(id)).query(
     `UPDATE "WhatsappConnection"
         SET status = $2::"WhatsappStatus",
             "qrCode" = COALESCE($3, "qrCode"),
@@ -75,11 +101,14 @@ export async function setStatus(
 }
 
 export async function clearQr(id: string): Promise<void> {
-  await getPool().query(`UPDATE "WhatsappConnection" SET "qrCode" = NULL WHERE id = $1`, [id]);
+  await (await poolFor(id)).query(
+    `UPDATE "WhatsappConnection" SET "qrCode" = NULL WHERE id = $1`,
+    [id],
+  );
 }
 
 export async function saveAuth(id: string, authEnc: string): Promise<void> {
-  await getPool().query(
+  await (await poolFor(id)).query(
     `UPDATE "WhatsappConnection" SET "authEnc" = $2, "updatedAt" = now() WHERE id = $1`,
     [id, authEnc],
   );
@@ -87,7 +116,7 @@ export async function saveAuth(id: string, authEnc: string): Promise<void> {
 
 /** Cerrar sesión borra las credenciales: si no, se reconectaría solo. */
 export async function forgetAuth(id: string): Promise<void> {
-  await getPool().query(
+  await (await poolFor(id)).query(
     `UPDATE "WhatsappConnection"
         SET "authEnc" = NULL, "qrCode" = NULL, phone = NULL,
             status = 'disconnected'::"WhatsappStatus", "updatedAt" = now()
@@ -129,7 +158,7 @@ export async function claimNext(
   day: string,
   cap: number,
 ): Promise<QueuedMessage | undefined> {
-  const client = await getPool().connect();
+  const client = await (await poolFor(connectionId)).connect();
   try {
     await client.query('BEGIN');
 
@@ -197,15 +226,28 @@ export async function claimNext(
  * puede mirar el teléfono y ver si llegó.
  */
 export async function reclaimExpired(): Promise<number> {
-  const { rowCount } = await getPool().query(
-    `UPDATE "WhatsappMessage"
-        SET status = 'sent_unknown',
-            "claimedBy" = NULL,
-            "leaseUntil" = NULL,
-            error = COALESCE(error, 'El repartidor se detuvo a mitad del envío. No consta si llegó.')
-      WHERE status = 'processing' AND "leaseUntil" < now()`,
-  );
-  return rowCount ?? 0;
+  let total = 0;
+
+  // Por TODAS las oficinas: un arriendo vencido es de un proceso muerto, y esos
+  // no distinguen de quién era la fila. Una oficina que falle se anota y se
+  // sigue con las demás.
+  for (const office of await offices()) {
+    try {
+      const { rowCount } = await office.pool.query(
+        `UPDATE "WhatsappMessage"
+            SET status = 'sent_unknown',
+                "claimedBy" = NULL,
+                "leaseUntil" = NULL,
+                error = COALESCE(error, 'El repartidor se detuvo a mitad del envío. No consta si llegó.')
+          WHERE status = 'processing' AND "leaseUntil" < now()`,
+      );
+      total += rowCount ?? 0;
+    } catch (error) {
+      console.error(`[wa] ${office.database}: no se pudo recuperar lo vencido: ${String(error)}`);
+    }
+  }
+
+  return total;
 }
 
 /**
@@ -217,9 +259,13 @@ export async function reclaimExpired(): Promise<number> {
 export async function markSent(
   messageId: string,
   worker: string,
+  // La CONEXIÓN, que antes no hacía falta: con una base por oficina es lo que
+  // dice en cuál está este mensaje. Sin ella habría que buscarlo en todas, o
+  // —peor— escribir en la primera que conteste.
+  connectionId: string,
   providerMessageId: string | null,
 ): Promise<boolean> {
-  const { rowCount } = await getPool().query(
+  const { rowCount } = await (await poolFor(connectionId)).query(
     `UPDATE "WhatsappMessage"
         SET status = 'sent', "sentAt" = now(), error = NULL,
             "providerMessageId" = $3, "claimedBy" = NULL, "leaseUntil" = NULL
@@ -241,7 +287,7 @@ export async function markFailed(
   day: string,
   reason: string,
 ): Promise<void> {
-  const client = await getPool().connect();
+  const client = await (await poolFor(connectionId)).connect();
   try {
     await client.query('BEGIN');
     const { rowCount } = await client.query(
@@ -300,7 +346,7 @@ export async function readTunables(): Promise<Tunables> {
 
   let stored = new Map<string, string>();
   try {
-    const { rows } = await getPool().query<{ key: string; value: string | null }>(
+    const { rows } = await controlPool().query<{ key: string; value: string | null }>(
       `SELECT key, value FROM "Setting" WHERE key = ANY($1::text[])`,
       [['WHATSAPP_DELAY_MIN', 'WHATSAPP_DELAY_MAX', 'WHATSAPP_WARMUP_CAP']],
     );

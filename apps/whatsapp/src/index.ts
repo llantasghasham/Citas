@@ -2,7 +2,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { timingSafeEqual } from 'node:crypto';
 
 import { readConfig } from './config.js';
-import { getConnection, getPool, listConnections } from './db.js';
+import { getConnection, listConnections } from './db.js';
+import { closeAllPools, isFleet, offices } from './planes.js';
 import { runSender, stopSender } from './sender.js';
 import { closeAllSockets, isUp, logoutSession, resumeAll, startSession } from './sessions.js';
 
@@ -51,6 +52,11 @@ const server = createServer((request, response) => {
           ok: true,
           total: rows.length,
           up: rows.filter((row) => isUp(row.id)).length,
+          // Cuántas bases se están recorriendo. En modo compartido es 1 y no
+          // significa nada; con la flota encendida es lo que distingue «no hay
+          // números conectados» de «no estoy mirando donde están».
+          offices: (await offices()).length,
+          fleet: isFleet(),
         });
         return;
       }
@@ -133,7 +139,7 @@ async function shutdown(signal: string): Promise<void> {
     await stopSender();
     closeAllSockets();
     await new Promise<void>((resolve) => server.close(() => resolve()));
-    await getPool().end();
+    await closeAllPools();
     console.log('[wa] cerrado');
   } catch (error) {
     console.error(`[wa] al cerrar: ${String(error)}`);

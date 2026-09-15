@@ -99,7 +99,7 @@ async function drainOne(connection: ConnectionRow): Promise<boolean> {
     const sent = await socket.sendMessage(exists.jid, { text: message.body });
     // El identificador de WhatsApp, cuando lo da: es el único asa para
     // averiguar después si un mensaje dudoso llegó de verdad.
-    const wrote = await markSent(message.id, WORKER, sent?.key?.id ?? null);
+    const wrote = await markSent(message.id, WORKER, connection.id, sent?.key?.id ?? null);
     if (!wrote) {
       // El arriendo venció mientras se enviaba y otro proceso ya dio la fila
       // por dudosa. No se pisa: esa duda es información.

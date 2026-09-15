@@ -111,8 +111,8 @@ describe('la cola de WhatsApp', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, (
     const mine = await claimNext(id, 'dueño', day, 200);
     assert.ok(mine !== undefined);
 
-    assert.equal(await markSent(mine.id, 'intruso', null), false);
-    assert.equal(await markSent(mine.id, 'dueño', 'WA-123'), true);
+    assert.equal(await markSent(mine.id, 'intruso', id, null), false);
+    assert.equal(await markSent(mine.id, 'dueño', id, 'WA-123'), true);
     const row = await controlDb().whatsappMessage.findFirstOrThrow();
     assert.equal(row.providerMessageId, 'WA-123');
   });
@@ -180,7 +180,7 @@ describe('la cola de WhatsApp', { skip: HAS_DB ? false : 'sin DATABASE_URL' }, (
       // Uno sale de verdad; el otro se queda en la cola.
       const claimed = await claimNext(connectionId, 'w1', day, 200);
       assert.ok(claimed !== undefined);
-      assert.equal(await markSent(claimed.id, 'w1', 'wamid.1'), true);
+      assert.equal(await markSent(claimed.id, 'w1', connectionId, 'wamid.1'), true);
 
       assert.equal(await deleteConnection(scope, connectionId, fixture.get().userId), true);
 

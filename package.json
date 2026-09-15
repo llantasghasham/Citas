@@ -20,7 +20,7 @@
     "verify:e2e": "npm run verify:e2e --workspace @citas/web",
     "test": "npm run test --workspace @citas/web",
     "test:unit": "npm run test:unit --workspace @citas/web",
-    "test:integration": "npm run test:integration --workspace @citas/web",
+    "test:integration": "npm run test:integration --workspace @citas/web && npm run test --workspace @citas/whatsapp",
     "db:seed": "npm run db:seed --workspace @citas/web",
     "db:studio": "npm run db:studio --workspace @citas/web",
     "mobile": "npm run start --workspace @citas/mobile",

@@ -889,17 +889,39 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   oficina (`eachOffice`). No hay atajo: preguntarle a todas a la vez es
   exactamente lo que una base por oficina impide. Una oficina que falle no se
   lleva por delante a las demás.
-- EL SERVICIO DE WHATSAPP TODAVÍA NO SABE DE LA FLOTA, y por eso `TENANCY=fleet`
-  no se puede encender en una instalación que use el número por QR. Se conecta a
-  UNA base con SQL directo: con la flota, la web encolaría los mensajes en la
-  base de la oficina y ese proceso seguiría mirando la común — no saldría
-  ninguno, y nada lo diría. Ni un error, ni una fila en el historial, ni un
-  estado distinto en la pantalla; y la fila de la conexión existiría en las DOS
-  bases, con las credenciales de sesión duplicadas y escribiéndose por separado.
-  Así que FALLA CERRADO Y RUIDOSO: el servicio se niega a arrancar con
-  `TENANCY=fleet`, como el emisor de consola en producción y el almacén en
-  memoria. Y `/panel/sistema` lo dice en la misma fila donde recomienda el
-  cambio, que es donde alguien lo va a leer.
+- EL SERVICIO DE WHATSAPP RECORRE UNA BASE POR OFICINA (`apps/whatsapp/src/planes.ts`).
+  No lo hacía, y no fallaba: se conectaba a UNA base, así que con la flota
+  encendida la web encolaba en la base de la oficina y este proceso seguía
+  mirando la común. No salía ningún mensaje y la cola se veía llena y quieta —
+  sin un error, sin una línea en el registro, y con la fila de la conexión
+  existiendo en las DOS bases, credenciales de sesión de Baileys incluidas.
+- LO QUE HACE QUE NO SEA UN CAMBIO GRANDE: el modo COMPARTIDO se trata como una
+  flota de UNA base. Hay un solo camino en el resto del código —siempre se
+  recorren oficinas— y el modo viejo deja de ser un caso especial que se prueba
+  menos.
+- Y los DOS PLANOS también aquí: la base de CONTROL para saber qué oficinas hay
+  y para leer el freno de `Setting`, que es del arrendador; la de la OFICINA
+  para los números y sus mensajes. Confundirlos no da un error: da un freno que
+  no se aplica o un mensaje que nadie encuentra.
+- Las oficinas se releen CADA MINUTO, como el freno y por lo mismo: dar de alta
+  una oficina no puede costar que todas las demás vuelvan a escanear su QR. Una
+  oficina que falle se anota y se sigue con las otras — con una base por oficina,
+  que una esté caída es normal, y parar el reparto de todas por eso sería
+  convertir el problema de una en el de todas.
+- `poolFor(id)` RECUERDA en qué base vive cada conexión: el id no cambia de base
+  nunca. Y si no está en ninguna, LANZA en vez de caer a la de control: escribir
+  el estado de una conexión en la base equivocada es peor que no escribirlo.
+- `markSent` lleva ahora el id de la CONEXIÓN, que antes no hacía falta. Es lo
+  que dice en qué base está ese mensaje; sin él habría que buscarlo en todas o
+  —peor— escribir en la primera que conteste.
+- Se prueba contra DOS BASES DE VERDAD (`apps/whatsapp/tests/planes.test.ts`),
+  creadas y borradas por la prueba: que se ven los números de las dos, que
+  escribir el estado de uno va a SU base y deja intacto el de la otra, que un id
+  que no está en ninguna es «no existe» y no una excepción —si lanzara, quien
+  pulsó «Conectar» vería «error interno» en vez de «ese número no está»— y que
+  sin flota vuelve a ser una sola base. La primera versión de esa prueba se
+  tragaba el error de su propia preparación y encontró dos oficinas viejas de
+  otra prueba: verde donde tenía que haber rojo.
 - El interruptor es `TENANCY`, y el orden de encenderlo NO es negociable:
   PRIMERO `npm run db:fleet -- migrar` —la base de cada oficina se COPIA de la
   plantilla, así que una plantilla atrasada da una oficina atrasada y el copiado
