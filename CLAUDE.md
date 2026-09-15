@@ -1016,6 +1016,28 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
 - El guion se NIEGA a pisar un `STORAGE_ENDPOINT` que ya exista. Reescribir el
   almacén en uso deja las filas de la base apuntando a objetos del almacén
   anterior, y eso se descubre como galerías rotas en la ficha de gente real.
+- LO PRIMERO que hace el guion es CONSEGUIR el binario y comprobar que
+  ARRANCA, antes de crear un usuario, una carpeta o una credencial. Estaba en
+  medio, y el día que `dl.min.io` empezó a contestar **410 Gone** —MinIO dejó de
+  publicar el servidor de la edición comunitaria— el guion se paró en seco con
+  un `curl: (22)` a secas, con media máquina ya preparada. Ahora prueba varias
+  direcciones, DICE cuál falló y con qué código, y admite `MINIO_URL=` o
+  `MINIO_BIN=` para una copia propia. Un `curl -f` calla el código y `set -e`
+  mata el guion antes de poder contarlo: por eso ahí no lleva `-f`.
+- Y comprueba que lo descargado es un ELF que responde a `--version`. Un 200 con
+  una página de error dentro —un proxy de empresa, un portal cautivo— se
+  instalaba igual, y el fallo aparecía después en `systemctl`, sin ninguna pista.
+- El bucket ya NO lo crea `mc`. Era un SEGUNDO binario traído de internet, es
+  decir una segunda forma de que la instalación se caiga por algo que no es de
+  este proyecto. Lo hace `npm run storage:bucket`, con la firma del propio
+  proyecto —la comprobada contra el vector oficial de AWS— y la llave vacía, que
+  es la dirección DEL BUCKET y el único sitio que firma algo que no es un
+  objeto; `tests/almacen-s3.test.ts` comprueba que sale `/<bucket>/`.
+- Y lo que ese paso comprueba no es que el bucket exista: escribe, lee y borra
+  un objeto POR EL PUERTO DEL PRODUCTO con las variables recién escritas. Si
+  termina en verde, lo probado es la instalación entera. `mc` decía «bucket
+  creado» con su propio código y sus propias credenciales, que no prueba nada de
+  lo que va a correr después.
 - LO QUE EL GUION NO PUEDE HACER y por eso lo dice al terminar: respaldar.
   `backup-citas.sh` solo copia PostgreSQL, y las fotos viven en
   `/var/lib/minio`. Una boda sin sus fotos se arregla; el catálogo de
@@ -1220,6 +1242,7 @@ npm run test:integration # la suite entera, y se NIEGA a correr sin DATABASE_URL
 npm run db:fleet   # la flota: -- migrar | estado | crear <subdominio>
 npm run db:split   # mueve cada oficina a su base: -- copiar | limpiar
 npm run sinpe:check # revisa los buzones de SINPE (lo llama el temporizador)
+npm run storage:bucket # crea el bucket del almacen y comprueba ida y vuelta
 npm test           # las pruebas (necesitan PostgreSQL; sin él se saltan)
 ```
 

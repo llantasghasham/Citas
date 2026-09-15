@@ -4,18 +4,32 @@
 #
 #   sudo bash deploy/minio-instalar.sh
 #
+# Y si el binario de MinIO no se puede descargar desde aquí —ver abajo—, con la
+# dirección puesta a mano o con el archivo ya bajado:
+#
+#   sudo MINIO_URL=https://…/minio  bash deploy/minio-instalar.sh
+#   sudo MINIO_BIN=/root/minio      bash deploy/minio-instalar.sh
+#
 # QUÉ HACE, en orden, y todo es idempotente: ejecutarlo dos veces no rompe nada
 # y no vuelve a generar credenciales.
 #
-#   1. Descarga MinIO y lo deja en /usr/local/bin.
+#   1. CONSIGUE el binario de MinIO y comprueba que ARRANCA — lo primero de
+#      todo, antes de tocar nada de la máquina.
 #   2. Crea el usuario `minio` y /var/lib/minio, que no los tiene nadie más.
 #   3. GENERA las credenciales aquí, con /dev/urandom. No salen de esta máquina
 #      y no están escritas en ningún archivo del repositorio.
 #   4. Arranca el servicio, SOLO en 127.0.0.1.
-#   5. Crea el bucket.
-#   6. CIFRA la secreta con la llave de la instalación y escribe las seis
+#   5. CIFRA la secreta con la llave de la instalación y escribe las cinco
 #      variables en apps/web/.env, que ya está en 600.
+#   6. Crea el bucket y comprueba de verdad que se puede escribir, leer y
+#      borrar — con el código del producto, no con otro cliente.
 #   7. Reinicia la web.
+#
+# EL ORDEN DE 1 IMPORTA. Estaba en medio, y el día que `dl.min.io` empezó a
+# contestar 410 el guion se paró en seco con un «curl: (22)» a secas después de
+# haber dejado media máquina preparada. Lo que se trae de internet se trae y se
+# comprueba ANTES de crear un usuario, una carpeta o una credencial: así un
+# fallo no deja nada detrás y volver a ejecutarlo es limpio.
 #
 # LO QUE NO HACE, y hay que saberlo: respaldar. Las fotos quedan en
 # /var/lib/minio y el respaldo de este proyecto solo copia PostgreSQL. Al final
@@ -29,8 +43,14 @@ DATOS=/var/lib/minio/datos
 ENTORNO=/etc/minio/entorno
 PUERTO=9000
 
+# La versión FIJADA. Se pone una concreta y no «la última» porque la última es
+# justo lo que dejó de existir: una dirección con un número dentro se puede
+# comprobar, y el día que cambie se cambia aquí y se ve en el historial.
+VERSION_MINIO="${VERSION_MINIO:-RELEASE.2025-10-15T17-29-55Z}"
+
 rojo() { printf '\033[31m%s\033[0m\n' "$*"; }
 ok()   { printf '  \033[32m✓\033[0m %s\n' "$*"; }
+aviso(){ printf '  \033[33m·\033[0m %s\n' "$*"; }
 paso() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
 [ "$(id -u)" -eq 0 ] || { rojo "Hay que ejecutarlo como root (sudo)."; exit 1; }
@@ -44,19 +64,106 @@ if grep -q '^STORAGE_ENDPOINT=' "$ENV_FILE"; then
   echo "  la base apuntando a objetos que están en el almacén anterior, y eso se"
   echo "  descubre como galerías rotas en la ficha de gente real."
   echo
-  echo "  Para empezar de cero, quite a mano las seis líneas STORAGE_* y vuelva."
+  echo "  Si lo que falló fue el último paso —el bucket— no hace falta repetir"
+  echo "  nada de esto. Basta con:"
+  echo
+  echo "    cd $DIR && npm run storage:bucket --workspace @citas/web"
+  echo
+  echo "  Para empezar de cero, quite a mano las líneas STORAGE_* y vuelva."
   exit 1
 fi
 
 # ------------------------------------------------------------------ el binario
 paso "MinIO"
-if [ -x /usr/local/bin/minio ]; then
-  ok "ya estaba instalado"
+
+case "$(uname -m)" in
+  x86_64|amd64)   ARCO=amd64 ;;
+  aarch64|arm64)  ARCO=arm64 ;;
+  *) rojo "Arquitectura no contemplada: $(uname -m). Baje el binario a mano y use MINIO_BIN=/ruta/minio."; exit 1 ;;
+esac
+
+# Comprueba que lo descargado es un ejecutable de verdad y que ARRANCA.
+#
+# Sin esto, un servidor que contesta una página de error con un 200 —un portal
+# cautivo, un proxy de empresa, una CDN enfadada— se instalaba como si fuera el
+# binario y el fallo aparecía después, en `systemctl`, sin ninguna pista.
+sirve() {
+  local archivo="$1"
+  [ -s "$archivo" ] || return 1
+  head -c 4 "$archivo" | grep -qa 'ELF' || return 1
+  chmod 0755 "$archivo"
+  "$archivo" --version >/dev/null 2>&1
+}
+
+if [ -n "${MINIO_BIN:-}" ]; then
+  # Alguien lo bajó por su cuenta. Se comprueba igual: la comprobación no es
+  # desconfianza, es que un archivo a medias se ve idéntico a uno entero.
+  sirve "$MINIO_BIN" || { rojo "$MINIO_BIN no es un binario de MinIO que arranque aquí."; exit 1; }
+  install -m 0755 "$MINIO_BIN" /usr/local/bin/minio
+  ok "instalado desde $MINIO_BIN"
+elif [ -x /usr/local/bin/minio ] && sirve /usr/local/bin/minio; then
+  ok "ya estaba instalado ($(/usr/local/bin/minio --version 2>/dev/null | head -1))"
 else
-  curl -fsSL -o /usr/local/bin/minio \
-    https://dl.min.io/server/minio/release/linux-amd64/minio
-  chmod 0755 /usr/local/bin/minio
-  ok "descargado en /usr/local/bin/minio"
+  TMP_MINIO="$(mktemp)"
+  trap 'rm -f "${TMP_MINIO:-}"' EXIT
+
+  CANDIDATAS=()
+  if [ -n "${MINIO_URL:-}" ]; then CANDIDATAS+=("$MINIO_URL"); fi
+  CANDIDATAS+=(
+    "https://dl.min.io/server/minio/release/linux-$ARCO/archive/minio.$VERSION_MINIO"
+    "https://dl.min.io/server/minio/release/linux-$ARCO/minio"
+  )
+
+  CONSEGUIDO=""
+  for url in "${CANDIDATAS[@]}"; do
+    # `-f` NO: con él, `curl` se calla el código y `set -e` mata el guion antes
+    # de poder decir cuál falló y con qué. Lo que se quiere aquí es justo lo
+    # contrario: probar, contar, y seguir con la siguiente.
+    # El `|| true` y no un `|| echo 000`: `curl` YA escribe el código —«000»
+    # cuando ni siquiera pudo conectar— y añadirle otro daba «000000».
+    codigo="$(curl -sSL --max-time 600 -o "$TMP_MINIO" -w '%{http_code}' "$url" 2>/dev/null)" || true
+    [ -n "$codigo" ] || codigo=000
+    if [ "$codigo" = "200" ] && sirve "$TMP_MINIO"; then
+      CONSEGUIDO="$url"
+      break
+    fi
+    aviso "$codigo — $url"
+  done
+
+  if [ -z "$CONSEGUIDO" ]; then
+    echo
+    rojo "No se pudo descargar MinIO desde ninguna de las direcciones de arriba."
+    cat <<EOF
+
+  Esto NO es un fallo de esta máquina ni de este proyecto. MinIO dejó de
+  publicar el binario del servidor de la edición comunitaria: la dirección de
+  siempre contesta 410 «Gone», que quiere decir que se quitó a propósito.
+
+  No se ha tocado nada: no hay usuario nuevo, ni carpeta, ni credenciales, ni
+  una línea escrita en el .env. Se puede volver a ejecutar tal cual.
+
+  DOS SALIDAS, y las dos terminan aquí mismo:
+
+  1. Si encuentra una dirección que sirva —la de un archivo de una versión
+     concreta, o una copia propia— pásesela:
+
+       sudo MINIO_URL=https://…/minio bash $0
+
+  2. Si ya tiene el archivo en la máquina (bajado a mano, sacado de la imagen
+     de contenedor, o copiado de otro servidor):
+
+       sudo MINIO_BIN=/ruta/al/minio bash $0
+
+  En los dos casos se comprueba que el archivo arranca antes de instalarlo.
+EOF
+    exit 1
+  fi
+
+  install -m 0755 "$TMP_MINIO" /usr/local/bin/minio
+  rm -f "$TMP_MINIO"
+  trap - EXIT
+  ok "descargado de $CONSEGUIDO"
+  ok "$(/usr/local/bin/minio --version 2>/dev/null | head -1)"
 fi
 
 # ------------------------------------------------------------- usuario y datos
@@ -105,24 +212,6 @@ curl -fsS "http://127.0.0.1:$PUERTO/minio/health/live" >/dev/null 2>&1 \
   || { rojo "MinIO no responde. Mire: journalctl -u minio -n 50"; exit 1; }
 ok "responde en 127.0.0.1:$PUERTO (y solo ahí)"
 
-# ---------------------------------------------------------------------- bucket
-paso "Bucket"
-if [ -x /usr/local/bin/mc ]; then
-  ok "mc ya estaba"
-else
-  curl -fsSL -o /usr/local/bin/mc \
-    https://dl.min.io/client/mc/release/linux-amd64/mc
-  chmod 0755 /usr/local/bin/mc
-fi
-export MC_HOST_citas="http://$MINIO_ROOT_USER:$MINIO_ROOT_PASSWORD@127.0.0.1:$PUERTO"
-/usr/local/bin/mc mb --ignore-existing "citas/$BUCKET" >/dev/null
-# PRIVADO, y se deja dicho: las fotos se sirven por `/api/d/media/<id>`, que
-# comprueba que la imagen esté aprobada Y el negocio publicado. Un bucket
-# público se saltaría las dos cosas — una foto retirada por una reclamación de
-# derechos seguiría viéndose con su dirección directa.
-/usr/local/bin/mc anonymous set none "citas/$BUCKET" >/dev/null 2>&1 || true
-ok "bucket «$BUCKET», privado"
-
 # ------------------------------------------------------------------ el fichero
 paso "Configuración de la web"
 KEY_FILE="$(grep -m1 '^CITAS_SECRET_KEY_FILE=' "$ENV_FILE" | cut -d= -f2- | tr -d '"')"
@@ -147,7 +236,33 @@ STORAGE_BUCKET=$BUCKET
 STORAGE_ACCESS_KEY_ID=$MINIO_ROOT_USER
 STORAGE_SECRET_ACCESS_KEY_ENC=$CIFRADA
 EOF
-ok "seis variables escritas en apps/web/.env (la secreta, cifrada)"
+ok "cinco variables escritas en apps/web/.env (la secreta, cifrada)"
+
+# ---------------------------------------------------------------------- bucket
+#
+# Aquí iba `mc`, el cliente de MinIO, que era un SEGUNDO binario descargado de
+# internet. Ya no: lo hace el propio proyecto con su firma, la que está
+# comprobada contra el vector oficial de AWS.
+#
+# Y lo que comprueba no es que el bucket exista. Escribe, lee y borra un objeto
+# POR EL MISMO PUERTO QUE EL PRODUCTO, con las variables que se acaban de
+# escribir. Si esto sale en verde, lo que está probado es la instalación entera;
+# `mc` habría dicho «bucket creado» usando su propio código y sus propias
+# credenciales, que no prueba nada de lo que va a correr después.
+paso "Bucket y comprobación"
+if ( cd "$DIR" && sudo -u "$APP_USER" npm run storage:bucket --workspace @citas/web --silent ); then
+  ok "bucket «$BUCKET», privado, y la ida y vuelta comprobada"
+else
+  echo
+  rojo "El bucket no quedó listo."
+  echo
+  echo "  Las variables YA están escritas en el .env, así que no repita este"
+  echo "  guion: se negaría, y con razón. Corrija lo que diga el error de arriba"
+  echo "  y vuelva a lanzar solo el último paso:"
+  echo
+  echo "    cd $DIR && npm run storage:bucket --workspace @citas/web"
+  exit 1
+fi
 
 paso "Reiniciando la web"
 systemctl restart citas

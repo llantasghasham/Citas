@@ -24,6 +24,7 @@
     "test:integration": "node scripts/test-integration.mjs",
     "brand:build": "tsx scripts/build-brand.ts",
     "sinpe:check": "tsx scripts/check-sinpe.ts",
+    "storage:bucket": "tsx scripts/storage-bucket.ts",
     "db:check": "tsx scripts/check-migrations.ts",
     "verify:e2e": "tsx scripts/e2e-verificacion.ts",
     "db:fleet": "tsx scripts/fleet.ts",

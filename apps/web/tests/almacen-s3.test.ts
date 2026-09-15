@@ -6,6 +6,7 @@ import { after, before, describe, it } from 'node:test';
 import { encryptSecret } from '../src/lib/secrets';
 import { objectKeyFor, type ObjectKey } from '../src/lib/storage/key';
 import { s3ConfigFromEnv, s3ObjectStore, type S3Config } from '../src/lib/storage/s3';
+import { presignS3Url } from '../src/lib/storage/sign';
 
 /**
  * EL ADAPTADOR DE VERDAD, contra un servidor de verdad.
@@ -292,5 +293,35 @@ describe('el adaptador S3 contra un servidor', () => {
     // jamás. Esto ya se comprueba sobre la firma; aquí se comprueba sobre lo
     // que de verdad se mandó por el cable.
     assert.ok(!entera.includes(config.secretAccessKey), 'la secreta salió en la petición');
+  });
+
+  it('crear el BUCKET es un PUT a la ruta del bucket, y no a un objeto', async () => {
+    // Lo que hace `npm run storage:bucket`, que es lo que
+    // `deploy/minio-instalar.sh` usa desde que dejó de descargar `mc`.
+    //
+    // Es el ÚNICO sitio del proyecto que firma algo que no es un objeto, y por
+    // eso se comprueba: una barra de más o de menos aquí no da un error
+    // reconocible —da un 403 de firma inválida, o peor, crea un objeto vacío
+    // llamado como el bucket— y el guion de instalación diría que todo fue
+    // bien.
+    visto.length = 0;
+    const url = presignS3Url({
+      method: 'PUT',
+      endpoint: config.endpoint,
+      region: config.region,
+      bucket: config.bucket,
+      key: '',
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+      expiresIn: 60,
+    });
+
+    const respuesta = await fetch(url, { method: 'PUT', redirect: 'error' });
+    assert.equal(respuesta.status, 200);
+
+    const ultima = visto.at(-1);
+    assert.ok(ultima !== undefined);
+    assert.equal(ultima.method, 'PUT');
+    assert.equal(ultima.path, `/${config.bucket}/`, 'no es la ruta del bucket');
   });
 });
