@@ -6,7 +6,8 @@ import { readSenderDns } from '@/lib/mail/dns';
 import { MAIL_FROM_FORMAT, mailFromProblem } from '@/lib/mail/from';
 import { secret, setting } from '@/lib/settings';
 import { runningAsRoot } from '@/lib/render/browser';
-import { controlDb, tenancyMode } from '@/lib/db/client';
+import { controlDb, db, tenancyMode } from '@/lib/db/client';
+import { eachOffice } from '@/lib/db/fleet';
 import { isOverdue } from '@/lib/directory/clock';
 import { storageDirFromEnv } from '@/lib/storage/fs';
 import { s3ConfigFromEnv } from '@/lib/storage/s3';
@@ -131,12 +132,8 @@ async function migrationsCheck(): Promise<HealthCheck> {
     return { key: 'migrations', level: 'warn', detail: 'DATA_SOURCE ≠ database' };
   }
 
-  let onDisk: string[];
-  try {
-    onDisk = readdirSync(migrationsDirectory(), { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => entry.name);
-  } catch {
+  const onDisk = migrationsOnDisk();
+  if (onDisk === null) {
     return { key: 'migrations', level: 'warn', detail: 'prisma/migrations' };
   }
 
@@ -158,6 +155,17 @@ async function migrationsCheck(): Promise<HealthCheck> {
     };
   } catch {
     return { key: 'migrations', level: 'fail', detail: '_prisma_migrations' };
+  }
+}
+
+/** Las migraciones que trae el repositorio, o `null` si no se puede leer. */
+function migrationsOnDisk(): string[] | null {
+  try {
+    return readdirSync(migrationsDirectory(), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
+  } catch {
+    return null;
   }
 }
 
@@ -564,10 +572,55 @@ async function tenancyCheck(): Promise<HealthCheck> {
     };
   }
 
+  // Y AL DÍA, que es la otra mitad y faltaba.
+  //
+  // «Aplicar las migraciones» deja de ser una orden y pasa a ser una por
+  // oficina: la base de cada una se COPIA de la plantilla, así que una que se
+  // diera de alta antes de la última migración se queda atrás. Y una oficina
+  // con el esquema viejo NO falla al arrancar — falla la primera vez que
+  // alguien usa lo nuevo, que es cuando peor viene enterarse. Desde fuera se ve
+  // igual que si no pasara nada, que es el tipo de avería que esta pantalla
+  // existe para sacar a la luz, igual que un buzón de SINPE caído.
+  //
+  // Es una consulta por oficina y no hay atajo; se paga aquí porque esta
+  // pantalla la abre el superadministrador de vez en cuando, y lo que cuesta no
+  // saberlo es una boda que no se puede abrir.
+  const onDisk = migrationsOnDisk();
+  if (onDisk !== null) {
+    const atrasadas: string[] = [];
+    for (const scope of await eachOffice()) {
+      const nombre = scope.databaseName ?? '?';
+      try {
+        const rows = await db(scope).$queryRawUnsafe<{ migration_name: string }[]>(
+          'SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL',
+        );
+        const applied = new Set(rows.map((row) => row.migration_name));
+        const missing = onDisk.filter((name) => !applied.has(name));
+        if (missing.length > 0) atrasadas.push(`${nombre} (le faltan ${missing.length})`);
+      } catch {
+        // Que una base no conteste es una avería suya, no de esta pantalla: se
+        // dice y se siguen mirando las demás. Parar aquí convertiría el
+        // problema de una oficina en no saber nada de ninguna.
+        atrasadas.push(`${nombre} (no contesta)`);
+      }
+    }
+
+    if (atrasadas.length > 0) {
+      return {
+        key: 'tenancy',
+        level: 'fail',
+        detail:
+          `${atrasadas.length} de ${offices.length} oficina(s) con el esquema atrasado: ` +
+          `${atrasadas.join(', ')}. Se arregla con «npm run db:fleet -- migrar», que pone ` +
+          'al día la plantilla y todas.',
+      };
+    }
+  }
+
   return {
     key: 'tenancy',
     level: 'ok',
-    detail: `Una base de datos por oficina · ${offices.length} oficina(s), ${offices.length} base(s).`,
+    detail: `Una base de datos por oficina · ${offices.length} oficina(s), todas al día.`,
   };
 }
 

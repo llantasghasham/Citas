@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { after, before, describe, it } from 'node:test';
+import { Pool } from 'pg';
 
 // ANTES de importar nada que lo lea: el reparto se elige al arrancar el proceso,
 // y el corredor de pruebas de Node da un proceso por archivo, así que esto no
@@ -15,8 +16,9 @@ import {
   scopeForSlug,
 } from '../src/lib/db/directory';
 import { TEMPLATE_DB, databaseExists, dropTenantDatabase } from '../src/lib/db/fleet';
+import { readHealth } from '../src/lib/system/health';
 import { databaseNameFor } from '../src/lib/db/naming';
-import { urlForDatabase } from '../src/lib/db/routing';
+import { controlDatabaseName, urlForDatabase } from '../src/lib/db/routing';
 import { tenantScope, type TenantScope } from '../src/lib/db/tenant';
 import { importGuests } from '../src/lib/repositories/guests';
 import { prismaInvitationRepository } from '../src/lib/repositories/prisma';
@@ -180,6 +182,61 @@ describe('dos oficinas, la aplicación entera', { skip: !HAS_DB }, () => {
     assert.notEqual(suyo, slug, 'se le dio a DOS un slug que no era suyo');
     assert.equal((await scopeForSlug(suyo))?.tenantId, scopeDos.tenantId);
     assert.equal((await scopeForSlug(slug))?.tenantId, scopeUno.tenantId);
+  });
+
+  it('la pantalla de salud ve si una oficina se quedó atrás de migraciones', async () => {
+    // La oficina raíz del sembrado no tiene base propia y esta comprobación se
+    // corta ahí —con razón: una oficina apuntada sin base no trabaja—. Para
+    // poder mirar lo de las migraciones se le presta la base de control, que
+    // está al día, y se le devuelve su nulo al terminar.
+    const sinBase = await controlDb().tenant.findMany({
+      where: { databaseName: null },
+      select: { id: true },
+    });
+    await controlDb().tenant.updateMany({
+      where: { databaseName: null },
+      data: { databaseName: controlDatabaseName() },
+    });
+
+    // Con las dos bases recién copiadas de la plantilla, están al día.
+    const antes = (await readHealth()).find((check) => check.key === 'tenancy');
+    assert.equal(antes?.level, 'ok', antes?.detail ?? '');
+
+    // Ahora se le quita una migración a UNA de las dos, que es exactamente lo
+    // que pasa con una oficina dada de alta antes de la última: su base se copia
+    // de la plantilla y se queda atrás. No falla al arrancar — falla el día que
+    // alguien usa lo nuevo, y desde fuera se ve igual que si todo fuera bien.
+    const suya = new Pool({ connectionString: urlForDatabase(databaseNameFor(DOS)), max: 1 });
+    let quitada = '';
+    try {
+      const { rows } = await suya.query<{ migration_name: string }>(
+        'SELECT migration_name FROM "_prisma_migrations" ORDER BY finished_at DESC LIMIT 1',
+      );
+      quitada = rows[0]?.migration_name ?? '';
+      assert.notEqual(quitada, '', 'la base de la oficina no declara ninguna migración');
+      await suya.query('DELETE FROM "_prisma_migrations" WHERE migration_name = $1', [quitada]);
+
+      const despues = (await readHealth()).find((check) => check.key === 'tenancy');
+      assert.equal(despues?.level, 'fail', 'la pantalla no vio la oficina atrasada');
+      assert.ok(
+        despues?.detail.includes(databaseNameFor(DOS)),
+        `no dice CUÁL está atrasada: ${despues?.detail ?? ''}`,
+      );
+    } finally {
+      if (quitada.length > 0) {
+        await suya.query(
+          `INSERT INTO "_prisma_migrations"
+             (id, checksum, migration_name, finished_at, applied_steps_count)
+           VALUES (gen_random_uuid()::text, '', $1, now(), 1)`,
+          [quitada],
+        );
+      }
+      await suya.end();
+      await controlDb().tenant.updateMany({
+        where: { id: { in: sinBase.map((office) => office.id) } },
+        data: { databaseName: null },
+      });
+    }
   });
 
   it('un slug que no existe no lleva a ninguna base', async () => {

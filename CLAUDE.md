@@ -872,7 +872,11 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   las atrasadas ARRIBA y en rojo, igual que los buzones de SINPE caídos: es el
   mismo tipo de avería —algo que desde fuera se ve igual que si no pasara nada—.
   Una oficina con el esquema viejo no falla al arrancar: falla la primera vez que
-  alguien usa lo nuevo, que es cuando peor viene enterarse.
+  alguien usa lo nuevo, que es cuando peor viene enterarse. Y por eso ya no hace
+  falta acordarse de mirar: `/panel/sistema` recorre las oficinas y pone en ROJO
+  las atrasadas, con el nombre de su base. Comprobaba las migraciones de la base
+  PRINCIPAL y ninguna de las demás, que con la flota encendida es justo donde
+  vive el esquema que usa la gente.
 - Dónde vive cada cosa, y la línea no es arbitraria: en la base de la OFICINA va
   lo que es su trabajo —eventos, invitaciones, imágenes, invitados, mesas,
   confirmaciones, números de WhatsApp y sus mensajes—; en la de CONTROL va lo que
