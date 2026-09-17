@@ -886,6 +886,18 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   Ahora `ownerId` es TEXTO SUELTO, igual que `PublicListing.sourceEventId` y por
   lo mismo. Una frontera que se afirma y no se comprueba es una frontera que un
   día no está.
+- Y AHORA SE COMPRUEBA, porque la frase de arriba seguía sin ser exacta después
+  de arreglarla: hay SEIS claves foráneas que apuntan a `Tenant` —de `Event`,
+  `Consent`, `OptOut`, `MessageCampaign`, `WhatsappConnection` y
+  `WhatsappMessage`—, y `Tenant` es del plano de control. Funcionan porque su
+  fila se COPIA a la base de cada oficina, una sola y la suya, al dar de alta
+  (`createOffice`) y al mudar (`db:split`): sin ella no se podría guardar ni un
+  evento. O sea que no cruzan nada, resuelven dentro de la misma base. La regla
+  de verdad es esa y `npm run db:check` la ejecuta contra `pg_constraint` en
+  cada despliegue: ninguna clave foránea puede apuntar a una tabla de control
+  que NO se copia —`User`, `Order`, `Payment`, `Provider`—, y la que lo intente
+  sale con su nombre. En `shared` una de esas funciona igual de bien hasta el
+  día de la mudanza, que es cuando mata el copiado a la mitad.
 - QUÉ TABLA VIVE EN QUÉ PLANO está en `lib/db/planes.ts`, en DOS listas cerradas,
   y `tests/planes.test.ts` comprueba contra `schema.prisma` que no falte ninguna
   en las dos. Estaba escrita a mano dentro del guion de la mudanza y se quedó

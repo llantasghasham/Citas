@@ -27,18 +27,32 @@ import { signWithSecretKey } from '@/lib/secrets';
  *     mismo: un borrado que borra su propio rastro no es un borrado, es una
  *     desaparición. Tampoco se tocan las respuestas.
  *
- * Lo que esto NO se lleva, y hay que saberlo: `WhatsappMessage.toPhone` guarda
- * el número al que se escribió, y se queda. Es el registro de lo que salió —lo
- * que se mira cuando alguien pregunta si a un invitado le llegó su invitación—
- * y borrarlo sería borrar la prueba. Las dos reglas se tocan aquí y la decisión
- * es a favor del registro; si algún día se decide lo contrario, se decide para
- * esa tabla y con su propio plazo, no de rebote desde este archivo.
+ *   - El TELÉFONO DEL MENSAJE también. `WhatsappMessage.toPhone` guarda el
+ *     número al que se escribió y hay una fila por cada vez que se le escribió,
+ *     así que dejarlo era hacer la mitad del trabajo: un volcado seguía
+ *     teniendo el número entero de los doscientos invitados. No se borra —el
+ *     registro de lo que salió es lo que se mira cuando alguien pregunta si a
+ *     un invitado le llegó su invitación— sino que se sustituye por su HUELLA
+ *     con la llave de la instalación. Queda la fila entera y se puede seguir
+ *     contestando «¿a este número le escribimos?» recalculándola.
+ *
+ * Este párrafo decía lo CONTRARIO —que `toPhone` se quedaba— y se quedó atrás
+ * cuando se añadió la huella, que está treinta líneas más abajo con su propia
+ * explicación. Un comentario que afirma lo contrario que su código es peor que
+ * no tenerlo: quien lo lea se irá tranquilo creyendo que en esa tabla siguen los
+ * números, o creyendo que no, y las dos veces sin mirar.
  *
  * Y NO SE EJECUTA SOLO. No hay temporizador que llame a esto, ni lo va a haber
  * por su cuenta: lo dispara una PERSONA desde el panel, o un temporizador que
  * alguien monte a propósito sabiendo lo que borra. Un trabajo automático que
  * llegue de serie borrando teléfonos de bodas es el que un día se lleva la lista
  * de una boda que todavía no se ha celebrado porque alguien tecleó mal la fecha.
+ *
+ * Y HOY NO HAY NI PANTALLA NI TEMPORIZADOR: esto está escrito y probado, y no lo
+ * llama nadie más que sus pruebas. Así que el plazo de conservación de este
+ * producto es, en la práctica, PARA SIEMPRE — los teléfonos de los invitados de
+ * una boda de hace dos años siguen enteros en la base. Queda dicho aquí, en el
+ * archivo que lo arregla, y no en una lista de pendientes que nadie abre.
  */
 
 /** Lo que se mira para decidir si a un evento ya le toca. */

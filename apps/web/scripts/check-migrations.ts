@@ -1,5 +1,7 @@
 import { execFileSync } from 'node:child_process';
 
+import { CONTROL_TABLES, OFFICE_TABLES } from '../src/lib/db/planes';
+
 /**
  * Aplica TODAS las migraciones sobre una base creada desde cero y comprueba que
  * el esquema salió como dice el código.
@@ -287,6 +289,55 @@ const CHECKS: Check[] = [
            WHERE indexname = 'SinpeMovement_accountId_reference_key'`,
     expect: (rows) => String(rows[0]?.['indexdef'] ?? '').includes('UNIQUE'),
     why: 'leer el mismo correo dos veces cobraría dos veces',
+  },
+  {
+    /**
+     * NINGUNA clave foránea cruza de un plano al otro, salvo hacia `Tenant`.
+     *
+     * Esto ya pasó, y no lo atrapó nadie: `Event.ownerId` apuntaba a `User`,
+     * que es del plano de CONTROL. Mientras todo estaba en una sola base la
+     * frontera se cumplía sola y nadie lo notó; el primer `db:split -- copiar`
+     * contra datos de verdad murió exactamente ahí, con unas tablas escritas y
+     * otras no. Estaba además escrito como cierto en la documentación, que es
+     * la peor forma de tener un fallo: la afirmación sustituye a la
+     * comprobación.
+     *
+     * La excepción es `Tenant` y es REAL, no un permiso: su fila se COPIA a la
+     * base de cada oficina —una sola, la suya— porque todo lo de esa oficina
+     * cuelga de ella y sin eso no se puede guardar ni un evento. Lo hacen
+     * `createOffice` al dar de alta y `db:split` al mudar. Así que esa clave no
+     * cruza nada: resuelve dentro de la misma base.
+     *
+     * Lo que este guardia impide es la SIGUIENTE, la que apunte a una tabla de
+     * control que NO se copia —`User`, `Order`, `Payment`, `Provider`— y que en
+     * `shared` funcionaría igual de bien hasta el día de la mudanza.
+     *
+     * Se lee del catálogo de PostgreSQL y no del esquema a ojo, que es lo que
+     * se deja de hacer el día que hay prisa.
+     */
+    what: 'ninguna clave foránea cruza entre los dos planos',
+    sql: `SELECT origen.relname AS origen, destino.relname AS destino, c.conname
+            FROM pg_constraint c
+            JOIN pg_class origen ON origen.oid = c.conrelid
+            JOIN pg_class destino ON destino.oid = c.confrelid
+           WHERE c.contype = 'f' AND destino.relname <> 'Tenant'`,
+    expect: (rows) => {
+      const mayus = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
+      const oficina = new Set<string>(OFFICE_TABLES.map(mayus));
+      const control = new Set<string>(CONTROL_TABLES.map(mayus));
+      const plano = (t: string): string =>
+        oficina.has(t) ? 'oficina' : control.has(t) ? 'control' : 'sin plano';
+      const cruzan = rows.filter(
+        (row) => plano(String(row['origen'])) !== plano(String(row['destino'])),
+      );
+      for (const row of cruzan) {
+        console.error(
+          `      ${String(row['origen'])} → ${String(row['destino'])}  (${String(row['conname'])})`,
+        );
+      }
+      return cruzan.length === 0;
+    },
+    why: 'una clave foránea de una tabla de oficina a una de control funciona hasta el día de la mudanza, y ese día mata el copiado a la mitad',
   },
 ];
 
