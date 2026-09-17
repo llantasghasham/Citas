@@ -852,6 +852,21 @@ Mercado inicial: Líbano. Idiomas: árabe (principal, RTL), español, portugués
   sabe en cuál. Para eso están `PublicSlug` y `GuestToken` en la base de control,
   que dicen en qué base seguir buscando y nada más — ni el evento, ni la fecha,
   ni los novios.
+- Y esas dos filas se RECLAMAN, no se apuntan. Estaba escrito con
+  `createMany({ skipDuplicates: true })`, que no distingue «ya era tuyo» de «es
+  de OTRA oficina»: se tragaba los dos igual y devolvía sin decir nada. El slug
+  sale de la raíz del nombre más seis caracteres al azar, y con nombres árabes
+  la raíz es SIEMPRE `invitacion`, así que toda la separación vive en esos seis
+  —dieciséis millones, que por la paradoja del cumpleaños chocan de verdad a las
+  pocas miles de invitaciones—. Con una base el choque era ruidoso y sin daño:
+  el índice único de `InvitationVersion` hacía fallar la publicación. Repartidas,
+  la segunda oficina escribe en SU base, donde ese slug está libre, y nada falla
+  — pero `/i/<slug>` sigue llevando a la PRIMERA, y la pareja de la segunda
+  reenvía por WhatsApp un enlace que abre la boda de unos desconocidos. El
+  reparto convirtió un error visible en una mezcla silenciosa entre dos clientes.
+  Ahora se inserta y se vuelve a LEER de quién es (`claimSlugs`): la clave
+  primaria decide, es atómica, y quien pierde se entera y acuña otro. Olvidar
+  también va por oficina, que es la otra mitad de lo mismo.
 - «Aplicar las migraciones» deja de ser una orden y pasa a ser una por oficina.
   `npm run db:fleet -- migrar` pone al día la plantilla y todas; `estado` enseña
   las atrasadas ARRIBA y en rojo, igual que los buzones de SINPE caídos: es el

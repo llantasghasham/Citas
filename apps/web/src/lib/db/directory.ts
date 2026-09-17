@@ -29,36 +29,196 @@ import { tenantScope, type TenantScope } from './tenant';
  * NUNCA, y nadie se entera hasta que un invitado abre el enlace y no hay nada.
  */
 
-/** Apunta dónde vivirán estos slugs. Antes de crearlos, a propósito. */
-export async function registerSlugs(scope: TenantScope, slugs: readonly string[]): Promise<void> {
-  if (slugs.length === 0) return;
-  await controlDb().publicSlug.createMany({
+/**
+ * Reclamar no es apuntar, y la diferencia era un agujero entre oficinas.
+ *
+ * Esto se escribió con `createMany({ skipDuplicates: true })`, que para lo que
+ * hacía falta —volver a apuntar lo que YA es nuestro sin que reviente— es lo
+ * correcto. Pero `skipDuplicates` no distingue «ya lo tenías tú» de «es de
+ * OTRA oficina»: se traga las dos igual y devuelve sin decir nada.
+ *
+ * Y el slug se acuña con el nombre de los novios más seis caracteres al azar,
+ * o `invitacion-<azar>` cuando el nombre es árabe — que en el mercado inicial
+ * es SIEMPRE. Así que la raíz se repite y toda la separación vive en esos seis
+ * caracteres: dieciséis millones de combinaciones, que por la paradoja del
+ * cumpleaños empiezan a chocar de verdad a las pocas miles de invitaciones.
+ *
+ * Con una sola base el choque era ruidoso y sin daño: el índice único de
+ * `InvitationVersion` hacía fallar la publicación. Repartidas, la segunda
+ * oficina escribe en SU base, donde ese slug está libre, y nada falla — pero
+ * `/i/<slug>` sigue resolviendo a la PRIMERA. La pareja de la segunda comparte
+ * su enlace por WhatsApp y a sus invitados les sale la boda de unos
+ * desconocidos, con sus nombres y su salón. El traslado a una base por oficina
+ * convirtió un error visible en una mezcla silenciosa entre dos clientes.
+ *
+ * Así que ya no se apunta: se RECLAMA. Se intenta insertar y se vuelve a LEER
+ * de quién es. La clave primaria decide y es atómica, así que dos oficinas
+ * reclamando a la vez tienen una ganadora y una que se entera.
+ */
+export type ClaimResult = { ok: true } | { ok: false; taken: string[] };
+
+/** Reclama estos slugs para esta oficina. Dice cuáles ya eran de otra. */
+export async function claimSlugs(
+  scope: TenantScope,
+  slugs: readonly string[],
+): Promise<ClaimResult> {
+  if (slugs.length === 0) return { ok: true };
+  const prisma = controlDb();
+  await prisma.publicSlug.createMany({
     data: slugs.map((slug) => ({ slug, tenantId: scope.tenantId })),
     skipDuplicates: true,
   });
+  // La relectura es lo que convierte esto en una reclamación. Sin ella, lo que
+  // el `skipDuplicates` se tragó se leería como un éxito.
+  const rows = await prisma.publicSlug.findMany({
+    where: { slug: { in: [...slugs] } },
+    select: { slug: true, tenantId: true },
+  });
+  const taken = rows.filter((row) => row.tenantId !== scope.tenantId).map((row) => row.slug);
+  return taken.length === 0 ? { ok: true } : { ok: false, taken };
 }
 
 /** Lo mismo para los enlaces personales de los invitados. */
-export async function registerGuestTokens(
+export async function claimGuestTokens(
+  scope: TenantScope,
+  tokens: readonly string[],
+): Promise<ClaimResult> {
+  if (tokens.length === 0) return { ok: true };
+  const prisma = controlDb();
+  await prisma.guestToken.createMany({
+    data: tokens.map((token) => ({ token, tenantId: scope.tenantId })),
+    skipDuplicates: true,
+  });
+  const rows = await prisma.guestToken.findMany({
+    where: { token: { in: [...tokens] } },
+    select: { token: true, tenantId: true },
+  });
+  const taken = rows.filter((row) => row.tenantId !== scope.tenantId).map((row) => row.token);
+  return taken.length === 0 ? { ok: true } : { ok: false, taken };
+}
+
+/**
+ * Acuña identificadores LIBRES, reintentando con otros los que ya eran de otra
+ * oficina.
+ *
+ * Va en tandas y no de uno en uno: importar doscientos invitados son doscientas
+ * idas y venidas a la base de control si se reclama uno a uno, y esa base la
+ * comparten todas las oficinas. En la práctica basta una: un choque es raro, y
+ * cuando ocurre solo se reintenta lo que chocó.
+ *
+ * Los candidatos se DESDUPLICAN entre sí antes de reclamarlos. Sin eso, dos
+ * iguales dentro de la misma tanda se insertarían como uno —el `ON CONFLICT DO
+ * NOTHING` de PostgreSQL no protesta— y la relectura diría que los dos son
+ * nuestros: dos invitaciones distintas con el mismo enlace, y el fallo lo
+ * habría metido justo la función que existe para impedirlo.
+ */
+async function claimFresh(
+  count: number,
+  make: () => string,
+  claim: (candidates: string[]) => Promise<ClaimResult>,
+  qué: string,
+): Promise<string[]> {
+  if (count <= 0) return [];
+  const listos: string[] = [];
+  const usados = new Set<string>();
+
+  for (let intento = 0; intento < 6 && listos.length < count; intento += 1) {
+    const candidatos = new Set<string>();
+    // El generador se llama un número ACOTADO de veces. Sin tope, uno que
+    // devolviera siempre lo mismo —una prueba, o el día que alguien le quite el
+    // azar a `buildSlug`— dejaría este bucle girando para siempre dentro de una
+    // petición: no un error, un servidor colgado.
+    const tope = (count - listos.length) * 20;
+    for (let i = 0; i < tope && candidatos.size < count - listos.length; i += 1) {
+      const nuevo = make();
+      if (!usados.has(nuevo)) candidatos.add(nuevo);
+    }
+    for (const c of candidatos) usados.add(c);
+    if (candidatos.size === 0) break;
+
+    const lista = [...candidatos];
+    const resultado = await claim(lista);
+    const ajenos = new Set(resultado.ok ? [] : resultado.taken);
+    for (const c of lista) if (!ajenos.has(c)) listos.push(c);
+  }
+
+  if (listos.length < count) {
+    // Seis tandas seguidas chocando no es mala suerte: es que algo va mal.
+    // Fallar aquí deja una publicación sin hacer, que se arregla volviendo a
+    // pulsar; seguir sería escribir una invitación que lleva a otra boda.
+    throw new Error(`No se pudo acuñar ${qué} libre después de seis intentos.`);
+  }
+  return listos;
+}
+
+/** Slugs públicos libres en TODA la plataforma, no solo en esta oficina. */
+export async function claimFreshSlugs(
+  scope: TenantScope,
+  count: number,
+  make: () => string,
+): Promise<string[]> {
+  return claimFresh(count, make, (candidatos) => claimSlugs(scope, candidatos), 'un slug');
+}
+
+/**
+ * Uno solo. Existe para no obligar a cada sitio que pide UN slug a fingir que
+ * la lista podría venir vacía: `claimFresh` o devuelve los que se le piden o
+ * lanza, así que un `if (slug === undefined)` en el sitio de la llamada sería
+ * un caso imposible contestado con una mentira —«no encontrado»— que el día
+ * que alguien lo lea le hará buscar en el sitio equivocado.
+ */
+export async function claimFreshSlug(
+  scope: TenantScope,
+  make: () => string,
+): Promise<string> {
+  const [slug] = await claimFreshSlugs(scope, 1, make);
+  if (slug === undefined) throw new Error('claimFreshSlugs devolvió una lista vacía.');
+  return slug;
+}
+
+/** Uno solo, por lo mismo que `claimFreshSlug`. */
+export async function claimFreshToken(
+  scope: TenantScope,
+  make: () => string,
+): Promise<string> {
+  const [token] = await claimFreshTokens(scope, 1, make);
+  if (token === undefined) throw new Error('claimFreshTokens devolvió una lista vacía.');
+  return token;
+}
+
+/** Enlaces personales libres en toda la plataforma. */
+export async function claimFreshTokens(
+  scope: TenantScope,
+  count: number,
+  make: () => string,
+): Promise<string[]> {
+  return claimFresh(count, make, (candidatos) => claimGuestTokens(scope, candidatos), 'un enlace');
+}
+
+/**
+ * Se borra lo apuntado cuando lo apuntado deja de existir, y SOLO lo propio.
+ *
+ * El ámbito no es de adorno aunque hoy no lo llame nadie: sin él, borrar es la
+ * otra mitad del mismo agujero que la reclamación cierra. Una oficina que
+ * pidiera olvidar un slug que resultara ser de otra le dejaría la invitación
+ * sin poder encontrarse en toda la plataforma —un 404 para todos los invitados
+ * que ya tienen el enlace— y nadie se enteraría hasta que llamara la pareja.
+ */
+export async function forgetSlugs(scope: TenantScope, slugs: readonly string[]): Promise<void> {
+  if (slugs.length === 0) return;
+  await controlDb().publicSlug.deleteMany({
+    where: { slug: { in: [...slugs] }, tenantId: scope.tenantId },
+  });
+}
+
+export async function forgetGuestTokens(
   scope: TenantScope,
   tokens: readonly string[],
 ): Promise<void> {
   if (tokens.length === 0) return;
-  await controlDb().guestToken.createMany({
-    data: tokens.map((token) => ({ token, tenantId: scope.tenantId })),
-    skipDuplicates: true,
+  await controlDb().guestToken.deleteMany({
+    where: { token: { in: [...tokens] }, tenantId: scope.tenantId },
   });
-}
-
-/** Se borra lo apuntado cuando lo apuntado deja de existir. */
-export async function forgetSlugs(slugs: readonly string[]): Promise<void> {
-  if (slugs.length === 0) return;
-  await controlDb().publicSlug.deleteMany({ where: { slug: { in: [...slugs] } } });
-}
-
-export async function forgetGuestTokens(tokens: readonly string[]): Promise<void> {
-  if (tokens.length === 0) return;
-  await controlDb().guestToken.deleteMany({ where: { token: { in: [...tokens] } } });
 }
 
 /**

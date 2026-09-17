@@ -8,7 +8,12 @@ import { after, before, describe, it } from 'node:test';
 process.env['TENANCY'] = 'fleet';
 
 import { controlDb, db } from '../src/lib/db/client';
-import { registerSlugs, scopeForGuestToken, scopeForSlug } from '../src/lib/db/directory';
+import {
+  claimFreshSlug,
+  claimSlugs,
+  scopeForGuestToken,
+  scopeForSlug,
+} from '../src/lib/db/directory';
 import { TEMPLATE_DB, databaseExists, dropTenantDatabase } from '../src/lib/db/fleet';
 import { databaseNameFor } from '../src/lib/db/naming';
 import { urlForDatabase } from '../src/lib/db/routing';
@@ -81,7 +86,7 @@ describe('dos oficinas, la aplicación entera', { skip: !HAS_DB }, () => {
 
   it('una invitación publicada se encuentra por su enlace público', async () => {
     const slug = 'prueba-flota-boda-uno';
-    await registerSlugs(scopeUno, [slug]);
+    assert.deepEqual(await claimSlugs(scopeUno, [slug]), { ok: true });
     await db(scopeUno).event.create({
       data: {
         tenantId: scopeUno.tenantId,
@@ -146,6 +151,35 @@ describe('dos oficinas, la aplicación entera', { skip: !HAS_DB }, () => {
     assert.equal((await db(scopeDos).guest.findMany({})).length, 0);
     const ajeno = invitados[0]?.token ?? '';
     assert.equal(await db(scopeDos).guest.findUnique({ where: { token: ajeno } }), null);
+  });
+
+  it('una oficina NO se queda con el slug de otra', async () => {
+    // Este es el fallo que este bloque existe para que no vuelva.
+    //
+    // El slug se acuña con la raíz del nombre más seis caracteres al azar, y
+    // con nombres árabes la raíz es SIEMPRE `invitacion`: toda la separación
+    // vive en esos seis. Con una sola base un choque era ruidoso e inofensivo
+    // —el índice único de `InvitationVersion` hacía fallar la publicación—.
+    // Repartidas, la segunda oficina escribe en SU base, donde ese slug está
+    // libre, y nada falla; pero `/i/<slug>` sigue llevando a la PRIMERA. La
+    // pareja de la segunda reenvía su enlace por WhatsApp y a sus invitados les
+    // sale la boda de unos desconocidos.
+    const slug = 'prueba-flota-boda-uno'; // ya reclamado por UNO, arriba.
+
+    const intento = await claimSlugs(scopeDos, [slug]);
+    assert.deepEqual(intento, { ok: false, taken: [slug] }, 'DOS se quedó con el slug de UNO');
+
+    // Y el enlace sigue llevando a quien lo reclamó primero.
+    const dueño = await scopeForSlug(slug);
+    assert.equal(dueño?.tenantId, scopeUno.tenantId);
+
+    // Lo que sí puede hacer DOS es quedarse con OTRO, sin tocar el de UNO: la
+    // misma raíz y otro final, que es lo que hace `buildSlug` al reintentar.
+    let n = 0;
+    const suyo = await claimFreshSlug(scopeDos, () => `${slug}${n++ === 0 ? '' : `-${n}`}`);
+    assert.notEqual(suyo, slug, 'se le dio a DOS un slug que no era suyo');
+    assert.equal((await scopeForSlug(suyo))?.tenantId, scopeDos.tenantId);
+    assert.equal((await scopeForSlug(slug))?.tenantId, scopeUno.tenantId);
   });
 
   it('un slug que no existe no lleva a ninguna base', async () => {

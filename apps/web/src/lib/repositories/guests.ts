@@ -4,7 +4,7 @@ import type { Locale } from '@citas/core';
 
 import { guestAllowanceFor } from '@/lib/billing/packages';
 import { db } from '@/lib/db/client';
-import { registerGuestTokens } from '@/lib/db/directory';
+import { claimFreshTokens } from '@/lib/db/directory';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import type { ImportedGuest } from '@/lib/guests/import';
 import { versionForLocale, type EventVersion } from '@/lib/repositories/versions';
@@ -103,22 +103,28 @@ export async function importGuests(
     };
   }
 
-  const rows = fresh.map((guest) => ({
-    eventId,
-    name: guest.name,
-    phone: guest.phone,
-    locale: guest.locale,
-    token: newToken(),
-    invitedAt: new Date(),
-  }));
-
   // El directorio antes que los invitados, por lo mismo que con los slugs: un
   // token apuntado sin invitado detrás es un 404; un invitado sin token apuntado
   // tiene un enlace en el móvil que no lleva a ninguna parte.
-  await registerGuestTokens(
-    scope,
-    rows.map((row) => row.token),
-  );
+  //
+  // Y se RECLAMAN, no se apuntan: el token es de veinticuatro bytes al azar y
+  // un choque entre dos oficinas es materialmente imposible, pero eso lo
+  // garantiza ahora la base y no una cuenta de probabilidad. Va en UNA tanda
+  // para toda la lista: doscientos invitados no pueden ser doscientas idas a la
+  // base que comparten todas las oficinas.
+  const tokens = await claimFreshTokens(scope, fresh.length, newToken);
+  const rows = fresh.map((guest, index) => {
+    const token = tokens[index];
+    if (token === undefined) throw new Error('faltó un enlace reclamado al importar');
+    return {
+      eventId,
+      name: guest.name,
+      phone: guest.phone,
+      locale: guest.locale,
+      token,
+      invitedAt: new Date(),
+    };
+  });
   await prisma.guest.createMany({ data: rows });
 
   return { ok: true, added: fresh.length };

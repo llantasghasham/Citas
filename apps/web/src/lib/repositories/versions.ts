@@ -3,7 +3,7 @@ import { templateFor, themeFor, type Locale } from '@citas/core';
 import { buildSlug } from '@/lib/create/slug';
 import { defaultNumerals } from '@/lib/create/options';
 import { db } from '@/lib/db/client';
-import { registerSlugs } from '@/lib/db/directory';
+import { claimFreshSlug } from '@/lib/db/directory';
 import { scopedWhere, type TenantScope } from '@/lib/db/tenant';
 import { findVerse } from '@/lib/verses';
 
@@ -85,9 +85,12 @@ export async function addEventVersion(
   // put the wrong script on the card, so it is dropped rather than trusted.
   const quoteId = findVerse(input.quoteId)?.locale === input.locale ? input.quoteId : null;
   const theme = themeFor(event.type);
-  const slug = buildSlug(event.honorees.map((honoree) => honoree.name));
-
-  await registerSlugs(scope, [slug]);
+  // El slug se RECLAMA en la base de control antes de escribir la invitación:
+  // es lo único que está en un sitio donde escriben todas las oficinas, así que
+  // es lo único que puede impedir que dos publiquen el mismo. Si ya es de otra,
+  // se acuña otro; la raíz es la misma y lo que cambia es el azar del final.
+  const honorees = event.honorees.map((honoree) => honoree.name);
+  const slug = await claimFreshSlug(scope, () => buildSlug(honorees));
   await prisma.invitationVersion.create({
     data: {
       eventId: event.id,

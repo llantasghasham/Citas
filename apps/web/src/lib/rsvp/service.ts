@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 
 import type { RsvpStatus } from '@/generated/prisma/enums';
 import { db } from '@/lib/db/client';
-import { registerGuestTokens, scopeForSlug } from '@/lib/db/directory';
+import { claimFreshToken, scopeForSlug } from '@/lib/db/directory';
 
 export const RSVP_STATUSES = ['attending', 'declined', 'tentative'] as const;
 
@@ -114,8 +114,7 @@ export async function submitRsvp(input: SubmitRsvpInput): Promise<SubmitRsvpResu
   }
 
   if (guest === null) {
-    const token = newGuestToken();
-    await registerGuestTokens(scope, [token]);
+    const token = await claimFreshToken(scope, newGuestToken);
     guest = await prisma.guest.create({
       data: {
         eventId: event.id,

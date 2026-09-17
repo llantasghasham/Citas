@@ -6,7 +6,7 @@ import { buildSlug } from '@/lib/create/slug';
 import { eventLimitReached } from '@/lib/billing/plans';
 import type { AuthenticatedSession } from '@/lib/auth/session';
 import { controlDb, db } from '@/lib/db/client';
-import { registerSlugs } from '@/lib/db/directory';
+import { claimFreshSlugs } from '@/lib/db/directory';
 import { tenantScope } from '@/lib/db/tenant';
 
 import { draftProblems, draftVersions, mapUrlFor, type InvitationDraft } from './draft';
@@ -51,31 +51,34 @@ export async function publishDraft(
   // One row per language the organiser wrote, the invitation's own first. Each
   // gets its own public slug: a guest reading English must be able to be sent a
   // URL that is the English card, not the Arabic one with a language switch.
-  const versions = draftVersions(draft).map((version) => ({
-    slug: buildSlug(honorees),
-    locale: version.locale,
-    direction: version.locale === 'ar' ? ('rtl' as const) : ('ltr' as const),
-    numeralSystem:
-      version.locale === draft.locale ? draft.numeralSystem : defaultNumerals(version.locale),
-    templateId: templateFor(draft.eventType),
-    message: version.message,
-    quoteId: version.quoteId.length === 0 ? null : version.quoteId,
-    themePrimary: themeFor(draft.eventType).primary,
-    themeAccent: themeFor(draft.eventType).accent,
-    themeBackground: themeFor(draft.eventType).background,
-    publishedAt: new Date(),
-  }));
-  const slug = versions[0]?.slug ?? buildSlug(honorees);
-
-  // El directorio ANTES que la invitación, que es al revés de lo que parece.
-  // Una entrada apuntando a una invitación que no llegó a crearse resuelve a una
-  // base donde no hay nada: un 404, igual que si no existiera. Una invitación
-  // sin entrada no se puede encontrar nunca, y de eso nadie se entera hasta que
-  // un invitado abre su enlace.
-  await registerSlugs(
-    scope,
-    versions.map((version) => version.slug),
-  );
+  // Los slugs se RECLAMAN primero, todos de una vez, y se vuelve a acuñar el
+  // que ya fuera de otra oficina. Va ANTES de construir las versiones porque
+  // una versión con un slug que no es suyo es una invitación cuyo enlace lleva
+  // a la boda de otro cliente.
+  const borradores = draftVersions(draft);
+  const slugs = await claimFreshSlugs(scope, borradores.length, () => buildSlug(honorees));
+  const versions = borradores.map((version, index) => {
+    const slug = slugs[index];
+    // No puede pasar —`claimFreshSlugs` devuelve tantos como se le piden o
+    // lanza— y por eso se levanta en vez de caer a un slug sin reclamar: ese
+    // sería justo el que puede llevar a la boda de otra oficina.
+    if (slug === undefined) throw new Error('faltó un slug reclamado al publicar');
+    return {
+      slug,
+      locale: version.locale,
+      direction: version.locale === 'ar' ? ('rtl' as const) : ('ltr' as const),
+      numeralSystem:
+        version.locale === draft.locale ? draft.numeralSystem : defaultNumerals(version.locale),
+      templateId: templateFor(draft.eventType),
+      message: version.message,
+      quoteId: version.quoteId.length === 0 ? null : version.quoteId,
+      themePrimary: themeFor(draft.eventType).primary,
+      themeAccent: themeFor(draft.eventType).accent,
+      themeBackground: themeFor(draft.eventType).background,
+      publishedAt: new Date(),
+    };
+  });
+  const slug = versions[0]?.slug ?? '';
 
   const event = await prisma.event.create({
     data: {
