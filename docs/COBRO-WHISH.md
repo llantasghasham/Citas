@@ -61,6 +61,37 @@ data }` y el enlace de pago está en `data.collectUrl`. **El servicio responde
 200 aunque haya rechazado la petición**: el fallo se lee en `status: false` del
 cuerpo, no en el código HTTP.
 
+## Lo que dice su hoja de servicio
+
+Whish mandó por correo la hoja de «Whish Pay | Online Integration». Es comercial
+y no técnica —no trae ni un endpoint— pero confirma tres cosas que hasta ahora
+eran suposiciones, y abre una pregunta que puede dejar todos los cobros sin
+liquidar:
+
+- **La comisión es del 1 %** para integración propia por API (y por WooCommerce).
+  Shopify va al 2 %. No hay coste de alta, ni mensualidad, ni permanencia.
+- **El pago es por BILLETERA, con un código de un solo uso**: el cliente confirma
+  con su OTP, el importe se descuenta de su saldo de Whish y se abona al instante
+  en la cuenta de comercio. No hace falta tarjeta. Eso encaja con lo que ya
+  hacía el código: el pagador sale a la página de Whish y vuelve.
+- **El abono es inmediato** y el efectivo se retira en cualquiera de sus 1.450
+  puntos sin fecha valor.
+
+### La pregunta que abre la comisión, y por qué es cara
+
+Si hay un 1 %, hay un importe bruto y uno neto. Y `applySettlement` compara lo
+que el proveedor dice que se cobró con lo que se abrió, y **si no cuadra no
+liquida nada** (`reconcile.ts`, `amount_mismatch`). Eso está bien —es lo que
+impide activar un plan de veinticinco mil porque alguien pagó mil— pero
+significa que si el estado de un cobro devuelve el NETO, un pago de 20 $ volvería
+como 19,80 $ y **ningún pedido llegaría nunca a «pagado»**: la pareja paga, el
+plan no se activa, y el repaso lo reintenta cada cinco minutos para siempre.
+
+Así que hay que preguntarlo por escrito y comprobarlo en el primer cobro de un
+dólar, igual que el formato del importe: **¿`amount` en la respuesta de
+`payment/collect/status` es lo que pagó el cliente o lo que se abona descontada
+la comisión?**
+
 ## Cómo paga el cliente, y por qué importa
 
 Whish **no permite cobrar dentro de nuestra página**. `collect` devuelve un
@@ -192,6 +223,8 @@ de menos. No se cierra sin respuesta POR ESCRITO.
 > 6. متى تنتهي صلاحية طلب تحصيل غير مدفوع؟
 > 7. العمولة، ودورة التسوية، وإلى أي حساب.
 > 8. الحدود لكل عملية ولكل يوم.
+> 9. في ردّ `payment/collect/status`، هل `amount` هو ما دفعه العميل أم المبلغ
+>    بعد خصم العمولة؟
 
 Y en inglés:
 
@@ -206,6 +239,8 @@ Y en inglés:
 > 6. How long before an unpaid collection expires?
 > 7. Fee, settlement cycle, and to which account.
 > 8. Limits per transaction and per day.
+> 9. In the `payment/collect/status` response, is `amount` what the customer
+>    paid, or the amount net of your commission?
 
 Lo que contesten a la 3 se comprueba igual con un cobro real de un dólar mirado
 en el panel de Whish. Una respuesta por WhatsApp no es una prueba.
@@ -234,8 +269,10 @@ en el panel de Whish. Una respuesta por WhatsApp no es una prueba.
    segundo cobro o devuelve el primero?
 7. **Caducidad** de un cobro sin pagar.
 8. **Devoluciones.** ¿Hay API de reembolso o se hace a mano?
-9. **Comisión y liquidación.** Cuánto se llevan, cada cuánto liquidan y a qué
-   cuenta.
+9. **Comisión y liquidación.** Su hoja dice **1 %** por API propia; falta
+   confirmar cada cuánto liquidan, a qué cuenta, y —lo que decide si el código
+   funciona— **si el importe que devuelve `status` es el bruto o el neto**. Con
+   el neto, `applySettlement` no liquidaría NINGÚN cobro.
 10. **Límites** por transacción y por día.
 
 ## Reglas de la integración
@@ -299,7 +336,9 @@ siguiente.
 
 | | |
 |---|---|
-| Formulario de Whish Pay | **enviado**, esperando a su equipo |
+| Formulario de Whish Pay | **contestado** por su Dpto. Comercial: piden decir si hay empresa registrada y el dominio |
+| Comisión | **1 %** por API propia, sin coste de alta ni mensualidad (su hoja de servicio) |
+| Bruto o neto en `status` | **por confirmar** — con el neto no se liquidaría ningún cobro |
 | `channel`, `secret`, `websiteUrl` | **faltan** — es lo único que bloquea |
 | Formato del importe | **por confirmar** con el cobro de un dólar |
 | Callback firmado | **por confirmar**; mientras no lo esté, el callback solo avisa |
